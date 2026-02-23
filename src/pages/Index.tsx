@@ -1,12 +1,141 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { StatCard } from "@/components/StatCard";
+import { FilterBar } from "@/components/FilterBar";
+import { SalesTable, PurchasesTable } from "@/components/InvoiceTable";
+import { MonthlyChart } from "@/components/SummaryChart";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  Receipt,
+  FileText,
+  Loader2,
+} from "lucide-react";
+import { useMemo } from "react";
+
+function formatCurrency(n: number) {
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(n);
+}
 
 const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const {
+    sales,
+    purchases,
+    loading,
+    filters,
+    setFilters,
+    filterOptions,
+  } = useInvoiceData();
+
+  const stats = useMemo(() => {
+    const totalSales = sales.reduce((a, s) => a + s.totale, 0);
+    const totalPurchases = purchases.reduce((a, p) => a + p.totale, 0);
+    const totalTaxSales = sales.reduce((a, s) => a + s.imposta, 0);
+    const totalTaxPurchases = purchases.reduce((a, p) => a + p.imposta, 0);
+    return {
+      totalSales,
+      totalPurchases,
+      balance: totalSales - totalPurchases,
+      taxBalance: totalTaxSales - totalTaxPurchases,
+      countSales: sales.length,
+      countPurchases: purchases.length,
+    };
+  }, [sales, purchases]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Caricamento dati...</span>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="container py-5">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-primary p-2">
+              <FileText className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Riepilogo Economico-Finanziario</h1>
+              <p className="text-sm text-muted-foreground">
+                {stats.countSales} fatture vendita · {stats.countPurchases} fatture acquisto
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container py-6 space-y-6">
+        {/* Filters */}
+        <FilterBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          options={filterOptions}
+        />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Totale Vendite"
+            value={formatCurrency(stats.totalSales)}
+            subtitle={`${stats.countSales} fatture`}
+            icon={TrendingUp}
+            variant="income"
+          />
+          <StatCard
+            title="Totale Acquisti"
+            value={formatCurrency(stats.totalPurchases)}
+            subtitle={`${stats.countPurchases} fatture`}
+            icon={TrendingDown}
+            variant="expense"
+          />
+          <StatCard
+            title="Saldo"
+            value={formatCurrency(stats.balance)}
+            subtitle="Vendite - Acquisti"
+            icon={Scale}
+            variant="balance"
+          />
+          <StatCard
+            title="Saldo IVA"
+            value={formatCurrency(stats.taxBalance)}
+            subtitle="IVA vendite - IVA acquisti"
+            icon={Receipt}
+            variant="neutral"
+          />
+        </div>
+
+        {/* Chart */}
+        <div className="rounded-xl border bg-card p-5">
+          <h2 className="text-sm font-semibold mb-4">Andamento Mensile</h2>
+          <MonthlyChart sales={sales} purchases={purchases} />
+        </div>
+
+        {/* Tables */}
+        <Tabs defaultValue="sales" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="sales">Fatture Vendita ({stats.countSales})</TabsTrigger>
+            <TabsTrigger value="purchases">Fatture Acquisto ({stats.countPurchases})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="sales">
+            <SalesTable data={sales} />
+          </TabsContent>
+          <TabsContent value="purchases">
+            <PurchasesTable data={purchases} />
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 };
