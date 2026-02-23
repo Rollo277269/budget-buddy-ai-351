@@ -3,6 +3,8 @@ import { StatCard } from "@/components/StatCard";
 import { FilterBar } from "@/components/FilterBar";
 import { SalesTable, PurchasesTable } from "@/components/InvoiceTable";
 import { MonthlyChart } from "@/components/SummaryChart";
+import { ClientPieChart, SupplierPieChart } from "@/components/PieCharts";
+import { CigDetailTable } from "@/components/CigDetailTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp,
@@ -120,6 +122,24 @@ const Index = () => {
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">Andamento Mensile</h2>
           <MonthlyChart sales={sales} purchases={purchases} />
+        </div>
+
+        {/* Pie Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="rounded-xl border bg-card p-5">
+            <h2 className="text-sm font-semibold mb-4">Distribuzione Vendite per Cliente</h2>
+            <ClientPieChart sales={sales} />
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <h2 className="text-sm font-semibold mb-4">Distribuzione Acquisti per Fornitore</h2>
+            <SupplierPieChart purchases={purchases} />
+          </div>
+        </div>
+
+        {/* CIG Detail */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold">Dettaglio per CIG / Commessa</h2>
+          <CigDetailTable sales={sales} purchases={purchases} />
         </div>
 
         {/* Tables */}
