@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useInvoiceData, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
+import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
@@ -35,6 +36,7 @@ const columns: ColumnDef<PurchaseInvoice>[] = [
 
 const AcquistiPage = () => {
   const { purchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
 
   if (loading) {
     return (
@@ -51,7 +53,13 @@ const AcquistiPage = () => {
         <p className="text-sm text-muted-foreground">{purchases.length} fatture trovate</p>
       </div>
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
-      <DataTable columns={columns} data={purchases} rowKey={(r) => `${r.anno}-${r.numero}`} />
+      <DataTable<PurchaseInvoice> columns={columns} data={purchases} rowKey={(r) => `${r.anno}-${r.numero}`} onRowClick={setSelectedInvoice} />
+      <InvoiceDetailSheet
+        invoice={selectedInvoice}
+        open={!!selectedInvoice}
+        onOpenChange={(open) => !open && setSelectedInvoice(null)}
+        type="acquisto"
+      />
     </div>
   );
 };

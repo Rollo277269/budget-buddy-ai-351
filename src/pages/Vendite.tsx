@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useInvoiceData, SaleInvoice } from "@/hooks/useInvoiceData";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
+import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
@@ -35,6 +36,7 @@ const columns: ColumnDef<SaleInvoice>[] = [
 
 const VenditePage = () => {
   const { sales, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
 
   if (loading) {
     return (
@@ -51,7 +53,13 @@ const VenditePage = () => {
         <p className="text-sm text-muted-foreground">{sales.length} fatture trovate</p>
       </div>
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
-      <DataTable columns={columns} data={sales} rowKey={(r) => `${r.anno}-${r.numero}`} />
+      <DataTable<SaleInvoice> columns={columns} data={sales} rowKey={(r) => `${r.anno}-${r.numero}`} onRowClick={setSelectedInvoice} />
+      <InvoiceDetailSheet
+        invoice={selectedInvoice}
+        open={!!selectedInvoice}
+        onOpenChange={(open) => !open && setSelectedInvoice(null)}
+        type="vendita"
+      />
     </div>
   );
 };
