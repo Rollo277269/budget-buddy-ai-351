@@ -1,18 +1,15 @@
 import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { StatCard } from "@/components/StatCard";
 import { FilterBar } from "@/components/FilterBar";
-import { SalesTable, PurchasesTable } from "@/components/InvoiceTable";
 import { MonthlyChart } from "@/components/SummaryChart";
 import { ClientPieChart, SupplierPieChart } from "@/components/PieCharts";
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp,
   TrendingDown,
   Scale,
   Receipt,
-  FileText,
   Loader2,
 } from "lucide-react";
 import { useMemo } from "react";
@@ -61,25 +58,9 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container py-5">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary p-2">
-              <FileText className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Riepilogo Economico-Finanziario</h1>
-              <p className="text-sm text-muted-foreground">
-                {stats.countSales} fatture vendita · {stats.countPurchases} fatture acquisto
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div>
 
-      <main className="container py-6 space-y-6">
+      <div className="p-6 space-y-6">
         {/* Filters */}
         <FilterBar
           filters={filters}
@@ -149,20 +130,7 @@ const Index = () => {
           <CigDetailTable sales={sales} purchases={purchases} />
         </div>
 
-        {/* Tables */}
-        <Tabs defaultValue="sales" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="sales">Fatture Vendita ({stats.countSales})</TabsTrigger>
-            <TabsTrigger value="purchases">Fatture Acquisto ({stats.countPurchases})</TabsTrigger>
-          </TabsList>
-          <TabsContent value="sales">
-            <SalesTable data={sales} />
-          </TabsContent>
-          <TabsContent value="purchases">
-            <PurchasesTable data={purchases} />
-          </TabsContent>
-        </Tabs>
-      </main>
+      </div>
     </div>
   );
 };
