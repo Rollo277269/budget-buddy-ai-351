@@ -5,6 +5,7 @@ import { SalesTable, PurchasesTable } from "@/components/InvoiceTable";
 import { MonthlyChart } from "@/components/SummaryChart";
 import { ClientPieChart, SupplierPieChart } from "@/components/PieCharts";
 import { CigDetailTable } from "@/components/CigDetailTable";
+import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingUp,
@@ -134,6 +135,12 @@ const Index = () => {
             <h2 className="text-sm font-semibold mb-4">Distribuzione Acquisti per Fornitore</h2>
             <SupplierPieChart purchases={purchases} />
           </div>
+        </div>
+
+        {/* Deadline Analysis */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold">Analisi Scadenze</h2>
+          <DeadlineAnalysis sales={sales} purchases={purchases} />
         </div>
 
         {/* CIG Detail */}
