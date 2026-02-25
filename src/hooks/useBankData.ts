@@ -1,6 +1,10 @@
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
+import * as pdfjsLib from "pdfjs-dist";
 import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
+
+// Configure pdf.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 export interface BankMovement {
   id: string;
@@ -95,6 +99,44 @@ function detectColumns(header: any[]): {
     else if (h.includes("saldo")) result.saldo = i;
   }
   return result;
+}
+
+async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const allLines: string[] = [];
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+
+    // Group text items by Y position to reconstruct rows
+    const itemsByY = new Map<number, { x: number; str: string }[]>();
+    for (const item of content.items) {
+      if (!("str" in item) || !item.str.trim()) continue;
+      const y = Math.round((item as any).transform[5]);
+      if (!itemsByY.has(y)) itemsByY.set(y, []);
+      itemsByY.get(y)!.push({ x: (item as any).transform[4], str: item.str });
+    }
+
+    // Sort by Y descending (PDF coords), then by X
+    const sortedYs = Array.from(itemsByY.keys()).sort((a, b) => b - a);
+    for (const y of sortedYs) {
+      const items = itemsByY.get(y)!.sort((a, b) => a.x - b.x);
+      allLines.push(items.map((i) => i.str.trim()).join("\t"));
+    }
+  }
+
+  // Parse lines into rows by splitting on tabs/multiple spaces
+  const rows: any[][] = [];
+  for (const line of allLines) {
+    if (!line.trim()) continue;
+    // Split on tab or 3+ spaces
+    const cells = line.split(/\t|   +/).map((c) => c.trim()).filter(Boolean);
+    if (cells.length >= 2) {
+      rows.push(cells);
+    }
+  }
+  return rows;
 }
 
 function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
@@ -227,11 +269,18 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     setLoading(true);
     setFileName(file.name);
     try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true }) as any[];
-      setRawMovements(parseBank(rows));
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext === "pdf") {
+        const buf = await file.arrayBuffer();
+        const rows = await parsePdfToRows(buf);
+        setRawMovements(parseBank(rows));
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true }) as any[];
+        setRawMovements(parseBank(rows));
+      }
     } catch (err) {
       console.error("Errore parsing file bancario:", err);
     } finally {

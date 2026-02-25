@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search } from "lucide-react";
+import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText } from "lucide-react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement } from "@/hooks/useBankData";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -181,11 +181,25 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
   );
 }
 
+const ACCEPTED_TYPES = [
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "text/csv",
+  "application/pdf",
+];
+const ACCEPTED_EXT = [".xlsx", ".xls", ".csv", ".pdf"];
+
+function isAcceptedFile(file: File) {
+  if (ACCEPTED_TYPES.includes(file.type)) return true;
+  return ACCEPTED_EXT.some((ext) => file.name.toLowerCase().endsWith(ext));
+}
+
 const BanchePage = () => {
   const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
   const { movements, loading, fileName, handleFileUpload, addReconciliation, removeReconciliation, stats } = useBankData(allSales, allPurchases);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const columns: ColumnDef<BankMovement>[] = useMemo(() => [
     { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true, filterable: true },
@@ -224,10 +238,48 @@ const BanchePage = () => {
     addReconciliation({ movementId, invoiceType: type, invoiceAnno: anno, invoiceNumero: numero });
   };
 
+  const onDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const onDragLeave = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const onDrop = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && isAcceptedFile(file)) {
+      handleFileUpload(file);
+    }
+  }, [handleFileUpload]);
+
   const isLoading = loading || invoiceLoading;
 
   return (
-    <div className="p-6 space-y-6">
+    <div
+      className="p-6 space-y-6 relative min-h-full"
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-xl backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 text-primary">
+            <Upload className="h-12 w-12 animate-bounce" />
+            <p className="text-lg font-semibold">Rilascia il file qui</p>
+            <p className="text-sm text-muted-foreground">Excel (.xlsx, .xls, .csv) o PDF</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Banche</h2>
@@ -239,7 +291,7 @@ const BanchePage = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".xlsx,.xls,.csv"
+            accept=".xlsx,.xls,.csv,.pdf"
             className="hidden"
             onChange={onFileChange}
           />
@@ -251,11 +303,17 @@ const BanchePage = () => {
       </div>
 
       {movements.length === 0 && !isLoading && (
-        <div className="flex flex-col items-center justify-center h-64 rounded-xl border bg-card text-muted-foreground">
-          <FileSpreadsheet className="h-12 w-12 mb-4 opacity-30" />
-          <p className="text-sm">Carica un file Excel (.xlsx, .xls) con l'estratto conto</p>
-          <p className="text-xs mt-1">I movimenti verranno automaticamente associati alle fatture</p>
-        </div>
+        <button
+          className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="flex gap-3 mb-4">
+            <FileSpreadsheet className="h-10 w-10 opacity-30" />
+            <FileText className="h-10 w-10 opacity-30" />
+          </div>
+          <p className="text-sm font-medium">Carica o trascina un estratto conto</p>
+          <p className="text-xs mt-1">Formati supportati: Excel (.xlsx, .xls, .csv) e PDF</p>
+        </button>
       )}
 
       {isLoading && (
