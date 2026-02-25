@@ -1,0 +1,466 @@
+import { useState, useEffect, useCallback } from "react";
+import { Settings, Landmark, FileText, CalendarClock, Plus, Trash2, Save, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { DataTable, ColumnDef } from "@/components/DataTable";
+import { toast } from "sonner";
+
+// ─── Conti Correnti ──────────────────────────────────────────────
+
+interface ContoCorrente {
+  id: string;
+  banca: string;
+  iban: string;
+  intestatario: string;
+  note: string;
+}
+
+const CONTI_KEY = "conti-correnti";
+
+function loadConti(): ContoCorrente[] {
+  try { return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]"); }
+  catch { return []; }
+}
+
+function saveConti(conti: ContoCorrente[]) {
+  localStorage.setItem(CONTI_KEY, JSON.stringify(conti));
+}
+
+function ContiCorrentiTab() {
+  const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
+  const [editing, setEditing] = useState<ContoCorrente | null>(null);
+
+  const empty: ContoCorrente = { id: "", banca: "", iban: "", intestatario: "", note: "" };
+
+  const handleSave = () => {
+    if (!editing) return;
+    if (!editing.banca || !editing.iban) {
+      toast.error("Banca e IBAN sono obbligatori");
+      return;
+    }
+    const updated = editing.id
+      ? conti.map((c) => (c.id === editing.id ? editing : c))
+      : [...conti, { ...editing, id: crypto.randomUUID() }];
+    setConti(updated);
+    saveConti(updated);
+    setEditing(null);
+    toast.success(editing.id ? "Conto aggiornato" : "Conto aggiunto");
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = conti.filter((c) => c.id !== id);
+    setConti(updated);
+    saveConti(updated);
+    toast.success("Conto eliminato");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Conti Correnti</h3>
+          <p className="text-xs text-muted-foreground">Gestisci i dati dei conti correnti bancari</p>
+        </div>
+        <Button size="sm" onClick={() => setEditing({ ...empty })}>
+          <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
+        </Button>
+      </div>
+
+      {editing && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Banca *</Label>
+                <Input value={editing.banca} onChange={(e) => setEditing({ ...editing, banca: e.target.value })} placeholder="Nome banca" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">IBAN *</Label>
+                <Input value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value.toUpperCase() })} placeholder="IT60X0542811101000000123456" className="h-9 text-sm font-mono" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Intestatario</Label>
+                <Input value={editing.intestatario} onChange={(e) => setEditing({ ...editing, intestatario: e.target.value })} placeholder="Ragione sociale" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Note</Label>
+                <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
+              <Button size="sm" onClick={handleSave}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {conti.length === 0 && !editing ? (
+        <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
+          <Landmark className="h-10 w-10 mb-3 opacity-30" />
+          <p className="text-sm">Nessun conto corrente configurato</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {conti.map((c) => (
+            <Card key={c.id} className="group">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold">{c.banca}</p>
+                    <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
+                    {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
+                    {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(c)}>
+                      <FileText className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(c.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Regole Denominazione ────────────────────────────────────────
+
+interface NamingRule {
+  id: string;
+  tipo: string;
+  pattern: string;
+  esempio: string;
+}
+
+const RULES_KEY = "naming-rules";
+
+function loadRules(): NamingRule[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(RULES_KEY) || "null");
+    if (saved) return saved;
+  } catch {}
+  return [
+    { id: "1", tipo: "Fattura Vendita", pattern: "FV_{ANNO}_{NUMERO}_{CLIENTE}", esempio: "FV_2024_001_RossiSRL" },
+    { id: "2", tipo: "Fattura Acquisto", pattern: "FA_{ANNO}_{NUMERO}_{FORNITORE}", esempio: "FA_2024_042_BianchiSPA" },
+    { id: "3", tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" },
+  ];
+}
+
+function saveRules(rules: NamingRule[]) {
+  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+}
+
+function NamingRulesTab() {
+  const [rules, setRules] = useState<NamingRule[]>(loadRules);
+  const [editing, setEditing] = useState<NamingRule | null>(null);
+
+  const empty: NamingRule = { id: "", tipo: "", pattern: "", esempio: "" };
+
+  const handleSave = () => {
+    if (!editing) return;
+    if (!editing.tipo || !editing.pattern) {
+      toast.error("Tipo documento e pattern sono obbligatori");
+      return;
+    }
+    const updated = editing.id
+      ? rules.map((r) => (r.id === editing.id ? editing : r))
+      : [...rules, { ...editing, id: crypto.randomUUID() }];
+    setRules(updated);
+    saveRules(updated);
+    setEditing(null);
+    toast.success("Regola salvata");
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = rules.filter((r) => r.id !== id);
+    setRules(updated);
+    saveRules(updated);
+    toast.success("Regola eliminata");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Regole di Denominazione</h3>
+          <p className="text-xs text-muted-foreground">Definisci le convenzioni per i nomi dei file caricati</p>
+        </div>
+        <Button size="sm" onClick={() => setEditing({ ...empty })}>
+          <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
+        </Button>
+      </div>
+
+      {editing && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Tipo Documento *</Label>
+                <Input value={editing.tipo} onChange={(e) => setEditing({ ...editing, tipo: e.target.value })} placeholder="Es. Fattura Vendita" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Pattern *</Label>
+                <Input value={editing.pattern} onChange={(e) => setEditing({ ...editing, pattern: e.target.value })} placeholder="Es. FV_{ANNO}_{NUMERO}" className="h-9 text-sm font-mono" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Esempio</Label>
+                <Input value={editing.esempio} onChange={(e) => setEditing({ ...editing, esempio: e.target.value })} placeholder="Es. FV_2024_001_RossiSRL" className="h-9 text-sm font-mono" />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
+              <Button size="sm" onClick={handleSave}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="text-xs text-muted-foreground rounded-lg border bg-muted/30 p-3">
+        <p className="font-medium mb-1">Variabili disponibili:</p>
+        <div className="flex flex-wrap gap-2">
+          {["{ANNO}", "{MESE}", "{NUMERO}", "{CLIENTE}", "{FORNITORE}", "{BANCA}", "{CIG}", "{DATA}"].map((v) => (
+            <Badge key={v} variant="outline" className="font-mono text-[10px]">{v}</Badge>
+          ))}
+        </div>
+      </div>
+
+      {rules.length === 0 && !editing ? (
+        <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
+          <FileText className="h-10 w-10 mb-3 opacity-30" />
+          <p className="text-sm">Nessuna regola configurata</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {rules.map((r) => (
+            <Card key={r.id} className="group">
+              <CardContent className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-4 min-w-0">
+                  <Badge variant="secondary" className="text-[10px] shrink-0">{r.tipo}</Badge>
+                  <span className="text-xs font-mono truncate">{r.pattern}</span>
+                  {r.esempio && (
+                    <>
+                      <span className="text-xs text-muted-foreground">→</span>
+                      <span className="text-xs text-muted-foreground font-mono truncate">{r.esempio}</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(r)}>
+                    <FileText className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(r.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Scadenzario ─────────────────────────────────────────────────
+
+function formatCurrency(n: number) {
+  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
+}
+
+function parseDate(d: string): Date | null {
+  if (!d) return null;
+  const parts = d.split("/");
+  if (parts.length === 3) return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+  return null;
+}
+
+interface ScadenzaRow {
+  tipo: "credito" | "debito";
+  numero: string;
+  soggetto: string;
+  totale: number;
+  scadenza: string;
+  scadenzaDate: Date | null;
+  giorniRimasti: number;
+  stato: "scaduta" | "in_scadenza" | "regolare";
+  cig: string;
+}
+
+const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
+  {
+    key: "stato", label: "Stato", sortable: true, filterable: true,
+    render: (r) => {
+      if (r.stato === "scaduta") return <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Scaduta</Badge>;
+      if (r.stato === "in_scadenza") return <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><Clock className="h-3 w-3 mr-1" />In scadenza</Badge>;
+      return <Badge variant="outline" className="text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Regolare</Badge>;
+    },
+  },
+  {
+    key: "tipo", label: "Tipo", sortable: true, filterable: true,
+    render: (r) => <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>,
+  },
+  { key: "numero", label: "N° Fattura", sortable: true, render: (r) => <span className="text-xs font-mono">{r.numero}</span> },
+  { key: "soggetto", label: "Soggetto", filterable: true, render: (r) => <span className="text-xs truncate max-w-[200px] block">{r.soggetto}</span> },
+  { key: "scadenza", label: "Scadenza", sortable: true, render: (r) => <span className="text-xs">{r.scadenza}</span> },
+  {
+    key: "giorniRimasti", label: "Giorni", sortable: true, align: "right",
+    render: (r) => (
+      <span className={`text-xs font-mono font-medium ${r.giorniRimasti < 0 ? "text-destructive" : r.giorniRimasti <= 30 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"}`}>
+        {r.giorniRimasti < 0 ? `${Math.abs(r.giorniRimasti)}g fa` : `${r.giorniRimasti}g`}
+      </span>
+    ),
+  },
+  {
+    key: "totale", label: "Importo", sortable: true, align: "right",
+    render: (r) => <span className={`text-xs font-mono font-medium ${r.tipo === "credito" ? "text-income" : "text-expense"}`}>{formatCurrency(r.totale)}</span>,
+  },
+  { key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> },
+];
+
+function ScadenzarioTab() {
+  const { allSales, allPurchases, loading } = useInvoiceData();
+
+  const rows: ScadenzaRow[] = (() => {
+    if (loading) return [];
+    const now = new Date();
+    const result: ScadenzaRow[] = [];
+
+    const getStato = (stato: string, scadDate: Date | null): ScadenzaRow["stato"] => {
+      const s = stato.toLowerCase();
+      if (s.includes("scadut")) return "scaduta";
+      if (s.includes("scadere")) return "in_scadenza";
+      if (!scadDate) return "regolare";
+      const days = (scadDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      if (days < 0) return "scaduta";
+      if (days <= 30) return "in_scadenza";
+      return "regolare";
+    };
+
+    allSales.forEach((s) => {
+      const d = parseDate(s.scadenza || s.data);
+      const days = d ? Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 9999;
+      const stato = getStato(s.stato, d);
+      if (stato !== "regolare") {
+        result.push({ tipo: "credito", numero: `${s.numero}/${s.anno}`, soggetto: s.cliente, totale: s.totale, scadenza: s.scadenza || s.data, scadenzaDate: d, giorniRimasti: days, stato, cig: s.cig });
+      }
+    });
+
+    allPurchases.forEach((p) => {
+      const d = parseDate(p.scadenza || p.data);
+      const days = d ? Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 9999;
+      const stato = getStato(p.stato, d);
+      if (stato !== "regolare") {
+        result.push({ tipo: "debito", numero: `${p.numero}/${p.anno}`, soggetto: p.fornitore, totale: p.totale, scadenza: p.scadenza || p.data, scadenzaDate: d, giorniRimasti: days, stato, cig: p.cig });
+      }
+    });
+
+    return result.sort((a, b) => a.giorniRimasti - b.giorniRimasti);
+  })();
+
+  const totCrediti = rows.filter((r) => r.tipo === "credito").reduce((s, r) => s + r.totale, 0);
+  const totDebiti = rows.filter((r) => r.tipo === "debito").reduce((s, r) => s + r.totale, 0);
+  const scadute = rows.filter((r) => r.stato === "scaduta").length;
+  const inScadenza = rows.filter((r) => r.stato === "in_scadenza").length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold">Scadenzario</h3>
+        <p className="text-xs text-muted-foreground">Fatture scadute e in scadenza entro 30 giorni</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Scadute</p>
+            <p className="text-xl font-bold text-destructive">{scadute}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">In Scadenza</p>
+            <p className="text-xl font-bold text-[hsl(var(--warning))]">{inScadenza}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Crediti aperti</p>
+            <p className="text-lg font-bold font-mono text-income">{formatCurrency(totCrediti)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Debiti aperti</p>
+            <p className="text-lg font-bold font-mono text-expense">{formatCurrency(totDebiti)}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <DataTable<ScadenzaRow>
+        columns={scadenzaCols}
+        data={rows}
+        rowKey={(r) => `${r.tipo}-${r.numero}`}
+      />
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────
+
+const StrumentiPage = () => {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h2 className="text-lg font-bold tracking-tight">Strumenti</h2>
+        <p className="text-sm text-muted-foreground">Configurazione e utilità</p>
+      </div>
+
+      <Tabs defaultValue="conti" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <TabsTrigger value="conti" className="text-xs">
+            <Landmark className="h-3.5 w-3.5 mr-1.5" />Conti Correnti
+          </TabsTrigger>
+          <TabsTrigger value="naming" className="text-xs">
+            <FileText className="h-3.5 w-3.5 mr-1.5" />Denominazione
+          </TabsTrigger>
+          <TabsTrigger value="scadenzario" className="text-xs">
+            <CalendarClock className="h-3.5 w-3.5 mr-1.5" />Scadenzario
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="conti">
+          <ContiCorrentiTab />
+        </TabsContent>
+        <TabsContent value="naming">
+          <NamingRulesTab />
+        </TabsContent>
+        <TabsContent value="scadenzario">
+          <ScadenzarioTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default StrumentiPage;
