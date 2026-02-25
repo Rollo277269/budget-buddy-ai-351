@@ -10,6 +10,7 @@ import AcquistiPage from "./pages/Acquisti";
 import BanchePage from "./pages/Banche";
 import CommessePage from "./pages/Commesse";
 import ListaCommessePage from "./pages/ListaCommesse";
+import StrumentiPage from "./pages/Strumenti";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/banche" element={<BanchePage />} />
             <Route path="/commesse" element={<CommessePage />} />
             <Route path="/lista-commesse" element={<ListaCommessePage />} />
+            <Route path="/strumenti" element={<StrumentiPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
