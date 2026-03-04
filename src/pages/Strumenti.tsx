@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Landmark, FileText, CalendarClock, Plus, Trash2, Save, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
+import { Settings, Landmark, FileText, CalendarClock, Plus, Trash2, Save, AlertTriangle, Clock, CheckCircle2, Building2, TrendingUp, TrendingDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -274,6 +274,169 @@ function NamingRulesTab() {
   );
 }
 
+// ─── Centri di Costo / Ricavo ────────────────────────────────────
+
+interface CentroCR {
+  id: string;
+  tipo: "costo" | "ricavo";
+  codice: string;
+  descrizione: string;
+  responsabile: string;
+  note: string;
+}
+
+const CENTRI_KEY = "centri-costo-ricavo";
+
+function loadCentri(): CentroCR[] {
+  try { return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]"); }
+  catch { return []; }
+}
+
+function saveCentri(centri: CentroCR[]) {
+  localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
+}
+
+function CentriCostoRicavoTab() {
+  const [centri, setCentri] = useState<CentroCR[]>(loadCentri);
+  const [editing, setEditing] = useState<CentroCR | null>(null);
+  const [filtroTipo, setFiltroTipo] = useState<"tutti" | "costo" | "ricavo">("tutti");
+
+  const empty: CentroCR = { id: "", tipo: "costo", codice: "", descrizione: "", responsabile: "", note: "" };
+
+  const handleSave = () => {
+    if (!editing) return;
+    if (!editing.codice || !editing.descrizione) {
+      toast.error("Codice e descrizione sono obbligatori");
+      return;
+    }
+    const duplicate = centri.find((c) => c.codice === editing.codice && c.id !== editing.id);
+    if (duplicate) {
+      toast.error("Codice già esistente");
+      return;
+    }
+    const updated = editing.id
+      ? centri.map((c) => (c.id === editing.id ? editing : c))
+      : [...centri, { ...editing, id: crypto.randomUUID() }];
+    setCentri(updated);
+    saveCentri(updated);
+    setEditing(null);
+    toast.success(editing.id ? "Centro aggiornato" : "Centro aggiunto");
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = centri.filter((c) => c.id !== id);
+    setCentri(updated);
+    saveCentri(updated);
+    toast.success("Centro eliminato");
+  };
+
+  const filtered = filtroTipo === "tutti" ? centri : centri.filter((c) => c.tipo === filtroTipo);
+  const numCosti = centri.filter((c) => c.tipo === "costo").length;
+  const numRicavi = centri.filter((c) => c.tipo === "ricavo").length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
+          <p className="text-xs text-muted-foreground">Definisci i centri per la contabilità analitica</p>
+        </div>
+        <Button size="sm" onClick={() => setEditing({ ...empty })}>
+          <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
+        </Button>
+      </div>
+
+      <div className="flex gap-2">
+        {(["tutti", "costo", "ricavo"] as const).map((t) => (
+          <Button key={t} size="sm" variant={filtroTipo === t ? "default" : "outline"} className="text-xs h-7" onClick={() => setFiltroTipo(t)}>
+            {t === "tutti" ? `Tutti (${centri.length})` : t === "costo" ? `Costi (${numCosti})` : `Ricavi (${numRicavi})`}
+          </Button>
+        ))}
+      </div>
+
+      {editing && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Tipo *</Label>
+                <div className="flex gap-2">
+                  <Button size="sm" variant={editing.tipo === "costo" ? "default" : "outline"} className="text-xs h-8 flex-1" onClick={() => setEditing({ ...editing, tipo: "costo" })}>
+                    <TrendingDown className="h-3.5 w-3.5 mr-1" />Costo
+                  </Button>
+                  <Button size="sm" variant={editing.tipo === "ricavo" ? "default" : "outline"} className="text-xs h-8 flex-1" onClick={() => setEditing({ ...editing, tipo: "ricavo" })}>
+                    <TrendingUp className="h-3.5 w-3.5 mr-1" />Ricavo
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Codice *</Label>
+                <Input value={editing.codice} onChange={(e) => setEditing({ ...editing, codice: e.target.value.toUpperCase() })} placeholder="Es. CC001" className="h-9 text-sm font-mono" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Descrizione *</Label>
+                <Input value={editing.descrizione} onChange={(e) => setEditing({ ...editing, descrizione: e.target.value })} placeholder="Es. Ufficio Amministrativo" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Responsabile</Label>
+                <Input value={editing.responsabile} onChange={(e) => setEditing({ ...editing, responsabile: e.target.value })} placeholder="Nome responsabile" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <Label className="text-xs">Note</Label>
+                <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
+              <Button size="sm" onClick={handleSave}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {filtered.length === 0 && !editing ? (
+        <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
+          <Building2 className="h-10 w-10 mb-3 opacity-30" />
+          <p className="text-sm">{filtroTipo === "tutti" ? "Nessun centro configurato" : `Nessun centro di ${filtroTipo} configurato`}</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {filtered.map((c) => (
+            <Card key={c.id} className="group">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <Badge variant={c.tipo === "costo" ? "destructive" : "secondary"} className="text-[10px] mt-0.5 shrink-0">
+                      {c.tipo === "costo" ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
+                      {c.tipo === "costo" ? "Costo" : "Ricavo"}
+                    </Badge>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-semibold text-muted-foreground">{c.codice}</span>
+                        <p className="text-sm font-semibold">{c.descrizione}</p>
+                      </div>
+                      {c.responsabile && <p className="text-xs text-muted-foreground">Resp: {c.responsabile}</p>}
+                      {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(c)}>
+                      <FileText className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(c.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Scadenzario ─────────────────────────────────────────────────
 
 function formatCurrency(n: number) {
@@ -437,9 +600,12 @@ const StrumentiPage = () => {
       </div>
 
       <Tabs defaultValue="conti" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
+        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
           <TabsTrigger value="conti" className="text-xs">
             <Landmark className="h-3.5 w-3.5 mr-1.5" />Conti Correnti
+          </TabsTrigger>
+          <TabsTrigger value="centri" className="text-xs">
+            <Building2 className="h-3.5 w-3.5 mr-1.5" />Centri C/R
           </TabsTrigger>
           <TabsTrigger value="naming" className="text-xs">
             <FileText className="h-3.5 w-3.5 mr-1.5" />Denominazione
@@ -451,6 +617,9 @@ const StrumentiPage = () => {
 
         <TabsContent value="conti">
           <ContiCorrentiTab />
+        </TabsContent>
+        <TabsContent value="centri">
+          <CentriCostoRicavoTab />
         </TabsContent>
         <TabsContent value="naming">
           <NamingRulesTab />
