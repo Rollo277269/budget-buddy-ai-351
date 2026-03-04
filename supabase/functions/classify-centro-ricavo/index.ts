@@ -12,43 +12,40 @@ serve(async (req) => {
   }
 
   try {
-    const { invoices, centri } = await req.json();
+    // tipo: "costo" | "ricavo", tipoFattura: "vendita" | "acquisto"
+    const { invoices, centri, tipo = "ricavo", tipoFattura = "vendita" } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    if (!centri || centri.length === 0) {
+    const centriFiltrati = (centri || []).filter((c: any) => c.tipo === tipo);
+    if (centriFiltrati.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Nessun centro di ricavo definito" }),
+        JSON.stringify({ error: `Nessun centro di ${tipo} definito` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const centriRicavo = centri
-      .filter((c: any) => c.tipo === "ricavo")
+    const centriList = centriFiltrati
       .map((c: any) => `${c.codice}: ${c.descrizione}`)
       .join("\n");
 
-    if (!centriRicavo) {
-      return new Response(
-        JSON.stringify({ error: "Nessun centro di ricavo definito" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const soggettoField = tipoFattura === "vendita" ? "cliente" : "fornitore";
+    const soggettoLabel = tipoFattura === "vendita" ? "Cliente" : "Fornitore";
 
     const invoiceList = invoices
       .map(
         (inv: any) =>
-          `ID:${inv.anno}-${inv.numero} | Cliente:${inv.cliente} | Importo:${inv.totale} | Desc:${inv.descrizione || "N/A"} | CIG:${inv.cig || "N/A"}`
+          `ID:${inv.anno}-${inv.numero} | ${soggettoLabel}:${inv[soggettoField] || "N/A"} | Importo:${inv.totale} | Desc:${inv.descrizione || "N/A"} | CIG:${inv.cig || "N/A"}`
       )
       .join("\n");
 
-    const systemPrompt = `Sei un assistente contabile. Devi classificare fatture di vendita assegnando a ciascuna un centro di ricavo.
+    const systemPrompt = `Sei un assistente contabile. Devi classificare fatture di ${tipoFattura} assegnando a ciascuna un centro di ${tipo}.
 
-Centri di ricavo disponibili:
-${centriRicavo}
+Centri di ${tipo} disponibili:
+${centriList}
 
-Per ogni fattura, rispondi SOLO con il codice del centro di ricavo più appropriato basandoti su cliente, descrizione, importo e CIG.
+Per ogni fattura, rispondi SOLO con il codice del centro di ${tipo} più appropriato basandoti su ${soggettoLabel.toLowerCase()}, descrizione, importo e CIG.
 Se non riesci a determinare il centro, rispondi con "N/A".`;
 
     const response = await fetch(
@@ -65,7 +62,7 @@ Se non riesci a determinare il centro, rispondi con "N/A".`;
             { role: "system", content: systemPrompt },
             {
               role: "user",
-              content: `Classifica queste fatture. Rispondi in formato JSON array: [{"id": "anno-numero", "codice": "CODICE_CENTRO"}]\n\n${invoiceList}`,
+              content: `Classifica queste fatture.\n\n${invoiceList}`,
             },
           ],
           tools: [
@@ -73,8 +70,7 @@ Se non riesci a determinare il centro, rispondi con "N/A".`;
               type: "function",
               function: {
                 name: "classify_invoices",
-                description:
-                  "Classifica le fatture assegnando un centro di ricavo a ciascuna",
+                description: `Classifica le fatture assegnando un centro di ${tipo} a ciascuna`,
                 parameters: {
                   type: "object",
                   properties: {
@@ -83,15 +79,8 @@ Se non riesci a determinare il centro, rispondi con "N/A".`;
                       items: {
                         type: "object",
                         properties: {
-                          id: {
-                            type: "string",
-                            description: "ID fattura nel formato anno-numero",
-                          },
-                          codice: {
-                            type: "string",
-                            description:
-                              "Codice del centro di ricavo assegnato, o N/A",
-                          },
+                          id: { type: "string", description: "ID fattura nel formato anno-numero" },
+                          codice: { type: "string", description: `Codice del centro di ${tipo} assegnato, o N/A` },
                         },
                         required: ["id", "codice"],
                         additionalProperties: false,
@@ -104,33 +93,24 @@ Se non riesci a determinare il centro, rispondi con "N/A".`;
               },
             },
           ],
-          tool_choice: {
-            type: "function",
-            function: { name: "classify_invoices" },
-          },
+          tool_choice: { type: "function", function: { name: "classify_invoices" } },
         }),
       }
     );
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite richieste superato, riprova tra poco." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Limite richieste superato, riprova tra poco." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Crediti AI esauriti." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Crediti AI esauriti." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(
-        JSON.stringify({ error: "Errore gateway AI" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Errore gateway AI" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const result = await response.json();
@@ -143,10 +123,8 @@ Se non riesci a determinare il centro, rispondi con "N/A".`;
       });
     }
 
-    return new Response(
-      JSON.stringify({ classifications: [] }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ classifications: [] }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("classify error:", e);
     return new Response(
