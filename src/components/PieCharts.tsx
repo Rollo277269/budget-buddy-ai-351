@@ -1,5 +1,6 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { loadCentri } from "@/hooks/useCentri";
 import { useMemo } from "react";
 
 function formatCurrency(n: number) {
@@ -130,6 +131,88 @@ export function SupplierPieChart({ purchases }: { purchases: PurchaseInvoice[] }
         </Pie>
         <Tooltip content={<CustomTooltip />} />
       </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+const COLORS_CENTRI = [
+  "hsl(152 60% 36%)", "hsl(200 50% 45%)", "hsl(270 45% 50%)",
+  "hsl(30 65% 48%)", "hsl(340 50% 55%)", "hsl(180 45% 40%)",
+  "hsl(60 50% 42%)", "hsl(120 40% 45%)", "hsl(300 40% 50%)",
+  "hsl(0 50% 50%)",
+];
+
+export function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
+  const data = useMemo(() => {
+    const centri = loadCentri().filter((c) => c.tipo === "ricavo");
+    if (centri.length === 0) return [];
+
+    let mapRaw: Record<string, string> = {};
+    try {
+      mapRaw = JSON.parse(localStorage.getItem("centro-map-ricavo-vendite") || "{}");
+    } catch {}
+
+    const totals: Record<string, number> = {};
+    let nonClassificato = 0;
+
+    sales.forEach((s) => {
+      const key = `${s.anno}-${s.numero}`;
+      const codice = mapRaw[key];
+      if (codice) {
+        const centro = centri.find((c) => c.codice === codice);
+        const label = centro ? `${centro.codice} - ${centro.descrizione}` : codice;
+        totals[label] = (totals[label] || 0) + s.totale;
+      } else {
+        nonClassificato += s.totale;
+      }
+    });
+
+    const sorted = Object.entries(totals)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    if (nonClassificato > 0) {
+      sorted.push({ name: "Non classificato", value: nonClassificato });
+    }
+
+    return sorted;
+  }, [sales]);
+
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
+        Nessun centro di ricavo definito
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={320}>
+      <BarChart data={data} layout="vertical" margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+        <XAxis
+          type="number"
+          tickFormatter={(v) => formatCurrency(v)}
+          style={{ fontSize: "10px" }}
+          stroke="hsl(var(--muted-foreground))"
+        />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={160}
+          tick={{ fontSize: 11 }}
+          stroke="hsl(var(--muted-foreground))"
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+          {data.map((entry, i) => (
+            <Cell
+              key={i}
+              fill={entry.name === "Non classificato" ? "hsl(var(--muted-foreground))" : COLORS_CENTRI[i % COLORS_CENTRI.length]}
+            />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   );
 }
