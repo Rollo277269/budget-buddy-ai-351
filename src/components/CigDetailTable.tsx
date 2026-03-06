@@ -42,7 +42,7 @@ function makeColumns(onCigClick: (cig: string) => void): ColumnDef<CigRow>[] {
 
 export function CigDetailTable({ sales, purchases }: { sales: SaleInvoice[]; purchases: PurchaseInvoice[] }) {
   const navigate = useNavigate();
-  const columns = useMemo(() => makeColumns((cig) => navigate(`/commesse?cig=${encodeURIComponent(cig)}`)), [navigate]);
+  const columns = useMemo(() => makeColumns((cig) => navigate(`/?cig=${encodeURIComponent(cig)}`)), [navigate]);
 
   const rows = useMemo(() => {
     const map: Record<string, CigRow> = {};

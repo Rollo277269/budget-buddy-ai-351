@@ -91,7 +91,7 @@ const AcquistiPage = () => {
       { key: "cig", label: "CIG", render: (r) => r.cig ? (
         <span
           className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
-          onClick={(e) => { e.stopPropagation(); navigate(`/commesse?cig=${encodeURIComponent(r.cig)}`); }}
+          onClick={(e) => { e.stopPropagation(); navigate(`/?cig=${encodeURIComponent(r.cig)}`); }}
         >{r.cig}</span>
       ) : <span className="font-mono text-[11px]">—</span>, sortable: true, filterable: true },
       { key: "imponibile", label: "Imponibile", render: (r) => <span className="text-xs font-mono text-right block">{formatCurrency(r.imponibile)}</span>, sortable: true, align: "right" },
