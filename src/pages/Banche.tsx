@@ -196,7 +196,7 @@ function isAcceptedFile(file: File) {
 
 const BanchePage = () => {
   const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
-  const { movements, loading, fileName, handleFileUpload, addReconciliation, removeReconciliation, stats } = useBankData(allSales, allPurchases);
+  const { movements, loading, fileNames, handleFileUpload, addReconciliation, removeReconciliation, clearMovements, stats } = useBankData(allSales, allPurchases);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -286,7 +286,7 @@ const BanchePage = () => {
         <div>
           <h2 className="text-lg font-bold tracking-tight">Banche</h2>
           <p className="text-sm text-muted-foreground">
-            {fileName ? `File: ${fileName}` : "Carica un estratto conto per iniziare"}
+            {fileNames.length > 0 ? `File: ${fileNames.join(", ")}` : "Carica un estratto conto per iniziare"}
           </p>
         </div>
         <div>
