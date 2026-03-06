@@ -15,7 +15,8 @@ import {
   Receipt,
   Loader2,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 const Index = () => {
   const {
@@ -26,6 +27,17 @@ const Index = () => {
     setFilters,
     filterOptions,
   } = useInvoiceData();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const cigParam = searchParams.get("cig");
+    if (cigParam && filters.cig !== cigParam) {
+      setFilters({ ...filters, cig: cigParam });
+      searchParams.delete("cig");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const { movements, stats: bankStats } = useBankData(sales, purchases);
 
