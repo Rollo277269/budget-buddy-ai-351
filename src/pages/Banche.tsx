@@ -229,8 +229,10 @@ const BanchePage = () => {
   ], []);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileUpload(file);
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach((file) => handleFileUpload(file));
+    }
     e.target.value = "";
   };
 
@@ -254,9 +256,9 @@ const BanchePage = () => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && isAcceptedFile(file)) {
-      handleFileUpload(file);
+    const files = e.dataTransfer.files;
+    if (files) {
+      Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file));
     }
   }, [handleFileUpload]);
 
@@ -292,6 +294,7 @@ const BanchePage = () => {
             ref={fileInputRef}
             type="file"
             accept=".xlsx,.xls,.csv,.pdf"
+            multiple
             className="hidden"
             onChange={onFileChange}
           />
