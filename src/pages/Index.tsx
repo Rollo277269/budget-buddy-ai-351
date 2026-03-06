@@ -1,10 +1,12 @@
 import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { useBankData } from "@/hooks/useBankData";
 import { StatCard } from "@/components/StatCard";
 import { FilterBar } from "@/components/FilterBar";
 import { MonthlyChart } from "@/components/SummaryChart";
 import { ClientPieChart, SupplierPieChart, CentroRicavoChart } from "@/components/PieCharts";
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
+import { BankReconciliationSummary } from "@/components/BankReconciliationSummary";
 import {
   TrendingUp,
   TrendingDown,
@@ -30,6 +32,8 @@ const Index = () => {
     setFilters,
     filterOptions,
   } = useInvoiceData();
+
+  const { movements, stats: bankStats } = useBankData(sales, purchases);
 
   const stats = useMemo(() => {
     const totalSales = sales.reduce((a, s) => a + s.totale, 0);
@@ -123,6 +127,11 @@ const Index = () => {
           <h2 className="text-sm font-semibold mb-4">Ricavi per Centro di Ricavo</h2>
           <CentroRicavoChart sales={sales} />
         </div>
+
+        {/* Bank Reconciliation Summary */}
+        {movements.length > 0 && (
+          <BankReconciliationSummary movements={movements} stats={bankStats} />
+        )}
 
         {/* Deadline Analysis */}
         <div className="space-y-3">
