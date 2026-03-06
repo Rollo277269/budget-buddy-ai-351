@@ -1,10 +1,12 @@
 import { useMemo, useState, useCallback } from "react";
 import { useInvoiceData, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
+import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { CentroCell } from "@/components/CentroCell";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
+import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles } from "lucide-react";
@@ -23,12 +25,14 @@ function StatusBadge({ stato }: { stato: string }) {
 }
 
 const AcquistiPage = () => {
-  const { purchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const { purchases, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
+  const [selectedCig, setSelectedCig] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const costoMap = useCentroMap("costo", "acquisti");
   const ricavoMap = useCentroMap("ricavo", "acquisti");
   const [classifying, setClassifying] = useState(false);
+  const { links, addLink, removeLink } = useCommessaLinks();
 
   const handleAIClassify = useCallback(async () => {
     const hasCosto = centriCosto.length > 0;
@@ -85,7 +89,12 @@ const AcquistiPage = () => {
       { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
       { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
       { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.fornitore}</span>, sortable: true, filterable: true },
-      { key: "cig", label: "CIG", render: (r) => <span className="font-mono text-[11px]">{r.cig || "—"}</span>, sortable: true, filterable: true },
+      { key: "cig", label: "CIG", render: (r) => r.cig ? (
+        <span
+          className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+          onClick={(e) => { e.stopPropagation(); setSelectedCig(r.cig); }}
+        >{r.cig}</span>
+      ) : <span className="font-mono text-[11px]">—</span>, sortable: true, filterable: true },
       { key: "imponibile", label: "Imponibile", render: (r) => <span className="text-xs font-mono text-right block">{formatCurrency(r.imponibile)}</span>, sortable: true, align: "right" },
       { key: "imposta", label: "IVA", render: (r) => <span className="text-xs font-mono text-right block">{formatCurrency(r.imposta)}</span>, sortable: true, align: "right" },
       { key: "totale", label: "Totale", render: (r) => <span className="text-xs font-mono font-semibold text-right block">{formatCurrency(r.totale)}</span>, sortable: true, align: "right" },
@@ -137,6 +146,22 @@ const AcquistiPage = () => {
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
       <DataTable<PurchaseInvoice> columns={columns} data={purchases} rowKey={(r) => `${r.anno}-${r.numero}`} onRowClick={setSelectedInvoice} />
       <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
+      <CommessaDetailSheet
+        commessa={selectedCig ? {
+          numero: 0,
+          cig: selectedCig,
+          oggetto: allSales.find(s => s.cig === selectedCig)?.descrizione || allPurchases.find(p => p.cig === selectedCig)?.descrizione || "—",
+          committente: allSales.find(s => s.cig === selectedCig)?.cliente || "—",
+          assegnataria: allPurchases.find(p => p.cig === selectedCig)?.fornitore || "—",
+        } : null}
+        open={!!selectedCig}
+        onOpenChange={(o) => !o && setSelectedCig(null)}
+        allSales={allSales}
+        allPurchases={allPurchases}
+        manualLinks={links}
+        onAddLink={addLink}
+        onRemoveLink={removeLink}
+      />
     </div>
   );
 };
