@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 
@@ -13,16 +14,16 @@ interface CigRow {
   nAcquisti: number;
 }
 
-function makeColumns(onCigClick?: (cig: string) => void): ColumnDef<CigRow>[] {
+function makeColumns(onCigClick: (cig: string) => void): ColumnDef<CigRow>[] {
   return [
     {
       key: "cig", label: "CIG", sortable: true, filterable: true,
-      render: (r) => onCigClick ? (
+      render: (r) => (
         <span
           className="font-mono text-xs text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
           onClick={(e) => { e.stopPropagation(); onCigClick(r.cig); }}
         >{r.cig}</span>
-      ) : <span className="font-mono text-xs">{r.cig}</span>,
+      ),
     },
     { key: "vendite", label: "Vendite", render: (r) => <span className="text-xs font-mono text-income">{formatCurrency(r.vendite)}</span>, sortable: true, align: "right" },
     { key: "nVendite", label: "N° Fatt. V.", render: (r) => <span className="text-xs text-right block">{r.nVendite}</span>, sortable: true, align: "right" },
@@ -39,8 +40,9 @@ function makeColumns(onCigClick?: (cig: string) => void): ColumnDef<CigRow>[] {
   ];
 }
 
-export function CigDetailTable({ sales, purchases, onCigClick }: { sales: SaleInvoice[]; purchases: PurchaseInvoice[]; onCigClick?: (cig: string) => void }) {
-  const columns = useMemo(() => makeColumns(onCigClick), [onCigClick]);
+export function CigDetailTable({ sales, purchases }: { sales: SaleInvoice[]; purchases: PurchaseInvoice[] }) {
+  const navigate = useNavigate();
+  const columns = useMemo(() => makeColumns((cig) => navigate(`/commesse?cig=${encodeURIComponent(cig)}`)), [navigate]);
 
   const rows = useMemo(() => {
     const map: Record<string, CigRow> = {};
