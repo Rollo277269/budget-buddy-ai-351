@@ -2,9 +2,23 @@ import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { FilterBar } from "@/components/FilterBar";
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { Loader2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 
 const CommessePage = () => {
   const { sales, purchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Pre-set CIG filter from URL query param
+  useEffect(() => {
+    const cigParam = searchParams.get("cig");
+    if (cigParam && filters.cig !== cigParam) {
+      setFilters({ ...filters, cig: cigParam });
+      // Clean up the URL
+      searchParams.delete("cig");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   if (loading) {
     return (
