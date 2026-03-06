@@ -10,13 +10,7 @@ import {
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useMemo } from "react";
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+import { formatCurrency } from "@/lib/format";
 
 interface Props {
   sales: SaleInvoice[];

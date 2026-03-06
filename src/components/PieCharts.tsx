@@ -3,9 +3,7 @@ import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { loadCentri } from "@/hooks/useCentri";
 import { useMemo } from "react";
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
-}
+import { formatCurrency } from "@/lib/format";
 
 const COLORS_SALES = [
   "hsl(152 60% 36%)", "hsl(152 50% 46%)", "hsl(180 45% 40%)",

@@ -7,6 +7,7 @@ import { ClientPieChart, SupplierPieChart, CentroRicavoChart } from "@/component
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
 import { BankReconciliationSummary } from "@/components/BankReconciliationSummary";
+import { formatCurrency } from "@/lib/format";
 import {
   TrendingUp,
   TrendingDown,
@@ -15,13 +16,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useMemo } from "react";
-
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-  }).format(n);
-}
 
 const Index = () => {
   const {

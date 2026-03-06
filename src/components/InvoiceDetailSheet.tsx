@@ -6,9 +6,7 @@ import { FileText } from "lucide-react";
 
 type Invoice = SaleInvoice | PurchaseInvoice;
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
-}
+import { formatCurrency } from "@/lib/format";
 
 function StatusBadge({ stato }: { stato: string }) {
   const s = stato.toLowerCase();
