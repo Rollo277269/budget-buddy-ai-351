@@ -205,32 +205,11 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
   return movements;
 }
 
-function autoMatch(
-  movements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[],
-  sales: SaleInvoice[],
-  purchases: PurchaseInvoice[],
-  manualRecs: Reconciliation[]
-): BankMovement[] {
-  const manualMap = new Map(manualRecs.map((r) => [r.movementId, r]));
-
-  return movements.map((m) => {
-    // Check manual first
-    const manual = manualMap.get(m.id);
-    if (manual) {
-      return {
-        ...m,
-        matchedType: manual.invoiceType,
-        matchedAnno: manual.invoiceAnno,
-        matchedNumero: manual.invoiceNumero,
-        matchConfidence: "manual" as const,
-      };
-    }
-
 // Compute a relevance score (0-100) for a movement-invoice pair
 export function scoreMatch(
   m: { importo: number; descrizione: string; cig: string },
   inv: { totale: number; cig: string; numero: number; anno: number; partitaIva: string },
-  name: string // cliente or fornitore
+  name: string
 ): number {
   let score = 0;
   const absImporto = Math.abs(m.importo);
@@ -244,8 +223,8 @@ export function scoreMatch(
   const diff = Math.abs(inv.totale - absImporto);
   if (diff < 0.02) score += 30;
   else if (diff < 1) score += 25;
-  else if (diff < absImporto * 0.01) score += 20; // within 1%
-  else if (diff < absImporto * 0.05) score += 10; // within 5%
+  else if (absImporto > 0 && diff < absImporto * 0.01) score += 20;
+  else if (absImporto > 0 && diff < absImporto * 0.05) score += 10;
 
   // Invoice number in description
   const invNums = extractInvoiceNumbers(m.descrizione);
@@ -253,7 +232,7 @@ export function scoreMatch(
 
   // Name similarity
   const ns = nameSimilarity(m.descrizione, name);
-  score += Math.round(ns * 15); // max 15 points
+  score += Math.round(ns * 15);
 
   // Partita IVA match
   const descPiva = extractPartitaIva(m.descrizione);
@@ -269,11 +248,9 @@ function autoMatch(
   manualRecs: Reconciliation[]
 ): BankMovement[] {
   const manualMap = new Map(manualRecs.map((r) => [r.movementId, r]));
-  // Track already-matched invoices to avoid double-matching
   const usedSales = new Set<string>();
   const usedPurchases = new Set<string>();
 
-  // First pass: score all movements
   const scored = movements.map((m) => {
     const manual = manualMap.get(m.id);
     if (manual) {
@@ -295,49 +272,34 @@ function autoMatch(
     let bestAnno = 0;
     let bestNumero = 0;
 
-    if (m.importo > 0 || m.importo === 0) {
-      // Try sales
+    if (m.importo >= 0) {
       for (const s of sales) {
         const sc = scoreMatch(m, s, s.cliente);
-        if (sc > bestScore) {
-          bestScore = sc;
-          bestType = "vendita";
-          bestAnno = s.anno;
-          bestNumero = s.numero;
-        }
+        if (sc > bestScore) { bestScore = sc; bestType = "vendita"; bestAnno = s.anno; bestNumero = s.numero; }
       }
     }
-    if (m.importo < 0 || m.importo === 0) {
-      // Try purchases
+    if (m.importo <= 0) {
       for (const p of purchases) {
         const sc = scoreMatch(m, p, p.fornitore);
-        if (sc > bestScore) {
-          bestScore = sc;
-          bestType = "acquisto";
-          bestAnno = p.anno;
-          bestNumero = p.numero;
-        }
+        if (sc > bestScore) { bestScore = sc; bestType = "acquisto"; bestAnno = p.anno; bestNumero = p.numero; }
       }
     }
 
     return { movement: m, bestType, bestAnno, bestNumero, bestScore, confidence: "none" as const };
   });
 
-  // Sort by score descending so highest-confidence matches claim invoices first
   const sortedIndices = scored
     .map((_, i) => i)
     .filter((i) => scored[i].confidence !== "manual")
     .sort((a, b) => scored[b].bestScore - scored[a].bestScore);
 
-  const AUTO_THRESHOLD = 35; // Minimum score for auto-match
+  const AUTO_THRESHOLD = 35;
 
   for (const idx of sortedIndices) {
     const s = scored[idx];
     if (s.bestScore < AUTO_THRESHOLD) continue;
-
     const key = `${s.bestAnno}-${s.bestNumero}`;
     const usedSet = s.bestType === "vendita" ? usedSales : usedPurchases;
-
     if (!usedSet.has(key)) {
       usedSet.add(key);
       scored[idx] = { ...s, confidence: "auto" as const };
