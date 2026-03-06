@@ -12,9 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
-}
+import { formatCurrency } from "@/lib/format";
 
 function ReconciliationBadge({ m }: { m: BankMovement }) {
   if (m.matchConfidence === "auto") {

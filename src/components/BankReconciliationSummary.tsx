@@ -2,6 +2,7 @@ import { BankMovement } from "@/hooks/useBankData";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import { Landmark, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface Props {
   movements: BankMovement[];
@@ -12,13 +13,6 @@ interface Props {
     entrate: number;
     uscite: number;
   };
-}
-
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-  }).format(n);
 }
 
 export function BankReconciliationSummary({ movements, stats }: Props) {

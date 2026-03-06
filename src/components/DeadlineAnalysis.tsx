@@ -11,9 +11,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
-}
+import { formatCurrency } from "@/lib/format";
 
 function parseDate(d: string): Date | null {
   if (!d) return null;

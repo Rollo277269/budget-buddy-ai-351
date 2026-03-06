@@ -2,9 +2,7 @@ import { useMemo } from "react";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
-}
+import { formatCurrency } from "@/lib/format";
 
 interface CigRow {
   cig: string;

@@ -22,9 +22,7 @@ import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { ManualLink } from "@/hooks/useCommessaLinks";
 import { Link2, Link2Off, Plus, Search, X } from "lucide-react";
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
-}
+import { formatCurrency } from "@/lib/format";
 
 function invoiceKey(anno: number, numero: number) {
   return `${anno}-${numero}`;
