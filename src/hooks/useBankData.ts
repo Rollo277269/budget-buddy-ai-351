@@ -270,17 +270,30 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     setFileName(file.name);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase();
+      let newMovements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[];
       if (ext === "pdf") {
         const buf = await file.arrayBuffer();
         const rows = await parsePdfToRows(buf);
-        setRawMovements(parseBank(rows));
+        newMovements = parseBank(rows);
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true }) as any[];
-        setRawMovements(parseBank(rows));
+        newMovements = parseBank(rows);
       }
+
+      // Merge with existing movements, keeping already-loaded rows on duplicates
+      setRawMovements((prev) => {
+        if (prev.length === 0) return newMovements;
+        const fingerprint = (m: typeof prev[0]) => `${m.data}|${m.descrizione}|${m.importo}`;
+        const existingKeys = new Set(prev.map(fingerprint));
+        const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
+        // Re-index ids to avoid collisions
+        const offset = prev.length;
+        const reindexed = unique.map((m, i) => ({ ...m, id: `bank-${offset + i}` }));
+        return [...prev, ...reindexed];
+      });
     } catch (err) {
       console.error("Errore parsing file bancario:", err);
     } finally {
