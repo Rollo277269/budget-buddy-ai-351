@@ -226,57 +226,131 @@ function autoMatch(
       };
     }
 
-    // 1. Match by CIG
-    if (m.cig) {
-      if (m.importo > 0) {
-        const match = sales.find((s) => s.cig === m.cig && Math.abs(s.totale - m.importo) < 0.02);
-        if (match) return { ...m, matchedType: "vendita" as const, matchedAnno: match.anno, matchedNumero: match.numero, matchConfidence: "auto" as const };
-      } else {
-        const match = purchases.find((p) => p.cig === m.cig && Math.abs(p.totale - Math.abs(m.importo)) < 0.02);
-        if (match) return { ...m, matchedType: "acquisto" as const, matchedAnno: match.anno, matchedNumero: match.numero, matchConfidence: "auto" as const };
+// Compute a relevance score (0-100) for a movement-invoice pair
+export function scoreMatch(
+  m: { importo: number; descrizione: string; cig: string },
+  inv: { totale: number; cig: string; numero: number; anno: number; partitaIva: string },
+  name: string // cliente or fornitore
+): number {
+  let score = 0;
+  const absImporto = Math.abs(m.importo);
+
+  // CIG match (strongest signal)
+  if (m.cig && inv.cig && m.cig.toLowerCase() === inv.cig.toLowerCase()) {
+    score += 40;
+  }
+
+  // Amount match with graduated tolerance
+  const diff = Math.abs(inv.totale - absImporto);
+  if (diff < 0.02) score += 30;
+  else if (diff < 1) score += 25;
+  else if (diff < absImporto * 0.01) score += 20; // within 1%
+  else if (diff < absImporto * 0.05) score += 10; // within 5%
+
+  // Invoice number in description
+  const invNums = extractInvoiceNumbers(m.descrizione);
+  if (invNums.includes(inv.numero)) score += 15;
+
+  // Name similarity
+  const ns = nameSimilarity(m.descrizione, name);
+  score += Math.round(ns * 15); // max 15 points
+
+  // Partita IVA match
+  const descPiva = extractPartitaIva(m.descrizione);
+  if (descPiva && inv.partitaIva && descPiva === inv.partitaIva) score += 10;
+
+  return Math.min(score, 100);
+}
+
+function autoMatch(
+  movements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[],
+  sales: SaleInvoice[],
+  purchases: PurchaseInvoice[],
+  manualRecs: Reconciliation[]
+): BankMovement[] {
+  const manualMap = new Map(manualRecs.map((r) => [r.movementId, r]));
+  // Track already-matched invoices to avoid double-matching
+  const usedSales = new Set<string>();
+  const usedPurchases = new Set<string>();
+
+  // First pass: score all movements
+  const scored = movements.map((m) => {
+    const manual = manualMap.get(m.id);
+    if (manual) {
+      const key = `${manual.invoiceAnno}-${manual.invoiceNumero}`;
+      if (manual.invoiceType === "vendita") usedSales.add(key);
+      else usedPurchases.add(key);
+      return {
+        movement: m,
+        bestType: manual.invoiceType as "vendita" | "acquisto",
+        bestAnno: manual.invoiceAnno,
+        bestNumero: manual.invoiceNumero,
+        bestScore: 999,
+        confidence: "manual" as const,
+      };
+    }
+
+    let bestScore = 0;
+    let bestType: "vendita" | "acquisto" = "vendita";
+    let bestAnno = 0;
+    let bestNumero = 0;
+
+    if (m.importo > 0 || m.importo === 0) {
+      // Try sales
+      for (const s of sales) {
+        const sc = scoreMatch(m, s, s.cliente);
+        if (sc > bestScore) {
+          bestScore = sc;
+          bestType = "vendita";
+          bestAnno = s.anno;
+          bestNumero = s.numero;
+        }
       }
-      // CIG match without exact amount
-      if (m.importo > 0) {
-        const match = sales.find((s) => s.cig === m.cig);
-        if (match) return { ...m, matchedType: "vendita" as const, matchedAnno: match.anno, matchedNumero: match.numero, matchConfidence: "auto" as const };
-      } else {
-        const match = purchases.find((p) => p.cig === m.cig);
-        if (match) return { ...m, matchedType: "acquisto" as const, matchedAnno: match.anno, matchedNumero: match.numero, matchConfidence: "auto" as const };
+    }
+    if (m.importo < 0 || m.importo === 0) {
+      // Try purchases
+      for (const p of purchases) {
+        const sc = scoreMatch(m, p, p.fornitore);
+        if (sc > bestScore) {
+          bestScore = sc;
+          bestType = "acquisto";
+          bestAnno = p.anno;
+          bestNumero = p.numero;
+        }
       }
     }
 
-    // 2. Match by amount + name similarity
-    const tolerance = 0.02;
-    if (m.importo > 0) {
-      const candidates = sales.filter((s) => Math.abs(s.totale - m.importo) < tolerance);
-      if (candidates.length === 1) {
-        return { ...m, matchedType: "vendita" as const, matchedAnno: candidates[0].anno, matchedNumero: candidates[0].numero, matchConfidence: "auto" as const };
-      }
-      // Try name similarity
-      const best = candidates.reduce<{ inv: SaleInvoice | null; score: number }>((acc, s) => {
-        const score = nameSimilarity(m.descrizione, s.cliente);
-        return score > acc.score ? { inv: s, score } : acc;
-      }, { inv: null, score: 0 });
-      if (best.inv && best.score >= 0.4) {
-        return { ...m, matchedType: "vendita" as const, matchedAnno: best.inv.anno, matchedNumero: best.inv.numero, matchConfidence: "auto" as const };
-      }
-    } else if (m.importo < 0) {
-      const absAmt = Math.abs(m.importo);
-      const candidates = purchases.filter((p) => Math.abs(p.totale - absAmt) < tolerance);
-      if (candidates.length === 1) {
-        return { ...m, matchedType: "acquisto" as const, matchedAnno: candidates[0].anno, matchedNumero: candidates[0].numero, matchConfidence: "auto" as const };
-      }
-      const best = candidates.reduce<{ inv: PurchaseInvoice | null; score: number }>((acc, p) => {
-        const score = nameSimilarity(m.descrizione, p.fornitore);
-        return score > acc.score ? { inv: p, score } : acc;
-      }, { inv: null, score: 0 });
-      if (best.inv && best.score >= 0.4) {
-        return { ...m, matchedType: "acquisto" as const, matchedAnno: best.inv.anno, matchedNumero: best.inv.numero, matchConfidence: "auto" as const };
-      }
-    }
-
-    return { ...m, matchedType: "" as const, matchedAnno: 0, matchedNumero: 0, matchConfidence: "none" as const };
+    return { movement: m, bestType, bestAnno, bestNumero, bestScore, confidence: "none" as const };
   });
+
+  // Sort by score descending so highest-confidence matches claim invoices first
+  const sortedIndices = scored
+    .map((_, i) => i)
+    .filter((i) => scored[i].confidence !== "manual")
+    .sort((a, b) => scored[b].bestScore - scored[a].bestScore);
+
+  const AUTO_THRESHOLD = 35; // Minimum score for auto-match
+
+  for (const idx of sortedIndices) {
+    const s = scored[idx];
+    if (s.bestScore < AUTO_THRESHOLD) continue;
+
+    const key = `${s.bestAnno}-${s.bestNumero}`;
+    const usedSet = s.bestType === "vendita" ? usedSales : usedPurchases;
+
+    if (!usedSet.has(key)) {
+      usedSet.add(key);
+      scored[idx] = { ...s, confidence: "auto" as const };
+    }
+  }
+
+  return scored.map((s) => ({
+    ...s.movement,
+    matchedType: s.confidence !== "none" ? s.bestType : ("" as const),
+    matchedAnno: s.confidence !== "none" ? s.bestAnno : 0,
+    matchedNumero: s.confidence !== "none" ? s.bestNumero : 0,
+    matchConfidence: s.confidence,
+  }));
 }
 
 function loadMovements(): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
