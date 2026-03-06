@@ -1,5 +1,6 @@
 import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { useBankData } from "@/hooks/useBankData";
+import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { StatCard } from "@/components/StatCard";
 import { FilterBar } from "@/components/FilterBar";
 import { MonthlyChart } from "@/components/SummaryChart";
@@ -7,6 +8,7 @@ import { ClientPieChart, SupplierPieChart, CentroRicavoChart } from "@/component
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
 import { BankReconciliationSummary } from "@/components/BankReconciliationSummary";
+import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { formatCurrency } from "@/lib/format";
 import {
   TrendingUp,
@@ -15,12 +17,14 @@ import {
   Receipt,
   Loader2,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 
 const Index = () => {
   const {
     sales,
     purchases,
+    allSales,
+    allPurchases,
     loading,
     filters,
     setFilters,
@@ -28,6 +32,9 @@ const Index = () => {
   } = useInvoiceData();
 
   const { movements, stats: bankStats } = useBankData(sales, purchases);
+  const { links, addLink, removeLink } = useCommessaLinks();
+  const [selectedCig, setSelectedCig] = useState<string | null>(null);
+  const handleCigClick = useCallback((cig: string) => setSelectedCig(cig), []);
 
   const stats = useMemo(() => {
     const totalSales = sales.reduce((a, s) => a + s.totale, 0);
@@ -136,10 +143,27 @@ const Index = () => {
         {/* CIG Detail */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold">Dettaglio per CIG / Commessa</h2>
-          <CigDetailTable sales={sales} purchases={purchases} />
+          <CigDetailTable sales={sales} purchases={purchases} onCigClick={handleCigClick} />
         </div>
 
       </div>
+
+      <CommessaDetailSheet
+        commessa={selectedCig ? {
+          numero: 0,
+          cig: selectedCig,
+          oggetto: allSales.find(s => s.cig === selectedCig)?.descrizione || allPurchases.find(p => p.cig === selectedCig)?.descrizione || "—",
+          committente: allSales.find(s => s.cig === selectedCig)?.cliente || "—",
+          assegnataria: allPurchases.find(p => p.cig === selectedCig)?.fornitore || "—",
+        } : null}
+        open={!!selectedCig}
+        onOpenChange={(o) => !o && setSelectedCig(null)}
+        allSales={allSales}
+        allPurchases={allPurchases}
+        manualLinks={links}
+        onAddLink={addLink}
+        onRemoveLink={removeLink}
+      />
     </div>
   );
 };

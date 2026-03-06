@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 
@@ -13,23 +13,35 @@ interface CigRow {
   nAcquisti: number;
 }
 
-const columns: ColumnDef<CigRow>[] = [
-  { key: "cig", label: "CIG", render: (r) => <span className="font-mono text-xs">{r.cig}</span>, sortable: true, filterable: true },
-  { key: "vendite", label: "Vendite", render: (r) => <span className="text-xs font-mono text-income">{formatCurrency(r.vendite)}</span>, sortable: true, align: "right" },
-  { key: "nVendite", label: "N° Fatt. V.", render: (r) => <span className="text-xs text-right block">{r.nVendite}</span>, sortable: true, align: "right" },
-  { key: "acquisti", label: "Acquisti", render: (r) => <span className="text-xs font-mono text-expense">{formatCurrency(r.acquisti)}</span>, sortable: true, align: "right" },
-  { key: "nAcquisti", label: "N° Fatt. A.", render: (r) => <span className="text-xs text-right block">{r.nAcquisti}</span>, sortable: true, align: "right" },
-  {
-    key: "saldo", label: "Saldo", sortable: true, align: "right",
-    render: (r) => (
-      <span className={`text-xs font-mono font-semibold ${r.saldo >= 0 ? "text-income" : "text-expense"}`}>
-        {formatCurrency(r.saldo)}
-      </span>
-    ),
-  },
-];
+function makeColumns(onCigClick?: (cig: string) => void): ColumnDef<CigRow>[] {
+  return [
+    {
+      key: "cig", label: "CIG", sortable: true, filterable: true,
+      render: (r) => onCigClick ? (
+        <span
+          className="font-mono text-xs text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+          onClick={(e) => { e.stopPropagation(); onCigClick(r.cig); }}
+        >{r.cig}</span>
+      ) : <span className="font-mono text-xs">{r.cig}</span>,
+    },
+    { key: "vendite", label: "Vendite", render: (r) => <span className="text-xs font-mono text-income">{formatCurrency(r.vendite)}</span>, sortable: true, align: "right" },
+    { key: "nVendite", label: "N° Fatt. V.", render: (r) => <span className="text-xs text-right block">{r.nVendite}</span>, sortable: true, align: "right" },
+    { key: "acquisti", label: "Acquisti", render: (r) => <span className="text-xs font-mono text-expense">{formatCurrency(r.acquisti)}</span>, sortable: true, align: "right" },
+    { key: "nAcquisti", label: "N° Fatt. A.", render: (r) => <span className="text-xs text-right block">{r.nAcquisti}</span>, sortable: true, align: "right" },
+    {
+      key: "saldo", label: "Saldo", sortable: true, align: "right",
+      render: (r) => (
+        <span className={`text-xs font-mono font-semibold ${r.saldo >= 0 ? "text-income" : "text-expense"}`}>
+          {formatCurrency(r.saldo)}
+        </span>
+      ),
+    },
+  ];
+}
 
-export function CigDetailTable({ sales, purchases }: { sales: SaleInvoice[]; purchases: PurchaseInvoice[] }) {
+export function CigDetailTable({ sales, purchases, onCigClick }: { sales: SaleInvoice[]; purchases: PurchaseInvoice[]; onCigClick?: (cig: string) => void }) {
+  const columns = useMemo(() => makeColumns(onCigClick), [onCigClick]);
+
   const rows = useMemo(() => {
     const map: Record<string, CigRow> = {};
     sales.forEach((s) => {
