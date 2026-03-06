@@ -45,7 +45,25 @@ function saveReconciliations(recs: Reconciliation[]) {
 
 function extractCIG(text: string): string {
   if (!text) return "";
-  const match = text.match(/CIG[:\s]*([A-Z0-9]+)/i);
+  const match = text.match(/CIG[:\s]*([A-Z0-9]{10})/i);
+  return match ? match[1] : "";
+}
+
+// Extract possible invoice numbers from bank description
+function extractInvoiceNumbers(text: string): number[] {
+  if (!text) return [];
+  const matches = text.match(/(?:fatt|ft|inv|doc|n)[.°:\s]*(\d{1,6})/gi);
+  if (!matches) return [];
+  return matches.map(m => {
+    const num = m.match(/(\d+)/);
+    return num ? parseInt(num[1], 10) : 0;
+  }).filter(n => n > 0);
+}
+
+// Extract possible partita IVA from description
+function extractPartitaIva(text: string): string {
+  if (!text) return "";
+  const match = text.match(/\b(\d{11})\b/);
   return match ? match[1] : "";
 }
 
