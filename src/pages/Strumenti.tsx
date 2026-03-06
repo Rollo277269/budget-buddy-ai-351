@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { toast } from "sonner";
 
@@ -439,7 +440,7 @@ function CentriCostoRicavoTab() {
 
 // ─── Scadenzario ─────────────────────────────────────────────────
 
-import { formatCurrency } from "@/lib/format";
+
 
 function parseDate(d: string): Date | null {
   if (!d) return null;
