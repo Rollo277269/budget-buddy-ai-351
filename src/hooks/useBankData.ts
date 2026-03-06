@@ -285,7 +285,7 @@ function autoMatch(
       }
     }
 
-    return { movement: m, bestType, bestAnno, bestNumero, bestScore, confidence: "none" as const };
+    return { movement: m, bestType, bestAnno, bestNumero, bestScore, confidence: "none" as "none" | "auto" | "manual" };
   });
 
   const sortedIndices = scored
