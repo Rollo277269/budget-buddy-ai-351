@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText } from "lucide-react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, ArrowUpDown } from "lucide-react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-import { useBankData, BankMovement } from "@/hooks/useBankData";
+import { useBankData, BankMovement, scoreMatch } from "@/hooks/useBankData";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,20 +62,44 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"vendita" | "acquisto">("vendita");
 
+  // Pre-select tab based on movement direction
+  const effectiveTab = movement
+    ? (movement.importo < 0 ? "acquisto" : "vendita")
+    : tab;
+
+  const currentTab = tab === effectiveTab ? tab : effectiveTab;
+
+  // Score and sort invoices by relevance
+  const scoredItems = useMemo(() => {
+    if (!movement) return [];
+
+    const isVendita = currentTab === "vendita";
+    const list = isVendita ? sales : purchases;
+
+    const scored = list.map((inv) => {
+      const name = isVendita ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
+      const sc = scoreMatch(movement, inv, name);
+      return { inv, score: sc, name };
+    });
+
+    // Filter by search
+    const filtered = search
+      ? scored.filter(({ inv, name }) => {
+          const q = search.toLowerCase();
+          return name.toLowerCase().includes(q) ||
+            String(inv.numero).includes(q) ||
+            inv.cig.toLowerCase().includes(q) ||
+            inv.descrizione.toLowerCase().includes(q);
+        })
+      : scored;
+
+    // Sort by score descending
+    return filtered.sort((a, b) => b.score - a.score);
+  }, [movement, currentTab, sales, purchases, search]);
+
   if (!movement) return null;
 
   const isMatched = movement.matchConfidence !== "none";
-  const items = tab === "vendita"
-    ? sales.filter((s) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        return s.cliente.toLowerCase().includes(q) || String(s.numero).includes(q) || s.cig.toLowerCase().includes(q) || s.descrizione.toLowerCase().includes(q);
-      })
-    : purchases.filter((p) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        return p.fornitore.toLowerCase().includes(q) || String(p.numero).includes(q) || p.cig.toLowerCase().includes(q) || p.descrizione.toLowerCase().includes(q);
-      });
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -115,7 +139,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
           {/* Tab selector */}
           <div className="flex gap-1">
             <Button
-              variant={tab === "vendita" ? "default" : "outline"}
+              variant={currentTab === "vendita" ? "default" : "outline"}
               size="sm"
               className="text-xs flex-1"
               onClick={() => setTab("vendita")}
@@ -123,7 +147,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
               Fatture Vendita
             </Button>
             <Button
-              variant={tab === "acquisto" ? "default" : "outline"}
+              variant={currentTab === "acquisto" ? "default" : "outline"}
               size="sm"
               className="text-xs flex-1"
               onClick={() => setTab("acquisto")}
@@ -143,29 +167,36 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
             />
           </div>
 
-          {/* Invoice list */}
+          {/* Invoice list sorted by relevance */}
           <ScrollArea className="h-[400px]">
             <div className="space-y-1 pr-3">
-              {items.length === 0 && (
+              {scoredItems.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>
               )}
-              {items.map((inv) => {
-                const isVendita = tab === "vendita";
-                const name = isVendita ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
-                const tot = inv.totale;
+              {scoredItems.map(({ inv, score, name }) => {
+                const isVendita = currentTab === "vendita";
                 return (
                   <button
                     key={`${inv.anno}-${inv.numero}`}
-                    className="w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors"
+                    className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${
+                      score >= 35 ? "border-primary/40 bg-primary/5" : ""
+                    }`}
                     onClick={() => {
-                      onReconcile(movement.id, tab, inv.anno, inv.numero);
+                      onReconcile(movement.id, currentTab, inv.anno, inv.numero);
                       onOpenChange(false);
                     }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
-                      <span className={`text-xs font-mono ${isVendita ? "text-income" : "text-expense"}`}>
-                        {formatCurrency(tot)}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
+                        {score >= 35 && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">
+                            {score}% match
+                          </Badge>
+                        )}
+                      </div>
+                      <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>
+                        {formatCurrency(inv.totale)}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate">{name}</p>
