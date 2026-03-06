@@ -28,6 +28,8 @@ export interface Reconciliation {
 }
 
 const STORAGE_KEY = "bank-reconciliations";
+const MOVEMENTS_KEY = "bank-movements";
+const FILES_KEY = "bank-file-names";
 
 function loadReconciliations(): Reconciliation[] {
   try {
@@ -259,15 +261,27 @@ function autoMatch(
   });
 }
 
+function loadMovements(): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
+  try { return JSON.parse(localStorage.getItem(MOVEMENTS_KEY) || "[]"); } catch { return []; }
+}
+function saveMovements(m: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]) {
+  localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(m));
+}
+function loadFileNames(): string[] {
+  try { return JSON.parse(localStorage.getItem(FILES_KEY) || "[]"); } catch { return []; }
+}
+function saveFileNames(names: string[]) {
+  localStorage.setItem(FILES_KEY, JSON.stringify(names));
+}
+
 export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) {
-  const [rawMovements, setRawMovements] = useState<Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]>([]);
+  const [rawMovements, setRawMovements] = useState(loadMovements);
   const [reconciliations, setReconciliations] = useState<Reconciliation[]>(loadReconciliations);
   const [loading, setLoading] = useState(false);
-  const [fileName, setFileName] = useState("");
+  const [fileNames, setFileNames] = useState<string[]>(loadFileNames);
 
   const handleFileUpload = useCallback(async (file: File) => {
     setLoading(true);
-    setFileName(file.name);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase();
       let newMovements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[];
@@ -283,22 +297,39 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
         newMovements = parseBank(rows);
       }
 
-      // Merge with existing movements, keeping already-loaded rows on duplicates
       setRawMovements((prev) => {
-        if (prev.length === 0) return newMovements;
-        const fingerprint = (m: typeof prev[0]) => `${m.data}|${m.descrizione}|${m.importo}`;
-        const existingKeys = new Set(prev.map(fingerprint));
-        const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
-        // Re-index ids to avoid collisions
-        const offset = prev.length;
-        const reindexed = unique.map((m, i) => ({ ...m, id: `bank-${offset + i}` }));
-        return [...prev, ...reindexed];
+        let merged: typeof prev;
+        if (prev.length === 0) {
+          merged = newMovements;
+        } else {
+          const fingerprint = (m: typeof prev[0]) => `${m.data}|${m.descrizione}|${m.importo}`;
+          const existingKeys = new Set(prev.map(fingerprint));
+          const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
+          const offset = prev.length;
+          const reindexed = unique.map((m, i) => ({ ...m, id: `bank-${offset + i}` }));
+          merged = [...prev, ...reindexed];
+        }
+        saveMovements(merged);
+        return merged;
+      });
+
+      setFileNames((prev) => {
+        const next = prev.includes(file.name) ? prev : [...prev, file.name];
+        saveFileNames(next);
+        return next;
       });
     } catch (err) {
       console.error("Errore parsing file bancario:", err);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const clearMovements = useCallback(() => {
+    setRawMovements([]);
+    setFileNames([]);
+    saveMovements([]);
+    saveFileNames([]);
   }, []);
 
   const movements = useMemo(
@@ -330,5 +361,5 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     return { total, matched, unmatched: total - matched, entrate, uscite };
   }, [movements]);
 
-  return { movements, loading, fileName, handleFileUpload, addReconciliation, removeReconciliation, stats };
+  return { movements, loading, fileNames, handleFileUpload, addReconciliation, removeReconciliation, clearMovements, stats };
 }
