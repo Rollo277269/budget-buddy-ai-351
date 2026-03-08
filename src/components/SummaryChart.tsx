@@ -1,6 +1,7 @@
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -8,26 +9,25 @@ import {
   Legend,
 } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { BankMovement } from "@/hooks/useBankData";
 import { useMemo } from "react";
-
 import { formatCurrency } from "@/lib/format";
 
 interface Props {
   sales: SaleInvoice[];
   purchases: PurchaseInvoice[];
+  movements?: BankMovement[];
 }
 
-export function MonthlyChart({ sales, purchases }: Props) {
+export function MonthlyChart({ sales, purchases, movements = [] }: Props) {
   const data = useMemo(() => {
-    const months: Record<string, { vendite: number; acquisti: number }> = {};
+    const months: Record<string, { vendite: number; acquisti: number; incassato: number; pagato: number }> = {};
 
-    const getMonthKey = (data: string, anno: number): string | null => {
-      // Handle dd/mm/yyyy format
+    const getMonthKey = (data: string, _anno: number): string | null => {
       const parts = data.split("/");
       if (parts.length === 3) {
         return `${parts[1]}/${parts[2]}`;
       }
-      // Handle serial date number from Excel
       const serial = parseFloat(data);
       if (!isNaN(serial) && serial > 30000) {
         const d = new Date((serial - 25569) * 86400 * 1000);
@@ -37,19 +37,26 @@ export function MonthlyChart({ sales, purchases }: Props) {
       return null;
     };
 
+    const ensure = (key: string) => {
+      if (!months[key]) months[key] = { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
+    };
+
     sales.forEach((s) => {
       const key = getMonthKey(s.data, s.anno);
-      if (key) {
-        if (!months[key]) months[key] = { vendite: 0, acquisti: 0 };
-        months[key].vendite += s.totale;
-      }
+      if (key) { ensure(key); months[key].vendite += s.totale; }
     });
 
     purchases.forEach((p) => {
       const key = getMonthKey(p.data, p.anno);
+      if (key) { ensure(key); months[key].acquisti += p.totale; }
+    });
+
+    movements.forEach((m) => {
+      const key = getMonthKey(m.data, 0);
       if (key) {
-        if (!months[key]) months[key] = { vendite: 0, acquisti: 0 };
-        months[key].acquisti += p.totale;
+        ensure(key);
+        if (m.importo > 0) months[key].incassato += m.importo;
+        else months[key].pagato += Math.abs(m.importo);
       }
     });
 
@@ -63,8 +70,10 @@ export function MonthlyChart({ sales, purchases }: Props) {
         mese: month,
         Vendite: Math.round(vals.vendite),
         Acquisti: Math.round(vals.acquisti),
+        "Ricavi-Costi": Math.round(vals.vendite - vals.acquisti),
+        "Incassato-Pagato": Math.round(vals.incassato - vals.pagato),
       }));
-  }, [sales, purchases]);
+  }, [sales, purchases, movements]);
 
   if (data.length === 0) {
     return (
@@ -74,9 +83,11 @@ export function MonthlyChart({ sales, purchases }: Props) {
     );
   }
 
+  const hasBank = movements.length > 0;
+
   return (
     <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
         <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
         <YAxis
           tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
@@ -94,7 +105,26 @@ export function MonthlyChart({ sales, purchases }: Props) {
         <Legend wrapperStyle={{ fontSize: "0.8rem" }} />
         <Bar dataKey="Vendite" fill="hsl(152 60% 36%)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Acquisti" fill="hsl(0 72% 51%)" radius={[4, 4, 0, 0]} />
-      </BarChart>
+        <Line
+          type="monotone"
+          dataKey="Ricavi-Costi"
+          stroke="hsl(210 80% 50%)"
+          strokeWidth={2}
+          dot={{ r: 3 }}
+          name="Ricavi-Costi"
+        />
+        {hasBank && (
+          <Line
+            type="monotone"
+            dataKey="Incassato-Pagato"
+            stroke="hsl(30 90% 50%)"
+            strokeWidth={2}
+            strokeDasharray="5 5"
+            dot={{ r: 3 }}
+            name="Incassato-Pagato"
+          />
+        )}
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }
