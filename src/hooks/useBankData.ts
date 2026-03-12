@@ -236,6 +236,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
     movements.push({
       id: `bank-${i}`,
       accountId: "",
+      sourceFile: "",
       data: parseDate(r[cols.data >= 0 ? cols.data : 0]),
       dataValuta: cols.dataValuta >= 0 ? parseDate(r[cols.dataValuta]) : "",
       descrizione: desc,
