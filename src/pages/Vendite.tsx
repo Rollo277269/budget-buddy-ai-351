@@ -12,6 +12,7 @@ import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Upload, FileText, CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,6 +37,7 @@ const VenditePage = () => {
   const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
 
@@ -46,8 +48,10 @@ const VenditePage = () => {
     const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".xml"));
     if (files.length === 0) { toast.error("Seleziona file XML"); return; }
     setUploading(true);
-    await uploadXmlFiles(files);
+    setUploadProgress({ done: 0, total: files.length });
+    await uploadXmlFiles(files, (done, total) => setUploadProgress({ done, total }));
     setUploading(false);
+    setUploadProgress(null);
   }, [uploadXmlFiles]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,7 +225,7 @@ const VenditePage = () => {
           <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
           <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
             {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-            {uploading ? "Caricamento..." : "Carica XML"}
+            {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Carica XML"}
           </Button>
           {hasCentri && (
             <Button size="sm" variant="outline" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
@@ -231,6 +235,17 @@ const VenditePage = () => {
           )}
         </div>
       </div>
+
+      {/* Upload progress bar */}
+      {uploading && uploadProgress && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Caricamento XML in corso…</span>
+            <span className="font-mono">{uploadProgress.done}/{uploadProgress.total}</span>
+          </div>
+          <Progress value={(uploadProgress.done / uploadProgress.total) * 100} className="h-2" />
+        </div>
+      )}
 
       {/* Unmatched XML list */}
       {xmlUnmatchedCount > 0 && (
