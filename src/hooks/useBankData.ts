@@ -9,6 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 export interface BankMovement {
   id: string;
   accountId: string;
+  sourceFile: string;
   data: string;
   dataValuta: string;
   descrizione: string;
