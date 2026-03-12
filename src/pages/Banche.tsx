@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2 } from "lucide-react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, Plus, CreditCard, Save } from "lucide-react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -17,20 +17,30 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
+import { toast } from "sonner";
 
 // Load conti from localStorage (same key as Strumenti page)
 interface ContoCorrente {
   id: string;
+  tipo: "conto_corrente" | "carta_credito";
   banca: string;
   iban: string;
   intestatario: string;
   note: string;
 }
+const CONTI_KEY = "conti-correnti";
 function loadConti(): ContoCorrente[] {
-  try { return JSON.parse(localStorage.getItem("conti-correnti") || "[]"); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]"); } catch { return []; }
+}
+function saveConti(conti: ContoCorrente[]) {
+  localStorage.setItem(CONTI_KEY, JSON.stringify(conti));
 }
 
 function ReconciliationBadge({ m }: { m: BankMovement }) {
