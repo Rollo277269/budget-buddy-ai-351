@@ -17,7 +17,7 @@ interface FilterBarProps {
   hideFornitore?: boolean;
 }
 
-export function FilterBar({ filters, onFiltersChange, options }: FilterBarProps) {
+export function FilterBar({ filters, onFiltersChange, options, hideCliente, hideFornitore }: FilterBarProps) {
   const update = (key: keyof Filters, value: string) => {
     onFiltersChange({ ...filters, [key]: value });
   };
