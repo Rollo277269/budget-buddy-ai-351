@@ -36,18 +36,47 @@ const VenditePage = () => {
   const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const dragCounter = useRef(0);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(sales);
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).filter((f) => f.name.toLowerCase().endsWith(".xml"));
+  const processXmlFiles = useCallback(async (fileList: File[]) => {
+    const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".xml"));
     if (files.length === 0) { toast.error("Seleziona file XML"); return; }
     setUploading(true);
     await uploadXmlFiles(files);
     setUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }, [uploadXmlFiles]);
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processXmlFiles(Array.from(e.target.files || []));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [processXmlFiles]);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current++;
+    setDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current = 0;
+    setDragging(false);
+    await processXmlFiles(Array.from(e.dataTransfer.files));
+  }, [processXmlFiles]);
 
   const handleAIClassify = useCallback(async () => {
     const hasRicavo = centriRicavo.length > 0;
