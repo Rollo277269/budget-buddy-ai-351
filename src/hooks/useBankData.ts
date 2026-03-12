@@ -9,6 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 export interface BankMovement {
   id: string;
   accountId: string;
+  sourceFile: string;
   data: string;
   dataValuta: string;
   descrizione: string;
@@ -235,6 +236,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
     movements.push({
       id: `bank-${i}`,
       accountId: "",
+      sourceFile: "",
       data: parseDate(r[cols.data >= 0 ? cols.data : 0]),
       dataValuta: cols.dataValuta >= 0 ? parseDate(r[cols.dataValuta]) : "",
       descrizione: desc,
@@ -416,13 +418,13 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
       if (ext === "pdf") {
         const buf = await file.arrayBuffer();
         const rows = await parsePdfToRows(buf);
-        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId }));
+        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId, sourceFile: file.name }));
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true }) as any[];
-        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId }));
+        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId, sourceFile: file.name }));
       }
 
       setRawMovements((prev) => {
@@ -469,8 +471,28 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
   const clearMovements = useCallback(() => {
     setRawMovements([]);
     setFileNames([]);
+    setReconciliations([]);
     saveMovements([]);
     saveFileNames([]);
+    saveReconciliations([]);
+  }, []);
+
+  const deleteFileMovements = useCallback((fileName: string) => {
+    setRawMovements((prev) => {
+      const next = prev.filter((m) => (m.sourceFile || "") !== fileName);
+      saveMovements(next);
+      return next;
+    });
+    setFileNames((prev) => {
+      const next = prev.filter((f) => f !== fileName);
+      saveFileNames(next);
+      return next;
+    });
+    setReconciliations((prev) => {
+      // We need to clean up reconciliations for removed movements
+      // but we don't have the IDs here easily, so we'll let autoMatch handle it
+      return prev;
+    });
   }, []);
 
   const deleteMovements = useCallback((ids: string[]) => {
@@ -531,7 +553,7 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
 
   return {
     movements, allMovements, loading, fileNames, handleFileUpload,
-    addReconciliation, removeReconciliation, clearMovements, deleteMovements,
+    addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates,
   };

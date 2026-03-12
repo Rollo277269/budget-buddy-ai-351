@@ -199,7 +199,7 @@ const BanchePage = () => {
   const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
   const {
     movements, loading, fileNames, handleFileUpload,
-    addReconciliation, removeReconciliation, clearMovements, deleteMovements,
+    addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates,
   } = useBankData(allSales, allPurchases);
@@ -377,9 +377,25 @@ const BanchePage = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Banche</h2>
-          <p className="text-sm text-muted-foreground">
-            {fileNames.length > 0 ? `File: ${fileNames.join(", ")}` : "Carica un estratto conto per iniziare"}
-          </p>
+          {fileNames.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Carica un estratto conto per iniziare</p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              {fileNames.map((fn) => (
+                <Badge key={fn} variant="secondary" className="text-[11px] gap-1 pr-1">
+                  <FileSpreadsheet className="h-3 w-3" />
+                  {fn}
+                  <button
+                    className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors"
+                    title={`Rimuovi ${fn} e i suoi movimenti`}
+                    onClick={(e) => { e.stopPropagation(); deleteFileMovements(fn); }}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* Account selector */}
