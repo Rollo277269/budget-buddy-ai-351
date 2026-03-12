@@ -199,7 +199,7 @@ const BanchePage = () => {
   const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
   const {
     movements, loading, fileNames, handleFileUpload,
-    addReconciliation, removeReconciliation, clearMovements, deleteMovements,
+    addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates,
   } = useBankData(allSales, allPurchases);
