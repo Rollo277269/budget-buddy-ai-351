@@ -23,6 +23,52 @@ export interface XmlInvoiceRecord {
 interface InvoiceWithKey {
   anno: number;
   numero: number;
+  totale?: number;
+  cliente?: string;
+  fornitore?: string;
+}
+
+function normalizeStr(s: string): string {
+  return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function fuzzyNameMatch(a: string, b: string): boolean {
+  const na = normalizeStr(a);
+  const nb = normalizeStr(b);
+  if (!na || !nb) return false;
+  return na.includes(nb) || nb.includes(na);
+}
+
+/**
+ * For purchases, match by amount + supplier name since the XML's invoice number
+ * is the supplier's numbering, not the company's internal registration number.
+ */
+function findPurchaseMatch(
+  xmlCedente: string | null,
+  xmlImporto: number | null,
+  invoices: InvoiceWithKey[],
+  alreadyMatchedKeys: Set<string>
+): InvoiceWithKey | null {
+  if (!xmlImporto) return null;
+
+  // First: exact amount + name match
+  for (const inv of invoices) {
+    const key = `${inv.anno}-${inv.numero}`;
+    if (alreadyMatchedKeys.has(key)) continue;
+    const amountMatch = inv.totale && Math.abs(inv.totale - xmlImporto) < 0.02;
+    const nameMatch = xmlCedente && inv.fornitore && fuzzyNameMatch(xmlCedente, inv.fornitore);
+    if (amountMatch && nameMatch) return inv;
+  }
+
+  // Fallback: exact amount match only (if unique)
+  const amountMatches = invoices.filter((inv) => {
+    const key = `${inv.anno}-${inv.numero}`;
+    if (alreadyMatchedKeys.has(key)) return false;
+    return inv.totale && Math.abs(inv.totale - xmlImporto) < 0.02;
+  });
+  if (amountMatches.length === 1) return amountMatches[0];
+
+  return null;
 }
 
 export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "acquisto" = "vendita") {
@@ -60,16 +106,22 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     let matched = 0;
     const total = files.length;
 
+    // Track already-matched invoice keys to avoid double matching
+    const alreadyMatchedKeys = new Set<string>();
+    xmlRecords.forEach((r) => {
+      if (r.matched && r.invoice_key) alreadyMatchedKeys.add(r.invoice_key);
+    });
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       onProgress?.(i, total);
       try {
         const text = await file.text();
         const parsed = parseFatturaPA(text);
-        const numero = extractInvoiceNumber(parsed.numero);
-        const anno = extractInvoiceYear(parsed.data);
+        const xmlNumero = extractInvoiceNumber(parsed.numero);
+        const xmlAnno = extractInvoiceYear(parsed.data);
 
-        const storagePath = `${tipo}/${anno}/${file.name}`;
+        const storagePath = `${tipo}/${xmlAnno}/${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("fatture-xml")
           .upload(storagePath, file, { upsert: true });
@@ -79,8 +131,32 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
           continue;
         }
 
-        const invoiceKey = `${anno}-${numero}`;
-        const isMatched = invoices.some((s) => s.anno === anno && s.numero === numero);
+        let invoiceKey: string | null = null;
+        let isMatched = false;
+        let matchedAnno: number | null = xmlAnno || null;
+        let matchedNumero: number | null = xmlNumero || null;
+
+        if (tipo === "vendita") {
+          // For sales, the XML number IS the company's invoice number
+          invoiceKey = (xmlAnno && xmlNumero) ? `${xmlAnno}-${xmlNumero}` : null;
+          isMatched = invoices.some((s) => s.anno === xmlAnno && s.numero === xmlNumero);
+        } else {
+          // For purchases, match by amount + supplier name
+          const purchaseMatch = findPurchaseMatch(
+            parsed.cedente.denominazione,
+            parsed.importoTotale,
+            invoices,
+            alreadyMatchedKeys
+          );
+          if (purchaseMatch) {
+            invoiceKey = `${purchaseMatch.anno}-${purchaseMatch.numero}`;
+            matchedAnno = purchaseMatch.anno;
+            matchedNumero = purchaseMatch.numero;
+            isMatched = true;
+            alreadyMatchedKeys.add(invoiceKey);
+          }
+        }
+
         const { rawXml, ...parsedWithoutRaw } = parsed;
 
         const { error: insertError } = await supabase
@@ -88,9 +164,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
           .insert({
             file_name: file.name,
             storage_path: storagePath,
-            anno: anno || null,
-            numero: numero || null,
-            invoice_key: (anno && numero) ? invoiceKey : null,
+            anno: matchedAnno,
+            numero: matchedNumero,
+            invoice_key: invoiceKey,
             cedente_denominazione: parsed.cedente.denominazione || null,
             cessionario_denominazione: parsed.cessionario.denominazione || null,
             data_fattura: parsed.data || null,
@@ -118,7 +194,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     toast.success(`${uploaded} XML caricati, ${matched} associati automaticamente`);
     await fetchRecords();
     return { uploaded, matched };
-  }, [invoices, fetchRecords, tipo]);
+  }, [invoices, fetchRecords, tipo, xmlRecords]);
 
   const deleteRecord = useCallback(async (id: string, storagePath: string) => {
     await supabase.storage.from("fatture-xml").remove([storagePath]);
@@ -137,11 +213,62 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     toast.success(`Associato a fattura ${numero}/${anno}`);
   }, [fetchRecords]);
 
+  /**
+   * Re-match all unmatched (or all) records for purchases using amount+name logic.
+   */
+  const rematchAll = useCallback(async () => {
+    if (tipo !== "acquisto") return;
+
+    const alreadyMatchedKeys = new Set<string>();
+    let matchedCount = 0;
+
+    for (const record of xmlRecords) {
+      const purchaseMatch = findPurchaseMatch(
+        record.cedente_denominazione,
+        record.importo_totale,
+        invoices,
+        alreadyMatchedKeys
+      );
+
+      if (purchaseMatch) {
+        const invoiceKey = `${purchaseMatch.anno}-${purchaseMatch.numero}`;
+        alreadyMatchedKeys.add(invoiceKey);
+
+        if (record.invoice_key !== invoiceKey || !record.matched) {
+          await supabase
+            .from("fatture_xml" as any)
+            .update({
+              invoice_key: invoiceKey,
+              anno: purchaseMatch.anno,
+              numero: purchaseMatch.numero,
+              matched: true,
+            } as any)
+            .eq("id", record.id);
+          matchedCount++;
+        }
+      } else if (record.matched) {
+        // Was matched but shouldn't be
+        await supabase
+          .from("fatture_xml" as any)
+          .update({ invoice_key: null, matched: false } as any)
+          .eq("id", record.id);
+        matchedCount++;
+      }
+    }
+
+    if (matchedCount > 0) {
+      await fetchRecords();
+      toast.success(`${matchedCount} associazioni aggiornate`);
+    } else {
+      toast.info("Nessuna modifica necessaria");
+    }
+  }, [xmlRecords, invoices, tipo, fetchRecords]);
+
   // Map: invoice_key -> XmlInvoiceRecord
   const xmlMap = new Map<string, XmlInvoiceRecord>();
   xmlRecords.forEach((r) => {
     if (r.invoice_key) xmlMap.set(r.invoice_key, r);
   });
 
-  return { xmlRecords, xmlMap, loading: loading, uploadXmlFiles, deleteRecord, manualMatch, refresh: fetchRecords, fetchParsedData };
+  return { xmlRecords, xmlMap, loading, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, refresh: fetchRecords, fetchParsedData };
 }

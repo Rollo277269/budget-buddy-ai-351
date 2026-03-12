@@ -14,7 +14,7 @@ import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2 } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -44,7 +44,7 @@ const AcquistiPage = () => {
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData } = useXmlInvoices(purchases, "acquisto");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData } = useXmlInvoices(purchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
@@ -295,7 +295,12 @@ const AcquistiPage = () => {
         {/* Unmatched XML list */}
         {xmlUnmatchedCount > 0 && (
           <div className="bg-muted/50 border border-border rounded-md p-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
+              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
+                <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {xmlRecords.filter((r) => !r.matched).map((r) => (
                 <Badge
