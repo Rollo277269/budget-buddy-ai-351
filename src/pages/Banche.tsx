@@ -290,10 +290,10 @@ const BanchePage = () => {
         />
       ),
     },
-    { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true, filterable: true },
-    { key: "dataValuta", label: "Data Valuta", render: (r) => <span className="text-xs">{r.dataValuta}</span>, sortable: true, defaultHidden: true },
+    { key: "data", label: "Data Operazione", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true, filterable: true },
+    { key: "dataValuta", label: "Data Valuta", render: (r) => <span className="text-xs">{r.dataValuta || "—"}</span>, sortable: true },
     {
-      key: "descrizione", label: "Descrizione", filterable: true,
+      key: "descrizione", label: "Causale", filterable: true,
       render: (r) => <span className="text-xs truncate max-w-[300px] block">{r.descrizione}</span>,
     },
     {

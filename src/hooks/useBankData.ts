@@ -69,23 +69,92 @@ function extractPartitaIva(text: string): string {
   return match ? match[1] : "";
 }
 
+function formatDate(d: Date): string {
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+function isValidDateString(value: string): boolean {
+  return /\b\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}\b/.test(value);
+}
+
 function parseDate(val: any): string {
-  if (!val) return "";
-  if (typeof val === "string" && val.includes("/")) return val;
-  const serial = parseFloat(String(val));
-  if (!isNaN(serial) && serial > 30000) {
-    const d = new Date((serial - 25569) * 86400 * 1000);
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  if (val == null || val === "") return "";
+
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return formatDate(val);
   }
-  return String(val);
+
+  if (typeof val === "number" && val > 25000 && val < 70000) {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return formatDate(d);
+  }
+
+  const str = String(val).trim();
+  if (!str) return "";
+
+  const iso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (iso) {
+    return `${iso[3].padStart(2, "0")}/${iso[2].padStart(2, "0")}/${iso[1]}`;
+  }
+
+  const dmy = str.match(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/);
+  if (dmy) {
+    const yy = dmy[3].length === 2 ? `20${dmy[3]}` : dmy[3];
+    return `${dmy[1].padStart(2, "0")}/${dmy[2].padStart(2, "0")}/${yy}`;
+  }
+
+  return "";
 }
 
 function parseNum(val: any): number {
   if (val == null || val === "") return 0;
   if (typeof val === "number") return val;
-  const s = String(val).replace(/\./g, "").replace(",", ".");
+
+  const raw = String(val).trim();
+  if (!raw) return 0;
+
+  const negative = raw.startsWith("-") || raw.endsWith("-") || (raw.startsWith("(") && raw.endsWith(")"));
+  let s = raw.replace(/[€$\s]/g, "").replace(/[()]/g, "").replace(/^-/, "").replace(/-$/, "");
+
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimalSep = lastComma > lastDot ? "," : ".";
+    const thousandsSep = decimalSep === "," ? "." : ",";
+    s = s.replace(new RegExp(`\\${thousandsSep}`, "g"), "").replace(decimalSep, ".");
+  } else if (lastComma >= 0) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else {
+    s = s.replace(/,/g, "");
+  }
+
   const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+  if (isNaN(n)) return 0;
+  return negative ? -n : n;
+}
+
+function looksLikeAmount(val: any): boolean {
+  if (typeof val === "number") return true;
+  const s = String(val ?? "").trim();
+  if (!s) return false;
+  return /^\(?-?\d{1,3}([.\s]\d{3})*([,.]\d{2})?\)?-?$/.test(s) || /^\(?-?\d+([,.]\d{2})\)?-?$/.test(s);
+}
+
+function inferCausale(row: any[], cols: { data: number; dataValuta: number; descrizione: number; dare: number; avere: number; importo: number; saldo: number }): string {
+  const ignored = new Set([cols.data, cols.dataValuta, cols.dare, cols.avere, cols.importo, cols.saldo].filter((i) => i >= 0));
+  return row
+    .map((c) => String(c ?? "").trim())
+    .filter((text, idx) => {
+      if (!text) return false;
+      if (ignored.has(idx)) return false;
+      if (isValidDateString(parseDate(text))) return false;
+      if (looksLikeAmount(text)) return false;
+      return true;
+    })
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalise(s: string): string {
@@ -112,14 +181,22 @@ function detectColumns(header: any[]): {
   const result = { data: -1, dataValuta: -1, descrizione: -1, dare: -1, avere: -1, importo: -1, saldo: -1 };
   for (let i = 0; i < header.length; i++) {
     const h = normalise(String(header[i] || ""));
-    // Dare/Avere first (may contain "movimenti")
+
     if (h.includes("dare") || h.includes("addebit") || h.includes("uscit")) { result.dare = i; continue; }
     if (h.includes("avere") || h.includes("accredit") || h.includes("entrat")) { result.avere = i; continue; }
+
     if (h.includes("data") && h.includes("valut")) { result.dataValuta = i; continue; }
-    if ((h.includes("valut") || h.includes("val ")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
+    if ((h === "valuta" || h.startsWith("valuta ") || h.includes("data valuta")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
+
+    if ((h.includes("data operaz") || h.includes("data contab") || h === "data") && result.data === -1) { result.data = i; continue; }
     if (h.includes("data") && result.data === -1) { result.data = i; continue; }
-    if (h.includes("descri") || h.includes("causal") || h.includes("operazion")) { result.descrizione = i; continue; }
-    if (h.includes("import") && !h.includes("iva")) { result.importo = i; continue; }
+
+    if ((h.includes("causal") || h.includes("descri") || h.includes("dettaglio") || (h.includes("operazion") && !h.includes("data"))) && result.descrizione === -1) {
+      result.descrizione = i;
+      continue;
+    }
+
+    if ((h.includes("import") || h.includes("ammontare")) && !h.includes("iva")) { result.importo = i; continue; }
     if (h.includes("saldo")) { result.saldo = i; continue; }
   }
   return result;
@@ -189,13 +266,12 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
 }
 
 function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
-  // Find header row
   let headerIdx = -1;
-  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+  for (let i = 0; i < Math.min(rows.length, 25); i++) {
     const row = rows[i];
     if (!row) continue;
     const joined = row.map((c: any) => normalise(String(c || ""))).join(" ");
-    if (joined.includes("data") && (joined.includes("descri") || joined.includes("causal") || joined.includes("import") || joined.includes("dare") || joined.includes("avere"))) {
+    if (joined.includes("data") && (joined.includes("descri") || joined.includes("causal") || joined.includes("import") || joined.includes("dare") || joined.includes("avere") || joined.includes("saldo"))) {
       headerIdx = i;
       break;
     }
@@ -208,43 +284,73 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
-    if (!r || r.every((c: any) => c == null || c === "")) continue;
+    if (!r || r.every((c: any) => c == null || String(c).trim() === "")) continue;
 
-    const desc = String(r[cols.descrizione] ?? r[1] ?? "");
+    const dateCandidates = r
+      .map((cell: any, idx: number) => ({ idx, value: parseDate(cell) }))
+      .filter((d: { idx: number; value: string }) => isValidDateString(d.value));
+
+    const dataFromCol = cols.data >= 0 ? parseDate(r[cols.data]) : "";
+    const valutaFromCol = cols.dataValuta >= 0 ? parseDate(r[cols.dataValuta]) : "";
+    const dataOperazione = isValidDateString(dataFromCol) ? dataFromCol : (dateCandidates[0]?.value ?? "");
+    const dataValuta = isValidDateString(valutaFromCol) ? valutaFromCol : (dateCandidates[1]?.value ?? "");
+
+    let causale = String(r[cols.descrizione] ?? "").trim();
+    if (!causale) causale = inferCausale(r, cols);
+
+    const causaleLower = causale.toLowerCase();
+    const saldoPatterns = [
+      "saldo iniziale", "saldo finale", "saldo al ", "saldo contabile", "saldo disponibile",
+      "totale movimenti", "saldo precedente", "riporto", "saldo liquido",
+    ];
+    if (saldoPatterns.some((p) => causaleLower.includes(p))) continue;
+
+    if (!isValidDateString(dataOperazione)) {
+      if (causale && movements.length > 0) {
+        const last = movements[movements.length - 1];
+        last.descrizione = `${last.descrizione} ${causale}`.replace(/\s+/g, " ").trim();
+        last.cig = extractCIG(last.descrizione) || last.cig;
+      }
+      continue;
+    }
+
     let importo = 0;
     if (cols.importo >= 0) {
       importo = parseNum(r[cols.importo]);
     } else if (cols.avere >= 0 || cols.dare >= 0) {
       const avere = cols.avere >= 0 ? parseNum(r[cols.avere]) : 0;
       const dare = cols.dare >= 0 ? parseNum(r[cols.dare]) : 0;
-      importo = avere > 0 ? avere : -dare;
+      importo = avere !== 0 ? avere : -dare;
     }
 
-    if (importo === 0 && !desc) continue;
+    if (importo === 0) {
+      const excluded = new Set<number>([cols.data, cols.dataValuta, cols.saldo].filter((idx) => idx >= 0));
+      dateCandidates.forEach((d: { idx: number; value: string }) => excluded.add(d.idx));
 
-    // Skip saldo iniziale/finale and summary rows
-    const descLower = desc.toLowerCase();
-    const saldoPatterns = ["saldo iniziale", "saldo finale", "saldo al ", "saldo contabile",
-      "saldo disponibile", "totale movimenti", "saldo precedente", "riporto", "saldo liquido"];
-    if (saldoPatterns.some(p => descLower.includes(p))) continue;
+      const amountCandidates = r
+        .map((cell: any, idx: number) => ({ idx, raw: cell, value: parseNum(cell) }))
+        .filter((n: { idx: number; raw: any; value: number }) => !excluded.has(n.idx) && n.value !== 0 && looksLikeAmount(n.raw));
 
-    // Skip rows without a valid date (non-movement rows from PDF)
-    const dataVal = r[cols.data >= 0 ? cols.data : 0];
-    const dateStr = parseDate(dataVal);
-    if (!dateStr || !/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(dateStr)) continue;
+      if (amountCandidates.length > 0) {
+        importo = amountCandidates[amountCandidates.length - 1].value;
+      }
+    }
+
+    if (importo === 0 && !causale) continue;
 
     movements.push({
       id: `bank-${i}`,
       accountId: "",
       sourceFile: "",
-      data: parseDate(r[cols.data >= 0 ? cols.data : 0]),
-      dataValuta: cols.dataValuta >= 0 ? parseDate(r[cols.dataValuta]) : "",
-      descrizione: desc,
+      data: dataOperazione,
+      dataValuta: dataValuta || dataOperazione,
+      descrizione: causale,
       importo,
       saldo: cols.saldo >= 0 ? parseNum(r[cols.saldo]) : 0,
-      cig: extractCIG(desc),
+      cig: extractCIG(causale),
     });
   }
+
   return movements;
 }
 
