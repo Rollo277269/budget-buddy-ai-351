@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
 import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2 } from "lucide-react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-import { useBankData, BankMovement, scoreMatch } from "@/hooks/useBankData";
+import { useBankData, BankMovement, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -191,6 +191,7 @@ const BanchePage = () => {
     movements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements,
     stats, activeAccountId, setActiveAccountId,
+    pendingDuplicates, confirmDuplicates, dismissDuplicates,
   } = useBankData(allSales, allPurchases);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
@@ -419,6 +420,51 @@ const BanchePage = () => {
         onReconcile={handleReconcile}
         onRemove={(id) => { removeReconciliation(id); setSelectedMovement(null); }}
       />
+
+      {/* Duplicate detection dialog */}
+      <AlertDialog open={!!pendingDuplicates} onOpenChange={(open) => { if (!open) dismissDuplicates(); }}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              Movimenti duplicati rilevati
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Nel file <span className="font-medium">{pendingDuplicates?.fileName}</span> sono stati trovati{" "}
+                  <span className="font-bold text-foreground">{pendingDuplicates?.duplicates.length}</span> movimenti già presenti
+                  {pendingDuplicates?.unique && pendingDuplicates.unique.length > 0 && (
+                    <> ({pendingDuplicates.unique.length} nuovi già importati)</>
+                  )}.
+                </p>
+                <ScrollArea className="max-h-[200px] rounded-md border">
+                  <div className="p-2 space-y-1">
+                    {pendingDuplicates?.duplicates.slice(0, 20).map((d, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
+                        <span className="text-muted-foreground">{d.data}</span>
+                        <span className="truncate max-w-[200px] mx-2">{d.descrizione}</span>
+                        <span className={`font-mono font-medium ${d.importo >= 0 ? "text-income" : "text-expense"}`}>
+                          {formatCurrency(d.importo)}
+                        </span>
+                      </div>
+                    ))}
+                    {(pendingDuplicates?.duplicates.length ?? 0) > 20 && (
+                      <p className="text-xs text-muted-foreground text-center py-1">
+                        ...e altri {(pendingDuplicates?.duplicates.length ?? 0) - 20}
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={dismissDuplicates}>Ignora duplicati</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDuplicates}>Importa comunque</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
