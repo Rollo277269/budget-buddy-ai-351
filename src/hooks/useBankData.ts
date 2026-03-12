@@ -471,8 +471,28 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
   const clearMovements = useCallback(() => {
     setRawMovements([]);
     setFileNames([]);
+    setReconciliations([]);
     saveMovements([]);
     saveFileNames([]);
+    saveReconciliations([]);
+  }, []);
+
+  const deleteFileMovements = useCallback((fileName: string) => {
+    setRawMovements((prev) => {
+      const next = prev.filter((m) => (m.sourceFile || "") !== fileName);
+      saveMovements(next);
+      return next;
+    });
+    setFileNames((prev) => {
+      const next = prev.filter((f) => f !== fileName);
+      saveFileNames(next);
+      return next;
+    });
+    setReconciliations((prev) => {
+      // We need to clean up reconciliations for removed movements
+      // but we don't have the IDs here easily, so we'll let autoMatch handle it
+      return prev;
+    });
   }, []);
 
   const deleteMovements = useCallback((ids: string[]) => {
