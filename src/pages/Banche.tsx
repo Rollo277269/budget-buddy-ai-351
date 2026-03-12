@@ -133,6 +133,18 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
     return filtered.sort((a, b) => b.score - a.score);
   }, [movement, currentTab, sales, purchases, search]);
 
+  const selectedTotal = useMemo(() => {
+    if (!movement) return 0;
+    let total = 0;
+    for (const key of selected) {
+      const [type, anno, numero] = key.split("-");
+      const list = type === "vendita" ? sales : purchases;
+      const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
+      if (inv) total += inv.totale;
+    }
+    return total;
+  }, [selected, sales, purchases, movement]);
+
   if (!movement) return null;
   const isMatched = movement.matchConfidence !== "none";
 
@@ -155,14 +167,6 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
     onReconcile(movement.id, invoices);
     onOpenChange(false);
   };
-
-  const selectedTotal = useMemo(() => {
-    let total = 0;
-    for (const key of selected) {
-      const [type, anno, numero] = key.split("-");
-      const list = type === "vendita" ? sales : purchases;
-      const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
-      if (inv) total += inv.totale;
     }
     return total;
   }, [selected, sales, purchases]);
