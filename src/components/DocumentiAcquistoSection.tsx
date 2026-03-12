@@ -118,6 +118,8 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
     );
   }
 
+  if (loading) return null;
+
   // Table only mode - renders the documents list
   if (tableOnly) {
     if (documenti.length === 0) return null;
