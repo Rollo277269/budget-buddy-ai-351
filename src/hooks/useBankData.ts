@@ -266,13 +266,12 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
 }
 
 function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
-  // Find header row
   let headerIdx = -1;
-  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+  for (let i = 0; i < Math.min(rows.length, 25); i++) {
     const row = rows[i];
     if (!row) continue;
     const joined = row.map((c: any) => normalise(String(c || ""))).join(" ");
-    if (joined.includes("data") && (joined.includes("descri") || joined.includes("causal") || joined.includes("import") || joined.includes("dare") || joined.includes("avere"))) {
+    if (joined.includes("data") && (joined.includes("descri") || joined.includes("causal") || joined.includes("import") || joined.includes("dare") || joined.includes("avere") || joined.includes("saldo"))) {
       headerIdx = i;
       break;
     }
@@ -285,43 +284,73 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
-    if (!r || r.every((c: any) => c == null || c === "")) continue;
+    if (!r || r.every((c: any) => c == null || String(c).trim() === "")) continue;
 
-    const desc = String(r[cols.descrizione] ?? r[1] ?? "");
+    const dateCandidates = r
+      .map((cell: any, idx: number) => ({ idx, value: parseDate(cell) }))
+      .filter((d: { idx: number; value: string }) => isValidDateString(d.value));
+
+    const dataFromCol = cols.data >= 0 ? parseDate(r[cols.data]) : "";
+    const valutaFromCol = cols.dataValuta >= 0 ? parseDate(r[cols.dataValuta]) : "";
+    const dataOperazione = isValidDateString(dataFromCol) ? dataFromCol : (dateCandidates[0]?.value ?? "");
+    const dataValuta = isValidDateString(valutaFromCol) ? valutaFromCol : (dateCandidates[1]?.value ?? "");
+
+    let causale = String(r[cols.descrizione] ?? "").trim();
+    if (!causale) causale = inferCausale(r, cols);
+
+    const causaleLower = causale.toLowerCase();
+    const saldoPatterns = [
+      "saldo iniziale", "saldo finale", "saldo al ", "saldo contabile", "saldo disponibile",
+      "totale movimenti", "saldo precedente", "riporto", "saldo liquido",
+    ];
+    if (saldoPatterns.some((p) => causaleLower.includes(p))) continue;
+
+    if (!isValidDateString(dataOperazione)) {
+      if (causale && movements.length > 0) {
+        const last = movements[movements.length - 1];
+        last.descrizione = `${last.descrizione} ${causale}`.replace(/\s+/g, " ").trim();
+        last.cig = extractCIG(last.descrizione) || last.cig;
+      }
+      continue;
+    }
+
     let importo = 0;
     if (cols.importo >= 0) {
       importo = parseNum(r[cols.importo]);
     } else if (cols.avere >= 0 || cols.dare >= 0) {
       const avere = cols.avere >= 0 ? parseNum(r[cols.avere]) : 0;
       const dare = cols.dare >= 0 ? parseNum(r[cols.dare]) : 0;
-      importo = avere > 0 ? avere : -dare;
+      importo = avere !== 0 ? avere : -dare;
     }
 
-    if (importo === 0 && !desc) continue;
+    if (importo === 0) {
+      const excluded = new Set<number>([cols.data, cols.dataValuta, cols.saldo].filter((idx) => idx >= 0));
+      dateCandidates.forEach((d: { idx: number; value: string }) => excluded.add(d.idx));
 
-    // Skip saldo iniziale/finale and summary rows
-    const descLower = desc.toLowerCase();
-    const saldoPatterns = ["saldo iniziale", "saldo finale", "saldo al ", "saldo contabile",
-      "saldo disponibile", "totale movimenti", "saldo precedente", "riporto", "saldo liquido"];
-    if (saldoPatterns.some(p => descLower.includes(p))) continue;
+      const amountCandidates = r
+        .map((cell: any, idx: number) => ({ idx, raw: cell, value: parseNum(cell) }))
+        .filter((n: { idx: number; raw: any; value: number }) => !excluded.has(n.idx) && n.value !== 0 && looksLikeAmount(n.raw));
 
-    // Skip rows without a valid date (non-movement rows from PDF)
-    const dataVal = r[cols.data >= 0 ? cols.data : 0];
-    const dateStr = parseDate(dataVal);
-    if (!dateStr || !/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(dateStr)) continue;
+      if (amountCandidates.length > 0) {
+        importo = amountCandidates[amountCandidates.length - 1].value;
+      }
+    }
+
+    if (importo === 0 && !causale) continue;
 
     movements.push({
       id: `bank-${i}`,
       accountId: "",
       sourceFile: "",
-      data: parseDate(r[cols.data >= 0 ? cols.data : 0]),
-      dataValuta: cols.dataValuta >= 0 ? parseDate(r[cols.dataValuta]) : "",
-      descrizione: desc,
+      data: dataOperazione,
+      dataValuta: dataValuta || dataOperazione,
+      descrizione: causale,
       importo,
       saldo: cols.saldo >= 0 ? parseNum(r[cols.saldo]) : 0,
-      cig: extractCIG(desc),
+      cig: extractCIG(causale),
     });
   }
+
   return movements;
 }
 
