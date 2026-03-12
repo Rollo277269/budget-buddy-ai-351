@@ -147,10 +147,19 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
     }
   }
 
+  // Filter out page headers/footers before parsing
+  const skipPatterns = [
+    /pagina\s+\d+\s*(di|\/)\s*\d+/i,
+    /\b[A-Z]{2}\d{2}[A-Z0-9]{10,27}\b/,  // IBAN
+    /estratto\s+conto/i,
+    /lista\s+movimenti/i,
+  ];
+
   // Parse lines into rows by splitting on tabs/multiple spaces
   const rows: any[][] = [];
   for (const line of allLines) {
     if (!line.trim()) continue;
+    if (skipPatterns.some(p => p.test(line))) continue;
     // Split on tab or 3+ spaces
     const cells = line.split(/\t|   +/).map((c) => c.trim()).filter(Boolean);
     if (cells.length >= 2) {
