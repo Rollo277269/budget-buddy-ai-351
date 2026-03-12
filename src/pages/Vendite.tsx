@@ -172,11 +172,7 @@ const VenditePage = () => {
             return (
               <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
                 e.stopPropagation();
-                const byteChars = atob(pdfAllegato.base64);
-                const byteArray = new Uint8Array(byteChars.length);
-                for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
-                const blob = new Blob([byteArray], { type: "application/pdf" });
-                window.open(URL.createObjectURL(blob), "_blank");
+                setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || `Fattura_${r.numero}-${r.anno}.pdf` });
               }}>
                 <FileDown className="h-3.5 w-3.5 text-red-600" />
               </Button>
