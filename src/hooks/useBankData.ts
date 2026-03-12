@@ -686,17 +686,25 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     [rawMovements, sales, purchases, reconciliations]
   );
 
-  const addReconciliation = useCallback((rec: Reconciliation) => {
+  const addReconciliation = useCallback((rec: Reconciliation | Reconciliation[]) => {
+    const recs = Array.isArray(rec) ? rec : [rec];
+    if (recs.length === 0) return;
+    const movementId = recs[0].movementId;
     setReconciliations((prev) => {
-      const next = [...prev.filter((r) => r.movementId !== rec.movementId), rec];
+      const next = [...prev.filter((r) => r.movementId !== movementId), ...recs];
       saveReconciliations(next);
       return next;
     });
   }, []);
 
-  const removeReconciliation = useCallback((movementId: string) => {
+  const removeReconciliation = useCallback((movementId: string, invoiceKey?: string) => {
     setReconciliations((prev) => {
-      const next = prev.filter((r) => r.movementId !== movementId);
+      let next: Reconciliation[];
+      if (invoiceKey) {
+        next = prev.filter((r) => !(r.movementId === movementId && `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` === invoiceKey));
+      } else {
+        next = prev.filter((r) => r.movementId !== movementId);
+      }
       saveReconciliations(next);
       return next;
     });
