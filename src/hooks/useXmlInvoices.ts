@@ -32,16 +32,26 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
   const fetchRecords = useCallback(async () => {
     const { data, error } = await supabase
       .from("fatture_xml" as any)
-      .select("*")
+      .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at")
       .eq("tipo", tipo)
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching XML records:", error);
       return;
     }
-    setXmlRecords((data || []) as unknown as XmlInvoiceRecord[]);
+    setXmlRecords((data || []).map((r: any) => ({ ...r, parsed_data: null })) as unknown as XmlInvoiceRecord[]);
     setLoading(false);
   }, [tipo]);
+
+  const fetchParsedData = useCallback(async (id: string): Promise<FatturaPAData | null> => {
+    const { data, error } = await supabase
+      .from("fatture_xml" as any)
+      .select("parsed_data")
+      .eq("id", id)
+      .single();
+    if (error || !data) return null;
+    return (data as any).parsed_data as FatturaPAData | null;
+  }, []);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
