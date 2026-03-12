@@ -1,14 +1,25 @@
 /**
+ * Aggiunge il separatore delle migliaia (punto) alla parte intera di un numero.
+ * Intl con locale it-IT non lo fa per numeri < 10.000, quindi usiamo un approccio manuale.
+ */
+function addThousandsSeparator(intPart: string): string {
+  // Handle negative numbers
+  const isNeg = intPart.startsWith("-");
+  const digits = isNeg ? intPart.slice(1) : intPart;
+  const result = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return isNeg ? `-${result}` : result;
+}
+
+/**
  * Formatta un numero come valuta EUR con separatore migliaia e 2 decimali.
- * Es: 1234567.8 → "€ 1.234.567,80"
+ * Es: 1234567.8 → "1.234.567,80 €"  |  3520.23 → "3.520,23 €"
  */
 export function formatCurrency(n: number): string {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
+  const abs = Math.abs(n);
+  const fixed = abs.toFixed(2);
+  const [intPart, decPart] = fixed.split(".");
+  const formatted = `${addThousandsSeparator(intPart)},${decPart} €`;
+  return n < 0 ? `-${formatted}` : formatted;
 }
 
 /**
@@ -16,8 +27,9 @@ export function formatCurrency(n: number): string {
  * Es: 1234567.8 → "1.234.567,80"
  */
 export function formatNumber(n: number): string {
-  return new Intl.NumberFormat("it-IT", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
+  const abs = Math.abs(n);
+  const fixed = abs.toFixed(2);
+  const [intPart, decPart] = fixed.split(".");
+  const formatted = `${addThousandsSeparator(intPart)},${decPart}`;
+  return n < 0 ? `-${formatted}` : formatted;
 }
