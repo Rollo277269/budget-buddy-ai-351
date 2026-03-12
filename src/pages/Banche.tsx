@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect, DragEvent } from "react";
 import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, CreditCard, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
