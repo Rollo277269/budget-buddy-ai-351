@@ -553,7 +553,7 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
 
   return {
     movements, allMovements, loading, fileNames, handleFileUpload,
-    addReconciliation, removeReconciliation, clearMovements, deleteMovements,
+    addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates,
   };
