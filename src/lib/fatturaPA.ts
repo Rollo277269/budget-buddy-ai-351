@@ -96,7 +96,8 @@ function findElement(doc: Document, ...tags: string[]): Element | null {
   return null;
 }
 
-function findAllElements(parent: Element | Document, tag: string): Element[] {
+function findAllElements(parent: Element | Document | null, tag: string): Element[] {
+  if (!parent) return [];
   const results: Element[] = [];
   const all = parent.getElementsByTagName("*");
   for (let i = 0; i < all.length; i++) {
