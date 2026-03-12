@@ -269,6 +269,7 @@ const BanchePage = () => {
     return map;
   }, [rawMovements]);
 
+  const allIds = useMemo(() => movements.map(m => m.id), [movements]);
   const allSelected = movements.length > 0 && selectedRows.size === movements.length;
   const someSelected = selectedRows.size > 0 && !allSelected;
 
