@@ -37,9 +37,6 @@ const CONTI_KEY = "conti-correnti";
 function loadConti(): ContoCorrente[] {
   try { return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]"); } catch { return []; }
 }
-function saveConti(conti: ContoCorrente[]) {
-  localStorage.setItem(CONTI_KEY, JSON.stringify(conti));
-}
 
 function ReconciliationBadge({ m }: { m: BankMovement }) {
   if (m.matchConfidence === "auto") {
