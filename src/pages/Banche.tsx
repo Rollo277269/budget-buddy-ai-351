@@ -517,10 +517,12 @@ const BanchePage = () => {
         <div className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground">
           <Landmark className="h-12 w-12 mb-4 opacity-30" />
           <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
-          <p className="text-xs mt-1 text-muted-foreground">Devi definire almeno un conto per caricare i movimenti</p>
-          <Button size="sm" className="mt-4" onClick={openNewAccount}>
-            <Plus className="h-4 w-4 mr-1" />Aggiungi conto
-          </Button>
+          <p className="text-xs mt-1 text-muted-foreground">Vai in Strumenti per aggiungere un conto</p>
+          <Link to="/strumenti">
+            <Button size="sm" className="mt-4">
+              <Settings className="h-4 w-4 mr-1" />Vai a Strumenti
+            </Button>
+          </Link>
         </div>
       )}
 
