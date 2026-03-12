@@ -369,19 +369,50 @@ function saveFileNames(names: string[]) {
   localStorage.setItem(FILES_KEY, JSON.stringify(names));
 }
 
+export type RawMovement = Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">;
+
+export interface DuplicateInfo {
+  duplicates: RawMovement[];
+  unique: RawMovement[];
+  fileName: string;
+}
+
 export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) {
   const [rawMovements, setRawMovements] = useState(loadMovements);
   const [reconciliations, setReconciliations] = useState<Reconciliation[]>(loadReconciliations);
   const [loading, setLoading] = useState(false);
   const [fileNames, setFileNames] = useState<string[]>(loadFileNames);
   const [activeAccountId, setActiveAccountId] = useState<string>("default");
+  const [pendingDuplicates, setPendingDuplicates] = useState<DuplicateInfo | null>(null);
+
+  const fingerprint = (m: RawMovement) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
+
+  const appendMovements = useCallback((movs: RawMovement[]) => {
+    setRawMovements((prev) => {
+      const offset = prev.length;
+      const reindexed = movs.map((m, i) => ({ ...m, id: `bank-${offset + i}` }));
+      const merged = [...prev, ...reindexed];
+      saveMovements(merged);
+      return merged;
+    });
+  }, []);
+
+  const confirmDuplicates = useCallback(() => {
+    if (!pendingDuplicates) return;
+    appendMovements(pendingDuplicates.duplicates);
+    setPendingDuplicates(null);
+  }, [pendingDuplicates, appendMovements]);
+
+  const dismissDuplicates = useCallback(() => {
+    setPendingDuplicates(null);
+  }, []);
 
   const handleFileUpload = useCallback(async (file: File, accountId?: string) => {
     setLoading(true);
     const acctId = accountId || activeAccountId;
     try {
       const ext = file.name.split(".").pop()?.toLowerCase();
-      let newMovements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[];
+      let newMovements: RawMovement[];
       if (ext === "pdf") {
         const buf = await file.arrayBuffer();
         const rows = await parsePdfToRows(buf);
@@ -395,19 +426,32 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
       }
 
       setRawMovements((prev) => {
-        let merged: typeof prev;
         if (prev.length === 0) {
-          merged = newMovements;
-        } else {
-          const fingerprint = (m: typeof prev[0]) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
-          const existingKeys = new Set(prev.map(fingerprint));
-          const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
+          saveMovements(newMovements);
+          return newMovements;
+        }
+        const existingKeys = new Set(prev.map(fingerprint));
+        const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
+        const dupes = newMovements.filter((m) => existingKeys.has(fingerprint(m)));
+
+        if (dupes.length > 0) {
+          setPendingDuplicates({ duplicates: dupes, unique, fileName: file.name });
+        }
+
+        if (unique.length > 0) {
           const offset = prev.length;
           const reindexed = unique.map((m, i) => ({ ...m, id: `bank-${offset + i}` }));
-          merged = [...prev, ...reindexed];
+          const merged = [...prev, ...reindexed];
+          saveMovements(merged);
+          return merged;
         }
-        saveMovements(merged);
-        return merged;
+
+        if (dupes.length > 0 && unique.length === 0) {
+          // All duplicates — don't change state but still show dialog
+          return prev;
+        }
+
+        return prev;
       });
 
       setFileNames((prev) => {
