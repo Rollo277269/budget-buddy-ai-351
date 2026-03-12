@@ -37,6 +37,7 @@ const VenditePage = () => {
   const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
 
@@ -47,8 +48,10 @@ const VenditePage = () => {
     const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".xml"));
     if (files.length === 0) { toast.error("Seleziona file XML"); return; }
     setUploading(true);
-    await uploadXmlFiles(files);
+    setUploadProgress({ done: 0, total: files.length });
+    await uploadXmlFiles(files, (done, total) => setUploadProgress({ done, total }));
     setUploading(false);
+    setUploadProgress(null);
   }, [uploadXmlFiles]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
