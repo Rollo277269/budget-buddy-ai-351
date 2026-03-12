@@ -133,10 +133,10 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
+      <div className="rounded-xl border bg-card [&>div]:max-h-[calc(100vh-280px)]">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-card">
+              <TableRow className="shadow-[0_1px_0_0_hsl(var(--border))]">
                 {activeColumns.map((col) => (
                   <TableHead
                     key={col.key}
