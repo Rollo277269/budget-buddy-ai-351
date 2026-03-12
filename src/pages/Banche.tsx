@@ -281,51 +281,15 @@ const BanchePage = () => {
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [showAccountDialog, setShowAccountDialog] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<ContoCorrente | null>(null);
-  const [accountForm, setAccountForm] = useState<Omit<ContoCorrente, "id">>({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
 
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
 
-  const openNewAccount = () => {
-    setEditingAccount(null);
-    setAccountForm({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
-    setShowAccountDialog(true);
-  };
-
-  const openEditAccount = (c: ContoCorrente) => {
-    setEditingAccount(c);
-    setAccountForm({ tipo: c.tipo, banca: c.banca, iban: c.iban, intestatario: c.intestatario, note: c.note });
-    setShowAccountDialog(true);
-  };
-
-  const handleSaveAccount = () => {
-    if (!accountForm.banca || !accountForm.iban) {
-      toast.error("Banca e IBAN/Numero carta sono obbligatori");
-      return;
-    }
-    let updated: ContoCorrente[];
-    if (editingAccount) {
-      updated = conti.map(c => c.id === editingAccount.id ? { ...accountForm, id: editingAccount.id } : c);
-      toast.success("Conto aggiornato");
-    } else {
-      const account: ContoCorrente = { ...accountForm, id: crypto.randomUUID() };
-      updated = [...conti, account];
-      setActiveAccountId(account.id);
-      toast.success("Conto aggiunto");
-    }
-    setConti(updated);
-    saveConti(updated);
-    setShowAccountDialog(false);
-  };
-
-  const handleDeleteAccount = (id: string) => {
-    const updated = conti.filter(c => c.id !== id);
-    setConti(updated);
-    saveConti(updated);
-    if (activeAccountId === id) setActiveAccountId("all");
-    toast.success("Conto eliminato");
-  };
+  // Re-read conti when localStorage changes (e.g. edited in Strumenti)
+  useCallback(() => {
+    const handler = () => setConti(loadConti());
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some(c => c.id === activeAccountId);
 
