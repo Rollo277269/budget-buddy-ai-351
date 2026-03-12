@@ -449,21 +449,31 @@ function autoMatch(
   purchases: PurchaseInvoice[],
   manualRecs: Reconciliation[]
 ): BankMovement[] {
-  const manualMap = new Map(manualRecs.map((r) => [r.movementId, r]));
+  // Group manual reconciliations by movementId (supports multiple per movement)
+  const manualGrouped = new Map<string, Reconciliation[]>();
+  for (const r of manualRecs) {
+    const list = manualGrouped.get(r.movementId) || [];
+    list.push(r);
+    manualGrouped.set(r.movementId, list);
+  }
   const usedSales = new Set<string>();
   const usedPurchases = new Set<string>();
 
   const scored = movements.map((m) => {
-    const manual = manualMap.get(m.id);
-    if (manual) {
-      const key = `${manual.invoiceAnno}-${manual.invoiceNumero}`;
-      if (manual.invoiceType === "vendita") usedSales.add(key);
-      else usedPurchases.add(key);
+    const manuals = manualGrouped.get(m.id);
+    if (manuals && manuals.length > 0) {
+      const invoices: MatchedInvoice[] = manuals.map((r) => {
+        const key = `${r.invoiceAnno}-${r.invoiceNumero}`;
+        if (r.invoiceType === "vendita") usedSales.add(key);
+        else usedPurchases.add(key);
+        return { type: r.invoiceType, anno: r.invoiceAnno, numero: r.invoiceNumero };
+      });
       return {
         movement: m,
-        bestType: manual.invoiceType as "vendita" | "acquisto",
-        bestAnno: manual.invoiceAnno,
-        bestNumero: manual.invoiceNumero,
+        invoices,
+        bestType: invoices[0].type,
+        bestAnno: invoices[0].anno,
+        bestNumero: invoices[0].numero,
         bestScore: 999,
         confidence: "manual" as const,
       };
@@ -487,7 +497,12 @@ function autoMatch(
       }
     }
 
-    return { movement: m, bestType, bestAnno, bestNumero, bestScore, confidence: "none" as "none" | "auto" | "manual" };
+    return {
+      movement: m,
+      invoices: [] as MatchedInvoice[],
+      bestType, bestAnno, bestNumero, bestScore,
+      confidence: "none" as "none" | "auto" | "manual",
+    };
   });
 
   const sortedIndices = scored
@@ -504,12 +519,17 @@ function autoMatch(
     const usedSet = s.bestType === "vendita" ? usedSales : usedPurchases;
     if (!usedSet.has(key)) {
       usedSet.add(key);
-      scored[idx] = { ...s, confidence: "auto" as const };
+      scored[idx] = {
+        ...s,
+        invoices: [{ type: s.bestType, anno: s.bestAnno, numero: s.bestNumero }],
+        confidence: "auto" as const,
+      };
     }
   }
 
   return scored.map((s) => ({
     ...s.movement,
+    matchedInvoices: s.invoices,
     matchedType: s.confidence !== "none" ? s.bestType : ("" as const),
     matchedAnno: s.confidence !== "none" ? s.bestAnno : 0,
     matchedNumero: s.confidence !== "none" ? s.bestNumero : 0,
