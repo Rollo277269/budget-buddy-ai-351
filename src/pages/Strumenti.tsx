@@ -130,7 +130,7 @@ function ContiCorrentiTab() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold">{c.banca}</p>
-                      <Badge variant="outline" className="text-[10px]">{c.tipo === "carta_credito" ? "Carta" : "C/C"}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{{ conto_corrente: "C/C", carta_credito: "Carta", finanziamento: "Finanz.", crediti_fiscali: "Cred. Fiscali" }[c.tipo]}</Badge>
                     </div>
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
