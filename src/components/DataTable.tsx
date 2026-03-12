@@ -33,6 +33,7 @@ interface DataTableProps<T> {
   data: T[];
   rowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
+  rowClassName?: (row: T) => string;
 }
 
 type SortDir = "asc" | "desc" | null;
