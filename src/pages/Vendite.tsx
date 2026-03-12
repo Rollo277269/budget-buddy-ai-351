@@ -294,7 +294,13 @@ const VenditePage = () => {
       )}
 
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
-      <DataTable<SaleInvoice> columns={columns} data={sales} rowKey={(r) => `${r.anno}-${r.numero}`} onRowClick={setSelectedInvoice} />
+      <DataTable<SaleInvoice>
+        columns={columns}
+        data={sales}
+        rowKey={(r) => `${r.anno}-${r.numero}`}
+        onRowClick={setSelectedInvoice}
+        rowClassName={(r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+      />
       <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
       <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} />
     </div>
