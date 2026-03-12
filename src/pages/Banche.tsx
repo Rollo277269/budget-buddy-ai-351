@@ -207,24 +207,50 @@ const BanchePage = () => {
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [showNewAccountDialog, setShowNewAccountDialog] = useState(false);
-  const [newAccount, setNewAccount] = useState<Omit<ContoCorrente, "id">>({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
+  const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<ContoCorrente | null>(null);
+  const [accountForm, setAccountForm] = useState<Omit<ContoCorrente, "id">>({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
 
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
 
+  const openNewAccount = () => {
+    setEditingAccount(null);
+    setAccountForm({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
+    setShowAccountDialog(true);
+  };
+
+  const openEditAccount = (c: ContoCorrente) => {
+    setEditingAccount(c);
+    setAccountForm({ tipo: c.tipo, banca: c.banca, iban: c.iban, intestatario: c.intestatario, note: c.note });
+    setShowAccountDialog(true);
+  };
+
   const handleSaveAccount = () => {
-    if (!newAccount.banca || !newAccount.iban) {
+    if (!accountForm.banca || !accountForm.iban) {
       toast.error("Banca e IBAN/Numero carta sono obbligatori");
       return;
     }
-    const account: ContoCorrente = { ...newAccount, id: crypto.randomUUID() };
-    const updated = [...conti, account];
+    let updated: ContoCorrente[];
+    if (editingAccount) {
+      updated = conti.map(c => c.id === editingAccount.id ? { ...accountForm, id: editingAccount.id } : c);
+      toast.success("Conto aggiornato");
+    } else {
+      const account: ContoCorrente = { ...accountForm, id: crypto.randomUUID() };
+      updated = [...conti, account];
+      setActiveAccountId(account.id);
+      toast.success("Conto aggiunto");
+    }
     setConti(updated);
     saveConti(updated);
-    setActiveAccountId(account.id);
-    setShowNewAccountDialog(false);
-    setNewAccount({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
-    toast.success("Conto aggiunto");
+    setShowAccountDialog(false);
+  };
+
+  const handleDeleteAccount = (id: string) => {
+    const updated = conti.filter(c => c.id !== id);
+    setConti(updated);
+    saveConti(updated);
+    if (activeAccountId === id) setActiveAccountId("all");
+    toast.success("Conto eliminato");
   };
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some(c => c.id === activeAccountId);
