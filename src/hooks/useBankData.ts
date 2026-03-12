@@ -157,6 +157,22 @@ function inferCausale(row: any[], cols: { data: number; dataValuta: number; desc
     .trim();
 }
 
+function normalise(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function nameSimilarity(a: string, b: string): number {
+  const na = normalise(a);
+  const nb = normalise(b);
+  if (!na || !nb) return 0;
+  if (na === nb) return 1;
+  if (na.includes(nb) || nb.includes(na)) return 0.8;
+  const wordsA = na.split(" ");
+  const wordsB = nb.split(" ");
+  const common = wordsA.filter((w) => wordsB.includes(w)).length;
+  return common / Math.max(wordsA.length, wordsB.length);
+}
+
 // Try to detect columns from header row
 function detectColumns(header: any[]): {
   data: number; dataValuta: number; descrizione: number;
