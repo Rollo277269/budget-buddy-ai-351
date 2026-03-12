@@ -6,6 +6,12 @@ import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 // Configure pdf.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
+export interface MatchedInvoice {
+  type: "vendita" | "acquisto";
+  anno: number;
+  numero: number;
+}
+
 export interface BankMovement {
   id: string;
   accountId: string;
@@ -17,10 +23,12 @@ export interface BankMovement {
   importo: number;
   saldo: number;
   cig: string;
+  matchedInvoices: MatchedInvoice[];
+  matchConfidence: "auto" | "manual" | "none";
+  // Legacy compat - derived from matchedInvoices[0]
   matchedType: "vendita" | "acquisto" | "";
   matchedAnno: number;
   matchedNumero: number;
-  matchConfidence: "auto" | "manual" | "none";
 }
 
 export interface Reconciliation {
@@ -278,7 +286,7 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
   return rows;
 }
 
-function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
+function parseBank(rows: any[]): Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
   let headerIdx = -1;
   for (let i = 0; i < Math.min(rows.length, 25); i++) {
     const row = rows[i];
@@ -293,7 +301,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
 
   const cols = detectColumns(rows[headerIdx] || []);
   console.log("[Bank Parser] Header at row:", headerIdx, "Columns:", cols, "Header:", rows[headerIdx]);
-  const movements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] = [];
+  const movements: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] = [];
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
@@ -436,26 +444,36 @@ export function scoreMatch(
 }
 
 function autoMatch(
-  movements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[],
+  movements: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[],
   sales: SaleInvoice[],
   purchases: PurchaseInvoice[],
   manualRecs: Reconciliation[]
 ): BankMovement[] {
-  const manualMap = new Map(manualRecs.map((r) => [r.movementId, r]));
+  // Group manual reconciliations by movementId (supports multiple per movement)
+  const manualGrouped = new Map<string, Reconciliation[]>();
+  for (const r of manualRecs) {
+    const list = manualGrouped.get(r.movementId) || [];
+    list.push(r);
+    manualGrouped.set(r.movementId, list);
+  }
   const usedSales = new Set<string>();
   const usedPurchases = new Set<string>();
 
   const scored = movements.map((m) => {
-    const manual = manualMap.get(m.id);
-    if (manual) {
-      const key = `${manual.invoiceAnno}-${manual.invoiceNumero}`;
-      if (manual.invoiceType === "vendita") usedSales.add(key);
-      else usedPurchases.add(key);
+    const manuals = manualGrouped.get(m.id);
+    if (manuals && manuals.length > 0) {
+      const invoices: MatchedInvoice[] = manuals.map((r) => {
+        const key = `${r.invoiceAnno}-${r.invoiceNumero}`;
+        if (r.invoiceType === "vendita") usedSales.add(key);
+        else usedPurchases.add(key);
+        return { type: r.invoiceType, anno: r.invoiceAnno, numero: r.invoiceNumero };
+      });
       return {
         movement: m,
-        bestType: manual.invoiceType as "vendita" | "acquisto",
-        bestAnno: manual.invoiceAnno,
-        bestNumero: manual.invoiceNumero,
+        invoices,
+        bestType: invoices[0].type,
+        bestAnno: invoices[0].anno,
+        bestNumero: invoices[0].numero,
         bestScore: 999,
         confidence: "manual" as const,
       };
@@ -479,7 +497,12 @@ function autoMatch(
       }
     }
 
-    return { movement: m, bestType, bestAnno, bestNumero, bestScore, confidence: "none" as "none" | "auto" | "manual" };
+    return {
+      movement: m,
+      invoices: [] as MatchedInvoice[],
+      bestType, bestAnno, bestNumero, bestScore,
+      confidence: "none" as "none" | "auto" | "manual",
+    };
   });
 
   const sortedIndices = scored
@@ -496,12 +519,17 @@ function autoMatch(
     const usedSet = s.bestType === "vendita" ? usedSales : usedPurchases;
     if (!usedSet.has(key)) {
       usedSet.add(key);
-      scored[idx] = { ...s, confidence: "auto" as const };
+      scored[idx] = {
+        ...s,
+        invoices: [{ type: s.bestType, anno: s.bestAnno, numero: s.bestNumero }],
+        confidence: "auto" as const,
+      };
     }
   }
 
   return scored.map((s) => ({
     ...s.movement,
+    matchedInvoices: s.invoices,
     matchedType: s.confidence !== "none" ? s.bestType : ("" as const),
     matchedAnno: s.confidence !== "none" ? s.bestAnno : 0,
     matchedNumero: s.confidence !== "none" ? s.bestNumero : 0,
@@ -509,10 +537,10 @@ function autoMatch(
   }));
 }
 
-function loadMovements(): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
+function loadMovements(): Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
   try { return JSON.parse(localStorage.getItem(MOVEMENTS_KEY) || "[]"); } catch { return []; }
 }
-function saveMovements(m: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]) {
+function saveMovements(m: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]) {
   localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(m));
 }
 function loadFileNames(): string[] {
@@ -522,7 +550,7 @@ function saveFileNames(names: string[]) {
   localStorage.setItem(FILES_KEY, JSON.stringify(names));
 }
 
-export type RawMovement = Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">;
+export type RawMovement = Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">;
 
 export interface DuplicateInfo {
   duplicates: RawMovement[];
@@ -678,17 +706,25 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     [rawMovements, sales, purchases, reconciliations]
   );
 
-  const addReconciliation = useCallback((rec: Reconciliation) => {
+  const addReconciliation = useCallback((rec: Reconciliation | Reconciliation[]) => {
+    const recs = Array.isArray(rec) ? rec : [rec];
+    if (recs.length === 0) return;
+    const movementId = recs[0].movementId;
     setReconciliations((prev) => {
-      const next = [...prev.filter((r) => r.movementId !== rec.movementId), rec];
+      const next = [...prev.filter((r) => r.movementId !== movementId), ...recs];
       saveReconciliations(next);
       return next;
     });
   }, []);
 
-  const removeReconciliation = useCallback((movementId: string) => {
+  const removeReconciliation = useCallback((movementId: string, invoiceKey?: string) => {
     setReconciliations((prev) => {
-      const next = prev.filter((r) => r.movementId !== movementId);
+      let next: Reconciliation[];
+      if (invoiceKey) {
+        next = prev.filter((r) => !(r.movementId === movementId && `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` === invoiceKey));
+      } else {
+        next = prev.filter((r) => r.movementId !== movementId);
+      }
       saveReconciliations(next);
       return next;
     });
