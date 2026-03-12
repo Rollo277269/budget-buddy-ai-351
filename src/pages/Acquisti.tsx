@@ -14,7 +14,7 @@ import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -40,8 +40,8 @@ const AcquistiPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const dragCounter = useRef(0);
+  const [xmlDragging, setXmlDragging] = useState(false);
+  const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData } = useXmlInvoices(purchases, "acquisto");
@@ -77,26 +77,24 @@ const AcquistiPage = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [processXmlFiles]);
 
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
+  // XML drag handlers
+  const handleXmlDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
-    dragCounter.current++;
-    setDragging(true);
+    xmlDragCounter.current++;
+    setXmlDragging(true);
   }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleXmlDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
-    dragCounter.current--;
-    if (dragCounter.current === 0) setDragging(false);
+    xmlDragCounter.current--;
+    if (xmlDragCounter.current === 0) setXmlDragging(false);
   }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleXmlDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
   }, []);
-
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
+  const handleXmlDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
-    dragCounter.current = 0;
-    setDragging(false);
+    xmlDragCounter.current = 0;
+    setXmlDragging(false);
     await processXmlFiles(Array.from(e.dataTransfer.files));
   }, [processXmlFiles]);
 
@@ -232,23 +230,7 @@ const AcquistiPage = () => {
 
   return (
     <div className="flex h-full">
-      <div
-        className={`p-6 space-y-6 relative overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        {/* Drop overlay */}
-        {dragging && (
-          <div className="absolute inset-0 z-50 bg-primary/5 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none">
-            <div className="bg-background/90 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg text-center">
-              <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
-              <p className="text-sm font-semibold text-primary">Rilascia i file XML qui</p>
-              <p className="text-xs text-muted-foreground">Caricamento massivo fatture acquisto</p>
-            </div>
-          </div>
-        )}
+      <div className={`p-6 space-y-6 overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h2 className="text-lg font-bold tracking-tight">Fatture di Acquisto</h2>
@@ -288,6 +270,28 @@ const AcquistiPage = () => {
           </div>
         )}
 
+        {/* Two drop zones side by side */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* XML Drop Zone */}
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
+            onDragEnter={handleXmlDragEnter}
+            onDragLeave={handleXmlDragLeave}
+            onDragOver={handleXmlDragOver}
+            onDrop={handleXmlDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+              <FileCode2 className="h-5 w-5" />
+              <span className="text-xs font-medium">Trascina file XML</span>
+              <span className="text-[10px]">Fatture elettroniche</span>
+            </div>
+          </div>
+
+          {/* PDF Drop Zone */}
+          <DocumentiAcquistoSection dropZoneOnly />
+        </div>
+
         {/* Unmatched XML list */}
         {xmlUnmatchedCount > 0 && (
           <div className="bg-muted/50 border border-border rounded-md p-3">
@@ -308,7 +312,8 @@ const AcquistiPage = () => {
           </div>
         )}
 
-        <DocumentiAcquistoSection />
+        {/* Documenti table (full section) */}
+        <DocumentiAcquistoSection tableOnly />
 
         <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideCliente />
         <DataTable<PurchaseInvoice>
