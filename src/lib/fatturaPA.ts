@@ -77,7 +77,7 @@ function getText(el: Element | Document | null, tag: string): string {
   return "";
 }
 
-function getNum(el: Element | null, tag: string): number {
+function getNum(el: Element | Document | null, tag: string): number {
   const v = getText(el, tag);
   return v ? parseFloat(v) : 0;
 }
