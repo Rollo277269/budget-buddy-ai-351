@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 interface ContoCorrente {
   id: string;
+  tipo: "conto_corrente" | "carta_credito";
   banca: string;
   iban: string;
   intestatario: string;
@@ -37,7 +38,7 @@ function ContiCorrentiTab() {
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
   const [editing, setEditing] = useState<ContoCorrente | null>(null);
 
-  const empty: ContoCorrente = { id: "", banca: "", iban: "", intestatario: "", note: "" };
+  const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" };
 
   const handleSave = () => {
     if (!editing) return;
@@ -78,12 +79,23 @@ function ContiCorrentiTab() {
           <CardContent className="p-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Banca *</Label>
-                <Input value={editing.banca} onChange={(e) => setEditing({ ...editing, banca: e.target.value })} placeholder="Nome banca" className="h-9 text-sm" />
+                <Label className="text-xs">Tipo *</Label>
+                <select
+                  value={editing.tipo}
+                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as "conto_corrente" | "carta_credito" })}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="conto_corrente">Conto Corrente</option>
+                  <option value="carta_credito">Carta di Credito</option>
+                </select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">IBAN *</Label>
-                <Input value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value.toUpperCase() })} placeholder="IT60X0542811101000000123456" className="h-9 text-sm font-mono" />
+                <Label className="text-xs">Banca / Emittente *</Label>
+                <Input value={editing.banca} onChange={(e) => setEditing({ ...editing, banca: e.target.value })} placeholder="Nome banca o emittente" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">{editing.tipo === "carta_credito" ? "Numero Carta" : "IBAN"} *</Label>
+                <Input value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value.toUpperCase() })} placeholder={editing.tipo === "carta_credito" ? "**** **** **** 1234" : "IT60X0542811101000000123456"} className="h-9 text-sm font-mono" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Intestatario</Label>
@@ -114,7 +126,10 @@ function ContiCorrentiTab() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold">{c.banca}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">{c.banca}</p>
+                      <Badge variant="outline" className="text-[10px]">{c.tipo === "carta_credito" ? "Carta" : "C/C"}</Badge>
+                    </div>
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}

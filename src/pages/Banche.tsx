@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2 } from "lucide-react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, Plus, CreditCard, Save } from "lucide-react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -17,20 +17,30 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
+import { toast } from "sonner";
 
 // Load conti from localStorage (same key as Strumenti page)
 interface ContoCorrente {
   id: string;
+  tipo: "conto_corrente" | "carta_credito";
   banca: string;
   iban: string;
   intestatario: string;
   note: string;
 }
+const CONTI_KEY = "conti-correnti";
 function loadConti(): ContoCorrente[] {
-  try { return JSON.parse(localStorage.getItem("conti-correnti") || "[]"); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]"); } catch { return []; }
+}
+function saveConti(conti: ContoCorrente[]) {
+  localStorage.setItem(CONTI_KEY, JSON.stringify(conti));
 }
 
 function ReconciliationBadge({ m }: { m: BankMovement }) {
@@ -197,8 +207,27 @@ const BanchePage = () => {
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [showNewAccountDialog, setShowNewAccountDialog] = useState(false);
+  const [newAccount, setNewAccount] = useState<Omit<ContoCorrente, "id">>({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
 
-  const conti = useMemo(() => loadConti(), []);
+  const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
+
+  const handleSaveAccount = () => {
+    if (!newAccount.banca || !newAccount.iban) {
+      toast.error("Banca e IBAN/Numero carta sono obbligatori");
+      return;
+    }
+    const account: ContoCorrente = { ...newAccount, id: crypto.randomUUID() };
+    const updated = [...conti, account];
+    setConti(updated);
+    saveConti(updated);
+    setActiveAccountId(account.id);
+    setShowNewAccountDialog(false);
+    setNewAccount({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
+    toast.success("Conto aggiunto");
+  };
+
+  const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some(c => c.id === activeAccountId);
 
   const allIds = useMemo(() => movements.map(m => m.id), [movements]);
   const allSelected = movements.length > 0 && selectedRows.size === movements.length;
@@ -273,8 +302,13 @@ const BanchePage = () => {
   ], [selectedRows, deleteMovements, allIds, allSelected, someSelected]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!hasValidAccount) {
+      toast.error("Seleziona prima un conto corrente o una carta");
+      e.target.value = "";
+      return;
+    }
     const files = e.target.files;
-    if (files) Array.from(files).forEach((file) => handleFileUpload(file));
+    if (files) Array.from(files).forEach((file) => handleFileUpload(file, activeAccountId));
     e.target.value = "";
   };
 
@@ -286,9 +320,13 @@ const BanchePage = () => {
   const onDragLeave = useCallback((e: DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }, []);
   const onDrop = useCallback((e: DragEvent) => {
     e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+    if (!hasValidAccount) {
+      toast.error("Seleziona prima un conto corrente o una carta");
+      return;
+    }
     const files = e.dataTransfer.files;
-    if (files) Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file));
-  }, [handleFileUpload]);
+    if (files) Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file, activeAccountId));
+  }, [handleFileUpload, hasValidAccount, activeAccountId]);
 
   const isLoading = loading || invoiceLoading;
 
@@ -320,37 +358,65 @@ const BanchePage = () => {
         <div className="flex items-center gap-2">
           {/* Account selector */}
           <Select value={activeAccountId} onValueChange={setActiveAccountId}>
-            <SelectTrigger className="w-[200px] h-9 text-xs">
-              <SelectValue placeholder="Tutti i conti" />
+            <SelectTrigger className={`w-[220px] h-9 text-xs ${!hasValidAccount && movements.length === 0 ? "border-primary ring-1 ring-primary/30" : ""}`}>
+              <SelectValue placeholder="Seleziona conto..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Conto predefinito</SelectItem>
-              <SelectItem value="all">Tutti i conti</SelectItem>
+              {conti.length === 0 && (
+                <div className="px-3 py-2 text-xs text-muted-foreground">Nessun conto configurato</div>
+              )}
               {conti.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.banca} — {c.iban.slice(-4)}
+                  <span className="flex items-center gap-1.5">
+                    {c.tipo === "carta_credito" ? <CreditCard className="h-3 w-3" /> : <Landmark className="h-3 w-3" />}
+                    {c.banca} — {c.iban.slice(-4)}
+                  </span>
                 </SelectItem>
               ))}
+              <SelectItem value="all">Tutti i conti</SelectItem>
             </SelectContent>
           </Select>
 
+          <Button variant="outline" size="sm" onClick={() => setShowNewAccountDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" />Nuovo conto
+          </Button>
+
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
-          <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading} size="sm">
+          <Button onClick={() => {
+            if (!hasValidAccount) { toast.error("Seleziona prima un conto corrente o una carta"); return; }
+            fileInputRef.current?.click();
+          }} disabled={isLoading} size="sm">
             <Upload className="h-4 w-4 mr-2" />Carica estratto
           </Button>
         </div>
       </div>
 
-      {movements.length === 0 && !isLoading && (
+      {movements.length === 0 && !isLoading && conti.length === 0 && (
+        <div className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground">
+          <Landmark className="h-12 w-12 mb-4 opacity-30" />
+          <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
+          <p className="text-xs mt-1 text-muted-foreground">Devi definire almeno un conto per caricare i movimenti</p>
+          <Button size="sm" className="mt-4" onClick={() => setShowNewAccountDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" />Aggiungi conto
+          </Button>
+        </div>
+      )}
+
+      {movements.length === 0 && !isLoading && conti.length > 0 && (
         <button
           className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (!hasValidAccount) { toast.error("Seleziona prima un conto dal menu in alto"); return; }
+            fileInputRef.current?.click();
+          }}
         >
           <div className="flex gap-3 mb-4">
             <FileSpreadsheet className="h-10 w-10 opacity-30" />
             <FileText className="h-10 w-10 opacity-30" />
           </div>
-          <p className="text-sm font-medium">Carica o trascina un estratto conto</p>
+          <p className="text-sm font-medium">
+            {hasValidAccount ? "Carica o trascina un estratto conto" : "Seleziona un conto dal menu, poi carica l'estratto"}
+          </p>
           <p className="text-xs mt-1">Formati supportati: Excel (.xlsx, .xls, .csv) e PDF</p>
         </button>
       )}
@@ -465,6 +531,45 @@ const BanchePage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New account dialog */}
+      <Dialog open={showNewAccountDialog} onOpenChange={setShowNewAccountDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nuovo conto</DialogTitle>
+            <DialogDescription>Aggiungi un conto corrente o una carta di credito</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Tipo</Label>
+              <select
+                value={newAccount.tipo}
+                onChange={(e) => setNewAccount({ ...newAccount, tipo: e.target.value as "conto_corrente" | "carta_credito" })}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="conto_corrente">Conto Corrente</option>
+                <option value="carta_credito">Carta di Credito</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Banca / Emittente *</Label>
+              <Input value={newAccount.banca} onChange={(e) => setNewAccount({ ...newAccount, banca: e.target.value })} placeholder="Nome banca o emittente" className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{newAccount.tipo === "carta_credito" ? "Numero Carta" : "IBAN"} *</Label>
+              <Input value={newAccount.iban} onChange={(e) => setNewAccount({ ...newAccount, iban: e.target.value.toUpperCase() })} placeholder={newAccount.tipo === "carta_credito" ? "**** **** **** 1234" : "IT60X0542811101000000123456"} className="h-9 text-sm font-mono" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Intestatario</Label>
+              <Input value={newAccount.intestatario} onChange={(e) => setNewAccount({ ...newAccount, intestatario: e.target.value })} placeholder="Ragione sociale" className="h-9 text-sm" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowNewAccountDialog(false)}>Annulla</Button>
+            <Button size="sm" onClick={handleSaveAccount}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
