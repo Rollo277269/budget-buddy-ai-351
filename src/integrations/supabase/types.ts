@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fatture_xml: {
+        Row: {
+          anno: number | null
+          cedente_denominazione: string | null
+          cessionario_denominazione: string | null
+          created_at: string | null
+          data_fattura: string | null
+          file_name: string
+          id: string
+          importo_totale: number | null
+          invoice_key: string | null
+          matched: boolean | null
+          numero: number | null
+          parsed_data: Json | null
+          storage_path: string
+        }
+        Insert: {
+          anno?: number | null
+          cedente_denominazione?: string | null
+          cessionario_denominazione?: string | null
+          created_at?: string | null
+          data_fattura?: string | null
+          file_name: string
+          id?: string
+          importo_totale?: number | null
+          invoice_key?: string | null
+          matched?: boolean | null
+          numero?: number | null
+          parsed_data?: Json | null
+          storage_path: string
+        }
+        Update: {
+          anno?: number | null
+          cedente_denominazione?: string | null
+          cessionario_denominazione?: string | null
+          created_at?: string | null
+          data_fattura?: string | null
+          file_name?: string
+          id?: string
+          importo_totale?: number | null
+          invoice_key?: string | null
+          matched?: boolean | null
+          numero?: number | null
+          parsed_data?: Json | null
+          storage_path?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
