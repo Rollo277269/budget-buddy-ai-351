@@ -396,17 +396,33 @@ const BanchePage = () => {
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
               {fileNames.map((fn) => (
-                <Badge key={fn} variant="secondary" className="text-[11px] gap-1 pr-1">
-                  <FileSpreadsheet className="h-3 w-3" />
-                  {fn}
-                  <button
-                    className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors"
-                    title={`Rimuovi ${fn} e i suoi movimenti`}
-                    onClick={(e) => { e.stopPropagation(); deleteFileMovements(fn); }}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
+                <AlertDialog key={fn}>
+                  <Badge variant="secondary" className="text-[11px] gap-1 pr-1">
+                    <FileSpreadsheet className="h-3 w-3" />
+                    {fn}
+                    <AlertDialogTrigger asChild>
+                      <button
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors"
+                        title={`Rimuovi ${fn} e i suoi movimenti`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </AlertDialogTrigger>
+                  </Badge>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Eliminare il file?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Vuoi rimuovere <span className="font-medium">{fn}</span> e tutti i movimenti importati da questo file? L'azione non può essere annullata.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annulla</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => deleteFileMovements(fn)}>Elimina</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               ))}
             </div>
           )}
