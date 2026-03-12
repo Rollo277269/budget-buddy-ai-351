@@ -418,13 +418,13 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
       if (ext === "pdf") {
         const buf = await file.arrayBuffer();
         const rows = await parsePdfToRows(buf);
-        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId }));
+        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId, sourceFile: file.name }));
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true }) as any[];
-        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId }));
+        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId, sourceFile: file.name }));
       }
 
       setRawMovements((prev) => {
