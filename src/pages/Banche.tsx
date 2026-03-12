@@ -486,7 +486,41 @@ const BanchePage = () => {
         </button>
       )}
 
-      {isLoading && (
+      {/* Account balances */}
+      {conti.length > 0 && rawMovements.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {conti.map((c) => {
+            const st = accountStats.get(c.id);
+            if (!st) return null;
+            return (
+              <Card
+                key={c.id}
+                className={`cursor-pointer transition-colors ${activeAccountId === c.id ? "border-primary ring-1 ring-primary/30" : "hover:border-primary/30"}`}
+                onClick={() => setActiveAccountId(c.id)}
+              >
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      {c.tipo === "carta_credito" ? <CreditCard className="h-4 w-4 text-muted-foreground" /> : <Landmark className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm font-semibold truncate">{c.banca}</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">{st.movimenti} mov.</Badge>
+                  </div>
+                  <p className="text-xs font-mono text-muted-foreground">{c.iban.slice(-8)}</p>
+                  <div className={`text-lg font-bold font-mono ${st.saldo >= 0 ? "text-income" : "text-expense"}`}>
+                    {formatCurrency(st.saldo)}
+                  </div>
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>↑ {formatCurrency(st.entrate)}</span>
+                    <span>↓ {formatCurrency(st.uscite)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
