@@ -203,7 +203,7 @@ export function DataTable<T extends Record<string, any>>({
                 sorted.map((row) => (
                   <TableRow
                     key={rowKey(row)}
-                    className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                    className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
                     onClick={() => onRowClick?.(row)}
                   >
                     {activeColumns.map((col) => (
