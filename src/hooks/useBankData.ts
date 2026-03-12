@@ -69,39 +69,92 @@ function extractPartitaIva(text: string): string {
   return match ? match[1] : "";
 }
 
+function formatDate(d: Date): string {
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+function isValidDateString(value: string): boolean {
+  return /\b\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}\b/.test(value);
+}
+
 function parseDate(val: any): string {
-  if (!val) return "";
-  if (typeof val === "string" && val.includes("/")) return val;
-  const serial = parseFloat(String(val));
-  if (!isNaN(serial) && serial > 30000) {
-    const d = new Date((serial - 25569) * 86400 * 1000);
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  if (val == null || val === "") return "";
+
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return formatDate(val);
   }
-  return String(val);
+
+  if (typeof val === "number" && val > 25000 && val < 70000) {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return formatDate(d);
+  }
+
+  const str = String(val).trim();
+  if (!str) return "";
+
+  const iso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (iso) {
+    return `${iso[3].padStart(2, "0")}/${iso[2].padStart(2, "0")}/${iso[1]}`;
+  }
+
+  const dmy = str.match(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/);
+  if (dmy) {
+    const yy = dmy[3].length === 2 ? `20${dmy[3]}` : dmy[3];
+    return `${dmy[1].padStart(2, "0")}/${dmy[2].padStart(2, "0")}/${yy}`;
+  }
+
+  return "";
 }
 
 function parseNum(val: any): number {
   if (val == null || val === "") return 0;
   if (typeof val === "number") return val;
-  const s = String(val).replace(/\./g, "").replace(",", ".");
+
+  const raw = String(val).trim();
+  if (!raw) return 0;
+
+  const negative = raw.startsWith("-") || raw.endsWith("-") || (raw.startsWith("(") && raw.endsWith(")"));
+  let s = raw.replace(/[€$\s]/g, "").replace(/[()]/g, "").replace(/^-/, "").replace(/-$/, "");
+
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimalSep = lastComma > lastDot ? "," : ".";
+    const thousandsSep = decimalSep === "," ? "." : ",";
+    s = s.replace(new RegExp(`\\${thousandsSep}`, "g"), "").replace(decimalSep, ".");
+  } else if (lastComma >= 0) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else {
+    s = s.replace(/,/g, "");
+  }
+
   const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+  if (isNaN(n)) return 0;
+  return negative ? -n : n;
 }
 
-function normalise(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+function looksLikeAmount(val: any): boolean {
+  if (typeof val === "number") return true;
+  const s = String(val ?? "").trim();
+  if (!s) return false;
+  return /^\(?-?\d{1,3}([.\s]\d{3})*([,.]\d{2})?\)?-?$/.test(s) || /^\(?-?\d+([,.]\d{2})\)?-?$/.test(s);
 }
 
-function nameSimilarity(a: string, b: string): number {
-  const na = normalise(a);
-  const nb = normalise(b);
-  if (!na || !nb) return 0;
-  if (na === nb) return 1;
-  if (na.includes(nb) || nb.includes(na)) return 0.8;
-  const wordsA = na.split(" ");
-  const wordsB = nb.split(" ");
-  const common = wordsA.filter((w) => wordsB.includes(w)).length;
-  return common / Math.max(wordsA.length, wordsB.length);
+function inferCausale(row: any[], cols: { data: number; dataValuta: number; descrizione: number; dare: number; avere: number; importo: number; saldo: number }): string {
+  const ignored = new Set([cols.data, cols.dataValuta, cols.dare, cols.avere, cols.importo, cols.saldo].filter((i) => i >= 0));
+  return row
+    .map((c) => String(c ?? "").trim())
+    .filter((text, idx) => {
+      if (!text) return false;
+      if (ignored.has(idx)) return false;
+      if (isValidDateString(parseDate(text))) return false;
+      if (looksLikeAmount(text)) return false;
+      return true;
+    })
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // Try to detect columns from header row
@@ -112,14 +165,22 @@ function detectColumns(header: any[]): {
   const result = { data: -1, dataValuta: -1, descrizione: -1, dare: -1, avere: -1, importo: -1, saldo: -1 };
   for (let i = 0; i < header.length; i++) {
     const h = normalise(String(header[i] || ""));
-    // Dare/Avere first (may contain "movimenti")
+
     if (h.includes("dare") || h.includes("addebit") || h.includes("uscit")) { result.dare = i; continue; }
     if (h.includes("avere") || h.includes("accredit") || h.includes("entrat")) { result.avere = i; continue; }
+
     if (h.includes("data") && h.includes("valut")) { result.dataValuta = i; continue; }
-    if ((h.includes("valut") || h.includes("val ")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
+    if ((h === "valuta" || h.startsWith("valuta ") || h.includes("data valuta")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
+
+    if ((h.includes("data operaz") || h.includes("data contab") || h === "data") && result.data === -1) { result.data = i; continue; }
     if (h.includes("data") && result.data === -1) { result.data = i; continue; }
-    if (h.includes("descri") || h.includes("causal") || h.includes("operazion")) { result.descrizione = i; continue; }
-    if (h.includes("import") && !h.includes("iva")) { result.importo = i; continue; }
+
+    if ((h.includes("causal") || h.includes("descri") || h.includes("dettaglio") || (h.includes("operazion") && !h.includes("data"))) && result.descrizione === -1) {
+      result.descrizione = i;
+      continue;
+    }
+
+    if ((h.includes("import") || h.includes("ammontare")) && !h.includes("iva")) { result.importo = i; continue; }
     if (h.includes("saldo")) { result.saldo = i; continue; }
   }
   return result;
