@@ -23,6 +23,7 @@ export interface ColumnDef<T> {
   render: (row: T) => ReactNode;
   sortable?: boolean;
   filterable?: boolean;
+  filterValue?: (row: T) => string;
   align?: "left" | "right";
   defaultHidden?: boolean;
 }
@@ -66,11 +67,15 @@ export function DataTable<T extends Record<string, any>>({
     for (const [key, val] of Object.entries(columnFilters)) {
       if (val) {
         const lower = val.toLowerCase();
-        result = result.filter((r) => String(r[key] ?? "").toLowerCase().includes(lower));
+        const col = columns.find((c) => c.key === key);
+        result = result.filter((r) => {
+          const cellVal = col?.filterValue ? col.filterValue(r) : String(r[key] ?? "");
+          return cellVal.toLowerCase().includes(lower);
+        });
       }
     }
     return result;
-  }, [data, columnFilters]);
+  }, [data, columnFilters, columns]);
 
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return filtered;

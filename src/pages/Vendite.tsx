@@ -140,7 +140,9 @@ const VenditePage = () => {
       { key: "totale", label: "Totale", render: (r) => <span className="text-xs font-mono font-semibold text-right block">{formatCurrency(r.totale)}</span>, sortable: true, align: "right" },
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       {
-        key: "xml", label: "XML", render: (r) => {
+        key: "xml", label: "XML", filterable: true,
+        filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        render: (r) => {
           const k = `${r.anno}-${r.numero}`;
           const xml = xmlMap.get(k);
           if (xml) return (
