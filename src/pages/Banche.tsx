@@ -1,5 +1,6 @@
-import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, Plus, CreditCard, Save, Pencil } from "lucide-react";
+import { useState, useRef, useMemo, useCallback, useEffect, DragEvent } from "react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, CreditCard, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, MatchedInvoice, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,11 +19,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
@@ -39,9 +36,6 @@ interface ContoCorrente {
 const CONTI_KEY = "conti-correnti";
 function loadConti(): ContoCorrente[] {
   try { return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]"); } catch { return []; }
-}
-function saveConti(conti: ContoCorrente[]) {
-  localStorage.setItem(CONTI_KEY, JSON.stringify(conti));
 }
 
 function ReconciliationBadge({ m }: { m: BankMovement }) {
@@ -284,51 +278,15 @@ const BanchePage = () => {
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [showAccountDialog, setShowAccountDialog] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<ContoCorrente | null>(null);
-  const [accountForm, setAccountForm] = useState<Omit<ContoCorrente, "id">>({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
 
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
 
-  const openNewAccount = () => {
-    setEditingAccount(null);
-    setAccountForm({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
-    setShowAccountDialog(true);
-  };
-
-  const openEditAccount = (c: ContoCorrente) => {
-    setEditingAccount(c);
-    setAccountForm({ tipo: c.tipo, banca: c.banca, iban: c.iban, intestatario: c.intestatario, note: c.note });
-    setShowAccountDialog(true);
-  };
-
-  const handleSaveAccount = () => {
-    if (!accountForm.banca || !accountForm.iban) {
-      toast.error("Banca e IBAN/Numero carta sono obbligatori");
-      return;
-    }
-    let updated: ContoCorrente[];
-    if (editingAccount) {
-      updated = conti.map(c => c.id === editingAccount.id ? { ...accountForm, id: editingAccount.id } : c);
-      toast.success("Conto aggiornato");
-    } else {
-      const account: ContoCorrente = { ...accountForm, id: crypto.randomUUID() };
-      updated = [...conti, account];
-      setActiveAccountId(account.id);
-      toast.success("Conto aggiunto");
-    }
-    setConti(updated);
-    saveConti(updated);
-    setShowAccountDialog(false);
-  };
-
-  const handleDeleteAccount = (id: string) => {
-    const updated = conti.filter(c => c.id !== id);
-    setConti(updated);
-    saveConti(updated);
-    if (activeAccountId === id) setActiveAccountId("all");
-    toast.success("Conto eliminato");
-  };
+  // Re-read conti when localStorage changes (e.g. edited in Strumenti)
+  useEffect(() => {
+    const handler = () => setConti(loadConti());
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some(c => c.id === activeAccountId);
 
@@ -536,18 +494,11 @@ const BanchePage = () => {
             </SelectContent>
           </Select>
 
-          {hasValidAccount && (
-            <Button variant="ghost" size="sm" className="h-9 w-9 p-0" title="Modifica conto" onClick={() => {
-              const c = conti.find(c => c.id === activeAccountId);
-              if (c) openEditAccount(c);
-            }}>
-              <Pencil className="h-3.5 w-3.5" />
+          <Link to="/strumenti">
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-1" />Gestisci conti
             </Button>
-          )}
-
-          <Button variant="outline" size="sm" onClick={openNewAccount}>
-            <Plus className="h-4 w-4 mr-1" />Nuovo conto
-          </Button>
+          </Link>
 
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
           <Button onClick={() => {
@@ -563,10 +514,12 @@ const BanchePage = () => {
         <div className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground">
           <Landmark className="h-12 w-12 mb-4 opacity-30" />
           <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
-          <p className="text-xs mt-1 text-muted-foreground">Devi definire almeno un conto per caricare i movimenti</p>
-          <Button size="sm" className="mt-4" onClick={openNewAccount}>
-            <Plus className="h-4 w-4 mr-1" />Aggiungi conto
-          </Button>
+          <p className="text-xs mt-1 text-muted-foreground">Vai in Strumenti per aggiungere un conto</p>
+          <Link to="/strumenti">
+            <Button size="sm" className="mt-4">
+              <Settings className="h-4 w-4 mr-1" />Vai a Strumenti
+            </Button>
+          </Link>
         </div>
       )}
 
@@ -735,55 +688,6 @@ const BanchePage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Account dialog (new / edit) */}
-      <Dialog open={showAccountDialog} onOpenChange={setShowAccountDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingAccount ? "Modifica conto" : "Nuovo conto"}</DialogTitle>
-            <DialogDescription>{editingAccount ? "Modifica i dati del conto" : "Aggiungi un conto corrente o una carta di credito"}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Tipo</Label>
-              <select
-                value={accountForm.tipo}
-                onChange={(e) => setAccountForm({ ...accountForm, tipo: e.target.value as "conto_corrente" | "carta_credito" })}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="conto_corrente">Conto Corrente</option>
-                <option value="carta_credito">Carta di Credito</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Banca / Emittente *</Label>
-              <Input value={accountForm.banca} onChange={(e) => setAccountForm({ ...accountForm, banca: e.target.value })} placeholder="Nome banca o emittente" className="h-9 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">{accountForm.tipo === "carta_credito" ? "Numero Carta" : "IBAN"} *</Label>
-              <Input value={accountForm.iban} onChange={(e) => setAccountForm({ ...accountForm, iban: e.target.value.toUpperCase() })} placeholder={accountForm.tipo === "carta_credito" ? "**** **** **** 1234" : "IT60X0542811101000000123456"} className="h-9 text-sm font-mono" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Intestatario</Label>
-              <Input value={accountForm.intestatario} onChange={(e) => setAccountForm({ ...accountForm, intestatario: e.target.value })} placeholder="Ragione sociale" className="h-9 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Note</Label>
-              <Input value={accountForm.note} onChange={(e) => setAccountForm({ ...accountForm, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
-            </div>
-          </div>
-          <DialogFooter className="flex justify-between sm:justify-between">
-            {editingAccount && (
-              <Button variant="destructive" size="sm" onClick={() => { handleDeleteAccount(editingAccount.id); setShowAccountDialog(false); }}>
-                <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
-              </Button>
-            )}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowAccountDialog(false)}>Annulla</Button>
-              <Button size="sm" onClick={handleSaveAccount}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
