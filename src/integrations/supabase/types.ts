@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      documenti_acquisto: {
+        Row: {
+          ai_summary: string | null
+          centro_costo: string | null
+          created_at: string | null
+          data_documento: string | null
+          descrizione: string | null
+          file_name: string
+          fornitore: string | null
+          id: string
+          importo: number | null
+          parsed_text: string | null
+          storage_path: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          centro_costo?: string | null
+          created_at?: string | null
+          data_documento?: string | null
+          descrizione?: string | null
+          file_name: string
+          fornitore?: string | null
+          id?: string
+          importo?: number | null
+          parsed_text?: string | null
+          storage_path: string
+        }
+        Update: {
+          ai_summary?: string | null
+          centro_costo?: string | null
+          created_at?: string | null
+          data_documento?: string | null
+          descrizione?: string | null
+          file_name?: string
+          fornitore?: string | null
+          id?: string
+          importo?: number | null
+          parsed_text?: string | null
+          storage_path?: string
+        }
+        Relationships: []
+      }
       fatture_xml: {
         Row: {
           anno: number | null
