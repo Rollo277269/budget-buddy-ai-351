@@ -312,7 +312,7 @@ const BanchePage = () => {
     },
     {
       key: "descrizione", label: "Descrizione", filterable: true,
-      render: (r) => <span className="text-xs truncate max-w-[280px] block">{r.descrizione}</span>,
+      render: (r) => <span className="text-xs max-w-[340px] block whitespace-pre-wrap break-words">{r.descrizione}</span>,
     },
     {
       key: "importo", label: "Importo", sortable: true, align: "right" as const,
