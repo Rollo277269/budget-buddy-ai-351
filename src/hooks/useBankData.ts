@@ -12,6 +12,7 @@ export interface BankMovement {
   sourceFile: string;
   data: string;
   dataValuta: string;
+  causale: string;
   descrizione: string;
   importo: number;
   saldo: number;
