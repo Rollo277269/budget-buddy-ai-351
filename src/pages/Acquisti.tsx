@@ -1,15 +1,18 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInvoiceData, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
+import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CentroCell } from "@/components/CentroCell";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
+import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,6 +35,52 @@ const AcquistiPage = () => {
   const costoMap = useCentroMap("costo", "acquisti");
   const ricavoMap = useCentroMap("ricavo", "acquisti");
   const [classifying, setClassifying] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(purchases, "acquisto");
+  const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+
+  const processXmlFiles = useCallback(async (fileList: File[]) => {
+    const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".xml"));
+    if (files.length === 0) { toast.error("Seleziona file XML"); return; }
+    setUploading(true);
+    setUploadProgress({ done: 0, total: files.length });
+    await uploadXmlFiles(files, (done, total) => setUploadProgress({ done, total }));
+    setUploading(false);
+    setUploadProgress(null);
+  }, [uploadXmlFiles]);
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processXmlFiles(Array.from(e.target.files || []));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [processXmlFiles]);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current++;
+    setDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current = 0;
+    setDragging(false);
+    await processXmlFiles(Array.from(e.dataTransfer.files));
+  }, [processXmlFiles]);
 
   const handleAIClassify = useCallback(async () => {
     const hasCosto = centriCosto.length > 0;
@@ -99,6 +148,20 @@ const AcquistiPage = () => {
       { key: "totale", label: "Totale", render: (r) => <span className="text-xs font-mono font-semibold text-right block">{formatCurrency(r.totale)}</span>, sortable: true, align: "right" },
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       {
+        key: "xml", label: "XML", filterable: true,
+        filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        render: (r) => {
+          const k = `${r.anno}-${r.numero}`;
+          const xml = xmlMap.get(k);
+          if (xml) return (
+            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => { e.stopPropagation(); setSelectedXml(xml); }}>
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+            </Button>
+          );
+          return <span className="text-muted-foreground text-[11px]">—</span>;
+        },
+      },
+      {
         key: "centroCosto", label: "Centro Costo", filterable: true,
         render: (r) => <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="costo" centri={centri} centroMap={costoMap.map} onAssign={costoMap.assign} />,
       },
@@ -111,7 +174,7 @@ const AcquistiPage = () => {
       { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[250px] truncate block">{r.descrizione || "—"}</span>, defaultHidden: true },
       { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true },
     ],
-    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign]
+    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, xmlMap, navigate]
   );
 
   if (loading) {
@@ -128,23 +191,90 @@ const AcquistiPage = () => {
     return (centriCosto.length > 0 && !costoMap.map[k]) || (centriRicavo.length > 0 && !ricavoMap.map[k]);
   }).length;
 
+  const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
+  const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div
+      className="p-6 space-y-6 relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drop overlay */}
+      {dragging && (
+        <div className="absolute inset-0 z-50 bg-primary/5 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none">
+          <div className="bg-background/90 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg text-center">
+            <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
+            <p className="text-sm font-semibold text-primary">Rilascia i file XML qui</p>
+            <p className="text-xs text-muted-foreground">Caricamento massivo fatture acquisto</p>
+          </div>
+        </div>
+      )}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Fatture di Acquisto</h2>
-          <p className="text-sm text-muted-foreground">{purchases.length} fatture trovate</p>
+          <p className="text-sm text-muted-foreground">
+            {purchases.length} fatture trovate
+            {xmlRecords.length > 0 && (
+              <span className="ml-2">
+                · <FileText className="inline h-3 w-3 mb-0.5" /> {xmlMatchedCount} XML associati
+                {xmlUnmatchedCount > 0 && <span className="text-destructive"> · {xmlUnmatchedCount} non associati</span>}
+              </span>
+            )}
+          </p>
         </div>
-        {hasCentri && (
-          <Button size="sm" variant="outline" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
-            {classifying ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
-            {classifying ? "Classifico..." : `Classifica con AI (${unclassifiedCount})`}
+        <div className="flex gap-2">
+          <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
+          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+            {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Carica XML"}
           </Button>
-        )}
+          {hasCentri && (
+            <Button size="sm" variant="outline" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
+              {classifying ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+              {classifying ? "Classifico..." : `Classifica con AI (${unclassifiedCount})`}
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Upload progress bar */}
+      {uploading && uploadProgress && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Caricamento XML in corso…</span>
+            <span className="font-mono">{uploadProgress.done}/{uploadProgress.total}</span>
+          </div>
+          <Progress value={(uploadProgress.done / uploadProgress.total) * 100} className="h-2" />
+        </div>
+      )}
+
+      {/* Unmatched XML list */}
+      {xmlUnmatchedCount > 0 && (
+        <div className="bg-muted/50 border border-border rounded-md p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
+          <div className="flex flex-wrap gap-1.5">
+            {xmlRecords.filter((r) => !r.matched).map((r) => (
+              <Badge
+                key={r.id}
+                variant="secondary"
+                className="text-[10px] cursor-pointer hover:bg-accent"
+                onClick={() => setSelectedXml(r)}
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                {r.file_name} — {r.cedente_denominazione || "?"} — {r.numero}/{r.anno}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
       <DataTable<PurchaseInvoice> columns={columns} data={purchases} rowKey={(r) => `${r.anno}-${r.numero}`} onRowClick={setSelectedInvoice} />
       <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
+      <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} />
     </div>
   );
 };

@@ -29,6 +29,7 @@ export type Database = {
           numero: number | null
           parsed_data: Json | null
           storage_path: string
+          tipo: string
         }
         Insert: {
           anno?: number | null
@@ -44,6 +45,7 @@ export type Database = {
           numero?: number | null
           parsed_data?: Json | null
           storage_path: string
+          tipo?: string
         }
         Update: {
           anno?: number | null
@@ -59,6 +61,7 @@ export type Database = {
           numero?: number | null
           parsed_data?: Json | null
           storage_path?: string
+          tipo?: string
         }
         Relationships: []
       }
