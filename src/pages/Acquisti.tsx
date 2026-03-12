@@ -12,7 +12,7 @@ import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
