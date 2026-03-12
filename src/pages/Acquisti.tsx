@@ -171,7 +171,7 @@ const AcquistiPage = () => {
           const k = `${r.anno}-${r.numero}`;
           const xml = xmlMap.get(k);
           if (xml) return (
-            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => { e.stopPropagation(); setSelectedXml(xml); }}>
+            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
             </Button>
           );
@@ -180,18 +180,14 @@ const AcquistiPage = () => {
       },
       {
         key: "pdf", label: "PDF", filterable: true,
-        filterValue: (r) => {
-          const xml = xmlMap.get(`${r.anno}-${r.numero}`);
-          return xml?.parsed_data?.allegati?.some((a) => a.formato?.toUpperCase() === "PDF") ? "sì" : "no";
-        },
+        filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
         render: (r) => {
           const xml = xmlMap.get(`${r.anno}-${r.numero}`);
-          const pdfAllegato = xml?.parsed_data?.allegati?.find((a) => a.formato?.toUpperCase() === "PDF");
-          if (pdfAllegato) {
+          if (xml) {
             return (
               <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
                 e.stopPropagation();
-                setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || `Fattura_${r.numero}-${r.anno}.pdf` });
+                openPdf(xml, `Fattura_${r.numero}-${r.anno}.pdf`);
               }}>
                 <FileDown className="h-3.5 w-3.5 text-red-600" />
               </Button>
