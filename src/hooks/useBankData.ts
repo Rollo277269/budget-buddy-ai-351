@@ -142,8 +142,8 @@ function looksLikeAmount(val: any): boolean {
   return /^\(?-?\d{1,3}([.\s]\d{3})*([,.]\d{2})?\)?-?$/.test(s) || /^\(?-?\d+([,.]\d{2})\)?-?$/.test(s);
 }
 
-function inferCausale(row: any[], cols: { data: number; dataValuta: number; descrizione: number; dare: number; avere: number; importo: number; saldo: number }): string {
-  const ignored = new Set([cols.data, cols.dataValuta, cols.dare, cols.avere, cols.importo, cols.saldo].filter((i) => i >= 0));
+function inferDescrizione(row: any[], cols: { data: number; dataValuta: number; causale: number; descrizione: number; dare: number; avere: number; importo: number; saldo: number }): string {
+  const ignored = new Set([cols.data, cols.dataValuta, cols.causale, cols.descrizione, cols.dare, cols.avere, cols.importo, cols.saldo].filter((i) => i >= 0));
   return row
     .map((c) => String(c ?? "").trim())
     .filter((text, idx) => {
