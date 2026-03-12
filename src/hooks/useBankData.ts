@@ -200,6 +200,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
   if (headerIdx === -1 && rows.length > 0) headerIdx = 0;
 
   const cols = detectColumns(rows[headerIdx] || []);
+  console.log("[Bank Parser] Header at row:", headerIdx, "Columns:", cols, "Header:", rows[headerIdx]);
   const movements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] = [];
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
