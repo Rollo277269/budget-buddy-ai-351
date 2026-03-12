@@ -43,8 +43,23 @@ const AcquistiPage = () => {
   const dragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(purchases, "acquisto");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData } = useXmlInvoices(purchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+
+  const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
+    const parsed = await fetchParsedData(record.id);
+    setSelectedXml({ ...record, parsed_data: parsed });
+  }, [fetchParsedData]);
+
+  const openPdf = useCallback(async (xmlRecord: (typeof xmlRecords)[0], fallbackName: string) => {
+    const parsed = await fetchParsedData(xmlRecord.id);
+    const pdfAllegato = parsed?.allegati?.find((a) => a.formato?.toUpperCase() === "PDF");
+    if (pdfAllegato) {
+      setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || fallbackName });
+    } else {
+      toast.error("Nessun PDF trovato in questo XML");
+    }
+  }, [fetchParsedData]);
 
   const processXmlFiles = useCallback(async (fileList: File[]) => {
     const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".xml"));
@@ -156,7 +171,7 @@ const AcquistiPage = () => {
           const k = `${r.anno}-${r.numero}`;
           const xml = xmlMap.get(k);
           if (xml) return (
-            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => { e.stopPropagation(); setSelectedXml(xml); }}>
+            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
             </Button>
           );
@@ -165,18 +180,14 @@ const AcquistiPage = () => {
       },
       {
         key: "pdf", label: "PDF", filterable: true,
-        filterValue: (r) => {
-          const xml = xmlMap.get(`${r.anno}-${r.numero}`);
-          return xml?.parsed_data?.allegati?.some((a) => a.formato?.toUpperCase() === "PDF") ? "sì" : "no";
-        },
+        filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
         render: (r) => {
           const xml = xmlMap.get(`${r.anno}-${r.numero}`);
-          const pdfAllegato = xml?.parsed_data?.allegati?.find((a) => a.formato?.toUpperCase() === "PDF");
-          if (pdfAllegato) {
+          if (xml) {
             return (
               <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
                 e.stopPropagation();
-                setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || `Fattura_${r.numero}-${r.anno}.pdf` });
+                openPdf(xml, `Fattura_${r.numero}-${r.anno}.pdf`);
               }}>
                 <FileDown className="h-3.5 w-3.5 text-red-600" />
               </Button>
@@ -198,7 +209,7 @@ const AcquistiPage = () => {
       { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[250px] truncate block">{r.descrizione || "—"}</span>, defaultHidden: true },
       { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true },
     ],
-    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, xmlMap, navigate]
+    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, xmlMap, navigate, openXmlSheet, openPdf]
   );
 
   if (loading) {
@@ -286,7 +297,7 @@ const AcquistiPage = () => {
                   key={r.id}
                   variant="secondary"
                   className="text-[10px] cursor-pointer hover:bg-accent"
-                  onClick={() => setSelectedXml(r)}
+                  onClick={() => openXmlSheet(r)}
                 >
                   <FileText className="h-3 w-3 mr-1" />
                   {r.file_name} — {r.cedente_denominazione || "?"} — {r.numero}/{r.anno}
