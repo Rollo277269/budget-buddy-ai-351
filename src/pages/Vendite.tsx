@@ -41,6 +41,7 @@ const VenditePage = () => {
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
+  const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
