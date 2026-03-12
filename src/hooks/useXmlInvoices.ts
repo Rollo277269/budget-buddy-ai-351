@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseFatturaPA, extractInvoiceNumber, extractInvoiceYear, FatturaPAData } from "@/lib/fatturaPA";
-import { SaleInvoice } from "@/hooks/useInvoiceData";
 import { toast } from "sonner";
 
 export interface XmlInvoiceRecord {
@@ -17,10 +16,16 @@ export interface XmlInvoiceRecord {
   importo_totale: number | null;
   parsed_data: FatturaPAData | null;
   matched: boolean;
+  tipo: string;
   created_at: string;
 }
 
-export function useXmlInvoices(sales: SaleInvoice[]) {
+interface InvoiceWithKey {
+  anno: number;
+  numero: number;
+}
+
+export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "acquisto" = "vendita") {
   const [xmlRecords, setXmlRecords] = useState<XmlInvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +33,7 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
     const { data, error } = await supabase
       .from("fatture_xml" as any)
       .select("*")
+      .eq("tipo", tipo)
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching XML records:", error);
@@ -35,7 +41,7 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
     }
     setXmlRecords((data || []) as unknown as XmlInvoiceRecord[]);
     setLoading(false);
-  }, []);
+  }, [tipo]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -53,7 +59,7 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
         const numero = extractInvoiceNumber(parsed.numero);
         const anno = extractInvoiceYear(parsed.data);
 
-        const storagePath = `${anno}/${file.name}`;
+        const storagePath = `${tipo}/${anno}/${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("fatture-xml")
           .upload(storagePath, file, { upsert: true });
@@ -64,7 +70,7 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
         }
 
         const invoiceKey = `${anno}-${numero}`;
-        const isMatched = sales.some((s) => s.anno === anno && s.numero === numero);
+        const isMatched = invoices.some((s) => s.anno === anno && s.numero === numero);
         const { rawXml, ...parsedWithoutRaw } = parsed;
 
         const { error: insertError } = await supabase
@@ -81,6 +87,7 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
             importo_totale: parsed.importoTotale || null,
             parsed_data: parsedWithoutRaw as any,
             matched: isMatched,
+            tipo,
           } as any);
 
         if (insertError) {
@@ -101,7 +108,7 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
     toast.success(`${uploaded} XML caricati, ${matched} associati automaticamente`);
     await fetchRecords();
     return { uploaded, matched };
-  }, [sales, fetchRecords]);
+  }, [invoices, fetchRecords, tipo]);
 
   const deleteRecord = useCallback(async (id: string, storagePath: string) => {
     await supabase.storage.from("fatture-xml").remove([storagePath]);

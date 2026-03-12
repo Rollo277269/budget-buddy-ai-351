@@ -41,7 +41,7 @@ const VenditePage = () => {
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(sales);
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
   const processXmlFiles = useCallback(async (fileList: File[]) => {
