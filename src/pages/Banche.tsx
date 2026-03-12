@@ -27,7 +27,7 @@ import { toast } from "sonner";
 // Load conti from localStorage (same key as Strumenti page)
 interface ContoCorrente {
   id: string;
-  tipo: "conto_corrente" | "carta_credito";
+  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali";
   banca: string;
   iban: string;
   intestatario: string;

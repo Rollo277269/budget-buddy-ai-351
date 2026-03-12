@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 interface ContoCorrente {
   id: string;
-  tipo: "conto_corrente" | "carta_credito";
+  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali";
   banca: string;
   iban: string;
   intestatario: string;
@@ -82,11 +82,13 @@ function ContiCorrentiTab() {
                 <Label className="text-xs">Tipo *</Label>
                 <select
                   value={editing.tipo}
-                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as "conto_corrente" | "carta_credito" })}
+                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as ContoCorrente["tipo"] })}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="conto_corrente">Conto Corrente</option>
                   <option value="carta_credito">Carta di Credito</option>
+                  <option value="finanziamento">Finanziamento</option>
+                  <option value="crediti_fiscali">Crediti Fiscali</option>
                 </select>
               </div>
               <div className="space-y-1">
@@ -128,7 +130,7 @@ function ContiCorrentiTab() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold">{c.banca}</p>
-                      <Badge variant="outline" className="text-[10px]">{c.tipo === "carta_credito" ? "Carta" : "C/C"}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{{ conto_corrente: "C/C", carta_credito: "Carta", finanziamento: "Finanz.", crediti_fiscali: "Cred. Fiscali" }[c.tipo]}</Badge>
                     </div>
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
