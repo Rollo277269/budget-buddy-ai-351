@@ -66,12 +66,18 @@ function ReconciliationBadge({ m }: { m: BankMovement }) {
 }
 
 function MatchedInvoiceLabel({ m }: { m: BankMovement }) {
-  if (m.matchConfidence === "none") return <span className="text-xs text-muted-foreground">—</span>;
-  const type = m.matchedType === "vendita" ? "V" : "A";
+  if (m.matchConfidence === "none" || !m.matchedInvoices.length) return <span className="text-xs text-muted-foreground">—</span>;
   return (
-    <span className="text-xs font-mono">
-      {type} {m.matchedAnno}/{m.matchedNumero}
-    </span>
+    <div className="flex flex-col gap-0.5">
+      {m.matchedInvoices.map((inv, i) => {
+        const type = inv.type === "vendita" ? "V" : "A";
+        return (
+          <span key={i} className="text-xs font-mono">
+            {type} {inv.anno}/{inv.numero}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
