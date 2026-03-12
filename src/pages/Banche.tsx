@@ -687,7 +687,7 @@ const BanchePage = () => {
         sales={allSales}
         purchases={allPurchases}
         onReconcile={handleReconcile}
-        onRemove={(id) => { removeReconciliation(id); setSelectedMovement(null); }}
+        onRemove={(id, invoiceKey) => { removeReconciliation(id, invoiceKey); if (!invoiceKey) setSelectedMovement(null); }}
       />
 
       {/* Duplicate detection dialog */}
