@@ -23,6 +23,7 @@ export interface ColumnDef<T> {
   render: (row: T) => ReactNode;
   sortable?: boolean;
   filterable?: boolean;
+  filterValue?: (row: T) => string;
   align?: "left" | "right";
   defaultHidden?: boolean;
 }
