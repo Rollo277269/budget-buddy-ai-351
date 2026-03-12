@@ -207,8 +207,27 @@ const BanchePage = () => {
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [showNewAccountDialog, setShowNewAccountDialog] = useState(false);
+  const [newAccount, setNewAccount] = useState<Omit<ContoCorrente, "id">>({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
 
-  const conti = useMemo(() => loadConti(), []);
+  const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
+
+  const handleSaveAccount = () => {
+    if (!newAccount.banca || !newAccount.iban) {
+      toast.error("Banca e IBAN/Numero carta sono obbligatori");
+      return;
+    }
+    const account: ContoCorrente = { ...newAccount, id: crypto.randomUUID() };
+    const updated = [...conti, account];
+    setConti(updated);
+    saveConti(updated);
+    setActiveAccountId(account.id);
+    setShowNewAccountDialog(false);
+    setNewAccount({ tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" });
+    toast.success("Conto aggiunto");
+  };
+
+  const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some(c => c.id === activeAccountId);
 
   const allIds = useMemo(() => movements.map(m => m.id), [movements]);
   const allSelected = movements.length > 0 && selectedRows.size === movements.length;
