@@ -209,7 +209,7 @@ const AcquistiPage = () => {
       { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[250px] truncate block">{r.descrizione || "—"}</span>, defaultHidden: true },
       { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true },
     ],
-    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, xmlMap, navigate]
+    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, xmlMap, navigate, openXmlSheet, openPdf]
   );
 
   if (loading) {
