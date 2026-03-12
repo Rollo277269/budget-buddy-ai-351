@@ -432,8 +432,14 @@ const BanchePage = () => {
     e.target.value = "";
   };
 
-  const handleReconcile = (movementId: string, type: "vendita" | "acquisto", anno: number, numero: number) => {
-    addReconciliation({ movementId, invoiceType: type, invoiceAnno: anno, invoiceNumero: numero });
+  const handleReconcile = (movementId: string, invoices: MatchedInvoice[]) => {
+    const recs = invoices.map((inv) => ({
+      movementId,
+      invoiceType: inv.type,
+      invoiceAnno: inv.anno,
+      invoiceNumero: inv.numero,
+    }));
+    addReconciliation(recs);
   };
 
   const onDragOver = useCallback((e: DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }, []);
