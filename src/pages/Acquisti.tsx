@@ -297,7 +297,7 @@ const AcquistiPage = () => {
                   key={r.id}
                   variant="secondary"
                   className="text-[10px] cursor-pointer hover:bg-accent"
-                  onClick={() => setSelectedXml(r)}
+                  onClick={() => openXmlSheet(r)}
                 >
                   <FileText className="h-3 w-3 mr-1" />
                   {r.file_name} — {r.cedente_denominazione || "?"} — {r.numero}/{r.anno}
