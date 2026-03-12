@@ -191,6 +191,7 @@ const BanchePage = () => {
     movements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements,
     stats, activeAccountId, setActiveAccountId,
+    pendingDuplicates, confirmDuplicates, dismissDuplicates,
   } = useBankData(allSales, allPurchases);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
