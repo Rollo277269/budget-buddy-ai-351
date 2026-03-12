@@ -82,11 +82,13 @@ function ContiCorrentiTab() {
                 <Label className="text-xs">Tipo *</Label>
                 <select
                   value={editing.tipo}
-                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as "conto_corrente" | "carta_credito" })}
+                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as ContoCorrente["tipo"] })}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="conto_corrente">Conto Corrente</option>
                   <option value="carta_credito">Carta di Credito</option>
+                  <option value="finanziamento">Finanziamento</option>
+                  <option value="crediti_fiscali">Crediti Fiscali</option>
                 </select>
               </div>
               <div className="space-y-1">
