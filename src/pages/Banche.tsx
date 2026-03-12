@@ -167,9 +167,6 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
     onReconcile(movement.id, invoices);
     onOpenChange(false);
   };
-    }
-    return total;
-  }, [selected, sales, purchases]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
