@@ -358,22 +358,34 @@ const BanchePage = () => {
         <div className="flex items-center gap-2">
           {/* Account selector */}
           <Select value={activeAccountId} onValueChange={setActiveAccountId}>
-            <SelectTrigger className="w-[200px] h-9 text-xs">
-              <SelectValue placeholder="Tutti i conti" />
+            <SelectTrigger className={`w-[220px] h-9 text-xs ${!hasValidAccount && movements.length === 0 ? "border-primary ring-1 ring-primary/30" : ""}`}>
+              <SelectValue placeholder="Seleziona conto..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Conto predefinito</SelectItem>
-              <SelectItem value="all">Tutti i conti</SelectItem>
+              {conti.length === 0 && (
+                <div className="px-3 py-2 text-xs text-muted-foreground">Nessun conto configurato</div>
+              )}
               {conti.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.banca} — {c.iban.slice(-4)}
+                  <span className="flex items-center gap-1.5">
+                    {c.tipo === "carta_credito" ? <CreditCard className="h-3 w-3" /> : <Landmark className="h-3 w-3" />}
+                    {c.banca} — {c.iban.slice(-4)}
+                  </span>
                 </SelectItem>
               ))}
+              <SelectItem value="all">Tutti i conti</SelectItem>
             </SelectContent>
           </Select>
 
+          <Button variant="outline" size="sm" onClick={() => setShowNewAccountDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" />Nuovo conto
+          </Button>
+
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
-          <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading} size="sm">
+          <Button onClick={() => {
+            if (!hasValidAccount) { toast.error("Seleziona prima un conto corrente o una carta"); return; }
+            fileInputRef.current?.click();
+          }} disabled={isLoading} size="sm">
             <Upload className="h-4 w-4 mr-2" />Carica estratto
           </Button>
         </div>
