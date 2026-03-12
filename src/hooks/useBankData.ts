@@ -147,10 +147,19 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
     }
   }
 
+  // Filter out page headers/footers before parsing
+  const skipPatterns = [
+    /pagina\s+\d+\s*(di|\/)\s*\d+/i,
+    /\b[A-Z]{2}\d{2}[A-Z0-9]{10,27}\b/,  // IBAN
+    /estratto\s+conto/i,
+    /lista\s+movimenti/i,
+  ];
+
   // Parse lines into rows by splitting on tabs/multiple spaces
   const rows: any[][] = [];
   for (const line of allLines) {
     if (!line.trim()) continue;
+    if (skipPatterns.some(p => p.test(line))) continue;
     // Split on tab or 3+ spaces
     const cells = line.split(/\t|   +/).map((c) => c.trim()).filter(Boolean);
     if (cells.length >= 2) {
@@ -192,6 +201,17 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
     }
 
     if (importo === 0 && !desc) continue;
+
+    // Skip saldo iniziale/finale and summary rows
+    const descLower = desc.toLowerCase();
+    const saldoPatterns = ["saldo iniziale", "saldo finale", "saldo al ", "saldo contabile",
+      "saldo disponibile", "totale movimenti", "saldo precedente", "riporto", "saldo liquido"];
+    if (saldoPatterns.some(p => descLower.includes(p))) continue;
+
+    // Skip rows without a valid date (non-movement rows from PDF)
+    const dataVal = r[cols.data >= 0 ? cols.data : 0];
+    const dateStr = parseDate(dataVal);
+    if (!dateStr || !/\d{2}\/\d{2}\/\d{4}/.test(dateStr)) continue;
 
     movements.push({
       id: `bank-${i}`,
