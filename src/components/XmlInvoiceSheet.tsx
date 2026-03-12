@@ -206,6 +206,20 @@ export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete, invoices
           <p className="text-sm text-muted-foreground mt-4">Dati XML non disponibili</p>
         )}
 
+        {/* Manual match section for unmatched records */}
+        {!record.matched && invoices && xmlMap && tipo && onManualMatch && (
+          <XmlMatchSection
+            record={record}
+            invoices={invoices}
+            xmlMap={xmlMap}
+            tipo={tipo}
+            onManualMatch={(xmlId, anno, numero) => {
+              onManualMatch(xmlId, anno, numero);
+              onOpenChange(false);
+            }}
+          />
+        )}
+
         <div className="mt-4 flex gap-2">
           {onDelete && (
             <Button size="sm" variant="destructive" onClick={() => { onDelete(record.id, record.storage_path); onOpenChange(false); }}>
