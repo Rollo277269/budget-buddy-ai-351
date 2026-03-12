@@ -391,16 +391,32 @@ const BanchePage = () => {
         </div>
       </div>
 
-      {movements.length === 0 && !isLoading && (
+      {movements.length === 0 && !isLoading && conti.length === 0 && (
+        <div className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground">
+          <Landmark className="h-12 w-12 mb-4 opacity-30" />
+          <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
+          <p className="text-xs mt-1 text-muted-foreground">Devi definire almeno un conto per caricare i movimenti</p>
+          <Button size="sm" className="mt-4" onClick={() => setShowNewAccountDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" />Aggiungi conto
+          </Button>
+        </div>
+      )}
+
+      {movements.length === 0 && !isLoading && conti.length > 0 && (
         <button
           className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (!hasValidAccount) { toast.error("Seleziona prima un conto dal menu in alto"); return; }
+            fileInputRef.current?.click();
+          }}
         >
           <div className="flex gap-3 mb-4">
             <FileSpreadsheet className="h-10 w-10 opacity-30" />
             <FileText className="h-10 w-10 opacity-30" />
           </div>
-          <p className="text-sm font-medium">Carica o trascina un estratto conto</p>
+          <p className="text-sm font-medium">
+            {hasValidAccount ? "Carica o trascina un estratto conto" : "Seleziona un conto dal menu, poi carica l'estratto"}
+          </p>
           <p className="text-xs mt-1">Formati supportati: Excel (.xlsx, .xls, .csv) e PDF</p>
         </button>
       )}
