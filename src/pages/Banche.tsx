@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
 import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2 } from "lucide-react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-import { useBankData, BankMovement, scoreMatch } from "@/hooks/useBankData";
+import { useBankData, BankMovement, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
