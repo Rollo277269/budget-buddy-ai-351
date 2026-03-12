@@ -68,10 +68,13 @@ export interface FatturaPAData {
   rawXml: string;
 }
 
-function getText(el: Element | null, tag: string): string {
+function getText(el: Element | Document | null, tag: string): string {
   if (!el) return "";
-  const node = el.getElementsByTagName(tag)[0];
-  return node?.textContent?.trim() || "";
+  const all = el.getElementsByTagName("*");
+  for (let i = 0; i < all.length; i++) {
+    if (all[i].localName === tag) return all[i].textContent?.trim() || "";
+  }
+  return "";
 }
 
 function getNum(el: Element | null, tag: string): number {
