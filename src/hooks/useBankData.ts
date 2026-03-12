@@ -191,10 +191,11 @@ function detectColumns(header: any[]): {
     if (h.includes("data") && h.includes("valut")) { result.dataValuta = i; continue; }
     if ((h === "valuta" || h.startsWith("valuta ") || h.includes("data valuta")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
     if ((h.includes("data operaz") || h.includes("data contab") || h === "data") && result.data === -1) { result.data = i; continue; }
+    if ((h.includes("operaz") && result.data === -1)) { result.data = i; continue; }
     if (h.includes("data") && result.data === -1) { result.data = i; continue; }
 
     // Causale = bank code (short), Descrizione = full text description
-    if (h === "causale" || h === "tipo" || h === "tipo operazione" || h === "cod" || h === "codice") {
+    if (h === "causale" || h === "caus" || h === "tipo" || h === "tipo operazione" || h === "cod" || h === "codice") {
       result.causale = i; continue;
     }
     if ((h.includes("descri") || h.includes("dettaglio") || h.includes("beneficiari") || h.includes("ordinant")) && result.descrizione === -1) {
@@ -208,7 +209,7 @@ function detectColumns(header: any[]): {
       result.descrizione = i; continue;
     }
 
-    if ((h.includes("import") || h.includes("ammontare")) && !h.includes("iva")) { result.importo = i; continue; }
+    if ((h.includes("import") || h.includes("ammontare") || h === "eur" || h === "euro") && !h.includes("iva")) { result.importo = i; continue; }
     if (h.includes("saldo")) { result.saldo = i; continue; }
   }
   return result;
