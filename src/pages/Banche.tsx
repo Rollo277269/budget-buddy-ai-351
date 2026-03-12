@@ -558,19 +558,19 @@ const BanchePage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* New account dialog */}
-      <Dialog open={showNewAccountDialog} onOpenChange={setShowNewAccountDialog}>
+      {/* Account dialog (new / edit) */}
+      <Dialog open={showAccountDialog} onOpenChange={setShowAccountDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Nuovo conto</DialogTitle>
-            <DialogDescription>Aggiungi un conto corrente o una carta di credito</DialogDescription>
+            <DialogTitle>{editingAccount ? "Modifica conto" : "Nuovo conto"}</DialogTitle>
+            <DialogDescription>{editingAccount ? "Modifica i dati del conto" : "Aggiungi un conto corrente o una carta di credito"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs">Tipo</Label>
               <select
-                value={newAccount.tipo}
-                onChange={(e) => setNewAccount({ ...newAccount, tipo: e.target.value as "conto_corrente" | "carta_credito" })}
+                value={accountForm.tipo}
+                onChange={(e) => setAccountForm({ ...accountForm, tipo: e.target.value as "conto_corrente" | "carta_credito" })}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="conto_corrente">Conto Corrente</option>
@@ -579,20 +579,31 @@ const BanchePage = () => {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Banca / Emittente *</Label>
-              <Input value={newAccount.banca} onChange={(e) => setNewAccount({ ...newAccount, banca: e.target.value })} placeholder="Nome banca o emittente" className="h-9 text-sm" />
+              <Input value={accountForm.banca} onChange={(e) => setAccountForm({ ...accountForm, banca: e.target.value })} placeholder="Nome banca o emittente" className="h-9 text-sm" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">{newAccount.tipo === "carta_credito" ? "Numero Carta" : "IBAN"} *</Label>
-              <Input value={newAccount.iban} onChange={(e) => setNewAccount({ ...newAccount, iban: e.target.value.toUpperCase() })} placeholder={newAccount.tipo === "carta_credito" ? "**** **** **** 1234" : "IT60X0542811101000000123456"} className="h-9 text-sm font-mono" />
+              <Label className="text-xs">{accountForm.tipo === "carta_credito" ? "Numero Carta" : "IBAN"} *</Label>
+              <Input value={accountForm.iban} onChange={(e) => setAccountForm({ ...accountForm, iban: e.target.value.toUpperCase() })} placeholder={accountForm.tipo === "carta_credito" ? "**** **** **** 1234" : "IT60X0542811101000000123456"} className="h-9 text-sm font-mono" />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Intestatario</Label>
-              <Input value={newAccount.intestatario} onChange={(e) => setNewAccount({ ...newAccount, intestatario: e.target.value })} placeholder="Ragione sociale" className="h-9 text-sm" />
+              <Input value={accountForm.intestatario} onChange={(e) => setAccountForm({ ...accountForm, intestatario: e.target.value })} placeholder="Ragione sociale" className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Note</Label>
+              <Input value={accountForm.note} onChange={(e) => setAccountForm({ ...accountForm, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setShowNewAccountDialog(false)}>Annulla</Button>
-            <Button size="sm" onClick={handleSaveAccount}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
+          <DialogFooter className="flex justify-between sm:justify-between">
+            {editingAccount && (
+              <Button variant="destructive" size="sm" onClick={() => { handleDeleteAccount(editingAccount.id); setShowAccountDialog(false); }}>
+                <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
+              </Button>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowAccountDialog(false)}>Annulla</Button>
+              <Button size="sm" onClick={handleSaveAccount}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
