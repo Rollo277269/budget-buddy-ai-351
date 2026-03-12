@@ -6,6 +6,12 @@ import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 // Configure pdf.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
+export interface MatchedInvoice {
+  type: "vendita" | "acquisto";
+  anno: number;
+  numero: number;
+}
+
 export interface BankMovement {
   id: string;
   accountId: string;
@@ -17,10 +23,12 @@ export interface BankMovement {
   importo: number;
   saldo: number;
   cig: string;
+  matchedInvoices: MatchedInvoice[];
+  matchConfidence: "auto" | "manual" | "none";
+  // Legacy compat - derived from matchedInvoices[0]
   matchedType: "vendita" | "acquisto" | "";
   matchedAnno: number;
   matchedNumero: number;
-  matchConfidence: "auto" | "manual" | "none";
 }
 
 export interface Reconciliation {
