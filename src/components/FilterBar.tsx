@@ -13,6 +13,8 @@ interface FilterBarProps {
     suppliers: string[];
     cigs: string[];
   };
+  hideCliente?: boolean;
+  hideFornitore?: boolean;
 }
 
 export function FilterBar({ filters, onFiltersChange, options }: FilterBarProps) {
