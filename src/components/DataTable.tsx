@@ -21,6 +21,7 @@ export interface ColumnDef<T> {
   key: string;
   label: string;
   render: (row: T) => ReactNode;
+  headerRender?: () => ReactNode;
   sortable?: boolean;
   filterable?: boolean;
   filterValue?: (row: T) => string;
