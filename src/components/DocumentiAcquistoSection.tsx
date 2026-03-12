@@ -88,9 +88,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
     await processPdfFiles(Array.from(e.dataTransfer.files));
   }, [processPdfFiles]);
 
-  if (loading) return null;
-
-  // Drop zone only mode - renders just the drag target
+  // Drop zone only mode - renders just the drag target (no loading dependency)
   if (dropZoneOnly) {
     return (
       <>
@@ -119,6 +117,8 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
       </>
     );
   }
+
+  if (loading) return null;
 
   // Table only mode - renders the documents list
   if (tableOnly) {
