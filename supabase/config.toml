@@ -2,3 +2,6 @@ project_id = "coihlrjnjlpphfadyvad"
 
 [functions.classify-centro-ricavo]
 verify_jwt = false
+
+[functions.parse-documento-acquisto]
+verify_jwt = false
