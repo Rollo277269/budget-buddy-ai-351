@@ -533,5 +533,6 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     movements, allMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements,
     stats, activeAccountId, setActiveAccountId,
+    pendingDuplicates, confirmDuplicates, dismissDuplicates,
   };
 }
