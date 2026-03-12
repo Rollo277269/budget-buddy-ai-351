@@ -227,7 +227,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
     // Skip rows without a valid date (non-movement rows from PDF)
     const dataVal = r[cols.data >= 0 ? cols.data : 0];
     const dateStr = parseDate(dataVal);
-    if (!dateStr || !/\d{2}\/\d{2}\/\d{4}/.test(dateStr)) continue;
+    if (!dateStr || !/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(dateStr)) continue;
 
     movements.push({
       id: `bank-${i}`,
