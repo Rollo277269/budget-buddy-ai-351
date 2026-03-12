@@ -176,25 +176,36 @@ function nameSimilarity(a: string, b: string): number {
 
 // Try to detect columns from header row
 function detectColumns(header: any[]): {
-  data: number; dataValuta: number; descrizione: number;
+  data: number; dataValuta: number; causale: number; descrizione: number;
   dare: number; avere: number; importo: number; saldo: number;
 } {
-  const result = { data: -1, dataValuta: -1, descrizione: -1, dare: -1, avere: -1, importo: -1, saldo: -1 };
+  const result = { data: -1, dataValuta: -1, causale: -1, descrizione: -1, dare: -1, avere: -1, importo: -1, saldo: -1 };
   for (let i = 0; i < header.length; i++) {
     const h = normalise(String(header[i] || ""));
 
+    // Amount columns first
     if (h.includes("dare") || h.includes("addebit") || h.includes("uscit")) { result.dare = i; continue; }
     if (h.includes("avere") || h.includes("accredit") || h.includes("entrat")) { result.avere = i; continue; }
 
+    // Date columns
     if (h.includes("data") && h.includes("valut")) { result.dataValuta = i; continue; }
     if ((h === "valuta" || h.startsWith("valuta ") || h.includes("data valuta")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
-
     if ((h.includes("data operaz") || h.includes("data contab") || h === "data") && result.data === -1) { result.data = i; continue; }
     if (h.includes("data") && result.data === -1) { result.data = i; continue; }
 
-    if ((h.includes("causal") || h.includes("descri") || h.includes("dettaglio") || (h.includes("operazion") && !h.includes("data"))) && result.descrizione === -1) {
-      result.descrizione = i;
-      continue;
+    // Causale = bank code (short), Descrizione = full text description
+    if (h === "causale" || h === "tipo" || h === "tipo operazione" || h === "cod" || h === "codice") {
+      result.causale = i; continue;
+    }
+    if ((h.includes("descri") || h.includes("dettaglio") || h.includes("beneficiari") || h.includes("ordinant")) && result.descrizione === -1) {
+      result.descrizione = i; continue;
+    }
+    // "causale" in compound headers like "causale/descrizione" → treat as descrizione
+    if (h.includes("causal") && result.causale === -1 && result.descrizione === -1) {
+      result.causale = i; continue;
+    }
+    if ((h.includes("operazion") && !h.includes("data")) && result.descrizione === -1) {
+      result.descrizione = i; continue;
     }
 
     if ((h.includes("import") || h.includes("ammontare")) && !h.includes("iva")) { result.importo = i; continue; }
