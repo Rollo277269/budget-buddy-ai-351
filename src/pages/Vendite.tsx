@@ -11,7 +11,7 @@ import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,6 +158,32 @@ const VenditePage = () => {
         },
       },
       {
+        key: "pdf", label: "PDF", filterable: true,
+        filterValue: (r) => {
+          const xml = xmlMap.get(`${r.anno}-${r.numero}`);
+          return xml?.parsed_data?.allegati?.some((a) => a.formato?.toUpperCase() === "PDF") ? "sì" : "no";
+        },
+        render: (r) => {
+          const xml = xmlMap.get(`${r.anno}-${r.numero}`);
+          const pdfAllegato = xml?.parsed_data?.allegati?.find((a) => a.formato?.toUpperCase() === "PDF");
+          if (pdfAllegato) {
+            return (
+              <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
+                e.stopPropagation();
+                const byteChars = atob(pdfAllegato.base64);
+                const byteArray = new Uint8Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+                const blob = new Blob([byteArray], { type: "application/pdf" });
+                window.open(URL.createObjectURL(blob), "_blank");
+              }}>
+                <FileDown className="h-3.5 w-3.5 text-red-600" />
+              </Button>
+            );
+          }
+          return <span className="text-muted-foreground text-[11px]">—</span>;
+        },
+      },
+      {
         key: "centroRicavo", label: "Centro Ricavo", filterable: true,
         render: (r) => <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} />,
       },
@@ -268,7 +294,13 @@ const VenditePage = () => {
       )}
 
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
-      <DataTable<SaleInvoice> columns={columns} data={sales} rowKey={(r) => `${r.anno}-${r.numero}`} onRowClick={setSelectedInvoice} />
+      <DataTable<SaleInvoice>
+        columns={columns}
+        data={sales}
+        rowKey={(r) => `${r.anno}-${r.numero}`}
+        onRowClick={setSelectedInvoice}
+        rowClassName={(r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+      />
       <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
       <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} />
     </div>

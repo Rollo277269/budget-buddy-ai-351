@@ -33,6 +33,7 @@ interface DataTableProps<T> {
   data: T[];
   rowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
+  rowClassName?: (row: T) => string;
 }
 
 type SortDir = "asc" | "desc" | null;
@@ -42,6 +43,7 @@ export function DataTable<T extends Record<string, any>>({
   data,
   rowKey,
   onRowClick,
+  rowClassName,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
@@ -201,7 +203,7 @@ export function DataTable<T extends Record<string, any>>({
                 sorted.map((row) => (
                   <TableRow
                     key={rowKey(row)}
-                    className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                    className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
                     onClick={() => onRowClick?.(row)}
                   >
                     {activeColumns.map((col) => (
