@@ -31,7 +31,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
-export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete }: Props) {
+export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete, invoices, xmlMap, tipo, onManualMatch }: Props) {
   if (!record) return null;
   const parsed = record.parsed_data as FatturaPAData | null;
 
