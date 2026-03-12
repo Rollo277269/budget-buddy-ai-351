@@ -12,6 +12,7 @@ export interface BankMovement {
   sourceFile: string;
   data: string;
   dataValuta: string;
+  causale: string;
   descrizione: string;
   importo: number;
   saldo: number;
@@ -141,8 +142,8 @@ function looksLikeAmount(val: any): boolean {
   return /^\(?-?\d{1,3}([.\s]\d{3})*([,.]\d{2})?\)?-?$/.test(s) || /^\(?-?\d+([,.]\d{2})\)?-?$/.test(s);
 }
 
-function inferCausale(row: any[], cols: { data: number; dataValuta: number; descrizione: number; dare: number; avere: number; importo: number; saldo: number }): string {
-  const ignored = new Set([cols.data, cols.dataValuta, cols.dare, cols.avere, cols.importo, cols.saldo].filter((i) => i >= 0));
+function inferDescrizione(row: any[], cols: { data: number; dataValuta: number; causale: number; descrizione: number; dare: number; avere: number; importo: number; saldo: number }): string {
+  const ignored = new Set([cols.data, cols.dataValuta, cols.causale, cols.descrizione, cols.dare, cols.avere, cols.importo, cols.saldo].filter((i) => i >= 0));
   return row
     .map((c) => String(c ?? "").trim())
     .filter((text, idx) => {
@@ -175,25 +176,36 @@ function nameSimilarity(a: string, b: string): number {
 
 // Try to detect columns from header row
 function detectColumns(header: any[]): {
-  data: number; dataValuta: number; descrizione: number;
+  data: number; dataValuta: number; causale: number; descrizione: number;
   dare: number; avere: number; importo: number; saldo: number;
 } {
-  const result = { data: -1, dataValuta: -1, descrizione: -1, dare: -1, avere: -1, importo: -1, saldo: -1 };
+  const result = { data: -1, dataValuta: -1, causale: -1, descrizione: -1, dare: -1, avere: -1, importo: -1, saldo: -1 };
   for (let i = 0; i < header.length; i++) {
     const h = normalise(String(header[i] || ""));
 
+    // Amount columns first
     if (h.includes("dare") || h.includes("addebit") || h.includes("uscit")) { result.dare = i; continue; }
     if (h.includes("avere") || h.includes("accredit") || h.includes("entrat")) { result.avere = i; continue; }
 
+    // Date columns
     if (h.includes("data") && h.includes("valut")) { result.dataValuta = i; continue; }
     if ((h === "valuta" || h.startsWith("valuta ") || h.includes("data valuta")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
-
     if ((h.includes("data operaz") || h.includes("data contab") || h === "data") && result.data === -1) { result.data = i; continue; }
     if (h.includes("data") && result.data === -1) { result.data = i; continue; }
 
-    if ((h.includes("causal") || h.includes("descri") || h.includes("dettaglio") || (h.includes("operazion") && !h.includes("data"))) && result.descrizione === -1) {
-      result.descrizione = i;
-      continue;
+    // Causale = bank code (short), Descrizione = full text description
+    if (h === "causale" || h === "tipo" || h === "tipo operazione" || h === "cod" || h === "codice") {
+      result.causale = i; continue;
+    }
+    if ((h.includes("descri") || h.includes("dettaglio") || h.includes("beneficiari") || h.includes("ordinant")) && result.descrizione === -1) {
+      result.descrizione = i; continue;
+    }
+    // "causale" in compound headers like "causale/descrizione" → treat as descrizione
+    if (h.includes("causal") && result.causale === -1 && result.descrizione === -1) {
+      result.causale = i; continue;
+    }
+    if ((h.includes("operazion") && !h.includes("data")) && result.descrizione === -1) {
+      result.descrizione = i; continue;
     }
 
     if ((h.includes("import") || h.includes("ammontare")) && !h.includes("iva")) { result.importo = i; continue; }
@@ -295,48 +307,79 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
     const dataOperazione = isValidDateString(dataFromCol) ? dataFromCol : (dateCandidates[0]?.value ?? "");
     const dataValuta = isValidDateString(valutaFromCol) ? valutaFromCol : (dateCandidates[1]?.value ?? "");
 
-    let causale = String(r[cols.descrizione] ?? "").trim();
-    if (!causale) causale = inferCausale(r, cols);
+    // Causale = bank code (short identifier)
+    let causale = cols.causale >= 0 ? String(r[cols.causale] ?? "").trim() : "";
 
-    const causaleLower = causale.toLowerCase();
+    // Descrizione = full text description
+    let descrizione = cols.descrizione >= 0 ? String(r[cols.descrizione] ?? "").trim() : "";
+
+    // If no dedicated descrizione column, infer from remaining text columns
+    if (!descrizione) {
+      descrizione = inferDescrizione(r, cols);
+    }
+
+    // If we only have one text field detected as causale but it's long, it's likely the description
+    if (!descrizione && causale.length > 20) {
+      descrizione = causale;
+      causale = "";
+    }
+
+    const fullText = `${causale} ${descrizione}`.trim();
+    const fullTextLower = fullText.toLowerCase();
     const saldoPatterns = [
       "saldo iniziale", "saldo finale", "saldo al ", "saldo contabile", "saldo disponibile",
       "totale movimenti", "saldo precedente", "riporto", "saldo liquido",
     ];
-    if (saldoPatterns.some((p) => causaleLower.includes(p))) continue;
+    if (saldoPatterns.some((p) => fullTextLower.includes(p))) continue;
 
     if (!isValidDateString(dataOperazione)) {
-      if (causale && movements.length > 0) {
+      if (fullText && movements.length > 0) {
         const last = movements[movements.length - 1];
-        last.descrizione = `${last.descrizione} ${causale}`.replace(/\s+/g, " ").trim();
+        last.descrizione = `${last.descrizione} ${fullText}`.replace(/\s+/g, " ").trim();
         last.cig = extractCIG(last.descrizione) || last.cig;
       }
       continue;
     }
 
+    // --- Importo: dare = negative (uscita), avere = positive (entrata) ---
     let importo = 0;
-    if (cols.importo >= 0) {
+    if (cols.dare >= 0 || cols.avere >= 0) {
+      const dareRaw = cols.dare >= 0 ? r[cols.dare] : null;
+      const avereRaw = cols.avere >= 0 ? r[cols.avere] : null;
+      const dareVal = Math.abs(parseNum(dareRaw));
+      const avereVal = Math.abs(parseNum(avereRaw));
+      if (avereVal > 0) {
+        importo = avereVal;  // entrata → positivo
+      } else if (dareVal > 0) {
+        importo = -dareVal;  // uscita → negativo
+      }
+    } else if (cols.importo >= 0) {
       importo = parseNum(r[cols.importo]);
-    } else if (cols.avere >= 0 || cols.dare >= 0) {
-      const avere = cols.avere >= 0 ? parseNum(r[cols.avere]) : 0;
-      const dare = cols.dare >= 0 ? parseNum(r[cols.dare]) : 0;
-      importo = avere !== 0 ? avere : -dare;
     }
 
+    // Fallback: scan for amounts in remaining cells
     if (importo === 0) {
-      const excluded = new Set<number>([cols.data, cols.dataValuta, cols.saldo].filter((idx) => idx >= 0));
+      const excluded = new Set<number>(
+        [cols.data, cols.dataValuta, cols.saldo, cols.causale, cols.descrizione].filter((idx) => idx >= 0)
+      );
       dateCandidates.forEach((d: { idx: number; value: string }) => excluded.add(d.idx));
 
       const amountCandidates = r
         .map((cell: any, idx: number) => ({ idx, raw: cell, value: parseNum(cell) }))
         .filter((n: { idx: number; raw: any; value: number }) => !excluded.has(n.idx) && n.value !== 0 && looksLikeAmount(n.raw));
 
-      if (amountCandidates.length > 0) {
-        importo = amountCandidates[amountCandidates.length - 1].value;
+      if (amountCandidates.length >= 2) {
+        // Two amount columns → likely dare/avere
+        const first = amountCandidates[0].value;
+        const second = amountCandidates[1].value;
+        if (Math.abs(second) > 0) importo = Math.abs(second);
+        else importo = -Math.abs(first);
+      } else if (amountCandidates.length === 1) {
+        importo = amountCandidates[0].value;
       }
     }
 
-    if (importo === 0 && !causale) continue;
+    if (importo === 0 && !fullText) continue;
 
     movements.push({
       id: `bank-${i}`,
@@ -344,10 +387,11 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
       sourceFile: "",
       data: dataOperazione,
       dataValuta: dataValuta || dataOperazione,
-      descrizione: causale,
+      causale,
+      descrizione: descrizione || causale,
       importo,
       saldo: cols.saldo >= 0 ? parseNum(r[cols.saldo]) : 0,
-      cig: extractCIG(causale),
+      cig: extractCIG(fullText),
     });
   }
 
