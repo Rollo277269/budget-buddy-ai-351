@@ -193,6 +193,17 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
 
     if (importo === 0 && !desc) continue;
 
+    // Skip saldo iniziale/finale and summary rows
+    const descLower = desc.toLowerCase();
+    const saldoPatterns = ["saldo iniziale", "saldo finale", "saldo al ", "saldo contabile",
+      "saldo disponibile", "totale movimenti", "saldo precedente", "riporto", "saldo liquido"];
+    if (saldoPatterns.some(p => descLower.includes(p))) continue;
+
+    // Skip rows without a valid date (non-movement rows from PDF)
+    const dataVal = r[cols.data >= 0 ? cols.data : 0];
+    const dateStr = parseDate(dataVal);
+    if (!dateStr || !/\d{2}\/\d{2}\/\d{4}/.test(dateStr)) continue;
+
     movements.push({
       id: `bank-${i}`,
       accountId: "",
