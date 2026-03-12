@@ -269,7 +269,7 @@ const BanchePage = () => {
         </button>
       ),
     },
-  ], [selectedRows, deleteMovements]);
+  ], [selectedRows, deleteMovements, allIds, allSelected, someSelected]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
