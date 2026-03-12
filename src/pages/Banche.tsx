@@ -88,19 +88,29 @@ interface ReconcileSheetProps {
   onOpenChange: (open: boolean) => void;
   sales: SaleInvoice[];
   purchases: PurchaseInvoice[];
-  onReconcile: (movementId: string, type: "vendita" | "acquisto", anno: number, numero: number) => void;
-  onRemove: (movementId: string) => void;
+  onReconcile: (movementId: string, invoices: MatchedInvoice[]) => void;
+  onRemove: (movementId: string, invoiceKey?: string) => void;
 }
 
 function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReconcile, onRemove }: ReconcileSheetProps) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"vendita" | "acquisto">("vendita");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const effectiveTab = movement
     ? (movement.importo < 0 ? "acquisto" : "vendita")
     : tab;
 
   const currentTab = tab === effectiveTab ? tab : effectiveTab;
+
+  // Initialize selected from existing matches when movement changes
+  useMemo(() => {
+    if (movement && movement.matchedInvoices.length > 0) {
+      setSelected(new Set(movement.matchedInvoices.map((inv) => `${inv.type}-${inv.anno}-${inv.numero}`)));
+    } else {
+      setSelected(new Set());
+    }
+  }, [movement?.id]);
 
   const scoredItems = useMemo(() => {
     if (!movement) return [];
@@ -126,6 +136,37 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
   if (!movement) return null;
   const isMatched = movement.matchConfidence !== "none";
 
+  const toggleInvoice = (type: "vendita" | "acquisto", anno: number, numero: number) => {
+    const key = `${type}-${anno}-${numero}`;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handleConfirm = () => {
+    if (selected.size === 0) return;
+    const invoices: MatchedInvoice[] = Array.from(selected).map((key) => {
+      const [type, anno, numero] = key.split("-");
+      return { type: type as "vendita" | "acquisto", anno: Number(anno), numero: Number(numero) };
+    });
+    onReconcile(movement.id, invoices);
+    onOpenChange(false);
+  };
+
+  const selectedTotal = useMemo(() => {
+    let total = 0;
+    for (const key of selected) {
+      const [type, anno, numero] = key.split("-");
+      const list = type === "vendita" ? sales : purchases;
+      const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
+      if (inv) total += inv.totale;
+    }
+    return total;
+  }, [selected, sales, purchases]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg">
@@ -137,16 +178,27 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
         </SheetHeader>
         <div className="mt-4 space-y-4">
           <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-            <p className="text-xs font-medium truncate">{movement.descrizione || "Nessuna descrizione"}</p>
+            <p className="text-xs font-medium whitespace-pre-wrap break-words">{movement.descrizione || "Nessuna descrizione"}</p>
             <div className="flex items-center gap-2">
               <ReconciliationBadge m={movement} />
               {isMatched && <MatchedInvoiceLabel m={movement} />}
             </div>
           </div>
           {isMatched && (
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => { onRemove(movement.id); onOpenChange(false); }}>
-              <X className="h-3 w-3 mr-1" />Rimuovi associazione
-            </Button>
+            <div className="space-y-1">
+              {movement.matchedInvoices.map((inv, i) => (
+                <div key={i} className="flex items-center justify-between text-xs rounded border px-2 py-1">
+                  <span className="font-mono">{inv.type === "vendita" ? "V" : "A"} {inv.anno}/{inv.numero}</span>
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => onRemove(movement.id, `${inv.type}-${inv.anno}-${inv.numero}`)}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" className="text-xs w-full" onClick={() => { onRemove(movement.id); onOpenChange(false); }}>
+                <X className="h-3 w-3 mr-1" />Rimuovi tutte le associazioni
+              </Button>
+            </div>
           )}
           <div className="flex gap-1">
             <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Fatture Vendita</Button>
@@ -156,19 +208,36 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input placeholder="Cerca fattura..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
           </div>
-          <ScrollArea className="h-[400px]">
+          {selected.size > 0 && (
+            <div className="flex items-center justify-between rounded-lg border bg-primary/5 border-primary/30 p-2">
+              <div className="text-xs">
+                <span className="font-medium">{selected.size} fattur{selected.size === 1 ? "a" : "e"}</span>
+                <span className="text-muted-foreground ml-2">Totale: {formatCurrency(selectedTotal)}</span>
+                <span className={`ml-2 font-medium ${Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--warning))]"}`}>
+                  {Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "✓ Quadra" : `Δ ${formatCurrency(selectedTotal - Math.abs(movement.importo))}`}
+                </span>
+              </div>
+              <Button size="sm" className="text-xs h-7" onClick={handleConfirm}>
+                Conferma
+              </Button>
+            </div>
+          )}
+          <ScrollArea className="h-[350px]">
             <div className="space-y-1 pr-3">
               {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
               {scoredItems.map(({ inv, score, name }) => {
+                const invKey = `${currentTab}-${inv.anno}-${inv.numero}`;
+                const isSelected = selected.has(invKey);
                 const isVendita = currentTab === "vendita";
                 return (
                   <button
-                    key={`${inv.anno}-${inv.numero}`}
-                    className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
-                    onClick={() => { onReconcile(movement.id, currentTab, inv.anno, inv.numero); onOpenChange(false); }}
+                    key={invKey}
+                    className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                    onClick={() => toggleInvoice(currentTab, inv.anno, inv.numero)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        <Checkbox checked={isSelected} className="pointer-events-none" />
                         <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
                         {score >= 35 && (
                           <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
@@ -176,8 +245,8 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
                       </div>
                       <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate">{name}</p>
-                    {inv.cig && <span className="text-[10px] font-mono text-muted-foreground">CIG: {inv.cig}</span>}
+                    <p className="text-[11px] text-muted-foreground truncate ml-6">{name}</p>
+                    {inv.cig && <span className="text-[10px] font-mono text-muted-foreground ml-6">CIG: {inv.cig}</span>}
                   </button>
                 );
               })}
@@ -188,14 +257,6 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
     </Sheet>
   );
 }
-
-const ACCEPTED_TYPES = [
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-excel",
-  "text/csv",
-  "application/pdf",
-];
-const ACCEPTED_EXT = [".xlsx", ".xls", ".csv", ".pdf"];
 
 function isAcceptedFile(file: File) {
   if (ACCEPTED_TYPES.includes(file.type)) return true;
