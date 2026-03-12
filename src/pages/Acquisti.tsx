@@ -298,7 +298,13 @@ const AcquistiPage = () => {
       )}
 
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
-      <DataTable<PurchaseInvoice> columns={columns} data={purchases} rowKey={(r) => `${r.anno}-${r.numero}`} onRowClick={setSelectedInvoice} />
+      <DataTable<PurchaseInvoice>
+        columns={columns}
+        data={purchases}
+        rowKey={(r) => `${r.anno}-${r.numero}`}
+        onRowClick={setSelectedInvoice}
+        rowClassName={(r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+      />
       <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
       <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} />
     </div>
