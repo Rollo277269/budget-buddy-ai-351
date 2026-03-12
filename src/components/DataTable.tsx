@@ -1,4 +1,4 @@
-import { useState, useMemo, ReactNode } from "react";
+import { useState, useMemo, useRef, useCallback, ReactNode } from "react";
 import {
   Table,
   TableBody,
@@ -15,7 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search, GripVertical, RotateCcw } from "lucide-react";
 
 export interface ColumnDef<T> {
   key: string;
@@ -27,6 +27,9 @@ export interface ColumnDef<T> {
   filterValue?: (row: T) => string;
   align?: "left" | "right";
   defaultHidden?: boolean;
+  wrap?: boolean;
+  minWidth?: number;
+  defaultWidth?: number;
 }
 
 interface DataTableProps<T> {
@@ -53,6 +56,83 @@ export function DataTable<T extends Record<string, any>>({
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
   });
   const [filterOpen, setFilterOpen] = useState<string | null>(null);
+
+  // Column order (array of keys)
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => columns.map((c) => c.key));
+
+  // Column widths
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    const w: Record<string, number> = {};
+    columns.forEach((c) => { if (c.defaultWidth) w[c.key] = c.defaultWidth; });
+    return w;
+  });
+
+  // Drag-to-reorder state
+  const [draggedCol, setDraggedCol] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
+  // Resize state
+  const resizeRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+
+  const handleResizeStart = useCallback((key: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const th = (e.target as HTMLElement).closest("th");
+    const startWidth = th?.getBoundingClientRect().width || 120;
+    resizeRef.current = { key, startX: e.clientX, startWidth };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizeRef.current) return;
+      const diff = ev.clientX - resizeRef.current.startX;
+      const col = columns.find((c) => c.key === resizeRef.current!.key);
+      const min = col?.minWidth || 60;
+      const newWidth = Math.max(min, resizeRef.current.startWidth + diff);
+      setColumnWidths((prev) => ({ ...prev, [resizeRef.current!.key]: newWidth }));
+    };
+    const onUp = () => {
+      resizeRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [columns]);
+
+  // Drag handlers for reorder
+  const handleDragStart = useCallback((key: string) => {
+    setDraggedCol(key);
+  }, []);
+
+  const handleDragOver = useCallback((key: string, e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedCol && draggedCol !== key) {
+      setDragOverCol(key);
+    }
+  }, [draggedCol]);
+
+  const handleDrop = useCallback((targetKey: string) => {
+    if (!draggedCol || draggedCol === targetKey) {
+      setDraggedCol(null);
+      setDragOverCol(null);
+      return;
+    }
+    setColumnOrder((prev) => {
+      const order = [...prev];
+      const fromIdx = order.indexOf(draggedCol);
+      const toIdx = order.indexOf(targetKey);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      order.splice(fromIdx, 1);
+      order.splice(toIdx, 0, draggedCol);
+      return order;
+    });
+    setDraggedCol(null);
+    setDragOverCol(null);
+  }, [draggedCol]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedCol(null);
+    setDragOverCol(null);
+  }, []);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {
@@ -94,8 +174,29 @@ export function DataTable<T extends Record<string, any>>({
     });
   }, [filtered, sortKey, sortDir]);
 
-  const activeColumns = columns.filter((c) => visibleColumns.has(c.key));
+  // Ordered + visible columns
+  const activeColumns = useMemo(() => {
+    const colMap = new Map(columns.map((c) => [c.key, c]));
+    return columnOrder
+      .filter((key) => visibleColumns.has(key) && colMap.has(key))
+      .map((key) => colMap.get(key)!);
+  }, [columns, columnOrder, visibleColumns]);
+
   const hasActiveFilters = Object.values(columnFilters).some(Boolean);
+
+  const isReordered = useMemo(() => {
+    const defaultOrder = columns.map((c) => c.key);
+    return columnOrder.some((k, i) => k !== defaultOrder[i]);
+  }, [columns, columnOrder]);
+
+  const resetOrder = useCallback(() => {
+    setColumnOrder(columns.map((c) => c.key));
+    setColumnWidths(() => {
+      const w: Record<string, number> = {};
+      columns.forEach((c) => { if (c.defaultWidth) w[c.key] = c.defaultWidth; });
+      return w;
+    });
+  }, [columns]);
 
   return (
     <div className="space-y-3">
@@ -105,117 +206,141 @@ export function DataTable<T extends Record<string, any>>({
           {sorted.length} di {data.length} righe
           {hasActiveFilters && " (filtrate)"}
         </p>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="text-xs">
-              <Columns3 className="h-3.5 w-3.5 mr-1.5" />
-              Colonne
+        <div className="flex items-center gap-1.5">
+          {(isReordered || Object.keys(columnWidths).length > 0) && (
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={resetOrder} title="Ripristina ordine e larghezza colonne">
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Reset
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {columns.map((col) => (
-              <DropdownMenuCheckboxItem
-                key={col.key}
-                checked={visibleColumns.has(col.key)}
-                onCheckedChange={(checked) => {
-                  setVisibleColumns((prev) => {
-                    const next = new Set(prev);
-                    if (checked) next.add(col.key);
-                    else next.delete(col.key);
-                    return next;
-                  });
-                }}
-              >
-                {col.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="text-xs">
+                <Columns3 className="h-3.5 w-3.5 mr-1.5" />
+                Colonne
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {columns.map((col) => (
+                <DropdownMenuCheckboxItem
+                  key={col.key}
+                  checked={visibleColumns.has(col.key)}
+                  onCheckedChange={(checked) => {
+                    setVisibleColumns((prev) => {
+                      const next = new Set(prev);
+                      if (checked) next.add(col.key);
+                      else next.delete(col.key);
+                      return next;
+                    });
+                  }}
+                >
+                  {col.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Table */}
       <div className="rounded-xl border bg-card [&>div]:max-h-[calc(100vh-280px)]">
-          <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
-              <TableRow className="shadow-[0_1px_0_0_hsl(var(--border))]">
-                {activeColumns.map((col) => (
-                  <TableHead
-                    key={col.key}
-                    className={`text-xs ${col.align === "right" ? "text-right" : ""}`}
-                  >
-                    <div className={`flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
-                      {col.headerRender ? col.headerRender() : <span>{col.label}</span>}
-                      <div className="flex items-center">
-                        {col.sortable && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => toggleSort(col.key)}
-                          >
-                            {sortKey === col.key && sortDir === "asc" ? (
-                              <ArrowUp className="h-3 w-3" />
-                            ) : sortKey === col.key && sortDir === "desc" ? (
-                              <ArrowDown className="h-3 w-3" />
-                            ) : (
-                              <ArrowUpDown className="h-3 w-3 opacity-40" />
-                            )}
-                          </Button>
-                        )}
-                        {col.filterable && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`}
-                            onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}
-                          >
-                            <Search className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-card">
+            <TableRow className="shadow-[0_1px_0_0_hsl(var(--border))]">
+              {activeColumns.map((col) => (
+                <TableHead
+                  key={col.key}
+                  className={`text-xs relative select-none ${col.align === "right" ? "text-right" : ""} ${dragOverCol === col.key ? "bg-accent" : ""}`}
+                  style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : col.defaultWidth ? { width: col.defaultWidth, minWidth: col.minWidth || 60 } : undefined}
+                  draggable
+                  onDragStart={() => handleDragStart(col.key)}
+                  onDragOver={(e) => handleDragOver(col.key, e)}
+                  onDrop={() => handleDrop(col.key)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className={`flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
+                    <GripVertical className="h-3 w-3 opacity-30 cursor-grab shrink-0" />
+                    {col.headerRender ? col.headerRender() : <span className="truncate">{col.label}</span>}
+                    <div className="flex items-center shrink-0">
+                      {col.sortable && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => toggleSort(col.key)}
+                        >
+                          {sortKey === col.key && sortDir === "asc" ? (
+                            <ArrowUp className="h-3 w-3" />
+                          ) : sortKey === col.key && sortDir === "desc" ? (
+                            <ArrowDown className="h-3 w-3" />
+                          ) : (
+                            <ArrowUpDown className="h-3 w-3 opacity-40" />
+                          )}
+                        </Button>
+                      )}
+                      {col.filterable && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`}
+                          onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}
+                        >
+                          <Search className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
-                    {filterOpen === col.key && col.filterable && (
-                      <Input
-                        autoFocus
-                        placeholder={`Filtra ${col.label.toLowerCase()}...`}
-                        value={columnFilters[col.key] || ""}
-                        onChange={(e) =>
-                          setColumnFilters((f) => ({ ...f, [col.key]: e.target.value }))
-                        }
-                        className="mt-1 h-7 text-xs"
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") setFilterOpen(null);
-                        }}
-                      />
-                    )}
-                  </TableHead>
-                ))}
+                  </div>
+                  {filterOpen === col.key && col.filterable && (
+                    <Input
+                      autoFocus
+                      placeholder={`Filtra ${col.label.toLowerCase()}...`}
+                      value={columnFilters[col.key] || ""}
+                      onChange={(e) =>
+                        setColumnFilters((f) => ({ ...f, [col.key]: e.target.value }))
+                      }
+                      className="mt-1 h-7 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setFilterOpen(null);
+                      }}
+                    />
+                  )}
+                  {/* Resize handle */}
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 z-20"
+                    onMouseDown={(e) => handleResizeStart(col.key, e)}
+                  />
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sorted.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={activeColumns.length} className="text-center text-muted-foreground py-8">
+                  Nessun risultato
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sorted.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={activeColumns.length} className="text-center text-muted-foreground py-8">
-                    Nessun risultato
-                  </TableCell>
+            ) : (
+              sorted.map((row) => (
+                <TableRow
+                  key={rowKey(row)}
+                  className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
+                  onClick={() => onRowClick?.(row)}
+                >
+                  {activeColumns.map((col) => (
+                    <TableCell
+                      key={col.key}
+                      className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""}`}
+                      style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
+                    >
+                      {col.render(row)}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ) : (
-                sorted.map((row) => (
-                  <TableRow
-                    key={rowKey(row)}
-                    className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
-                    onClick={() => onRowClick?.(row)}
-                  >
-                    {activeColumns.map((col) => (
-                      <TableCell key={col.key} className={col.align === "right" ? "text-right" : ""}>
-                        {col.render(row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

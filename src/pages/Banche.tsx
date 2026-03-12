@@ -388,8 +388,8 @@ const BanchePage = () => {
       render: (r) => r.causale ? <span className="text-xs font-mono">{r.causale}</span> : <span className="text-xs text-muted-foreground">—</span>,
     },
     {
-      key: "descrizione", label: "Descrizione", filterable: true,
-      render: (r) => <span className="text-xs max-w-[340px] block whitespace-pre-wrap break-words">{r.descrizione}</span>,
+      key: "descrizione", label: "Descrizione", filterable: true, wrap: true, defaultWidth: 340,
+      render: (r) => <span className="text-xs">{r.descrizione}</span>,
     },
     {
       key: "importo", label: "Importo", sortable: true, align: "right" as const,
