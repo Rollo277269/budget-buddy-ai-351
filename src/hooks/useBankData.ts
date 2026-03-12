@@ -8,6 +8,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
 export interface BankMovement {
   id: string;
+  accountId: string;
   data: string;
   dataValuta: string;
   descrizione: string;
@@ -194,6 +195,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
 
     movements.push({
       id: `bank-${i}`,
+      accountId: "",
       data: parseDate(r[cols.data >= 0 ? cols.data : 0]),
       dataValuta: cols.dataValuta >= 0 ? parseDate(r[cols.dataValuta]) : "",
       descrizione: desc,
@@ -333,22 +335,24 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
   const [reconciliations, setReconciliations] = useState<Reconciliation[]>(loadReconciliations);
   const [loading, setLoading] = useState(false);
   const [fileNames, setFileNames] = useState<string[]>(loadFileNames);
+  const [activeAccountId, setActiveAccountId] = useState<string>("default");
 
-  const handleFileUpload = useCallback(async (file: File) => {
+  const handleFileUpload = useCallback(async (file: File, accountId?: string) => {
     setLoading(true);
+    const acctId = accountId || activeAccountId;
     try {
       const ext = file.name.split(".").pop()?.toLowerCase();
       let newMovements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[];
       if (ext === "pdf") {
         const buf = await file.arrayBuffer();
         const rows = await parsePdfToRows(buf);
-        newMovements = parseBank(rows);
+        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId }));
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true }) as any[];
-        newMovements = parseBank(rows);
+        newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId }));
       }
 
       setRawMovements((prev) => {
@@ -356,7 +360,7 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
         if (prev.length === 0) {
           merged = newMovements;
         } else {
-          const fingerprint = (m: typeof prev[0]) => `${m.data}|${m.descrizione}|${m.importo}`;
+          const fingerprint = (m: typeof prev[0]) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
           const existingKeys = new Set(prev.map(fingerprint));
           const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
           const offset = prev.length;
@@ -377,7 +381,7 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeAccountId]);
 
   const clearMovements = useCallback(() => {
     setRawMovements([]);
@@ -386,7 +390,34 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     saveFileNames([]);
   }, []);
 
+  const deleteMovements = useCallback((ids: string[]) => {
+    setRawMovements((prev) => {
+      const idSet = new Set(ids);
+      const next = prev.filter((m) => !idSet.has(m.id));
+      saveMovements(next);
+      return next;
+    });
+    // Also remove any reconciliations for deleted movements
+    setReconciliations((prev) => {
+      const idSet = new Set(ids);
+      const next = prev.filter((r) => !idSet.has(r.movementId));
+      saveReconciliations(next);
+      return next;
+    });
+  }, []);
+
+  // Filter movements by active account
+  const accountMovements = useMemo(() => {
+    if (activeAccountId === "all") return rawMovements;
+    return rawMovements.filter(m => (m.accountId || "default") === activeAccountId);
+  }, [rawMovements, activeAccountId]);
+
   const movements = useMemo(
+    () => autoMatch(accountMovements, sales, purchases, reconciliations),
+    [accountMovements, sales, purchases, reconciliations]
+  );
+
+  const allMovements = useMemo(
     () => autoMatch(rawMovements, sales, purchases, reconciliations),
     [rawMovements, sales, purchases, reconciliations]
   );
@@ -415,5 +446,9 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     return { total, matched, unmatched: total - matched, entrate, uscite };
   }, [movements]);
 
-  return { movements, loading, fileNames, handleFileUpload, addReconciliation, removeReconciliation, clearMovements, stats };
+  return {
+    movements, allMovements, loading, fileNames, handleFileUpload,
+    addReconciliation, removeReconciliation, clearMovements, deleteMovements,
+    stats, activeAccountId, setActiveAccountId,
+  };
 }
