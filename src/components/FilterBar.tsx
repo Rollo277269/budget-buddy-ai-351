@@ -57,17 +57,31 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
         />
       </div>
 
-      <div className="space-y-1.5 min-w-[220px] max-w-[300px]">
-        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Cliente</label>
-        <Combobox
-          value={filters.cliente}
-          onValueChange={(v) => update("cliente", v)}
-          options={clientOptions}
-          placeholder="Tutti i clienti"
-          searchPlaceholder="Cerca cliente..."
-        />
-      </div>
+      {!hideCliente && (
+        <div className="space-y-1.5 min-w-[220px] max-w-[300px]">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Cliente</label>
+          <Combobox
+            value={filters.cliente}
+            onValueChange={(v) => update("cliente", v)}
+            options={clientOptions}
+            placeholder="Tutti i clienti"
+            searchPlaceholder="Cerca cliente..."
+          />
+        </div>
+      )}
 
+      {!hideFornitore && (
+        <div className="space-y-1.5 min-w-[220px] max-w-[300px]">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fornitore</label>
+          <Combobox
+            value={filters.fornitore}
+            onValueChange={(v) => update("fornitore", v)}
+            options={supplierOptions}
+            placeholder="Tutti i fornitori"
+            searchPlaceholder="Cerca fornitore..."
+          />
+        </div>
+      )}
 
       <div className="space-y-1.5 min-w-[180px] max-w-[240px]">
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">CIG</label>
