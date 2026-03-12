@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
+import { XmlMatchSection } from "@/components/XmlMatchSection";
+import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { FatturaPAData } from "@/lib/fatturaPA";
 import { formatCurrency } from "@/lib/format";
 import { FileText, Download, Trash2 } from "lucide-react";
@@ -14,6 +16,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDelete?: (id: string, storagePath: string) => void;
+  invoices?: (SaleInvoice | PurchaseInvoice)[];
+  xmlMap?: Map<string, XmlInvoiceRecord>;
+  tipo?: "vendita" | "acquisto";
+  onManualMatch?: (xmlId: string, anno: number, numero: number) => void;
 }
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -25,7 +31,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
-export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete }: Props) {
+export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete, invoices, xmlMap, tipo, onManualMatch }: Props) {
   if (!record) return null;
   const parsed = record.parsed_data as FatturaPAData | null;
 
@@ -198,6 +204,20 @@ export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete }: Props)
           </Tabs>
         ) : (
           <p className="text-sm text-muted-foreground mt-4">Dati XML non disponibili</p>
+        )}
+
+        {/* Manual match section for unmatched records */}
+        {!record.matched && invoices && xmlMap && tipo && onManualMatch && (
+          <XmlMatchSection
+            record={record}
+            invoices={invoices}
+            xmlMap={xmlMap}
+            tipo={tipo}
+            onManualMatch={(xmlId, anno, numero) => {
+              onManualMatch(xmlId, anno, numero);
+              onOpenChange(false);
+            }}
+          />
         )}
 
         <div className="mt-4 flex gap-2">
