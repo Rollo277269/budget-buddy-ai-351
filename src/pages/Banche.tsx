@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, DragEvent } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, ArrowUpDown } from "lucide-react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2 } from "lucide-react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, scoreMatch } from "@/hooks/useBankData";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -9,10 +9,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 import { formatCurrency } from "@/lib/format";
+
+// Load conti from localStorage (same key as Strumenti page)
+interface ContoCorrente {
+  id: string;
+  banca: string;
+  iban: string;
+  intestatario: string;
+  note: string;
+}
+function loadConti(): ContoCorrente[] {
+  try { return JSON.parse(localStorage.getItem("conti-correnti") || "[]"); } catch { return []; }
+}
 
 function ReconciliationBadge({ m }: { m: BankMovement }) {
   if (m.matchConfidence === "auto") {
@@ -60,27 +79,21 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"vendita" | "acquisto">("vendita");
 
-  // Pre-select tab based on movement direction
   const effectiveTab = movement
     ? (movement.importo < 0 ? "acquisto" : "vendita")
     : tab;
 
   const currentTab = tab === effectiveTab ? tab : effectiveTab;
 
-  // Score and sort invoices by relevance
   const scoredItems = useMemo(() => {
     if (!movement) return [];
-
     const isVendita = currentTab === "vendita";
     const list = isVendita ? sales : purchases;
-
     const scored = list.map((inv) => {
       const name = isVendita ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
       const sc = scoreMatch(movement, inv, name);
       return { inv, score: sc, name };
     });
-
-    // Filter by search
     const filtered = search
       ? scored.filter(({ inv, name }) => {
           const q = search.toLowerCase();
@@ -90,13 +103,10 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
             inv.descrizione.toLowerCase().includes(q);
         })
       : scored;
-
-    // Sort by score descending
     return filtered.sort((a, b) => b.score - a.score);
   }, [movement, currentTab, sales, purchases, search]);
 
   if (!movement) return null;
-
   const isMatched = movement.matchConfidence !== "none";
 
   return (
@@ -108,9 +118,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
             {movement.data} — {formatCurrency(movement.importo)}
           </SheetDescription>
         </SheetHeader>
-
         <div className="mt-4 space-y-4">
-          {/* Movement summary */}
           <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
             <p className="text-xs font-medium truncate">{movement.descrizione || "Nessuna descrizione"}</p>
             <div className="flex items-center gap-2">
@@ -118,84 +126,38 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
               {isMatched && <MatchedInvoiceLabel m={movement} />}
             </div>
           </div>
-
           {isMatched && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => {
-                onRemove(movement.id);
-                onOpenChange(false);
-              }}
-            >
-              <X className="h-3 w-3 mr-1" />
-              Rimuovi associazione
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => { onRemove(movement.id); onOpenChange(false); }}>
+              <X className="h-3 w-3 mr-1" />Rimuovi associazione
             </Button>
           )}
-
-          {/* Tab selector */}
           <div className="flex gap-1">
-            <Button
-              variant={currentTab === "vendita" ? "default" : "outline"}
-              size="sm"
-              className="text-xs flex-1"
-              onClick={() => setTab("vendita")}
-            >
-              Fatture Vendita
-            </Button>
-            <Button
-              variant={currentTab === "acquisto" ? "default" : "outline"}
-              size="sm"
-              className="text-xs flex-1"
-              onClick={() => setTab("acquisto")}
-            >
-              Fatture Acquisto
-            </Button>
+            <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Fatture Vendita</Button>
+            <Button variant={currentTab === "acquisto" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("acquisto")}>Fatture Acquisto</Button>
           </div>
-
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Cerca fattura..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-9 text-xs"
-            />
+            <Input placeholder="Cerca fattura..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
           </div>
-
-          {/* Invoice list sorted by relevance */}
           <ScrollArea className="h-[400px]">
             <div className="space-y-1 pr-3">
-              {scoredItems.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>
-              )}
+              {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
               {scoredItems.map(({ inv, score, name }) => {
                 const isVendita = currentTab === "vendita";
                 return (
                   <button
                     key={`${inv.anno}-${inv.numero}`}
-                    className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${
-                      score >= 35 ? "border-primary/40 bg-primary/5" : ""
-                    }`}
-                    onClick={() => {
-                      onReconcile(movement.id, currentTab, inv.anno, inv.numero);
-                      onOpenChange(false);
-                    }}
+                    className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                    onClick={() => { onReconcile(movement.id, currentTab, inv.anno, inv.numero); onOpenChange(false); }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
                         {score >= 35 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">
-                            {score}% match
-                          </Badge>
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
                         )}
                       </div>
-                      <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>
-                        {formatCurrency(inv.totale)}
-                      </span>
+                      <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate">{name}</p>
                     {inv.cig && <span className="text-[10px] font-mono text-muted-foreground">CIG: {inv.cig}</span>}
@@ -225,12 +187,37 @@ function isAcceptedFile(file: File) {
 
 const BanchePage = () => {
   const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
-  const { movements, loading, fileNames, handleFileUpload, addReconciliation, removeReconciliation, clearMovements, stats } = useBankData(allSales, allPurchases);
+  const {
+    movements, loading, fileNames, handleFileUpload,
+    addReconciliation, removeReconciliation, clearMovements, deleteMovements,
+    stats, activeAccountId, setActiveAccountId,
+  } = useBankData(allSales, allPurchases);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  const conti = useMemo(() => loadConti(), []);
 
   const columns: ColumnDef<BankMovement>[] = useMemo(() => [
+    {
+      key: "_select", label: "", render: (r) => (
+        <input
+          type="checkbox"
+          className="h-3.5 w-3.5 rounded border-input accent-primary"
+          checked={selectedRows.has(r.id)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            setSelectedRows(prev => {
+              const next = new Set(prev);
+              if (e.target.checked) next.add(r.id);
+              else next.delete(r.id);
+              return next;
+            });
+          }}
+        />
+      ),
+    },
     { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true, filterable: true },
     { key: "dataValuta", label: "Data Valuta", render: (r) => <span className="text-xs">{r.dataValuta}</span>, sortable: true, defaultHidden: true },
     {
@@ -255,13 +242,22 @@ const BanchePage = () => {
       key: "matchedType", label: "Fattura", sortable: true,
       render: (r) => <MatchedInvoiceLabel m={r} />,
     },
-  ], []);
+    {
+      key: "_delete", label: "", render: (r) => (
+        <button
+          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+          title="Elimina movimento"
+          onClick={(e) => { e.stopPropagation(); deleteMovements([r.id]); }}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      ),
+    },
+  ], [selectedRows, deleteMovements]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => handleFileUpload(file));
-    }
+    if (files) Array.from(files).forEach((file) => handleFileUpload(file));
     e.target.value = "";
   };
 
@@ -269,38 +265,24 @@ const BanchePage = () => {
     addReconciliation({ movementId, invoiceType: type, invoiceAnno: anno, invoiceNumero: numero });
   };
 
-  const onDragOver = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const onDragLeave = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
+  const onDragOver = useCallback((e: DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }, []);
+  const onDragLeave = useCallback((e: DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }, []);
   const onDrop = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
     const files = e.dataTransfer.files;
-    if (files) {
-      Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file));
-    }
+    if (files) Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file));
   }, [handleFileUpload]);
 
   const isLoading = loading || invoiceLoading;
 
+  const handleDeleteSelected = () => {
+    if (selectedRows.size === 0) return;
+    deleteMovements(Array.from(selectedRows));
+    setSelectedRows(new Set());
+  };
+
   return (
-    <div
-      className="p-6 space-y-6 relative min-h-full"
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
-      {/* Drag overlay */}
+    <div className="p-6 space-y-6 relative min-h-full" onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
       {isDragging && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-xl backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 text-primary">
@@ -311,25 +293,33 @@ const BanchePage = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Banche</h2>
           <p className="text-sm text-muted-foreground">
             {fileNames.length > 0 ? `File: ${fileNames.join(", ")}` : "Carica un estratto conto per iniziare"}
           </p>
         </div>
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv,.pdf"
-            multiple
-            className="hidden"
-            onChange={onFileChange}
-          />
-          <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
-            <Upload className="h-4 w-4 mr-2" />
-            Carica estratto conto
+        <div className="flex items-center gap-2">
+          {/* Account selector */}
+          <Select value={activeAccountId} onValueChange={setActiveAccountId}>
+            <SelectTrigger className="w-[200px] h-9 text-xs">
+              <SelectValue placeholder="Tutti i conti" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Conto predefinito</SelectItem>
+              <SelectItem value="all">Tutti i conti</SelectItem>
+              {conti.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.banca} — {c.iban.slice(-4)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
+          <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading} size="sm">
+            <Upload className="h-4 w-4 mr-2" />Carica estratto
           </Button>
         </div>
       </div>
@@ -358,37 +348,41 @@ const BanchePage = () => {
         <>
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Movimenti</p>
-                <p className="text-xl font-bold">{stats.total}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Riconciliati</p>
-                <p className="text-xl font-bold text-income">{stats.matched}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Da riconciliare</p>
-                <p className="text-xl font-bold text-expense">{stats.unmatched}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Entrate</p>
-                <p className="text-lg font-bold font-mono text-income">{formatCurrency(stats.entrate)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Uscite</p>
-                <p className="text-lg font-bold font-mono text-expense">{formatCurrency(stats.uscite)}</p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Movimenti</p><p className="text-xl font-bold">{stats.total}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Riconciliati</p><p className="text-xl font-bold text-income">{stats.matched}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Da riconciliare</p><p className="text-xl font-bold text-expense">{stats.unmatched}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Entrate</p><p className="text-lg font-bold font-mono text-income">{formatCurrency(stats.entrate)}</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Uscite</p><p className="text-lg font-bold font-mono text-expense">{formatCurrency(stats.uscite)}</p></CardContent></Card>
           </div>
+
+          {/* Bulk actions */}
+          {selectedRows.size > 0 && (
+            <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+              <span className="text-xs font-medium">{selectedRows.size} righe selezionate</span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="text-xs">
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina selezionate
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Vuoi eliminare {selectedRows.size} movimenti selezionati? Questa azione non può essere annullata.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteSelected}>Elimina</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedRows(new Set())}>
+                Deseleziona tutto
+              </Button>
+            </div>
+          )}
 
           {/* Table */}
           <DataTable<BankMovement>
