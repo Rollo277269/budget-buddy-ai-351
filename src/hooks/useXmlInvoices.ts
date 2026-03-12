@@ -39,18 +39,20 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
-  const uploadXmlFiles = useCallback(async (files: File[]) => {
+  const uploadXmlFiles = useCallback(async (files: File[], onProgress?: (done: number, total: number) => void) => {
     let uploaded = 0;
     let matched = 0;
+    const total = files.length;
 
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      onProgress?.(i, total);
       try {
         const text = await file.text();
         const parsed = parseFatturaPA(text);
         const numero = extractInvoiceNumber(parsed.numero);
         const anno = extractInvoiceYear(parsed.data);
 
-        // Upload to storage
         const storagePath = `${anno}/${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("fatture-xml")
@@ -61,11 +63,8 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
           continue;
         }
 
-        // Try auto-match
         const invoiceKey = `${anno}-${numero}`;
         const isMatched = sales.some((s) => s.anno === anno && s.numero === numero);
-
-        // Store parsed_data without rawXml to save space
         const { rawXml, ...parsedWithoutRaw } = parsed;
 
         const { error: insertError } = await supabase
@@ -98,6 +97,7 @@ export function useXmlInvoices(sales: SaleInvoice[]) {
       }
     }
 
+    onProgress?.(total, total);
     toast.success(`${uploaded} XML caricati, ${matched} associati automaticamente`);
     await fetchRecords();
     return { uploaded, matched };
