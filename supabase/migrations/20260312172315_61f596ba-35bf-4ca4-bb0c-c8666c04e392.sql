@@ -1,0 +1,1 @@
+ALTER TABLE public.fatture_xml ALTER COLUMN numero TYPE bigint;
