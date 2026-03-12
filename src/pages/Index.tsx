@@ -39,7 +39,7 @@ const Index = () => {
     }
   }, [searchParams]);
 
-  const { movements, stats: bankStats } = useBankData(sales, purchases);
+  const { allMovements: movements, stats: bankStats } = useBankData(sales, purchases);
 
   const stats = useMemo(() => {
     const totalSales = sales.reduce((a, s) => a + s.totale, 0);
