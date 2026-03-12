@@ -258,6 +258,14 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
   );
 }
 
+const ACCEPTED_TYPES = [
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "text/csv",
+  "application/pdf",
+];
+const ACCEPTED_EXT = [".xlsx", ".xls", ".csv", ".pdf"];
+
 function isAcceptedFile(file: File) {
   if (ACCEPTED_TYPES.includes(file.type)) return true;
   return ACCEPTED_EXT.some((ext) => file.name.toLowerCase().endsWith(ext));
