@@ -9,6 +9,7 @@ import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
+import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -306,6 +307,8 @@ const AcquistiPage = () => {
             </div>
           </div>
         )}
+
+        <DocumentiAcquistoSection />
 
         <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideCliente />
         <DataTable<PurchaseInvoice>
