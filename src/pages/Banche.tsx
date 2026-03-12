@@ -282,7 +282,7 @@ const BanchePage = () => {
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
 
   // Re-read conti when localStorage changes (e.g. edited in Strumenti)
-  useCallback(() => {
+  useEffect(() => {
     const handler = () => setConti(loadConti());
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
