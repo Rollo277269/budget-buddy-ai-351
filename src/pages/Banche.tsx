@@ -403,7 +403,7 @@ const BanchePage = () => {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="sm" onClick={() => setShowNewAccountDialog(true)}>
+          <Button variant="outline" size="sm" onClick={openNewAccount}>
             <Plus className="h-4 w-4 mr-1" />Nuovo conto
           </Button>
 
