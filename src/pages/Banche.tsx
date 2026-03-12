@@ -320,9 +320,13 @@ const BanchePage = () => {
   const onDragLeave = useCallback((e: DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }, []);
   const onDrop = useCallback((e: DragEvent) => {
     e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+    if (!hasValidAccount) {
+      toast.error("Seleziona prima un conto corrente o una carta");
+      return;
+    }
     const files = e.dataTransfer.files;
-    if (files) Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file));
-  }, [handleFileUpload]);
+    if (files) Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file, activeAccountId));
+  }, [handleFileUpload, hasValidAccount, activeAccountId]);
 
   const isLoading = loading || invoiceLoading;
 
