@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 interface ContoCorrente {
   id: string;
+  tipo: "conto_corrente" | "carta_credito";
   banca: string;
   iban: string;
   intestatario: string;
