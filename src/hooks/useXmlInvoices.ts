@@ -143,5 +143,5 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     if (r.invoice_key) xmlMap.set(r.invoice_key, r);
   });
 
-  return { xmlRecords, xmlMap, loading: loading, uploadXmlFiles, deleteRecord, manualMatch, refresh: fetchRecords };
+  return { xmlRecords, xmlMap, loading: loading, uploadXmlFiles, deleteRecord, manualMatch, refresh: fetchRecords, fetchParsedData };
 }
