@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { X } from "lucide-react";
+import { X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PdfViewerPanelProps {
@@ -16,13 +16,25 @@ export const PdfViewerPanel = forwardRef<HTMLDivElement, PdfViewerPanelProps>(
     const blob = new Blob([byteArray], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
 
+    const handleDownload = () => {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName || "fattura.pdf";
+      a.click();
+    };
+
     return (
       <div ref={ref} className="flex flex-col h-full border-l border-border bg-background">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/50">
           <span className="text-xs font-semibold truncate">{fileName || "PDF"}</span>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleDownload} title="Scarica PDF">
+              <Download className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
         <iframe src={url} className="flex-1 w-full" title="PDF Viewer" />
       </div>
