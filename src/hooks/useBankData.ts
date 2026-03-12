@@ -286,7 +286,7 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
   return rows;
 }
 
-function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
+function parseBank(rows: any[]): Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
   let headerIdx = -1;
   for (let i = 0; i < Math.min(rows.length, 25); i++) {
     const row = rows[i];
@@ -301,7 +301,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedType" | "matchedAnno
 
   const cols = detectColumns(rows[headerIdx] || []);
   console.log("[Bank Parser] Header at row:", headerIdx, "Columns:", cols, "Header:", rows[headerIdx]);
-  const movements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] = [];
+  const movements: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] = [];
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
@@ -444,7 +444,7 @@ export function scoreMatch(
 }
 
 function autoMatch(
-  movements: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[],
+  movements: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[],
   sales: SaleInvoice[],
   purchases: PurchaseInvoice[],
   manualRecs: Reconciliation[]
@@ -517,10 +517,10 @@ function autoMatch(
   }));
 }
 
-function loadMovements(): Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
+function loadMovements(): Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
   try { return JSON.parse(localStorage.getItem(MOVEMENTS_KEY) || "[]"); } catch { return []; }
 }
-function saveMovements(m: Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]) {
+function saveMovements(m: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]) {
   localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(m));
 }
 function loadFileNames(): string[] {
@@ -530,7 +530,7 @@ function saveFileNames(names: string[]) {
   localStorage.setItem(FILES_KEY, JSON.stringify(names));
 }
 
-export type RawMovement = Omit<BankMovement, "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">;
+export type RawMovement = Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">;
 
 export interface DuplicateInfo {
   duplicates: RawMovement[];
