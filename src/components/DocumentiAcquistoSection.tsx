@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
-import { Upload, FileText, Trash2, Loader2, Receipt, Eye } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Receipt, Eye, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -29,21 +29,26 @@ async function extractTextFromPdf(file: File): Promise<string> {
   return text;
 }
 
-export function DocumentiAcquistoSection() {
+interface Props {
+  dropZoneOnly?: boolean;
+  tableOnly?: boolean;
+}
+
+export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
   const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto } = useDocumentiAcquisto();
   const { centriCosto } = useCentriData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<DocumentoAcquisto | null>(null);
+  const [pdfDragging, setPdfDragging] = useState(false);
+  const pdfDragCounter = useRef(0);
 
-  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const processPdfFiles = useCallback(async (files: File[]) => {
     const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
     if (pdfFiles.length === 0) {
       toast.error("Seleziona file PDF");
       return;
     }
-
     setUploading(true);
     for (const file of pdfFiles) {
       try {
@@ -55,11 +60,157 @@ export function DocumentiAcquistoSection() {
       }
     }
     setUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }, [uploadDocumento]);
+
+  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processPdfFiles(Array.from(e.target.files || []));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [processPdfFiles]);
+
+  // PDF drag handlers
+  const handlePdfDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    pdfDragCounter.current++;
+    setPdfDragging(true);
+  }, []);
+  const handlePdfDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    pdfDragCounter.current--;
+    if (pdfDragCounter.current === 0) setPdfDragging(false);
+  }, []);
+  const handlePdfDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+  }, []);
+  const handlePdfDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    pdfDragCounter.current = 0;
+    setPdfDragging(false);
+    await processPdfFiles(Array.from(e.dataTransfer.files));
+  }, [processPdfFiles]);
 
   if (loading) return null;
 
+  // Drop zone only mode - renders just the drag target
+  if (dropZoneOnly) {
+    return (
+      <>
+        <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
+        <div
+          className={`relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer ${pdfDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
+          onDragEnter={handlePdfDragEnter}
+          onDragLeave={handlePdfDragLeave}
+          onDragOver={handlePdfDragOver}
+          onDrop={handlePdfDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {uploading ? (
+            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-xs font-medium">Analisi in corso...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+              <Receipt className="h-5 w-5" />
+              <span className="text-xs font-medium">Trascina file PDF</span>
+              <span className="text-[10px]">Ricevute, marche da bollo, affitti</span>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // Table only mode - renders the documents list
+  if (tableOnly) {
+    if (documenti.length === 0) return null;
+
+    return (
+      <>
+        <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">Ricevute e Documenti</h3>
+              <Badge variant="secondary" className="text-[10px]">{documenti.length}</Badge>
+            </div>
+          </div>
+
+          <ScrollArea className="max-h-[300px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[11px] h-8">Documento</TableHead>
+                  <TableHead className="text-[11px] h-8">Fornitore</TableHead>
+                  <TableHead className="text-[11px] h-8">Data</TableHead>
+                  <TableHead className="text-[11px] h-8 text-right">Importo</TableHead>
+                  <TableHead className="text-[11px] h-8">Centro Costo</TableHead>
+                  <TableHead className="text-[11px] h-8 w-[80px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documenti.map((doc) => (
+                  <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
+                    <TableCell className="text-xs py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
+                        <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs py-1.5 truncate max-w-[140px]">{doc.fornitore || "—"}</TableCell>
+                    <TableCell className="text-xs py-1.5">{doc.data_documento || "—"}</TableCell>
+                    <TableCell className="text-xs py-1.5 text-right font-mono">
+                      {doc.importo ? formatCurrency(doc.importo) : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
+                      {centriCosto.length > 0 ? (
+                        <Select
+                          value={doc.centro_costo || ""}
+                          onValueChange={(val) => updateCentroCosto(doc.id, val)}
+                        >
+                          <SelectTrigger className="h-6 text-[10px] w-[120px]">
+                            <SelectValue placeholder="—" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {centriCosto.map((c) => (
+                              <SelectItem key={c.id} value={c.codice} className="text-xs">{c.codice}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-1.5">
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={(e) => {
+                          e.stopPropagation();
+                          deleteDocumento(doc.id, doc.storage_path);
+                        }}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
+
+        {/* Detail Sheet */}
+        <Sheet open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
+          <SheetContent className="sm:max-w-[500px] overflow-y-auto">
+            {selectedDoc && <DocDetailContent doc={selectedDoc} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
+  // Default: full section (drop zone + table)
   return (
     <>
       <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
@@ -98,7 +249,7 @@ export function DocumentiAcquistoSection() {
                   <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
                     <TableCell className="text-xs py-1.5">
                       <div className="flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                        <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
                         <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
                       </div>
                     </TableCell>
@@ -156,54 +307,55 @@ export function DocumentiAcquistoSection() {
       {/* Detail Sheet */}
       <Sheet open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
         <SheetContent className="sm:max-w-[500px] overflow-y-auto">
-          {selectedDoc && (
-            <>
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-sm">
-                  <FileText className="h-4 w-4 text-red-500" />
-                  {selectedDoc.descrizione || selectedDoc.file_name}
-                </SheetTitle>
-              </SheetHeader>
-
-              <div className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-muted-foreground">DETTAGLI</h4>
-                  <DetailRow label="File" value={selectedDoc.file_name} />
-                  <DetailRow label="Fornitore" value={selectedDoc.fornitore} />
-                  <DetailRow label="Data" value={selectedDoc.data_documento} />
-                  <DetailRow label="Importo" value={selectedDoc.importo ? formatCurrency(selectedDoc.importo) : null} />
-                  <DetailRow label="Centro Costo" value={selectedDoc.centro_costo} />
-                </div>
-
-                {selectedDoc.ai_summary && (
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-semibold text-muted-foreground">RIEPILOGO AI</h4>
-                    <p className="text-xs text-foreground bg-muted/50 rounded-md p-2">{selectedDoc.ai_summary}</p>
-                  </div>
-                )}
-
-                {selectedDoc.parsed_text && (
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-semibold text-muted-foreground">TESTO ESTRATTO</h4>
-                    <ScrollArea className="h-[300px]">
-                      <pre className="text-[10px] font-mono bg-muted p-3 rounded-md whitespace-pre-wrap break-all">
-                        {selectedDoc.parsed_text}
-                      </pre>
-                    </ScrollArea>
-                  </div>
-                )}
-
-                <Button size="sm" variant="destructive" onClick={() => {
-                  deleteDocumento(selectedDoc.id, selectedDoc.storage_path);
-                  setSelectedDoc(null);
-                }}>
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
-                </Button>
-              </div>
-            </>
-          )}
+          {selectedDoc && <DocDetailContent doc={selectedDoc} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
         </SheetContent>
       </Sheet>
+    </>
+  );
+}
+
+function DocDetailContent({ doc, onDelete }: { doc: DocumentoAcquisto; onDelete: () => void }) {
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="flex items-center gap-2 text-sm">
+          <FileText className="h-4 w-4 text-destructive" />
+          {doc.descrizione || doc.file_name}
+        </SheetTitle>
+      </SheetHeader>
+
+      <div className="mt-4 space-y-4">
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-muted-foreground">DETTAGLI</h4>
+          <DetailRow label="File" value={doc.file_name} />
+          <DetailRow label="Fornitore" value={doc.fornitore} />
+          <DetailRow label="Data" value={doc.data_documento} />
+          <DetailRow label="Importo" value={doc.importo ? formatCurrency(doc.importo) : null} />
+          <DetailRow label="Centro Costo" value={doc.centro_costo} />
+        </div>
+
+        {doc.ai_summary && (
+          <div className="space-y-1">
+            <h4 className="text-xs font-semibold text-muted-foreground">RIEPILOGO AI</h4>
+            <p className="text-xs text-foreground bg-muted/50 rounded-md p-2">{doc.ai_summary}</p>
+          </div>
+        )}
+
+        {doc.parsed_text && (
+          <div className="space-y-1">
+            <h4 className="text-xs font-semibold text-muted-foreground">TESTO ESTRATTO</h4>
+            <ScrollArea className="h-[300px]">
+              <pre className="text-[10px] font-mono bg-muted p-3 rounded-md whitespace-pre-wrap break-all">
+                {doc.parsed_text}
+              </pre>
+            </ScrollArea>
+          </div>
+        )}
+
+        <Button size="sm" variant="destructive" onClick={onDelete}>
+          <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
+        </Button>
+      </div>
     </>
   );
 }
