@@ -198,7 +198,7 @@ function isAcceptedFile(file: File) {
 const BanchePage = () => {
   const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
   const {
-    movements, loading, fileNames, handleFileUpload,
+    movements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates,
