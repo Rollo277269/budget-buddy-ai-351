@@ -38,7 +38,7 @@ function ContiCorrentiTab() {
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
   const [editing, setEditing] = useState<ContoCorrente | null>(null);
 
-  const empty: ContoCorrente = { id: "", banca: "", iban: "", intestatario: "", note: "" };
+  const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" };
 
   const handleSave = () => {
     if (!editing) return;
