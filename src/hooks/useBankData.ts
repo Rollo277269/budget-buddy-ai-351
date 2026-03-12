@@ -130,20 +130,35 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
     const page = await pdf.getPage(p);
     const content = await page.getTextContent();
 
-    // Group text items by Y position to reconstruct rows
-    const itemsByY = new Map<number, { x: number; str: string }[]>();
+    // Collect all text items with coordinates
+    const items: { x: number; y: number; str: string }[] = [];
     for (const item of content.items) {
       if (!("str" in item) || !item.str.trim()) continue;
-      const y = Math.round((item as any).transform[5]);
-      if (!itemsByY.has(y)) itemsByY.set(y, []);
-      itemsByY.get(y)!.push({ x: (item as any).transform[4], str: item.str });
+      items.push({
+        x: (item as any).transform[4],
+        y: (item as any).transform[5],
+        str: item.str,
+      });
     }
 
-    // Sort by Y descending (PDF coords), then by X
-    const sortedYs = Array.from(itemsByY.keys()).sort((a, b) => b - a);
-    for (const y of sortedYs) {
-      const items = itemsByY.get(y)!.sort((a, b) => a.x - b.x);
-      allLines.push(items.map((i) => i.str.trim()).join("\t"));
+    // Group by Y with tolerance (items within 3px are on the same row)
+    const Y_TOLERANCE = 3;
+    items.sort((a, b) => b.y - a.y); // descending Y
+    const groups: { y: number; items: { x: number; str: string }[] }[] = [];
+    for (const item of items) {
+      const existing = groups.find((g) => Math.abs(g.y - item.y) <= Y_TOLERANCE);
+      if (existing) {
+        existing.items.push({ x: item.x, str: item.str });
+      } else {
+        groups.push({ y: item.y, items: [{ x: item.x, str: item.str }] });
+      }
+    }
+
+    // Sort groups by Y descending (top of page first), items within by X
+    groups.sort((a, b) => b.y - a.y);
+    for (const g of groups) {
+      g.items.sort((a, b) => a.x - b.x);
+      allLines.push(g.items.map((i) => i.str.trim()).join("\t"));
     }
   }
 
@@ -155,17 +170,18 @@ async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
     /lista\s+movimenti/i,
   ];
 
-  // Parse lines into rows by splitting on tabs/multiple spaces
+  // Parse lines into rows by splitting on tabs
   const rows: any[][] = [];
   for (const line of allLines) {
     if (!line.trim()) continue;
     if (skipPatterns.some(p => p.test(line))) continue;
-    // Split on tab or 3+ spaces
-    const cells = line.split(/\t|   +/).map((c) => c.trim()).filter(Boolean);
+    const cells = line.split(/\t/).map((c) => c.trim()).filter(Boolean);
     if (cells.length >= 2) {
       rows.push(cells);
     }
   }
+
+  console.log("[PDF Parser] Extracted rows:", rows.length, "Sample:", rows.slice(0, 5));
   return rows;
 }
 
