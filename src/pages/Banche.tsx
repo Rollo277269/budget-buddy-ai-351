@@ -403,6 +403,15 @@ const BanchePage = () => {
             </SelectContent>
           </Select>
 
+          {hasValidAccount && (
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0" title="Modifica conto" onClick={() => {
+              const c = conti.find(c => c.id === activeAccountId);
+              if (c) openEditAccount(c);
+            }}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
           <Button variant="outline" size="sm" onClick={openNewAccount}>
             <Plus className="h-4 w-4 mr-1" />Nuovo conto
           </Button>
