@@ -126,7 +126,10 @@ function ContiCorrentiTab() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold">{c.banca}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">{c.banca}</p>
+                      <Badge variant="outline" className="text-[10px]">{c.tipo === "carta_credito" ? "Carta" : "C/C"}</Badge>
+                    </div>
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
