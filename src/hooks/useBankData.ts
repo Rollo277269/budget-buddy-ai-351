@@ -111,13 +111,15 @@ function detectColumns(header: any[]): {
   const result = { data: -1, dataValuta: -1, descrizione: -1, dare: -1, avere: -1, importo: -1, saldo: -1 };
   for (let i = 0; i < header.length; i++) {
     const h = normalise(String(header[i] || ""));
-    if (h.includes("data") && h.includes("valut")) result.dataValuta = i;
-    else if (h.includes("data") && result.data === -1) result.data = i;
-    else if (h.includes("descri") || h.includes("causal") || h.includes("moviment")) result.descrizione = i;
-    else if (h.includes("dare") || h.includes("addebit") || h.includes("uscit")) result.dare = i;
-    else if (h.includes("avere") || h.includes("accredit") || h.includes("entrat")) result.avere = i;
-    else if (h.includes("import") && !h.includes("iva")) result.importo = i;
-    else if (h.includes("saldo")) result.saldo = i;
+    // Dare/Avere first (may contain "movimenti")
+    if (h.includes("dare") || h.includes("addebit") || h.includes("uscit")) { result.dare = i; continue; }
+    if (h.includes("avere") || h.includes("accredit") || h.includes("entrat")) { result.avere = i; continue; }
+    if (h.includes("data") && h.includes("valut")) { result.dataValuta = i; continue; }
+    if ((h.includes("valut") || h.includes("val ")) && result.dataValuta === -1) { result.dataValuta = i; continue; }
+    if (h.includes("data") && result.data === -1) { result.data = i; continue; }
+    if (h.includes("descri") || h.includes("causal") || h.includes("operazion")) { result.descrizione = i; continue; }
+    if (h.includes("import") && !h.includes("iva")) { result.importo = i; continue; }
+    if (h.includes("saldo")) { result.saldo = i; continue; }
   }
   return result;
 }
