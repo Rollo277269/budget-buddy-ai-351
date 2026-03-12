@@ -307,7 +307,7 @@ const AcquistiPage = () => {
           </div>
         )}
 
-        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
+        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideCliente />
         <DataTable<PurchaseInvoice>
           columns={columns}
           data={purchases}

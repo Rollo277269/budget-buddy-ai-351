@@ -303,7 +303,7 @@ const VenditePage = () => {
           </div>
         )}
 
-        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
+        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideFornitore />
         <DataTable<SaleInvoice>
           columns={columns}
           data={sales}
