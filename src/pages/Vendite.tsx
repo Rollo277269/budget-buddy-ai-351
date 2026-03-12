@@ -43,8 +43,23 @@ const VenditePage = () => {
   const dragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(sales, "vendita");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+
+  const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
+    const parsed = await fetchParsedData(record.id);
+    setSelectedXml({ ...record, parsed_data: parsed });
+  }, [fetchParsedData]);
+
+  const openPdf = useCallback(async (xmlRecord: (typeof xmlRecords)[0], fallbackName: string) => {
+    const parsed = await fetchParsedData(xmlRecord.id);
+    const pdfAllegato = parsed?.allegati?.find((a) => a.formato?.toUpperCase() === "PDF");
+    if (pdfAllegato) {
+      setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || fallbackName });
+    } else {
+      toast.error("Nessun PDF trovato in questo XML");
+    }
+  }, [fetchParsedData]);
 
   const processXmlFiles = useCallback(async (fileList: File[]) => {
     const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".xml"));
