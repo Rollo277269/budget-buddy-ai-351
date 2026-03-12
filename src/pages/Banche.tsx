@@ -302,8 +302,13 @@ const BanchePage = () => {
   ], [selectedRows, deleteMovements, allIds, allSelected, someSelected]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!hasValidAccount) {
+      toast.error("Seleziona prima un conto corrente o una carta");
+      e.target.value = "";
+      return;
+    }
     const files = e.target.files;
-    if (files) Array.from(files).forEach((file) => handleFileUpload(file));
+    if (files) Array.from(files).forEach((file) => handleFileUpload(file, activeAccountId));
     e.target.value = "";
   };
 
