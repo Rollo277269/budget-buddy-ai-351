@@ -199,6 +199,10 @@ const BanchePage = () => {
 
   const conti = useMemo(() => loadConti(), []);
 
+  const allIds = useMemo(() => movements.map(m => m.id), [movements]);
+  const allSelected = movements.length > 0 && selectedRows.size === movements.length;
+  const someSelected = selectedRows.size > 0 && !allSelected;
+
   const columns: ColumnDef<BankMovement>[] = useMemo(() => [
     {
       key: "_select", label: "", render: (r) => (
@@ -214,6 +218,18 @@ const BanchePage = () => {
               else next.delete(r.id);
               return next;
             });
+          }}
+        />
+      ),
+      headerRender: () => (
+        <input
+          type="checkbox"
+          className="h-3.5 w-3.5 rounded border-input accent-primary"
+          checked={allSelected}
+          ref={(el) => { if (el) el.indeterminate = someSelected; }}
+          onChange={(e) => {
+            if (e.target.checked) setSelectedRows(new Set(allIds));
+            else setSelectedRows(new Set());
           }}
         />
       ),
@@ -253,7 +269,7 @@ const BanchePage = () => {
         </button>
       ),
     },
-  ], [selectedRows, deleteMovements]);
+  ], [selectedRows, deleteMovements, allIds, allSelected, someSelected]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

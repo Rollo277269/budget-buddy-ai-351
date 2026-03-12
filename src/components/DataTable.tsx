@@ -21,6 +21,7 @@ export interface ColumnDef<T> {
   key: string;
   label: string;
   render: (row: T) => ReactNode;
+  headerRender?: () => ReactNode;
   sortable?: boolean;
   filterable?: boolean;
   filterValue?: (row: T) => string;
@@ -143,7 +144,7 @@ export function DataTable<T extends Record<string, any>>({
                     className={`text-xs ${col.align === "right" ? "text-right" : ""}`}
                   >
                     <div className={`flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
-                      <span>{col.label}</span>
+                      {col.headerRender ? col.headerRender() : <span>{col.label}</span>}
                       <div className="flex items-center">
                         {col.sortable && (
                           <Button
