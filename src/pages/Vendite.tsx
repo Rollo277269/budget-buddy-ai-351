@@ -8,6 +8,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
+import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ const VenditePage = () => {
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
+  const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
@@ -170,11 +172,7 @@ const VenditePage = () => {
             return (
               <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
                 e.stopPropagation();
-                const byteChars = atob(pdfAllegato.base64);
-                const byteArray = new Uint8Array(byteChars.length);
-                for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
-                const blob = new Blob([byteArray], { type: "application/pdf" });
-                window.open(URL.createObjectURL(blob), "_blank");
+                setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || `Fattura_${r.numero}-${r.anno}.pdf` });
               }}>
                 <FileDown className="h-3.5 w-3.5 text-red-600" />
               </Button>
@@ -217,92 +215,101 @@ const VenditePage = () => {
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
   return (
-    <div
-      className="p-6 space-y-6 relative"
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-    >
-      {/* Drop overlay */}
-      {dragging && (
-        <div className="absolute inset-0 z-50 bg-primary/5 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none">
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg text-center">
-            <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
-            <p className="text-sm font-semibold text-primary">Rilascia i file XML qui</p>
-            <p className="text-xs text-muted-foreground">Caricamento massivo fatture</p>
+    <div className="flex h-full">
+      <div
+        className={`p-6 space-y-6 relative overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {/* Drop overlay */}
+        {dragging && (
+          <div className="absolute inset-0 z-50 bg-primary/5 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none">
+            <div className="bg-background/90 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg text-center">
+              <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
+              <p className="text-sm font-semibold text-primary">Rilascia i file XML qui</p>
+              <p className="text-xs text-muted-foreground">Caricamento massivo fatture</p>
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-lg font-bold tracking-tight">Fatture di Vendita</h2>
+            <p className="text-sm text-muted-foreground">
+              {sales.length} fatture trovate
+              {xmlRecords.length > 0 && (
+                <span className="ml-2">
+                  · <FileText className="inline h-3 w-3 mb-0.5" /> {xmlMatchedCount} XML associati
+                  {xmlUnmatchedCount > 0 && <span className="text-destructive"> · {xmlUnmatchedCount} non associati</span>}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
+            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+              {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Carica XML"}
+            </Button>
+            {hasCentri && (
+              <Button size="sm" variant="outline" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
+                {classifying ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+                {classifying ? "Classifico..." : `Classifica con AI (${unclassifiedCount})`}
+              </Button>
+            )}
           </div>
         </div>
-      )}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight">Fatture di Vendita</h2>
-          <p className="text-sm text-muted-foreground">
-            {sales.length} fatture trovate
-            {xmlRecords.length > 0 && (
-              <span className="ml-2">
-                · <FileText className="inline h-3 w-3 mb-0.5" /> {xmlMatchedCount} XML associati
-                {xmlUnmatchedCount > 0 && <span className="text-destructive"> · {xmlUnmatchedCount} non associati</span>}
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
-          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-            {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-            {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Carica XML"}
-          </Button>
-          {hasCentri && (
-            <Button size="sm" variant="outline" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
-              {classifying ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
-              {classifying ? "Classifico..." : `Classifica con AI (${unclassifiedCount})`}
-            </Button>
-          )}
-        </div>
+
+        {/* Upload progress bar */}
+        {uploading && uploadProgress && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Caricamento XML in corso…</span>
+              <span className="font-mono">{uploadProgress.done}/{uploadProgress.total}</span>
+            </div>
+            <Progress value={(uploadProgress.done / uploadProgress.total) * 100} className="h-2" />
+          </div>
+        )}
+
+        {/* Unmatched XML list */}
+        {xmlUnmatchedCount > 0 && (
+          <div className="bg-muted/50 border border-border rounded-md p-3">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
+            <div className="flex flex-wrap gap-1.5">
+              {xmlRecords.filter((r) => !r.matched).map((r) => (
+                <Badge
+                  key={r.id}
+                  variant="secondary"
+                  className="text-[10px] cursor-pointer hover:bg-accent"
+                  onClick={() => setSelectedXml(r)}
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  {r.file_name} — {r.cedente_denominazione || "?"} — {r.numero}/{r.anno}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
+        <DataTable<SaleInvoice>
+          columns={columns}
+          data={sales}
+          rowKey={(r) => `${r.anno}-${r.numero}`}
+          onRowClick={setSelectedInvoice}
+          rowClassName={(r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+        />
+        <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
+        <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} />
       </div>
 
-      {/* Upload progress bar */}
-      {uploading && uploadProgress && (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Caricamento XML in corso…</span>
-            <span className="font-mono">{uploadProgress.done}/{uploadProgress.total}</span>
-          </div>
-          <Progress value={(uploadProgress.done / uploadProgress.total) * 100} className="h-2" />
+      {/* PDF side panel */}
+      {pdfData && (
+        <div className="w-1/2 h-full">
+          <PdfViewerPanel base64={pdfData.base64} fileName={pdfData.fileName} onClose={() => setPdfData(null)} />
         </div>
       )}
-
-      {/* Unmatched XML list */}
-      {xmlUnmatchedCount > 0 && (
-        <div className="bg-muted/50 border border-border rounded-md p-3">
-          <p className="text-xs font-semibold text-muted-foreground mb-2">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
-          <div className="flex flex-wrap gap-1.5">
-            {xmlRecords.filter((r) => !r.matched).map((r) => (
-              <Badge
-                key={r.id}
-                variant="secondary"
-                className="text-[10px] cursor-pointer hover:bg-accent"
-                onClick={() => setSelectedXml(r)}
-              >
-                <FileText className="h-3 w-3 mr-1" />
-                {r.file_name} — {r.cedente_denominazione || "?"} — {r.numero}/{r.anno}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
-      <DataTable<SaleInvoice>
-        columns={columns}
-        data={sales}
-        rowKey={(r) => `${r.anno}-${r.numero}`}
-        onRowClick={setSelectedInvoice}
-        rowClassName={(r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
-      />
-      <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
-      <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} />
     </div>
   );
 };
