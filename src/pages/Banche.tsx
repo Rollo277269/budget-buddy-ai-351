@@ -304,8 +304,8 @@ const BanchePage = () => {
         />
       ),
     },
-    { key: "data", label: "Data Operazione", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true, filterable: true },
-    { key: "dataValuta", label: "Data Valuta", render: (r) => <span className="text-xs">{r.dataValuta || "—"}</span>, sortable: true },
+    { key: "data", label: "Data Operazione", render: (r) => <span className="text-xs font-mono whitespace-nowrap">{r.data}</span>, sortable: true, filterable: true },
+    { key: "dataValuta", label: "Data Valuta", render: (r) => <span className="text-xs font-mono whitespace-nowrap">{r.dataValuta || "—"}</span>, sortable: true, filterable: true },
     {
       key: "causale", label: "Causale", filterable: true,
       render: (r) => r.causale ? <span className="text-xs font-mono">{r.causale}</span> : <span className="text-xs text-muted-foreground">—</span>,
