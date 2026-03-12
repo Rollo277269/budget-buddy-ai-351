@@ -236,6 +236,17 @@ const VenditePage = () => {
         </div>
       </div>
 
+      {/* Upload progress bar */}
+      {uploading && uploadProgress && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Caricamento XML in corso…</span>
+            <span className="font-mono">{uploadProgress.done}/{uploadProgress.total}</span>
+          </div>
+          <Progress value={(uploadProgress.done / uploadProgress.total) * 100} className="h-2" />
+        </div>
+      )}
+
       {/* Unmatched XML list */}
       {xmlUnmatchedCount > 0 && (
         <div className="bg-muted/50 border border-border rounded-md p-3">
