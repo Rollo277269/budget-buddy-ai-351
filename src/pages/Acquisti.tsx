@@ -308,6 +308,8 @@ const AcquistiPage = () => {
           </div>
         )}
 
+        <DocumentiAcquistoSection />
+
         <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideCliente />
         <DataTable<PurchaseInvoice>
           columns={columns}
