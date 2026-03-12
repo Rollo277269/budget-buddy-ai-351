@@ -255,7 +255,20 @@ const BanchePage = () => {
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some(c => c.id === activeAccountId);
 
-  const allIds = useMemo(() => movements.map(m => m.id), [movements]);
+  const accountStats = useMemo(() => {
+    const map = new Map<string, { entrate: number; uscite: number; saldo: number; movimenti: number }>();
+    for (const m of rawMovements) {
+      const aid = m.accountId || "default";
+      const cur = map.get(aid) || { entrate: 0, uscite: 0, saldo: 0, movimenti: 0 };
+      cur.movimenti++;
+      if (m.importo >= 0) cur.entrate += m.importo;
+      else cur.uscite += Math.abs(m.importo);
+      cur.saldo += m.importo;
+      map.set(aid, cur);
+    }
+    return map;
+  }, [rawMovements]);
+
   const allSelected = movements.length > 0 && selectedRows.size === movements.length;
   const someSelected = selectedRows.size > 0 && !allSelected;
 
