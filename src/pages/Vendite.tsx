@@ -185,7 +185,23 @@ const VenditePage = () => {
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
   return (
-    <div className="p-6 space-y-6">
+    <div
+      className="p-6 space-y-6 relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drop overlay */}
+      {dragging && (
+        <div className="absolute inset-0 z-50 bg-primary/5 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none">
+          <div className="bg-background/90 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg text-center">
+            <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
+            <p className="text-sm font-semibold text-primary">Rilascia i file XML qui</p>
+            <p className="text-xs text-muted-foreground">Caricamento massivo fatture</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Fatture di Vendita</h2>
