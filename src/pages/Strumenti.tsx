@@ -521,8 +521,8 @@ function CentriCostoRicavoTab() {
               <span className="font-mono text-xs">{sub.codice}</span>
             </div>
           </TableCell>
-          <TableCell className="text-sm">{sub.descrizione}</TableCell>
-          <TableCell className="text-sm text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
+          <TableCell className="text-xs">{sub.descrizione}</TableCell>
+          <TableCell className="text-xs text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
           <TableCell>
             <div className="flex gap-0.5">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditSub(sub)}>
