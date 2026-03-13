@@ -19,7 +19,7 @@ const items = [
   { title: "Banche", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
   { title: "Offerte", url: "/offerte", icon: Send },
-  { title: "Analisi per Commessa", url: "/commesse", icon: FolderKanban },
+  { title: "Riepiloghi per CIG", url: "/commesse", icon: FolderKanban },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
 
