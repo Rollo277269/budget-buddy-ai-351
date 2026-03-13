@@ -10,6 +10,8 @@ import AcquistiPage from "./pages/Acquisti";
 import BanchePage from "./pages/Banche";
 import CommessePage from "./pages/Commesse";
 import ListaCommessePage from "./pages/ListaCommesse";
+import OffertePage from "./pages/Offerte";
+import GareAggiudicatePage from "./pages/GareAggiudicate";
 import StrumentiPage from "./pages/Strumenti";
 import ScadenzarioPage from "./pages/Scadenzario";
 import NotFound from "./pages/NotFound";
