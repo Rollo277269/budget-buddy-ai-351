@@ -760,7 +760,7 @@ const StrumentiPage = () => {
     <div className="p-6 space-y-6">
 
       <Tabs defaultValue="conti" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <TabsList className="grid w-full grid-cols-3 max-w-xl">
           <TabsTrigger value="conti" className="text-xs">
             <Landmark className="h-3.5 w-3.5 mr-1.5" />Conti Correnti
           </TabsTrigger>
@@ -769,9 +769,6 @@ const StrumentiPage = () => {
           </TabsTrigger>
           <TabsTrigger value="naming" className="text-xs">
             <FileText className="h-3.5 w-3.5 mr-1.5" />Denominazione
-          </TabsTrigger>
-          <TabsTrigger value="scadenzario" className="text-xs">
-            <CalendarClock className="h-3.5 w-3.5 mr-1.5" />Scadenzario
           </TabsTrigger>
         </TabsList>
 
@@ -783,9 +780,6 @@ const StrumentiPage = () => {
         </TabsContent>
         <TabsContent value="naming">
           <NamingRulesTab />
-        </TabsContent>
-        <TabsContent value="scadenzario">
-          <ScadenzarioTab />
         </TabsContent>
       </Tabs>
     </div>

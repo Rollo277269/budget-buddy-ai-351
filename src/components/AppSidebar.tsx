@@ -13,6 +13,7 @@ import {
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
   { title: "Vendite", url: "/vendite", icon: FileText },
   { title: "Acquisti", url: "/acquisti", icon: ShoppingCart },
   { title: "Banche", url: "/banche", icon: Landmark },

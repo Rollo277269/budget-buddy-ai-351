@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 
 const pageTitles: Record<string, string> = {
   "/": "Riepilogo Economico-Finanziario",
+  "/scadenzario": "Scadenzario",
   "/vendite": "Vendite",
   "/acquisti": "Acquisti",
   "/banche": "Banche",
