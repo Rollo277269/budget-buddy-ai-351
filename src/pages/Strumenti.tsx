@@ -656,8 +656,8 @@ function CentriCostoRicavoTab() {
                 ) : (
                   <>
                     <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-mono text-sm font-semibold">{cat.codice}</span>
-                    <span className="text-sm text-muted-foreground flex-1">— {cat.descrizione}</span>
+                <span className="font-mono text-xs font-semibold">{cat.codice}</span>
+                    <span className="text-xs text-muted-foreground flex-1">— {cat.descrizione}</span>
                     <Badge variant="outline" className="text-[10px] mr-1">{subs.length}</Badge>
                     <div className="flex gap-0.5 shrink-0 opacity-0 group-hover/cat:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); if (!isExpanded) toggleExpand(cat.id); }}>
