@@ -5,7 +5,7 @@ export interface CentroCR {
   tipo: "costo" | "ricavo";
   codice: string;
   descrizione: string;
-  responsabile: string;
+  paroleChiaveMatching: string;
   note: string;
 }
 

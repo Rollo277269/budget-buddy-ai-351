@@ -300,7 +300,7 @@ interface CentroCR {
   tipo: "costo" | "ricavo";
   codice: string;
   descrizione: string;
-  responsabile: string;
+  paroleChiaveMatching: string;
   note: string;
 }
 
@@ -320,12 +320,12 @@ function CentriCostoRicavoTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCodice, setEditCodice] = useState("");
   const [editDescrizione, setEditDescrizione] = useState("");
-  const [editResponsabile, setEditResponsabile] = useState("");
+  const [editParoleChiave, setEditParoleChiave] = useState("");
   const [editNote, setEditNote] = useState("");
   const [addingTo, setAddingTo] = useState<"costo" | "ricavo" | null>(null);
   const [newCodice, setNewCodice] = useState("");
   const [newDescrizione, setNewDescrizione] = useState("");
-  const [newResponsabile, setNewResponsabile] = useState("");
+  const [newParoleChiave, setNewParoleChiave] = useState("");
   const [newNote, setNewNote] = useState("");
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const dragItemRef = useRef<string | null>(null);
@@ -334,7 +334,7 @@ function CentriCostoRicavoTab() {
     setEditingId(c.id);
     setEditCodice(c.codice);
     setEditDescrizione(c.descrizione);
-    setEditResponsabile(c.responsabile);
+    setEditParoleChiave(c.paroleChiaveMatching);
     setEditNote(c.note);
   };
 
@@ -349,7 +349,7 @@ function CentriCostoRicavoTab() {
     if (duplicate) {toast.error("Codice già esistente");return;}
     const updated = centri.map((c) =>
     c.id === editingId ?
-    { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, responsabile: editResponsabile, note: editNote } :
+    { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave, note: editNote } :
     c
     );
     setCentri(updated);
@@ -370,20 +370,20 @@ function CentriCostoRicavoTab() {
       tipo,
       codice: newCodice.toUpperCase(),
       descrizione: newDescrizione,
-      responsabile: newResponsabile,
+      paroleChiaveMatching: newParoleChiave,
       note: newNote
     };
     const updated = [...centri, newCentro];
     setCentri(updated);
     saveCentri(updated);
     setAddingTo(null);
-    setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");
+    setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");
     toast.success("Centro aggiunto");
   };
 
   const cancelAdd = () => {
     setAddingTo(null);
-    setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");
+    setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");
   };
 
   const handleDelete = (id: string) => {
@@ -425,7 +425,7 @@ function CentriCostoRicavoTab() {
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => {setAddingTo(tipo);setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");}}
+            onClick={() => {setAddingTo(tipo);setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");}}
             disabled={isAdding}>
             
             <Plus className="w-3.5 h-3.5 mr-1" /> Aggiungi
@@ -437,7 +437,7 @@ function CentriCostoRicavoTab() {
               <TableHead className="w-8" />
               <TableHead className="w-[25%]">Codice</TableHead>
               <TableHead className="w-[30%]">Descrizione</TableHead>
-              <TableHead>Responsabile</TableHead>
+              <TableHead>Parole Chiave Matching</TableHead>
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
@@ -469,7 +469,7 @@ function CentriCostoRicavoTab() {
                       <Input value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} className="h-8 text-sm" />
                     </TableCell>
                     <TableCell>
-                      <Input value={editResponsabile} onChange={(e) => setEditResponsabile(e.target.value)} className="h-8 text-sm" />
+                      <Input value={editParoleChiave} onChange={(e) => setEditParoleChiave(e.target.value)} className="h-8 text-sm" placeholder="parole chiave, separate, da virgola" />
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -487,7 +487,7 @@ function CentriCostoRicavoTab() {
                     <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
                     <TableCell className="font-mono text-sm font-semibold">{c.codice}</TableCell>
                     <TableCell className="text-sm">{c.descrizione}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.responsabile || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{c.paroleChiaveMatching || "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(c)}>
@@ -512,7 +512,7 @@ function CentriCostoRicavoTab() {
                   <Input value={newDescrizione} onChange={(e) => setNewDescrizione(e.target.value)} className="h-8 text-sm" placeholder="Descrizione..." />
                 </TableCell>
                 <TableCell>
-                  <Input value={newResponsabile} onChange={(e) => setNewResponsabile(e.target.value)} className="h-8 text-sm" placeholder="Responsabile..." />
+                  <Input value={newParoleChiave} onChange={(e) => setNewParoleChiave(e.target.value)} className="h-8 text-sm" placeholder="parole chiave, separate, da virgola" />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
@@ -541,8 +541,8 @@ function CentriCostoRicavoTab() {
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {renderTable("costo")}
         {renderTable("ricavo")}
+        {renderTable("costo")}
       </div>
     </div>);
 
