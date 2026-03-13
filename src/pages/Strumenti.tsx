@@ -383,7 +383,7 @@ function CentriCostoRicavoTab() {
 
   const cancelAdd = () => {
     setAddingTo(null);
-    setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");
+    setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");
   };
 
   const handleDelete = (id: string) => {
