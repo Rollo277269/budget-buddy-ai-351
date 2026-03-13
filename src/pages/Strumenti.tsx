@@ -85,7 +85,6 @@ function ContiCorrentiTab() {
                 value={editing.tipo}
                 onChange={(e) => setEditing({ ...editing, tipo: e.target.value as ContoCorrente["tipo"] })}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                
                   <option value="conto_corrente">Conto Corrente</option>
                   <option value="carta_credito">Carta di Credito</option>
                   <option value="finanziamento">Finanziamento</option>
@@ -122,7 +121,6 @@ function ContiCorrentiTab() {
           <Landmark className="h-10 w-10 mb-3 opacity-30" />
           <p className="text-sm">Nessun conto corrente configurato</p>
         </div> :
-
       <div className="grid gap-3">
           {conti.map((c) =>
         <Card key={c.id} className="group">
@@ -151,8 +149,8 @@ function ContiCorrentiTab() {
         )}
         </div>
       }
-    </div>);
-
+    </div>
+  );
 }
 
 // ─── Regole Denominazione ────────────────────────────────────────
@@ -172,10 +170,10 @@ function loadRules(): NamingRule[] {
     if (saved) return saved;
   } catch {}
   return [
-  { id: "1", tipo: "Fattura Vendita", pattern: "FV_{ANNO}_{NUMERO}_{CLIENTE}", esempio: "FV_2024_001_RossiSRL" },
-  { id: "2", tipo: "Fattura Acquisto", pattern: "FA_{ANNO}_{NUMERO}_{FORNITORE}", esempio: "FA_2024_042_BianchiSPA" },
-  { id: "3", tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" }];
-
+    { id: "1", tipo: "Fattura Vendita", pattern: "FV_{ANNO}_{NUMERO}_{CLIENTE}", esempio: "FV_2024_001_RossiSRL" },
+    { id: "2", tipo: "Fattura Acquisto", pattern: "FA_{ANNO}_{NUMERO}_{FORNITORE}", esempio: "FA_2024_042_BianchiSPA" },
+    { id: "3", tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" },
+  ];
 }
 
 function saveRules(rules: NamingRule[]) {
@@ -261,7 +259,6 @@ function NamingRulesTab() {
           <FileText className="h-10 w-10 mb-3 opacity-30" />
           <p className="text-sm">Nessuna regola configurata</p>
         </div> :
-
       <div className="space-y-2">
           {rules.map((r) =>
         <Card key={r.id} className="group">
@@ -289,11 +286,18 @@ function NamingRulesTab() {
         )}
         </div>
       }
-    </div>);
-
+    </div>
+  );
 }
 
 // ─── Centri di Costo / Ricavo ────────────────────────────────────
+
+interface CategoriaCentro {
+  id: string;
+  tipo: "costo" | "ricavo";
+  codice: string;
+  descrizione: string;
+}
 
 interface CentroCR {
   id: string;
@@ -302,255 +306,363 @@ interface CentroCR {
   descrizione: string;
   paroleChiaveMatching: string;
   note: string;
+  categoriaId?: string;
 }
 
 const CENTRI_KEY = "centri-costo-ricavo";
+const CATEGORIE_KEY = "centri-categorie";
 
 function loadCentri(): CentroCR[] {
-  try {return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]");}
-  catch {return [];}
+  try { return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]"); }
+  catch { return []; }
 }
-
-function saveCentri(centri: CentroCR[]) {
+function saveCentriLocal(centri: CentroCR[]) {
   localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
+}
+function loadCategorie(): CategoriaCentro[] {
+  try { return JSON.parse(localStorage.getItem(CATEGORIE_KEY) || "[]"); }
+  catch { return []; }
+}
+function saveCategorieLocal(cat: CategoriaCentro[]) {
+  localStorage.setItem(CATEGORIE_KEY, JSON.stringify(cat));
 }
 
 function CentriCostoRicavoTab() {
   const [centri, setCentri] = useState<CentroCR[]>(loadCentri);
+  const [categorie, setCategorie] = useState<CategoriaCentro[]>(loadCategorie);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(() => new Set(loadCategorie().map(c => c.id)));
+
+  // Editing subcategory
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCodice, setEditCodice] = useState("");
   const [editDescrizione, setEditDescrizione] = useState("");
   const [editParoleChiave, setEditParoleChiave] = useState("");
-  const [editNote, setEditNote] = useState("");
-  const [addingTo, setAddingTo] = useState<"costo" | "ricavo" | null>(null);
-  const [newCodice, setNewCodice] = useState("");
-  const [newDescrizione, setNewDescrizione] = useState("");
-  const [newParoleChiave, setNewParoleChiave] = useState("");
-  const [newNote, setNewNote] = useState("");
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
-  const dragItemRef = useRef<string | null>(null);
 
-  const startEdit = (c: CentroCR) => {
-    setEditingId(c.id);
-    setEditCodice(c.codice);
-    setEditDescrizione(c.descrizione);
-    setEditParoleChiave(c.paroleChiaveMatching);
-    setEditNote(c.note);
+  // Adding subcategory
+  const [addingToCat, setAddingToCat] = useState<string | null>(null);
+  const [newSubCodice, setNewSubCodice] = useState("");
+  const [newSubDescrizione, setNewSubDescrizione] = useState("");
+  const [newSubParoleChiave, setNewSubParoleChiave] = useState("");
+
+  // Category editing
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatCodice, setEditCatCodice] = useState("");
+  const [editCatDescrizione, setEditCatDescrizione] = useState("");
+
+  // Adding category
+  const [addingCatTo, setAddingCatTo] = useState<"costo" | "ricavo" | null>(null);
+  const [newCatCodice, setNewCatCodice] = useState("");
+  const [newCatDescrizione, setNewCatDescrizione] = useState("");
+
+  const toggleExpand = (catId: string) => {
+    setExpandedCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId); else next.add(catId);
+      return next;
+    });
   };
 
-  const cancelEdit = () => {setEditingId(null);};
-
-  const saveEdit = () => {
-    if (!editingId || !editCodice.trim() || !editDescrizione.trim()) {
-      toast.error("Codice e descrizione sono obbligatori");
-      return;
+  // ── Category CRUD ──
+  const handleAddCategory = (tipo: "costo" | "ricavo") => {
+    if (!newCatCodice.trim() || !newCatDescrizione.trim()) {
+      toast.error("Codice e descrizione categoria obbligatori"); return;
     }
-    const duplicate = centri.find((c) => c.codice === editCodice.toUpperCase() && c.id !== editingId);
-    if (duplicate) {toast.error("Codice già esistente");return;}
-    const updated = centri.map((c) =>
-    c.id === editingId ?
-    { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave, note: editNote } :
-    c
-    );
-    setCentri(updated);
-    saveCentri(updated);
-    setEditingId(null);
-    toast.success("Centro aggiornato");
+    const dup = categorie.find((c) => c.codice === newCatCodice.toUpperCase());
+    if (dup) { toast.error("Codice categoria già esistente"); return; }
+    const cat: CategoriaCentro = { id: crypto.randomUUID(), tipo, codice: newCatCodice.toUpperCase(), descrizione: newCatDescrizione };
+    const updated = [...categorie, cat];
+    setCategorie(updated); saveCategorieLocal(updated);
+    setAddingCatTo(null); setNewCatCodice(""); setNewCatDescrizione("");
+    setExpandedCats((prev) => new Set([...prev, cat.id]));
+    toast.success("Categoria aggiunta");
   };
 
-  const handleAdd = (tipo: "costo" | "ricavo") => {
-    if (!newCodice.trim() || !newDescrizione.trim()) {
-      toast.error("Codice e descrizione sono obbligatori");
-      return;
+  const startEditCat = (c: CategoriaCentro) => {
+    setEditingCatId(c.id); setEditCatCodice(c.codice); setEditCatDescrizione(c.descrizione);
+  };
+
+  const saveEditCat = () => {
+    if (!editingCatId || !editCatCodice.trim() || !editCatDescrizione.trim()) {
+      toast.error("Codice e descrizione obbligatori"); return;
     }
-    const duplicate = centri.find((c) => c.codice === newCodice.toUpperCase());
-    if (duplicate) {toast.error("Codice già esistente");return;}
-    const newCentro: CentroCR = {
-      id: crypto.randomUUID(),
-      tipo,
-      codice: newCodice.toUpperCase(),
-      descrizione: newDescrizione,
-      paroleChiaveMatching: newParoleChiave,
-      note: newNote
+    const dup = categorie.find((c) => c.codice === editCatCodice.toUpperCase() && c.id !== editingCatId);
+    if (dup) { toast.error("Codice già esistente"); return; }
+    const updated = categorie.map((c) => c.id === editingCatId ? { ...c, codice: editCatCodice.toUpperCase(), descrizione: editCatDescrizione } : c);
+    setCategorie(updated); saveCategorieLocal(updated); setEditingCatId(null);
+    toast.success("Categoria aggiornata");
+  };
+
+  const deleteCategory = (catId: string) => {
+    const subs = centri.filter((c) => c.categoriaId === catId);
+    if (subs.length > 0 && !confirm(`Questa categoria contiene ${subs.length} sottocategorie che verranno eliminate. Procedere?`)) return;
+    const updatedCat = categorie.filter((c) => c.id !== catId);
+    const updatedCentri = centri.filter((c) => c.categoriaId !== catId);
+    setCategorie(updatedCat); saveCategorieLocal(updatedCat);
+    setCentri(updatedCentri); saveCentriLocal(updatedCentri);
+    toast.success("Categoria eliminata");
+  };
+
+  // ── Subcategory CRUD ──
+  const handleAddSub = (categoriaId: string, tipo: "costo" | "ricavo") => {
+    if (!newSubCodice.trim() || !newSubDescrizione.trim()) {
+      toast.error("Codice e descrizione obbligatori"); return;
+    }
+    const dup = centri.find((c) => c.codice === newSubCodice.toUpperCase());
+    if (dup) { toast.error("Codice già esistente"); return; }
+    const newItem: CentroCR = {
+      id: crypto.randomUUID(), tipo, categoriaId,
+      codice: newSubCodice.toUpperCase(), descrizione: newSubDescrizione,
+      paroleChiaveMatching: newSubParoleChiave, note: ""
     };
-    const updated = [...centri, newCentro];
-    setCentri(updated);
-    saveCentri(updated);
-    setAddingTo(null);
-    setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");
-    toast.success("Centro aggiunto");
+    const updated = [...centri, newItem];
+    setCentri(updated); saveCentriLocal(updated);
+    setAddingToCat(null); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave("");
+    toast.success("Sottocategoria aggiunta");
   };
 
-  const cancelAdd = () => {
-    setAddingTo(null);
-    setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");
+  const startEditSub = (c: CentroCR) => {
+    setEditingId(c.id); setEditCodice(c.codice); setEditDescrizione(c.descrizione); setEditParoleChiave(c.paroleChiaveMatching);
   };
 
-  const handleDelete = (id: string) => {
+  const saveEditSub = () => {
+    if (!editingId || !editCodice.trim() || !editDescrizione.trim()) {
+      toast.error("Codice e descrizione obbligatori"); return;
+    }
+    const dup = centri.find((c) => c.codice === editCodice.toUpperCase() && c.id !== editingId);
+    if (dup) { toast.error("Codice già esistente"); return; }
+    const updated = centri.map((c) =>
+      c.id === editingId ? { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave } : c
+    );
+    setCentri(updated); saveCentriLocal(updated); setEditingId(null);
+    toast.success("Sottocategoria aggiornata");
+  };
+
+  const deleteSub = (id: string) => {
     const updated = centri.filter((c) => c.id !== id);
-    setCentri(updated);
-    saveCentri(updated);
-    toast.success("Centro eliminato");
-  };
-
-  const handleReorder = (dragId: string, dropId: string, items: CentroCR[]) => {
-    const dragIdx = items.findIndex((c) => c.id === dragId);
-    const dropIdx = items.findIndex((c) => c.id === dropId);
-    if (dragIdx === -1 || dropIdx === -1 || dragIdx === dropIdx) return;
-    const reordered = [...items];
-    const [moved] = reordered.splice(dragIdx, 1);
-    reordered.splice(dropIdx, 0, moved);
-    const otherItems = centri.filter((c) => c.tipo !== items[0]?.tipo);
-    const updated = [...otherItems, ...reordered];
-    setCentri(updated);
-    saveCentri(updated);
+    setCentri(updated); saveCentriLocal(updated);
+    toast.success("Sottocategoria eliminata");
   };
 
   const renderTable = (tipo: "costo" | "ricavo") => {
-    const items = centri.filter((c) => c.tipo === tipo);
-    const isAdding = addingTo === tipo;
+    const cats = categorie.filter((c) => c.tipo === tipo);
     const title = tipo === "costo" ? "Centri di Costo" : "Centri di Ricavo";
+    const isAddingCat = addingCatTo === tipo;
+    const totalSubs = centri.filter((c) => c.tipo === tipo).length;
 
     return (
       <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+        {/* Header */}
         <div className={`flex items-center justify-between px-4 py-3 border-b border-border ${tipo === "costo" ? "bg-destructive" : "bg-emerald-600"}`}>
           <div className="flex items-center gap-2">
             <Tag className="w-4 h-4 text-white" />
             <h3 className="font-semibold text-sm text-white">{title}</h3>
             <Badge variant="secondary" className="text-[10px]">
-              {items.length}
+              {cats.length} cat · {totalSubs} voci
             </Badge>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => {setAddingTo(tipo);setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");}}
-            disabled={isAdding}>
-            
-            <Plus className="w-3.5 h-3.5 mr-1" /> Aggiungi
+          <Button variant="outline" size="sm" className="h-7 text-xs"
+            onClick={() => { setAddingCatTo(tipo); setNewCatCodice(""); setNewCatDescrizione(""); }}
+            disabled={isAddingCat}>
+            <Plus className="w-3.5 h-3.5 mr-1" /> Categoria
           </Button>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8" />
-              <TableHead className="w-[25%]">Codice</TableHead>
-              <TableHead className="w-[30%]">Descrizione</TableHead>
-              <TableHead>Parole Chiave Matching</TableHead>
-              <TableHead className="w-20" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.length === 0 && !isAdding &&
-            <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
-                  Nessun centro configurato
-                </TableCell>
-              </TableRow>
-            }
-            {items.map((c) =>
-            <TableRow
-              key={c.id}
-              draggable={editingId !== c.id}
-              onDragStart={() => {dragItemRef.current = c.id;}}
-              onDragOver={(e) => {e.preventDefault();setDragOverId(c.id);}}
-              onDrop={() => {if (dragItemRef.current) handleReorder(dragItemRef.current, c.id, items);dragItemRef.current = null;setDragOverId(null);}}
-              onDragEnd={() => {dragItemRef.current = null;setDragOverId(null);}}
-              className={dragOverId === c.id ? "bg-accent" : ""}>
-              
-                {editingId === c.id ?
-              <>
-                    <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
-                    <TableCell>
-                      <Input value={editCodice} onChange={(e) => setEditCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono" autoFocus />
-                    </TableCell>
-                    <TableCell>
-                      <Input value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} className="h-8 text-sm" />
-                    </TableCell>
-                    <TableCell>
-                      <Input value={editParoleChiave} onChange={(e) => setEditParoleChiave(e.target.value)} className="h-8 text-sm" placeholder="parole chiave, separate, da virgola" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEdit}>
-                          <Check className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}>
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </> :
 
-              <>
-                    <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
-                    <TableCell className="font-mono text-sm font-semibold">{c.codice}</TableCell>
-                    <TableCell className="text-sm">{c.descrizione}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.paroleChiaveMatching || "—"}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(c)}>
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => {if (confirm(`Eliminare "${c.codice} - ${c.descrizione}"?`)) handleDelete(c.id);}}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </>
-              }
-              </TableRow>
-            )}
-            {isAdding &&
-            <TableRow>
-                <TableCell />
-                <TableCell>
-                  <Input value={newCodice} onChange={(e) => setNewCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono" placeholder="Codice..." autoFocus />
-                </TableCell>
-                <TableCell>
-                  <Input value={newDescrizione} onChange={(e) => setNewDescrizione(e.target.value)} className="h-8 text-sm" placeholder="Descrizione..." />
-                </TableCell>
-                <TableCell>
-                  <Input value={newParoleChiave} onChange={(e) => setNewParoleChiave(e.target.value)} className="h-8 text-sm" placeholder="parole chiave, separate, da virgola" />
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => handleAdd(tipo)} disabled={!newCodice.trim() || !newDescrizione.trim()}>
+        {/* Add category row */}
+        {isAddingCat && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border">
+            <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Input value={newCatCodice} onChange={(e) => setNewCatCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono w-28" placeholder="Codice..." autoFocus />
+            <Input value={newCatDescrizione} onChange={(e) => setNewCatDescrizione(e.target.value)} className="h-8 text-sm flex-1" placeholder="Descrizione categoria..." />
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600 shrink-0" onClick={() => handleAddCategory(tipo)} disabled={!newCatCodice.trim() || !newCatDescrizione.trim()}>
+              <Check className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setAddingCatTo(null)}>
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {cats.length === 0 && !isAddingCat && (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            Nessuna categoria configurata
+          </div>
+        )}
+
+        {/* Categories */}
+        {cats.map((cat) => {
+          const subs = centri.filter((c) => c.categoriaId === cat.id);
+          const isExpanded = expandedCats.has(cat.id);
+          const isEditingCat = editingCatId === cat.id;
+          const isAddingSub = addingToCat === cat.id;
+
+          return (
+            <div key={cat.id} className="border-b border-border last:border-b-0 group/cat">
+              {/* Category row */}
+              <div
+                className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""}`}
+                onClick={() => !isEditingCat && toggleExpand(cat.id)}
+              >
+                {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+
+                {isEditingCat ? (
+                  <>
+                    <Input value={editCatCodice} onChange={(e) => setEditCatCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono w-28" autoFocus onClick={(e) => e.stopPropagation()} />
+                    <Input value={editCatDescrizione} onChange={(e) => setEditCatDescrizione(e.target.value)} className="h-7 text-sm flex-1" onClick={(e) => e.stopPropagation()} />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600 shrink-0" onClick={(e) => { e.stopPropagation(); saveEditCat(); }}>
                       <Check className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelAdd}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); setEditingCatId(null); }}>
                       <X className="w-3.5 h-3.5" />
                     </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            }
-          </TableBody>
-        </Table>
-      </div>);
+                  </>
+                ) : (
+                  <>
+                    <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="font-mono text-sm font-semibold">{cat.codice}</span>
+                    <span className="text-sm text-muted-foreground flex-1">— {cat.descrizione}</span>
+                    <Badge variant="outline" className="text-[10px] mr-1">{subs.length}</Badge>
+                    <div className="flex gap-0.5 shrink-0 opacity-0 group-hover/cat:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); if (!isExpanded) toggleExpand(cat.id); }}>
+                        <Plus className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditCat(cat)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare la categoria "${cat.codice}"?`)) deleteCategory(cat.id); }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
 
+              {/* Subcategories */}
+              {isExpanded && (
+                <div className="bg-muted/20">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[30%] pl-12">Codice</TableHead>
+                        <TableHead className="w-[30%]">Descrizione</TableHead>
+                        <TableHead>Parole Chiave Matching</TableHead>
+                        <TableHead className="w-20" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subs.length === 0 && !isAddingSub && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-4 text-muted-foreground text-xs pl-12">
+                            Nessuna sottocategoria —{" "}
+                            <button className="underline hover:text-foreground" onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}>
+                              aggiungine una
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {subs.map((sub) => (
+                        <TableRow key={sub.id}>
+                          {editingId === sub.id ? (
+                            <>
+                              <TableCell className="pl-12">
+                                <Input value={editCodice} onChange={(e) => setEditCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono" autoFocus />
+                              </TableCell>
+                              <TableCell>
+                                <Input value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} className="h-7 text-sm" />
+                              </TableCell>
+                              <TableCell>
+                                <Input value={editParoleChiave} onChange={(e) => setEditParoleChiave(e.target.value)} className="h-7 text-sm" placeholder="parole chiave, separate, da virgola" />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-0.5">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEditSub}>
+                                    <Check className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                                    <X className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="font-mono text-sm pl-12">{sub.codice}</TableCell>
+                              <TableCell className="text-sm">{sub.descrizione}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-0.5">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditSub(sub)}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                      {isAddingSub && (
+                        <TableRow>
+                          <TableCell className="pl-12">
+                            <Input value={newSubCodice} onChange={(e) => setNewSubCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono" placeholder="Codice..." autoFocus />
+                          </TableCell>
+                          <TableCell>
+                            <Input value={newSubDescrizione} onChange={(e) => setNewSubDescrizione(e.target.value)} className="h-7 text-sm" placeholder="Descrizione..." />
+                          </TableCell>
+                          <TableCell>
+                            <Input value={newSubParoleChiave} onChange={(e) => setNewSubParoleChiave(e.target.value)} className="h-7 text-sm" placeholder="parole chiave, separate, da virgola" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-0.5">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => handleAddSub(cat.id, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
+                                <Check className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAddingToCat(null)}>
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                  {!isAddingSub && subs.length > 0 && (
+                    <div className="px-4 py-1.5 border-t border-border/50">
+                      <Button variant="ghost" size="sm" className="h-6 text-[11px] text-muted-foreground"
+                        onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}>
+                        <Plus className="w-3 h-3 mr-1" /> Aggiungi sottocategoria
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
-        <p className="text-xs text-muted-foreground">Configura i Centri di Costo e di Ricavo. Per ogni centro puoi definire delle parole chiave (separate da virgola) per l'assegnamento automatico delle fatture caricate. Ad es. materiale, cemento, calcestruzzo
-
+        <p className="text-xs text-muted-foreground">
+          Configura categorie e sottocategorie per i Centri di Costo e Ricavo. Per ogni sottocategoria puoi definire parole chiave (separate da virgola) per l'assegnamento automatico delle fatture.
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {renderTable("ricavo")}
         {renderTable("costo")}
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
 // ─── Scadenzario ─────────────────────────────────────────────────
-
-
 
 function parseDate(d: string): Date | null {
   if (!d) return null;
@@ -572,35 +684,34 @@ interface ScadenzaRow {
 }
 
 const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
-{
-  key: "stato", label: "Stato", sortable: true, filterable: true,
-  render: (r) => {
-    if (r.stato === "scaduta") return <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Scaduta</Badge>;
-    if (r.stato === "in_scadenza") return <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><Clock className="h-3 w-3 mr-1" />In scadenza</Badge>;
-    return <Badge variant="outline" className="text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Regolare</Badge>;
-  }
-},
-{
-  key: "tipo", label: "Tipo", sortable: true, filterable: true,
-  render: (r) => <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>
-},
-{ key: "numero", label: "N° Fattura", sortable: true, render: (r) => <span className="text-xs font-mono">{r.numero}</span> },
-{ key: "soggetto", label: "Soggetto", filterable: true, render: (r) => <span className="text-xs truncate max-w-[200px] block">{r.soggetto}</span> },
-{ key: "scadenza", label: "Scadenza", sortable: true, render: (r) => <span className="text-xs">{r.scadenza}</span> },
-{
-  key: "giorniRimasti", label: "Giorni", sortable: true, align: "right",
-  render: (r) =>
-  <span className={`text-xs font-mono font-medium ${r.giorniRimasti < 0 ? "text-destructive" : r.giorniRimasti <= 30 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"}`}>
-        {r.giorniRimasti < 0 ? `${Math.abs(r.giorniRimasti)}g fa` : `${r.giorniRimasti}g`}
-      </span>
-
-},
-{
-  key: "totale", label: "Importo", sortable: true, align: "right",
-  render: (r) => <span className={`text-xs font-mono font-medium ${r.tipo === "credito" ? "text-income" : "text-expense"}`}>{formatCurrency(r.totale)}</span>
-},
-{ key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> }];
-
+  {
+    key: "stato", label: "Stato", sortable: true, filterable: true,
+    render: (r) => {
+      if (r.stato === "scaduta") return <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Scaduta</Badge>;
+      if (r.stato === "in_scadenza") return <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><Clock className="h-3 w-3 mr-1" />In scadenza</Badge>;
+      return <Badge variant="outline" className="text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Regolare</Badge>;
+    }
+  },
+  {
+    key: "tipo", label: "Tipo", sortable: true, filterable: true,
+    render: (r) => <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>
+  },
+  { key: "numero", label: "N° Fattura", sortable: true, render: (r) => <span className="text-xs font-mono">{r.numero}</span> },
+  { key: "soggetto", label: "Soggetto", filterable: true, render: (r) => <span className="text-xs truncate max-w-[200px] block">{r.soggetto}</span> },
+  { key: "scadenza", label: "Scadenza", sortable: true, render: (r) => <span className="text-xs">{r.scadenza}</span> },
+  {
+    key: "giorniRimasti", label: "Giorni", sortable: true, align: "right",
+    render: (r) =>
+    <span className={`text-xs font-mono font-medium ${r.giorniRimasti < 0 ? "text-destructive" : r.giorniRimasti <= 30 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"}`}>
+      {r.giorniRimasti < 0 ? `${Math.abs(r.giorniRimasti)}g fa` : `${r.giorniRimasti}g`}
+    </span>
+  },
+  {
+    key: "totale", label: "Importo", sortable: true, align: "right",
+    render: (r) => <span className={`text-xs font-mono font-medium ${r.tipo === "credito" ? "text-income" : "text-expense"}`}>{formatCurrency(r.totale)}</span>
+  },
+  { key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> },
+];
 
 function ScadenzarioTab() {
   const { allSales, allPurchases, loading } = useInvoiceData();
@@ -651,8 +762,8 @@ function ScadenzarioTab() {
     return (
       <div className="flex items-center justify-center h-40">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -693,9 +804,8 @@ function ScadenzarioTab() {
         columns={scadenzaCols}
         data={rows}
         rowKey={(r) => `${r.tipo}-${r.numero}`} />
-      
-    </div>);
-
+    </div>
+  );
 }
 
 // ─── Main Page ───────────────────────────────────────────────────
@@ -737,8 +847,8 @@ const StrumentiPage = () => {
           <ScadenzarioTab />
         </TabsContent>
       </Tabs>
-    </div>);
-
+    </div>
+  );
 };
 
 export default StrumentiPage;
