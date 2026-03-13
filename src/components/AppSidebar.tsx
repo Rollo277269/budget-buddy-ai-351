@@ -18,6 +18,8 @@ const items = [
   { title: "Acquisti", url: "/acquisti", icon: ShoppingCart },
   { title: "Banche", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
+  { title: "Offerte", url: "/offerte", icon: Send },
+  { title: "Gare Aggiudicate", url: "/gare", icon: Trophy },
   { title: "Analisi per Commessa", url: "/commesse", icon: FolderKanban },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
