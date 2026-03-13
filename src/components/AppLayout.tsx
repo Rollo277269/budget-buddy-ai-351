@@ -1,8 +1,22 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { FileText } from "lucide-react";
+import { useLocation } from "react-router-dom";
+
+const pageTitles: Record<string, string> = {
+  "/": "Riepilogo Economico-Finanziario",
+  "/vendite": "Vendite",
+  "/acquisti": "Acquisti",
+  "/banche": "Banche",
+  "/commesse": "Commesse",
+  "/lista-commesse": "Lista Commesse",
+  "/strumenti": "Strumenti",
+};
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const title = pageTitles[location.pathname] || "Riepilogo Economico-Finanziario";
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -14,7 +28,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <div className="rounded-lg bg-primary p-1.5">
                 <FileText className="h-4 w-4 text-primary-foreground" />
               </div>
-              <h1 className="text-sm font-bold tracking-tight">Riepilogo Economico-Finanziario</h1>
+              <h1 className="text-sm font-bold tracking-tight">{title}</h1>
             </div>
           </header>
           <main className="flex-1 overflow-auto">
