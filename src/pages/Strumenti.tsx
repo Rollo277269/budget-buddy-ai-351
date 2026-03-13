@@ -377,7 +377,7 @@ function CentriCostoRicavoTab() {
     setCentri(updated);
     saveCentri(updated);
     setAddingTo(null);
-    setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");
+    setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");
     toast.success("Centro aggiunto");
   };
 
