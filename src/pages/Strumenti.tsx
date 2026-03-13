@@ -325,7 +325,7 @@ function CentriCostoRicavoTab() {
   const [addingTo, setAddingTo] = useState<"costo" | "ricavo" | null>(null);
   const [newCodice, setNewCodice] = useState("");
   const [newDescrizione, setNewDescrizione] = useState("");
-  const [newResponsabile, setNewResponsabile] = useState("");
+  const [newParoleChiave, setNewParoleChiave] = useState("");
   const [newNote, setNewNote] = useState("");
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const dragItemRef = useRef<string | null>(null);
