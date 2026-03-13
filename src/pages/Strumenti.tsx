@@ -437,7 +437,7 @@ function CentriCostoRicavoTab() {
               <TableHead className="w-8" />
               <TableHead className="w-[25%]">Codice</TableHead>
               <TableHead className="w-[30%]">Descrizione</TableHead>
-              <TableHead>Responsabile</TableHead>
+              <TableHead>Parole Chiave Matching</TableHead>
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
