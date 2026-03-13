@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/format";
 
 export interface Commessa {
-  numero: string;
+  numero: number;
   oggetto: string;
   committente: string;
   assegnataria: string;
