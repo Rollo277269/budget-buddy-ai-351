@@ -904,10 +904,6 @@ function ScadenzarioTab() {
 const StrumentiPage = () => {
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-lg font-bold tracking-tight">Strumenti</h2>
-        <p className="text-sm text-muted-foreground">Configurazione e utilità</p>
-      </div>
 
       <Tabs defaultValue="conti" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 max-w-2xl">
