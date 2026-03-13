@@ -11,6 +11,7 @@ import BanchePage from "./pages/Banche";
 import CommessePage from "./pages/Commesse";
 import ListaCommessePage from "./pages/ListaCommesse";
 import StrumentiPage from "./pages/Strumenti";
+import ScadenzarioPage from "./pages/Scadenzario";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
