@@ -81,7 +81,7 @@ const ListaCommessePage = () => {
       const countsDeriv = c.cig_derivato ? cigCounts.get(c.cig_derivato) || { fv: 0, fa: 0, tv: 0, ta: 0 } : { fv: 0, fa: 0, tv: 0, ta: 0 };
 
       return {
-        numero: c.commessa_consortile || "—",
+        numero: parseFloat(c.commessa_consortile || "0") || 0,
         oggetto: c.oggetto_lavori || "—",
         committente: c.committente || "—",
         assegnataria: c.impresa_assegnataria || "—",
