@@ -14,7 +14,9 @@ import {
   Scale,
   Receipt,
   Loader2,
+  Printer,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 

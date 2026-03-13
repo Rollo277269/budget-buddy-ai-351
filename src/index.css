@@ -101,3 +101,33 @@
     font-family: var(--font-mono);
   }
 }
+
+@media print {
+  /* Hide sidebar, header, filters, buttons */
+  [data-sidebar], nav, .sidebar-trigger, button, a[href] {
+    display: none !important;
+  }
+  /* Show main content full width */
+  main, [role="main"], .print-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0.5rem !important;
+  }
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area {
+    display: block !important;
+  }
+  /* Keep cards visible */
+  .rounded-xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
