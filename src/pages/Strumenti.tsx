@@ -338,8 +338,9 @@ function CentriCostoRicavoTab() {
   const [editDescrizione, setEditDescrizione] = useState("");
   const [editParoleChiave, setEditParoleChiave] = useState("");
 
-  // Adding subcategory
+  // Adding subcategory (to a specific category or unclassified)
   const [addingToCat, setAddingToCat] = useState<string | null>(null);
+  const [addingUnclassified, setAddingUnclassified] = useState<"costo" | "ricavo" | null>(null);
   const [newSubCodice, setNewSubCodice] = useState("");
   const [newSubDescrizione, setNewSubDescrizione] = useState("");
   const [newSubParoleChiave, setNewSubParoleChiave] = useState("");
@@ -354,12 +355,42 @@ function CentriCostoRicavoTab() {
   const [newCatCodice, setNewCatCodice] = useState("");
   const [newCatDescrizione, setNewCatDescrizione] = useState("");
 
+  // Drag state
+  const dragItemRef = useRef<string | null>(null);
+  const [dragOverCatId, setDragOverCatId] = useState<string | null>(null);
+  const [dragOverUnclassified, setDragOverUnclassified] = useState<"costo" | "ricavo" | null>(null);
+
   const toggleExpand = (catId: string) => {
     setExpandedCats((prev) => {
       const next = new Set(prev);
       if (next.has(catId)) next.delete(catId); else next.add(catId);
       return next;
     });
+  };
+
+  // ── Drag & Drop to classify ──
+  const handleDropOnCategory = (catId: string) => {
+    const itemId = dragItemRef.current;
+    if (!itemId) return;
+    const item = centri.find(c => c.id === itemId);
+    if (!item || item.categoriaId === catId) { dragItemRef.current = null; setDragOverCatId(null); return; }
+    const updated = centri.map(c => c.id === itemId ? { ...c, categoriaId: catId } : c);
+    setCentri(updated); saveCentriLocal(updated);
+    dragItemRef.current = null; setDragOverCatId(null);
+    const cat = categorie.find(c => c.id === catId);
+    toast.success(`"${item.codice}" spostata in ${cat?.codice || "categoria"}`);
+    if (!expandedCats.has(catId)) toggleExpand(catId);
+  };
+
+  const handleDropOnUnclassified = (tipo: "costo" | "ricavo") => {
+    const itemId = dragItemRef.current;
+    if (!itemId) return;
+    const item = centri.find(c => c.id === itemId);
+    if (!item || !item.categoriaId) { dragItemRef.current = null; setDragOverUnclassified(null); return; }
+    const updated = centri.map(c => c.id === itemId ? { ...c, categoriaId: undefined } : c);
+    setCentri(updated); saveCentriLocal(updated);
+    dragItemRef.current = null; setDragOverUnclassified(null);
+    toast.success(`"${item.codice}" rimossa dalla categoria`);
   };
 
   // ── Category CRUD ──
@@ -394,16 +425,20 @@ function CentriCostoRicavoTab() {
 
   const deleteCategory = (catId: string) => {
     const subs = centri.filter((c) => c.categoriaId === catId);
-    if (subs.length > 0 && !confirm(`Questa categoria contiene ${subs.length} sottocategorie che verranno eliminate. Procedere?`)) return;
+    const msg = subs.length > 0
+      ? `Questa categoria contiene ${subs.length} voci. Le voci verranno spostate tra le "Non classificate". Procedere?`
+      : `Eliminare la categoria?`;
+    if (!confirm(msg)) return;
+    // Move subs to unclassified instead of deleting them
+    const updatedCentri = centri.map((c) => c.categoriaId === catId ? { ...c, categoriaId: undefined } : c);
     const updatedCat = categorie.filter((c) => c.id !== catId);
-    const updatedCentri = centri.filter((c) => c.categoriaId !== catId);
     setCategorie(updatedCat); saveCategorieLocal(updatedCat);
     setCentri(updatedCentri); saveCentriLocal(updatedCentri);
     toast.success("Categoria eliminata");
   };
 
   // ── Subcategory CRUD ──
-  const handleAddSub = (categoriaId: string, tipo: "costo" | "ricavo") => {
+  const handleAddSub = (categoriaId: string | undefined, tipo: "costo" | "ricavo") => {
     if (!newSubCodice.trim() || !newSubDescrizione.trim()) {
       toast.error("Codice e descrizione obbligatori"); return;
     }
@@ -416,8 +451,9 @@ function CentriCostoRicavoTab() {
     };
     const updated = [...centri, newItem];
     setCentri(updated); saveCentriLocal(updated);
-    setAddingToCat(null); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave("");
-    toast.success("Sottocategoria aggiunta");
+    setAddingToCat(null); setAddingUnclassified(null);
+    setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave("");
+    toast.success("Voce aggiunta");
   };
 
   const startEditSub = (c: CentroCR) => {
@@ -434,20 +470,109 @@ function CentriCostoRicavoTab() {
       c.id === editingId ? { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave } : c
     );
     setCentri(updated); saveCentriLocal(updated); setEditingId(null);
-    toast.success("Sottocategoria aggiornata");
+    toast.success("Voce aggiornata");
   };
 
   const deleteSub = (id: string) => {
     const updated = centri.filter((c) => c.id !== id);
     setCentri(updated); saveCentriLocal(updated);
-    toast.success("Sottocategoria eliminata");
+    toast.success("Voce eliminata");
   };
+
+  // ── Render a draggable voce row ──
+  const renderVoceRow = (sub: CentroCR, indented: boolean) => (
+    <TableRow
+      key={sub.id}
+      draggable={editingId !== sub.id}
+      onDragStart={() => { dragItemRef.current = sub.id; }}
+      onDragEnd={() => { dragItemRef.current = null; setDragOverCatId(null); setDragOverUnclassified(null); }}
+      className="cursor-grab active:cursor-grabbing"
+    >
+      {editingId === sub.id ? (
+        <>
+          <TableCell className={indented ? "pl-12" : ""}>
+            <div className="flex items-center gap-2">
+              <GripVertical className="w-3.5 h-3.5 opacity-30 shrink-0" />
+              <Input value={editCodice} onChange={(e) => setEditCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono" autoFocus />
+            </div>
+          </TableCell>
+          <TableCell>
+            <Input value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} className="h-7 text-sm" />
+          </TableCell>
+          <TableCell>
+            <Input value={editParoleChiave} onChange={(e) => setEditParoleChiave(e.target.value)} className="h-7 text-sm" placeholder="parole chiave, separate, da virgola" />
+          </TableCell>
+          <TableCell>
+            <div className="flex gap-0.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEditSub}>
+                <Check className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </TableCell>
+        </>
+      ) : (
+        <>
+          <TableCell className={indented ? "pl-12" : ""}>
+            <div className="flex items-center gap-2">
+              <GripVertical className="w-3.5 h-3.5 opacity-30 shrink-0" />
+              <span className="font-mono text-sm">{sub.codice}</span>
+            </div>
+          </TableCell>
+          <TableCell className="text-sm">{sub.descrizione}</TableCell>
+          <TableCell className="text-sm text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
+          <TableCell>
+            <div className="flex gap-0.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditSub(sub)}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </TableCell>
+        </>
+      )}
+    </TableRow>
+  );
+
+  // ── Render add row ──
+  const renderAddRow = (categoriaId: string | undefined, tipo: "costo" | "ricavo", indented: boolean) => (
+    <TableRow>
+      <TableCell className={indented ? "pl-12" : ""}>
+        <div className="flex items-center gap-2">
+          <div className="w-3.5" />
+          <Input value={newSubCodice} onChange={(e) => setNewSubCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono" placeholder="Codice..." autoFocus />
+        </div>
+      </TableCell>
+      <TableCell>
+        <Input value={newSubDescrizione} onChange={(e) => setNewSubDescrizione(e.target.value)} className="h-7 text-sm" placeholder="Descrizione..." />
+      </TableCell>
+      <TableCell>
+        <Input value={newSubParoleChiave} onChange={(e) => setNewSubParoleChiave(e.target.value)} className="h-7 text-sm" placeholder="parole chiave, separate, da virgola" />
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-0.5">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => handleAddSub(categoriaId, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
+            <Check className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddingToCat(null); setAddingUnclassified(null); }}>
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 
   const renderTable = (tipo: "costo" | "ricavo") => {
     const cats = categorie.filter((c) => c.tipo === tipo);
     const title = tipo === "costo" ? "Centri di Costo" : "Centri di Ricavo";
     const isAddingCat = addingCatTo === tipo;
-    const totalSubs = centri.filter((c) => c.tipo === tipo).length;
+    const allItems = centri.filter((c) => c.tipo === tipo);
+    const unclassified = allItems.filter((c) => !c.categoriaId || !cats.some(cat => cat.id === c.categoriaId));
+    const isAddingUncl = addingUnclassified === tipo;
 
     return (
       <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
@@ -457,14 +582,21 @@ function CentriCostoRicavoTab() {
             <Tag className="w-4 h-4 text-white" />
             <h3 className="font-semibold text-sm text-white">{title}</h3>
             <Badge variant="secondary" className="text-[10px]">
-              {cats.length} cat · {totalSubs} voci
+              {cats.length} cat · {allItems.length} voci
             </Badge>
           </div>
-          <Button variant="outline" size="sm" className="h-7 text-xs"
-            onClick={() => { setAddingCatTo(tipo); setNewCatCodice(""); setNewCatDescrizione(""); }}
-            disabled={isAddingCat}>
-            <Plus className="w-3.5 h-3.5 mr-1" /> Categoria
-          </Button>
+          <div className="flex gap-1.5">
+            <Button variant="outline" size="sm" className="h-7 text-xs"
+              onClick={() => { setAddingUnclassified(tipo); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}
+              disabled={isAddingUncl}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> Voce
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs"
+              onClick={() => { setAddingCatTo(tipo); setNewCatCodice(""); setNewCatDescrizione(""); }}
+              disabled={isAddingCat}>
+              <FolderOpen className="w-3.5 h-3.5 mr-1" /> Categoria
+            </Button>
+          </div>
         </div>
 
         {/* Add category row */}
@@ -483,26 +615,30 @@ function CentriCostoRicavoTab() {
         )}
 
         {/* Empty state */}
-        {cats.length === 0 && !isAddingCat && (
+        {cats.length === 0 && unclassified.length === 0 && !isAddingCat && !isAddingUncl && (
           <div className="text-center py-8 text-muted-foreground text-sm">
             <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            Nessuna categoria configurata
+            Nessuna voce configurata
           </div>
         )}
 
-        {/* Categories */}
+        {/* Categories with drop targets */}
         {cats.map((cat) => {
           const subs = centri.filter((c) => c.categoriaId === cat.id);
           const isExpanded = expandedCats.has(cat.id);
           const isEditingCat = editingCatId === cat.id;
           const isAddingSub = addingToCat === cat.id;
+          const isDragOver = dragOverCatId === cat.id;
 
           return (
             <div key={cat.id} className="border-b border-border last:border-b-0 group/cat">
-              {/* Category row */}
+              {/* Category row — also a drop target */}
               <div
-                className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""}`}
+                className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""} ${isDragOver ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
                 onClick={() => !isEditingCat && toggleExpand(cat.id)}
+                onDragOver={(e) => { e.preventDefault(); setDragOverCatId(cat.id); setDragOverUnclassified(null); }}
+                onDragLeave={() => setDragOverCatId(null)}
+                onDrop={(e) => { e.preventDefault(); handleDropOnCategory(cat.id); }}
               >
                 {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
 
@@ -530,7 +666,7 @@ function CentriCostoRicavoTab() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditCat(cat)}>
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare la categoria "${cat.codice}"?`)) deleteCategory(cat.id); }}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteCategory(cat.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -553,87 +689,20 @@ function CentriCostoRicavoTab() {
                     <TableBody>
                       {subs.length === 0 && !isAddingSub && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-4 text-muted-foreground text-xs pl-12">
-                            Nessuna sottocategoria —{" "}
-                            <button className="underline hover:text-foreground" onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}>
-                              aggiungine una
-                            </button>
+                          <TableCell colSpan={4} className="text-center py-4 text-muted-foreground text-xs">
+                            Trascina qui una voce per classificarla in questa categoria
                           </TableCell>
                         </TableRow>
                       )}
-                      {subs.map((sub) => (
-                        <TableRow key={sub.id}>
-                          {editingId === sub.id ? (
-                            <>
-                              <TableCell className="pl-12">
-                                <Input value={editCodice} onChange={(e) => setEditCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono" autoFocus />
-                              </TableCell>
-                              <TableCell>
-                                <Input value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} className="h-7 text-sm" />
-                              </TableCell>
-                              <TableCell>
-                                <Input value={editParoleChiave} onChange={(e) => setEditParoleChiave(e.target.value)} className="h-7 text-sm" placeholder="parole chiave, separate, da virgola" />
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-0.5">
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEditSub}>
-                                    <Check className="w-3.5 h-3.5" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
-                                    <X className="w-3.5 h-3.5" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </>
-                          ) : (
-                            <>
-                              <TableCell className="font-mono text-sm pl-12">{sub.codice}</TableCell>
-                              <TableCell className="text-sm">{sub.descrizione}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
-                              <TableCell>
-                                <div className="flex gap-0.5">
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditSub(sub)}>
-                                    <Pencil className="w-3.5 h-3.5" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </>
-                          )}
-                        </TableRow>
-                      ))}
-                      {isAddingSub && (
-                        <TableRow>
-                          <TableCell className="pl-12">
-                            <Input value={newSubCodice} onChange={(e) => setNewSubCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono" placeholder="Codice..." autoFocus />
-                          </TableCell>
-                          <TableCell>
-                            <Input value={newSubDescrizione} onChange={(e) => setNewSubDescrizione(e.target.value)} className="h-7 text-sm" placeholder="Descrizione..." />
-                          </TableCell>
-                          <TableCell>
-                            <Input value={newSubParoleChiave} onChange={(e) => setNewSubParoleChiave(e.target.value)} className="h-7 text-sm" placeholder="parole chiave, separate, da virgola" />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-0.5">
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => handleAddSub(cat.id, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
-                                <Check className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAddingToCat(null)}>
-                                <X className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
+                      {subs.map((sub) => renderVoceRow(sub, true))}
+                      {isAddingSub && renderAddRow(cat.id, tipo, true)}
                     </TableBody>
                   </Table>
                   {!isAddingSub && subs.length > 0 && (
                     <div className="px-4 py-1.5 border-t border-border/50">
                       <Button variant="ghost" size="sm" className="h-6 text-[11px] text-muted-foreground"
                         onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}>
-                        <Plus className="w-3 h-3 mr-1" /> Aggiungi sottocategoria
+                        <Plus className="w-3 h-3 mr-1" /> Aggiungi voce
                       </Button>
                     </div>
                   )}
@@ -642,6 +711,28 @@ function CentriCostoRicavoTab() {
             </div>
           );
         })}
+
+        {/* Unclassified items — drop target to remove from category */}
+        {(unclassified.length > 0 || isAddingUncl) && (
+          <div
+            className={`border-t border-border ${dragOverUnclassified === tipo ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOverUnclassified(tipo); setDragOverCatId(null); }}
+            onDragLeave={() => setDragOverUnclassified(null)}
+            onDrop={(e) => { e.preventDefault(); handleDropOnUnclassified(tipo); }}
+          >
+            <div className="flex items-center gap-2 px-4 py-2 bg-muted/40">
+              <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">Non classificate</span>
+              <Badge variant="outline" className="text-[10px]">{unclassified.length}</Badge>
+            </div>
+            <Table>
+              <TableBody>
+                {unclassified.map((sub) => renderVoceRow(sub, false))}
+                {isAddingUncl && renderAddRow(undefined, tipo, false)}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     );
   };
@@ -651,7 +742,7 @@ function CentriCostoRicavoTab() {
       <div>
         <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
         <p className="text-xs text-muted-foreground">
-          Configura categorie e sottocategorie per i Centri di Costo e Ricavo. Per ogni sottocategoria puoi definire parole chiave (separate da virgola) per l'assegnamento automatico delle fatture.
+          Configura categorie e voci per i Centri di Costo e Ricavo. Trascina le voci sulle categorie per classificarle. Per ogni voce puoi definire parole chiave (separate da virgola) per il matching automatico.
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
