@@ -320,7 +320,7 @@ function CentriCostoRicavoTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCodice, setEditCodice] = useState("");
   const [editDescrizione, setEditDescrizione] = useState("");
-  const [editResponsabile, setEditResponsabile] = useState("");
+  const [editParoleChiave, setEditParoleChiave] = useState("");
   const [editNote, setEditNote] = useState("");
   const [addingTo, setAddingTo] = useState<"costo" | "ricavo" | null>(null);
   const [newCodice, setNewCodice] = useState("");
