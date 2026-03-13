@@ -370,7 +370,7 @@ function CentriCostoRicavoTab() {
       tipo,
       codice: newCodice.toUpperCase(),
       descrizione: newDescrizione,
-      responsabile: newResponsabile,
+      paroleChiaveMatching: newParoleChiave,
       note: newNote
     };
     const updated = [...centri, newCentro];
