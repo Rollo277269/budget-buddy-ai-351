@@ -425,7 +425,7 @@ function CentriCostoRicavoTab() {
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => {setAddingTo(tipo);setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");}}
+            onClick={() => {setAddingTo(tipo);setNewCodice("");setNewDescrizione("");setNewParoleChiave("");setNewNote("");}}
             disabled={isAdding}>
             
             <Plus className="w-3.5 h-3.5 mr-1" /> Aggiungi
