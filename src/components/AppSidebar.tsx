@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, ShoppingCart, Landmark, FolderKanban, ClipboardList, Settings } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileText, ShoppingCart, Landmark, FolderKanban, ClipboardList, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -13,6 +13,7 @@ import {
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
   { title: "Vendite", url: "/vendite", icon: FileText },
   { title: "Acquisti", url: "/acquisti", icon: ShoppingCart },
   { title: "Banche", url: "/banche", icon: Landmark },

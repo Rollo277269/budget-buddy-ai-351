@@ -11,6 +11,7 @@ import BanchePage from "./pages/Banche";
 import CommessePage from "./pages/Commesse";
 import ListaCommessePage from "./pages/ListaCommesse";
 import StrumentiPage from "./pages/Strumenti";
+import ScadenzarioPage from "./pages/Scadenzario";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
         <AppLayout>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/scadenzario" element={<ScadenzarioPage />} />
             <Route path="/vendite" element={<VenditePage />} />
             <Route path="/acquisti" element={<AcquistiPage />} />
             <Route path="/banche" element={<BanchePage />} />
