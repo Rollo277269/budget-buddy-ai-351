@@ -6,7 +6,7 @@ import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatNumber } from "@/lib/format";
 
 export interface Commessa {
   numero: string;
