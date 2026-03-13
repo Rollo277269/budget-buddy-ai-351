@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Settings, Landmark, FileText, CalendarClock, Plus, Trash2, Save, AlertTriangle, Clock, CheckCircle2, Building2, TrendingUp, TrendingDown } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Settings, Landmark, FileText, CalendarClock, Plus, Trash2, Save, AlertTriangle, Clock, CheckCircle2, Building2, TrendingUp, TrendingDown, Pencil, Check, X, GripVertical, Tag } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
