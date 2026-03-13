@@ -487,7 +487,7 @@ function CentriCostoRicavoTab() {
                     <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
                     <TableCell className="font-mono text-sm font-semibold">{c.codice}</TableCell>
                     <TableCell className="text-sm">{c.descrizione}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.responsabile || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{c.paroleChiaveMatching || "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(c)}>
