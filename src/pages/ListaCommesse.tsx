@@ -111,7 +111,7 @@ const ListaCommessePage = () => {
           {rows.length} commesse dal progetto CSSR
         </p>
       </div>
-      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || r.numero} onRowClick={setSelected} />
+      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} />
       <CommessaDetailSheet
         commessa={selected}
         open={!!selected}
