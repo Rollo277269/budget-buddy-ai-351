@@ -242,7 +242,6 @@ const VenditePage = () => {
         )}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h2 className="text-lg font-bold tracking-tight">Fatture di Vendita</h2>
             <p className="text-sm text-muted-foreground">
               {sales.length} fatture trovate
               {xmlRecords.length > 0 && (
