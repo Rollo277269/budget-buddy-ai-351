@@ -469,7 +469,7 @@ function CentriCostoRicavoTab() {
                       <Input value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} className="h-8 text-sm" />
                     </TableCell>
                     <TableCell>
-                      <Input value={editResponsabile} onChange={(e) => setEditResponsabile(e.target.value)} className="h-8 text-sm" />
+                      <Input value={editParoleChiave} onChange={(e) => setEditParoleChiave(e.target.value)} className="h-8 text-sm" placeholder="parole chiave, separate, da virgola" />
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
