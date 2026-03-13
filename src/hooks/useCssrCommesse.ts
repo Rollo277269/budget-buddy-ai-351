@@ -40,7 +40,7 @@ async function fetchCssrCommesse(): Promise<CssrCommessa[]> {
     console.error("Error fetching CSSR commesse:", error);
     return [];
   }
-  return (data as CssrCommessa[]) || [];
+  return (data as unknown as CssrCommessa[]) || [];
 }
 
 export function useCssrCommesse() {
