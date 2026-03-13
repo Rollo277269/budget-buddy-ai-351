@@ -74,11 +74,16 @@ const Index = () => {
 
       <div className="p-6 space-y-6">
         {/* Filters */}
-        <FilterBar
-          filters={filters}
-          onFiltersChange={setFilters}
-          options={filterOptions}
-        />
+        <div className="flex items-center justify-between gap-4 no-print">
+          <FilterBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            options={filterOptions}
+          />
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="shrink-0">
+            <Printer className="h-4 w-4 mr-1" /> Stampa PDF
+          </Button>
+        </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
