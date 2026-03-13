@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/format";
 
 export interface Commessa {
-  numero: string;
+  numero: number;
   oggetto: string;
   committente: string;
   assegnataria: string;
@@ -22,7 +22,7 @@ export interface Commessa {
 }
 
 const columns: ColumnDef<Commessa>[] = [
-  { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero && r.numero !== "—" ? formatNumber(parseFloat(r.numero)).replace(/,00$/, "") : "—"}</span>, sortable: true },
+  { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero ? formatNumber(r.numero).replace(/,00$/, "") : "—"}</span>, sortable: true },
   { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[280px] truncate block">{r.oggetto}</span> },
   { key: "committente", label: "Committente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.committente}</span> },
   { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
@@ -81,7 +81,7 @@ const ListaCommessePage = () => {
       const countsDeriv = c.cig_derivato ? cigCounts.get(c.cig_derivato) || { fv: 0, fa: 0, tv: 0, ta: 0 } : { fv: 0, fa: 0, tv: 0, ta: 0 };
 
       return {
-        numero: c.commessa_consortile || "—",
+        numero: parseFloat(c.commessa_consortile || "0") || 0,
         oggetto: c.oggetto_lavori || "—",
         committente: c.committente || "—",
         assegnataria: c.impresa_assegnataria || "—",
@@ -111,7 +111,7 @@ const ListaCommessePage = () => {
           {rows.length} commesse dal progetto CSSR
         </p>
       </div>
-      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || r.numero} onRowClick={setSelected} />
+      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} />
       <CommessaDetailSheet
         commessa={selected}
         open={!!selected}
