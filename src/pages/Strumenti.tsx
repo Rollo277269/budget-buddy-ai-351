@@ -486,7 +486,7 @@ function CentriCostoRicavoTab() {
       draggable={editingId !== sub.id}
       onDragStart={() => { dragItemRef.current = sub.id; }}
       onDragEnd={() => { dragItemRef.current = null; setDragOverCatId(null); setDragOverUnclassified(null); }}
-      className="cursor-grab active:cursor-grabbing"
+      className="cursor-grab active:cursor-grabbing [&>td]:py-1.5"
     >
       {editingId === sub.id ? (
         <>
