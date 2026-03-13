@@ -27,8 +27,8 @@ interface ContoCorrente {
 const CONTI_KEY = "conti-correnti";
 
 function loadConti(): ContoCorrente[] {
-  try { return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]"); }
-  catch { return []; }
+  try {return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]");}
+  catch {return [];}
 }
 
 function saveConti(conti: ContoCorrente[]) {
@@ -47,9 +47,9 @@ function ContiCorrentiTab() {
       toast.error("Banca e IBAN sono obbligatori");
       return;
     }
-    const updated = editing.id
-      ? conti.map((c) => (c.id === editing.id ? editing : c))
-      : [...conti, { ...editing, id: crypto.randomUUID() }];
+    const updated = editing.id ?
+    conti.map((c) => c.id === editing.id ? editing : c) :
+    [...conti, { ...editing, id: crypto.randomUUID() }];
     setConti(updated);
     saveConti(updated);
     setEditing(null);
@@ -75,17 +75,17 @@ function ContiCorrentiTab() {
         </Button>
       </div>
 
-      {editing && (
-        <Card>
+      {editing &&
+      <Card>
           <CardContent className="p-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Tipo *</Label>
                 <select
-                  value={editing.tipo}
-                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as ContoCorrente["tipo"] })}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
+                value={editing.tipo}
+                onChange={(e) => setEditing({ ...editing, tipo: e.target.value as ContoCorrente["tipo"] })}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                
                   <option value="conto_corrente">Conto Corrente</option>
                   <option value="carta_credito">Carta di Credito</option>
                   <option value="finanziamento">Finanziamento</option>
@@ -115,17 +115,17 @@ function ContiCorrentiTab() {
             </div>
           </CardContent>
         </Card>
-      )}
+      }
 
-      {conti.length === 0 && !editing ? (
-        <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
+      {conti.length === 0 && !editing ?
+      <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
           <Landmark className="h-10 w-10 mb-3 opacity-30" />
           <p className="text-sm">Nessun conto corrente configurato</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {conti.map((c) => (
-            <Card key={c.id} className="group">
+        </div> :
+
+      <div className="grid gap-3">
+          {conti.map((c) =>
+        <Card key={c.id} className="group">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -148,11 +148,11 @@ function ContiCorrentiTab() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+        )}
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 // ─── Regole Denominazione ────────────────────────────────────────
@@ -172,10 +172,10 @@ function loadRules(): NamingRule[] {
     if (saved) return saved;
   } catch {}
   return [
-    { id: "1", tipo: "Fattura Vendita", pattern: "FV_{ANNO}_{NUMERO}_{CLIENTE}", esempio: "FV_2024_001_RossiSRL" },
-    { id: "2", tipo: "Fattura Acquisto", pattern: "FA_{ANNO}_{NUMERO}_{FORNITORE}", esempio: "FA_2024_042_BianchiSPA" },
-    { id: "3", tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" },
-  ];
+  { id: "1", tipo: "Fattura Vendita", pattern: "FV_{ANNO}_{NUMERO}_{CLIENTE}", esempio: "FV_2024_001_RossiSRL" },
+  { id: "2", tipo: "Fattura Acquisto", pattern: "FA_{ANNO}_{NUMERO}_{FORNITORE}", esempio: "FA_2024_042_BianchiSPA" },
+  { id: "3", tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" }];
+
 }
 
 function saveRules(rules: NamingRule[]) {
@@ -194,9 +194,9 @@ function NamingRulesTab() {
       toast.error("Tipo documento e pattern sono obbligatori");
       return;
     }
-    const updated = editing.id
-      ? rules.map((r) => (r.id === editing.id ? editing : r))
-      : [...rules, { ...editing, id: crypto.randomUUID() }];
+    const updated = editing.id ?
+    rules.map((r) => r.id === editing.id ? editing : r) :
+    [...rules, { ...editing, id: crypto.randomUUID() }];
     setRules(updated);
     saveRules(updated);
     setEditing(null);
@@ -222,8 +222,8 @@ function NamingRulesTab() {
         </Button>
       </div>
 
-      {editing && (
-        <Card>
+      {editing &&
+      <Card>
           <CardContent className="p-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="space-y-1">
@@ -245,36 +245,36 @@ function NamingRulesTab() {
             </div>
           </CardContent>
         </Card>
-      )}
+      }
 
       <div className="text-xs text-muted-foreground rounded-lg border bg-muted/30 p-3">
         <p className="font-medium mb-1">Variabili disponibili:</p>
         <div className="flex flex-wrap gap-2">
-          {["{ANNO}", "{MESE}", "{NUMERO}", "{CLIENTE}", "{FORNITORE}", "{BANCA}", "{CIG}", "{DATA}"].map((v) => (
-            <Badge key={v} variant="outline" className="font-mono text-[10px]">{v}</Badge>
-          ))}
+          {["{ANNO}", "{MESE}", "{NUMERO}", "{CLIENTE}", "{FORNITORE}", "{BANCA}", "{CIG}", "{DATA}"].map((v) =>
+          <Badge key={v} variant="outline" className="font-mono text-[10px]">{v}</Badge>
+          )}
         </div>
       </div>
 
-      {rules.length === 0 && !editing ? (
-        <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
+      {rules.length === 0 && !editing ?
+      <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
           <FileText className="h-10 w-10 mb-3 opacity-30" />
           <p className="text-sm">Nessuna regola configurata</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {rules.map((r) => (
-            <Card key={r.id} className="group">
+        </div> :
+
+      <div className="space-y-2">
+          {rules.map((r) =>
+        <Card key={r.id} className="group">
               <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-4 min-w-0">
                   <Badge variant="secondary" className="text-[10px] shrink-0">{r.tipo}</Badge>
                   <span className="text-xs font-mono truncate">{r.pattern}</span>
-                  {r.esempio && (
-                    <>
+                  {r.esempio &&
+              <>
                       <span className="text-xs text-muted-foreground">→</span>
                       <span className="text-xs text-muted-foreground font-mono truncate">{r.esempio}</span>
                     </>
-                  )}
+              }
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(r)}>
@@ -286,11 +286,11 @@ function NamingRulesTab() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+        )}
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 // ─── Centri di Costo / Ricavo ────────────────────────────────────
@@ -307,8 +307,8 @@ interface CentroCR {
 const CENTRI_KEY = "centri-costo-ricavo";
 
 function loadCentri(): CentroCR[] {
-  try { return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]"); }
-  catch { return []; }
+  try {return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]");}
+  catch {return [];}
 }
 
 function saveCentri(centri: CentroCR[]) {
@@ -338,7 +338,7 @@ function CentriCostoRicavoTab() {
     setEditNote(c.note);
   };
 
-  const cancelEdit = () => { setEditingId(null); };
+  const cancelEdit = () => {setEditingId(null);};
 
   const saveEdit = () => {
     if (!editingId || !editCodice.trim() || !editDescrizione.trim()) {
@@ -346,11 +346,11 @@ function CentriCostoRicavoTab() {
       return;
     }
     const duplicate = centri.find((c) => c.codice === editCodice.toUpperCase() && c.id !== editingId);
-    if (duplicate) { toast.error("Codice già esistente"); return; }
+    if (duplicate) {toast.error("Codice già esistente");return;}
     const updated = centri.map((c) =>
-      c.id === editingId
-        ? { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, responsabile: editResponsabile, note: editNote }
-        : c
+    c.id === editingId ?
+    { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, responsabile: editResponsabile, note: editNote } :
+    c
     );
     setCentri(updated);
     saveCentri(updated);
@@ -364,26 +364,26 @@ function CentriCostoRicavoTab() {
       return;
     }
     const duplicate = centri.find((c) => c.codice === newCodice.toUpperCase());
-    if (duplicate) { toast.error("Codice già esistente"); return; }
+    if (duplicate) {toast.error("Codice già esistente");return;}
     const newCentro: CentroCR = {
       id: crypto.randomUUID(),
       tipo,
       codice: newCodice.toUpperCase(),
       descrizione: newDescrizione,
       responsabile: newResponsabile,
-      note: newNote,
+      note: newNote
     };
     const updated = [...centri, newCentro];
     setCentri(updated);
     saveCentri(updated);
     setAddingTo(null);
-    setNewCodice(""); setNewDescrizione(""); setNewResponsabile(""); setNewNote("");
+    setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");
     toast.success("Centro aggiunto");
   };
 
   const cancelAdd = () => {
     setAddingTo(null);
-    setNewCodice(""); setNewDescrizione(""); setNewResponsabile(""); setNewNote("");
+    setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");
   };
 
   const handleDelete = (id: string) => {
@@ -425,9 +425,9 @@ function CentriCostoRicavoTab() {
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => { setAddingTo(tipo); setNewCodice(""); setNewDescrizione(""); setNewResponsabile(""); setNewNote(""); }}
-            disabled={isAdding}
-          >
+            onClick={() => {setAddingTo(tipo);setNewCodice("");setNewDescrizione("");setNewResponsabile("");setNewNote("");}}
+            disabled={isAdding}>
+            
             <Plus className="w-3.5 h-3.5 mr-1" /> Aggiungi
           </Button>
         </div>
@@ -442,25 +442,25 @@ function CentriCostoRicavoTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length === 0 && !isAdding && (
-              <TableRow>
+            {items.length === 0 && !isAdding &&
+            <TableRow>
                 <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
                   Nessun centro configurato
                 </TableCell>
               </TableRow>
-            )}
-            {items.map((c) => (
-              <TableRow
-                key={c.id}
-                draggable={editingId !== c.id}
-                onDragStart={() => { dragItemRef.current = c.id; }}
-                onDragOver={(e) => { e.preventDefault(); setDragOverId(c.id); }}
-                onDrop={() => { if (dragItemRef.current) handleReorder(dragItemRef.current, c.id, items); dragItemRef.current = null; setDragOverId(null); }}
-                onDragEnd={() => { dragItemRef.current = null; setDragOverId(null); }}
-                className={dragOverId === c.id ? "bg-accent" : ""}
-              >
-                {editingId === c.id ? (
-                  <>
+            }
+            {items.map((c) =>
+            <TableRow
+              key={c.id}
+              draggable={editingId !== c.id}
+              onDragStart={() => {dragItemRef.current = c.id;}}
+              onDragOver={(e) => {e.preventDefault();setDragOverId(c.id);}}
+              onDrop={() => {if (dragItemRef.current) handleReorder(dragItemRef.current, c.id, items);dragItemRef.current = null;setDragOverId(null);}}
+              onDragEnd={() => {dragItemRef.current = null;setDragOverId(null);}}
+              className={dragOverId === c.id ? "bg-accent" : ""}>
+              
+                {editingId === c.id ?
+              <>
                     <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
                     <TableCell>
                       <Input value={editCodice} onChange={(e) => setEditCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono" autoFocus />
@@ -481,9 +481,9 @@ function CentriCostoRicavoTab() {
                         </Button>
                       </div>
                     </TableCell>
-                  </>
-                ) : (
-                  <>
+                  </> :
+
+              <>
                     <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
                     <TableCell className="font-mono text-sm font-semibold">{c.codice}</TableCell>
                     <TableCell className="text-sm">{c.descrizione}</TableCell>
@@ -493,17 +493,17 @@ function CentriCostoRicavoTab() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(c)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare "${c.codice} - ${c.descrizione}"?`)) handleDelete(c.id); }}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => {if (confirm(`Eliminare "${c.codice} - ${c.descrizione}"?`)) handleDelete(c.id);}}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </TableCell>
                   </>
-                )}
+              }
               </TableRow>
-            ))}
-            {isAdding && (
-              <TableRow>
+            )}
+            {isAdding &&
+            <TableRow>
                 <TableCell />
                 <TableCell>
                   <Input value={newCodice} onChange={(e) => setNewCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono" placeholder="Codice..." autoFocus />
@@ -525,27 +525,27 @@ function CentriCostoRicavoTab() {
                   </div>
                 </TableCell>
               </TableRow>
-            )}
+            }
           </TableBody>
         </Table>
-      </div>
-    );
+      </div>);
+
   };
 
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
-        <p className="text-xs text-muted-foreground">
-          Definisci i centri per la contabilità analitica. Puoi riordinare trascinando le righe.
+        <p className="text-xs text-muted-foreground">Configura i Centri di Costo e di Ricavo per le sezioni CSSR e Consorziata. Per ogni centro puoi definire delle parole chiave (separate da virgola) per l'assegnamento automatico delle fatture caricate.es. materiale, cemento, calcestruzzo
+
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {renderTable("costo")}
         {renderTable("ricavo")}
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 // ─── Scadenzario ─────────────────────────────────────────────────
@@ -572,35 +572,35 @@ interface ScadenzaRow {
 }
 
 const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
-  {
-    key: "stato", label: "Stato", sortable: true, filterable: true,
-    render: (r) => {
-      if (r.stato === "scaduta") return <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Scaduta</Badge>;
-      if (r.stato === "in_scadenza") return <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><Clock className="h-3 w-3 mr-1" />In scadenza</Badge>;
-      return <Badge variant="outline" className="text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Regolare</Badge>;
-    },
-  },
-  {
-    key: "tipo", label: "Tipo", sortable: true, filterable: true,
-    render: (r) => <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>,
-  },
-  { key: "numero", label: "N° Fattura", sortable: true, render: (r) => <span className="text-xs font-mono">{r.numero}</span> },
-  { key: "soggetto", label: "Soggetto", filterable: true, render: (r) => <span className="text-xs truncate max-w-[200px] block">{r.soggetto}</span> },
-  { key: "scadenza", label: "Scadenza", sortable: true, render: (r) => <span className="text-xs">{r.scadenza}</span> },
-  {
-    key: "giorniRimasti", label: "Giorni", sortable: true, align: "right",
-    render: (r) => (
-      <span className={`text-xs font-mono font-medium ${r.giorniRimasti < 0 ? "text-destructive" : r.giorniRimasti <= 30 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"}`}>
+{
+  key: "stato", label: "Stato", sortable: true, filterable: true,
+  render: (r) => {
+    if (r.stato === "scaduta") return <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Scaduta</Badge>;
+    if (r.stato === "in_scadenza") return <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><Clock className="h-3 w-3 mr-1" />In scadenza</Badge>;
+    return <Badge variant="outline" className="text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />Regolare</Badge>;
+  }
+},
+{
+  key: "tipo", label: "Tipo", sortable: true, filterable: true,
+  render: (r) => <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>
+},
+{ key: "numero", label: "N° Fattura", sortable: true, render: (r) => <span className="text-xs font-mono">{r.numero}</span> },
+{ key: "soggetto", label: "Soggetto", filterable: true, render: (r) => <span className="text-xs truncate max-w-[200px] block">{r.soggetto}</span> },
+{ key: "scadenza", label: "Scadenza", sortable: true, render: (r) => <span className="text-xs">{r.scadenza}</span> },
+{
+  key: "giorniRimasti", label: "Giorni", sortable: true, align: "right",
+  render: (r) =>
+  <span className={`text-xs font-mono font-medium ${r.giorniRimasti < 0 ? "text-destructive" : r.giorniRimasti <= 30 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"}`}>
         {r.giorniRimasti < 0 ? `${Math.abs(r.giorniRimasti)}g fa` : `${r.giorniRimasti}g`}
       </span>
-    ),
-  },
-  {
-    key: "totale", label: "Importo", sortable: true, align: "right",
-    render: (r) => <span className={`text-xs font-mono font-medium ${r.tipo === "credito" ? "text-income" : "text-expense"}`}>{formatCurrency(r.totale)}</span>,
-  },
-  { key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> },
-];
+
+},
+{
+  key: "totale", label: "Importo", sortable: true, align: "right",
+  render: (r) => <span className={`text-xs font-mono font-medium ${r.tipo === "credito" ? "text-income" : "text-expense"}`}>{formatCurrency(r.totale)}</span>
+},
+{ key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> }];
+
 
 function ScadenzarioTab() {
   const { allSales, allPurchases, loading } = useInvoiceData();
@@ -651,8 +651,8 @@ function ScadenzarioTab() {
     return (
       <div className="flex items-center justify-center h-40">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -692,10 +692,10 @@ function ScadenzarioTab() {
       <DataTable<ScadenzaRow>
         columns={scadenzaCols}
         data={rows}
-        rowKey={(r) => `${r.tipo}-${r.numero}`}
-      />
-    </div>
-  );
+        rowKey={(r) => `${r.tipo}-${r.numero}`} />
+      
+    </div>);
+
 }
 
 // ─── Main Page ───────────────────────────────────────────────────
@@ -737,8 +737,8 @@ const StrumentiPage = () => {
           <ScadenzarioTab />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>);
+
 };
 
 export default StrumentiPage;
