@@ -486,7 +486,7 @@ function CentriCostoRicavoTab() {
       draggable={editingId !== sub.id}
       onDragStart={() => { dragItemRef.current = sub.id; }}
       onDragEnd={() => { dragItemRef.current = null; setDragOverCatId(null); setDragOverUnclassified(null); }}
-      className="cursor-grab active:cursor-grabbing"
+      className="cursor-grab active:cursor-grabbing [&>td]:py-1.5"
     >
       {editingId === sub.id ? (
         <>
@@ -518,11 +518,11 @@ function CentriCostoRicavoTab() {
           <TableCell className={indented ? "pl-12" : ""}>
             <div className="flex items-center gap-2">
               <GripVertical className="w-3.5 h-3.5 opacity-30 shrink-0" />
-              <span className="font-mono text-sm">{sub.codice}</span>
+              <span className="font-mono text-xs">{sub.codice}</span>
             </div>
           </TableCell>
-          <TableCell className="text-sm">{sub.descrizione}</TableCell>
-          <TableCell className="text-sm text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
+          <TableCell className="text-xs">{sub.descrizione}</TableCell>
+          <TableCell className="text-xs text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
           <TableCell>
             <div className="flex gap-0.5">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditSub(sub)}>
@@ -634,7 +634,7 @@ function CentriCostoRicavoTab() {
             <div key={cat.id} className="border-b border-border last:border-b-0 group/cat">
               {/* Category row — also a drop target */}
               <div
-                className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""} ${isDragOver ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
+                className={`flex items-center gap-2 px-4 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""} ${isDragOver ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
                 onClick={() => !isEditingCat && toggleExpand(cat.id)}
                 onDragOver={(e) => { e.preventDefault(); setDragOverCatId(cat.id); setDragOverUnclassified(null); }}
                 onDragLeave={() => setDragOverCatId(null)}
@@ -656,8 +656,8 @@ function CentriCostoRicavoTab() {
                 ) : (
                   <>
                     <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-mono text-sm font-semibold">{cat.codice}</span>
-                    <span className="text-sm text-muted-foreground flex-1">— {cat.descrizione}</span>
+                <span className="font-mono text-xs font-semibold">{cat.codice}</span>
+                    <span className="text-xs text-muted-foreground flex-1">— {cat.descrizione}</span>
                     <Badge variant="outline" className="text-[10px] mr-1">{subs.length}</Badge>
                     <div className="flex gap-0.5 shrink-0 opacity-0 group-hover/cat:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); if (!isExpanded) toggleExpand(cat.id); }}>
@@ -680,10 +680,10 @@ function CentriCostoRicavoTab() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[30%] pl-12">Codice</TableHead>
-                        <TableHead className="w-[30%]">Descrizione</TableHead>
-                        <TableHead>Parole Chiave Matching</TableHead>
-                        <TableHead className="w-20" />
+                    <TableHead className="w-[30%] pl-12 text-[11px] h-8">Codice</TableHead>
+                        <TableHead className="w-[30%] text-[11px] h-8">Descrizione</TableHead>
+                        <TableHead className="text-[11px] h-8">Parole Chiave Matching</TableHead>
+                        <TableHead className="w-20 h-8" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
