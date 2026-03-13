@@ -314,10 +314,39 @@ function saveCentri(centri: CentroCR[]) {
   localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
 }
 
+function makeCentriColumns(): ColumnDef<CentroCR>[] {
+  return [
+    {
+      key: "codice", label: "Codice", sortable: true, filterable: true,
+      render: (r) => <span className="font-mono text-xs font-semibold">{r.codice}</span>,
+    },
+    {
+      key: "tipo", label: "Tipo", sortable: true, filterable: true,
+      render: (r) => (
+        <Badge variant={r.tipo === "costo" ? "destructive" : "secondary"} className="text-[10px]">
+          {r.tipo === "costo" ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
+          {r.tipo === "costo" ? "Costo" : "Ricavo"}
+        </Badge>
+      ),
+    },
+    {
+      key: "descrizione", label: "Descrizione", sortable: true, filterable: true,
+      render: (r) => <span className="text-xs max-w-[250px] truncate block">{r.descrizione}</span>,
+    },
+    {
+      key: "responsabile", label: "Responsabile", sortable: true, filterable: true,
+      render: (r) => <span className="text-xs text-muted-foreground">{r.responsabile || "—"}</span>,
+    },
+    {
+      key: "note", label: "Note",
+      render: (r) => <span className="text-xs text-muted-foreground italic max-w-[200px] truncate block">{r.note || "—"}</span>,
+    },
+  ];
+}
+
 function CentriCostoRicavoTab() {
   const [centri, setCentri] = useState<CentroCR[]>(loadCentri);
   const [editing, setEditing] = useState<CentroCR | null>(null);
-  const [filtroTipo, setFiltroTipo] = useState<"tutti" | "costo" | "ricavo">("tutti");
 
   const empty: CentroCR = { id: "", tipo: "costo", codice: "", descrizione: "", responsabile: "", note: "" };
 
@@ -348,28 +377,24 @@ function CentriCostoRicavoTab() {
     toast.success("Centro eliminato");
   };
 
-  const filtered = filtroTipo === "tutti" ? centri : centri.filter((c) => c.tipo === filtroTipo);
   const numCosti = centri.filter((c) => c.tipo === "costo").length;
   const numRicavi = centri.filter((c) => c.tipo === "ricavo").length;
+  const columns = makeCentriColumns();
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
-          <p className="text-xs text-muted-foreground">Definisci i centri per la contabilità analitica</p>
+          <p className="text-xs text-muted-foreground">
+            {centri.length} centri configurati — {numCosti} costo, {numRicavi} ricavo
+          </p>
         </div>
-        <Button size="sm" onClick={() => setEditing({ ...empty })}>
-          <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
-        </Button>
-      </div>
-
-      <div className="flex gap-2">
-        {(["tutti", "costo", "ricavo"] as const).map((t) => (
-          <Button key={t} size="sm" variant={filtroTipo === t ? "default" : "outline"} className="text-xs h-7" onClick={() => setFiltroTipo(t)}>
-            {t === "tutti" ? `Tutti (${centri.length})` : t === "costo" ? `Costi (${numCosti})` : `Ricavi (${numRicavi})`}
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => setEditing({ ...empty })}>
+            <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
           </Button>
-        ))}
+        </div>
       </div>
 
       {editing && (
@@ -405,6 +430,11 @@ function CentriCostoRicavoTab() {
               </div>
             </div>
             <div className="flex gap-2 justify-end">
+              {editing.id && (
+                <Button variant="destructive" size="sm" onClick={() => { handleDelete(editing.id); setEditing(null); }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
               <Button size="sm" onClick={handleSave}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
             </div>
@@ -412,44 +442,18 @@ function CentriCostoRicavoTab() {
         </Card>
       )}
 
-      {filtered.length === 0 && !editing ? (
+      {centri.length === 0 && !editing ? (
         <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
           <Building2 className="h-10 w-10 mb-3 opacity-30" />
-          <p className="text-sm">{filtroTipo === "tutti" ? "Nessun centro configurato" : `Nessun centro di ${filtroTipo} configurato`}</p>
+          <p className="text-sm">Nessun centro configurato</p>
         </div>
-      ) : (
-        <div className="grid gap-3">
-          {filtered.map((c) => (
-            <Card key={c.id} className="group">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <Badge variant={c.tipo === "costo" ? "destructive" : "secondary"} className="text-[10px] mt-0.5 shrink-0">
-                      {c.tipo === "costo" ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
-                      {c.tipo === "costo" ? "Costo" : "Ricavo"}
-                    </Badge>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-semibold text-muted-foreground">{c.codice}</span>
-                        <p className="text-sm font-semibold">{c.descrizione}</p>
-                      </div>
-                      {c.responsabile && <p className="text-xs text-muted-foreground">Resp: {c.responsabile}</p>}
-                      {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(c)}>
-                      <FileText className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(c.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      ) : centri.length > 0 && (
+        <DataTable<CentroCR>
+          columns={columns}
+          data={centri}
+          rowKey={(r) => r.id}
+          onRowClick={(r) => setEditing(r)}
+        />
       )}
     </div>
   );
