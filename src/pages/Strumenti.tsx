@@ -634,7 +634,7 @@ function CentriCostoRicavoTab() {
             <div key={cat.id} className="border-b border-border last:border-b-0 group/cat">
               {/* Category row — also a drop target */}
               <div
-                className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""} ${isDragOver ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
+                className={`flex items-center gap-2 px-4 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""} ${isDragOver ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
                 onClick={() => !isEditingCat && toggleExpand(cat.id)}
                 onDragOver={(e) => { e.preventDefault(); setDragOverCatId(cat.id); setDragOverUnclassified(null); }}
                 onDragLeave={() => setDragOverCatId(null)}
