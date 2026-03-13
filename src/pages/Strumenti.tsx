@@ -349,7 +349,7 @@ function CentriCostoRicavoTab() {
     if (duplicate) {toast.error("Codice già esistente");return;}
     const updated = centri.map((c) =>
     c.id === editingId ?
-    { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, responsabile: editResponsabile, note: editNote } :
+    { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave, note: editNote } :
     c
     );
     setCentri(updated);
