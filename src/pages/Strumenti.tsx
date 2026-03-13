@@ -518,7 +518,7 @@ function CentriCostoRicavoTab() {
           <TableCell className={indented ? "pl-12" : ""}>
             <div className="flex items-center gap-2">
               <GripVertical className="w-3.5 h-3.5 opacity-30 shrink-0" />
-              <span className="font-mono text-sm">{sub.codice}</span>
+              <span className="font-mono text-xs">{sub.codice}</span>
             </div>
           </TableCell>
           <TableCell className="text-sm">{sub.descrizione}</TableCell>
