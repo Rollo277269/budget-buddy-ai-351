@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Settings, Landmark, FileText, CalendarClock, Plus, Trash2, Save, AlertTriangle, Clock, CheckCircle2, Building2, TrendingUp, TrendingDown } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Settings, Landmark, FileText, CalendarClock, Plus, Trash2, Save, AlertTriangle, Clock, CheckCircle2, Building2, TrendingUp, TrendingDown, Pencil, Check, X, GripVertical, Tag } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -314,60 +315,75 @@ function saveCentri(centri: CentroCR[]) {
   localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
 }
 
-function makeCentriColumns(): ColumnDef<CentroCR>[] {
-  return [
-    {
-      key: "codice", label: "Codice", sortable: true, filterable: true,
-      render: (r) => <span className="font-mono text-xs font-semibold">{r.codice}</span>,
-    },
-    {
-      key: "tipo", label: "Tipo", sortable: true, filterable: true,
-      render: (r) => (
-        <Badge variant={r.tipo === "costo" ? "destructive" : "secondary"} className="text-[10px]">
-          {r.tipo === "costo" ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
-          {r.tipo === "costo" ? "Costo" : "Ricavo"}
-        </Badge>
-      ),
-    },
-    {
-      key: "descrizione", label: "Descrizione", sortable: true, filterable: true,
-      render: (r) => <span className="text-xs max-w-[250px] truncate block">{r.descrizione}</span>,
-    },
-    {
-      key: "responsabile", label: "Responsabile", sortable: true, filterable: true,
-      render: (r) => <span className="text-xs text-muted-foreground">{r.responsabile || "—"}</span>,
-    },
-    {
-      key: "note", label: "Note",
-      render: (r) => <span className="text-xs text-muted-foreground italic max-w-[200px] truncate block">{r.note || "—"}</span>,
-    },
-  ];
-}
-
 function CentriCostoRicavoTab() {
   const [centri, setCentri] = useState<CentroCR[]>(loadCentri);
-  const [editing, setEditing] = useState<CentroCR | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCodice, setEditCodice] = useState("");
+  const [editDescrizione, setEditDescrizione] = useState("");
+  const [editResponsabile, setEditResponsabile] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [addingTo, setAddingTo] = useState<"costo" | "ricavo" | null>(null);
+  const [newCodice, setNewCodice] = useState("");
+  const [newDescrizione, setNewDescrizione] = useState("");
+  const [newResponsabile, setNewResponsabile] = useState("");
+  const [newNote, setNewNote] = useState("");
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragItemRef = useRef<string | null>(null);
 
-  const empty: CentroCR = { id: "", tipo: "costo", codice: "", descrizione: "", responsabile: "", note: "" };
+  const startEdit = (c: CentroCR) => {
+    setEditingId(c.id);
+    setEditCodice(c.codice);
+    setEditDescrizione(c.descrizione);
+    setEditResponsabile(c.responsabile);
+    setEditNote(c.note);
+  };
 
-  const handleSave = () => {
-    if (!editing) return;
-    if (!editing.codice || !editing.descrizione) {
+  const cancelEdit = () => { setEditingId(null); };
+
+  const saveEdit = () => {
+    if (!editingId || !editCodice.trim() || !editDescrizione.trim()) {
       toast.error("Codice e descrizione sono obbligatori");
       return;
     }
-    const duplicate = centri.find((c) => c.codice === editing.codice && c.id !== editing.id);
-    if (duplicate) {
-      toast.error("Codice già esistente");
-      return;
-    }
-    const updated = editing.id
-      ? centri.map((c) => (c.id === editing.id ? editing : c))
-      : [...centri, { ...editing, id: crypto.randomUUID() }];
+    const duplicate = centri.find((c) => c.codice === editCodice.toUpperCase() && c.id !== editingId);
+    if (duplicate) { toast.error("Codice già esistente"); return; }
+    const updated = centri.map((c) =>
+      c.id === editingId
+        ? { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, responsabile: editResponsabile, note: editNote }
+        : c
+    );
     setCentri(updated);
     saveCentri(updated);
-    setEditing(null);
-    toast.success(editing.id ? "Centro aggiornato" : "Centro aggiunto");
+    setEditingId(null);
+    toast.success("Centro aggiornato");
+  };
+
+  const handleAdd = (tipo: "costo" | "ricavo") => {
+    if (!newCodice.trim() || !newDescrizione.trim()) {
+      toast.error("Codice e descrizione sono obbligatori");
+      return;
+    }
+    const duplicate = centri.find((c) => c.codice === newCodice.toUpperCase());
+    if (duplicate) { toast.error("Codice già esistente"); return; }
+    const newCentro: CentroCR = {
+      id: crypto.randomUUID(),
+      tipo,
+      codice: newCodice.toUpperCase(),
+      descrizione: newDescrizione,
+      responsabile: newResponsabile,
+      note: newNote,
+    };
+    const updated = [...centri, newCentro];
+    setCentri(updated);
+    saveCentri(updated);
+    setAddingTo(null);
+    setNewCodice(""); setNewDescrizione(""); setNewResponsabile(""); setNewNote("");
+    toast.success("Centro aggiunto");
+  };
+
+  const cancelAdd = () => {
+    setAddingTo(null);
+    setNewCodice(""); setNewDescrizione(""); setNewResponsabile(""); setNewNote("");
   };
 
   const handleDelete = (id: string) => {
@@ -377,84 +393,157 @@ function CentriCostoRicavoTab() {
     toast.success("Centro eliminato");
   };
 
-  const numCosti = centri.filter((c) => c.tipo === "costo").length;
-  const numRicavi = centri.filter((c) => c.tipo === "ricavo").length;
-  const columns = makeCentriColumns();
+  const handleReorder = (dragId: string, dropId: string, items: CentroCR[]) => {
+    const dragIdx = items.findIndex((c) => c.id === dragId);
+    const dropIdx = items.findIndex((c) => c.id === dropId);
+    if (dragIdx === -1 || dropIdx === -1 || dragIdx === dropIdx) return;
+    const reordered = [...items];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(dropIdx, 0, moved);
+    const otherItems = centri.filter((c) => c.tipo !== items[0]?.tipo);
+    const updated = [...otherItems, ...reordered];
+    setCentri(updated);
+    saveCentri(updated);
+  };
+
+  const renderTable = (tipo: "costo" | "ricavo") => {
+    const items = centri.filter((c) => c.tipo === tipo);
+    const isAdding = addingTo === tipo;
+    const title = tipo === "costo" ? "Centri di Costo" : "Centri di Ricavo";
+
+    return (
+      <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+        <div className={`flex items-center justify-between px-4 py-3 border-b border-border ${tipo === "costo" ? "bg-destructive" : "bg-emerald-600"}`}>
+          <div className="flex items-center gap-2">
+            <Tag className="w-4 h-4 text-white" />
+            <h3 className="font-semibold text-sm text-white">{title}</h3>
+            <Badge variant="secondary" className="text-[10px]">
+              {items.length}
+            </Badge>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => { setAddingTo(tipo); setNewCodice(""); setNewDescrizione(""); setNewResponsabile(""); setNewNote(""); }}
+            disabled={isAdding}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" /> Aggiungi
+          </Button>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8" />
+              <TableHead className="w-[25%]">Codice</TableHead>
+              <TableHead className="w-[30%]">Descrizione</TableHead>
+              <TableHead>Responsabile</TableHead>
+              <TableHead className="w-20" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.length === 0 && !isAdding && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
+                  Nessun centro configurato
+                </TableCell>
+              </TableRow>
+            )}
+            {items.map((c) => (
+              <TableRow
+                key={c.id}
+                draggable={editingId !== c.id}
+                onDragStart={() => { dragItemRef.current = c.id; }}
+                onDragOver={(e) => { e.preventDefault(); setDragOverId(c.id); }}
+                onDrop={() => { if (dragItemRef.current) handleReorder(dragItemRef.current, c.id, items); dragItemRef.current = null; setDragOverId(null); }}
+                onDragEnd={() => { dragItemRef.current = null; setDragOverId(null); }}
+                className={dragOverId === c.id ? "bg-accent" : ""}
+              >
+                {editingId === c.id ? (
+                  <>
+                    <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
+                    <TableCell>
+                      <Input value={editCodice} onChange={(e) => setEditCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono" autoFocus />
+                    </TableCell>
+                    <TableCell>
+                      <Input value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} className="h-8 text-sm" />
+                    </TableCell>
+                    <TableCell>
+                      <Input value={editResponsabile} onChange={(e) => setEditResponsabile(e.target.value)} className="h-8 text-sm" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEdit}>
+                          <Check className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}>
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell className="w-8 cursor-grab"><GripVertical className="w-4 h-4 opacity-30" /></TableCell>
+                    <TableCell className="font-mono text-sm font-semibold">{c.codice}</TableCell>
+                    <TableCell className="text-sm">{c.descrizione}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{c.responsabile || "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(c)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare "${c.codice} - ${c.descrizione}"?`)) handleDelete(c.id); }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                )}
+              </TableRow>
+            ))}
+            {isAdding && (
+              <TableRow>
+                <TableCell />
+                <TableCell>
+                  <Input value={newCodice} onChange={(e) => setNewCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono" placeholder="Codice..." autoFocus />
+                </TableCell>
+                <TableCell>
+                  <Input value={newDescrizione} onChange={(e) => setNewDescrizione(e.target.value)} className="h-8 text-sm" placeholder="Descrizione..." />
+                </TableCell>
+                <TableCell>
+                  <Input value={newResponsabile} onChange={(e) => setNewResponsabile(e.target.value)} className="h-8 text-sm" placeholder="Responsabile..." />
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => handleAdd(tipo)} disabled={!newCodice.trim() || !newDescrizione.trim()}>
+                      <Check className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelAdd}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
-          <p className="text-xs text-muted-foreground">
-            {centri.length} centri configurati — {numCosti} costo, {numRicavi} ricavo
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => setEditing({ ...empty })}>
-            <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
-          </Button>
-        </div>
+      <div>
+        <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
+        <p className="text-xs text-muted-foreground">
+          Definisci i centri per la contabilità analitica. Puoi riordinare trascinando le righe.
+        </p>
       </div>
-
-      {editing && (
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Tipo *</Label>
-                <div className="flex gap-2">
-                  <Button size="sm" variant={editing.tipo === "costo" ? "default" : "outline"} className="text-xs h-8 flex-1" onClick={() => setEditing({ ...editing, tipo: "costo" })}>
-                    <TrendingDown className="h-3.5 w-3.5 mr-1" />Costo
-                  </Button>
-                  <Button size="sm" variant={editing.tipo === "ricavo" ? "default" : "outline"} className="text-xs h-8 flex-1" onClick={() => setEditing({ ...editing, tipo: "ricavo" })}>
-                    <TrendingUp className="h-3.5 w-3.5 mr-1" />Ricavo
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Codice *</Label>
-                <Input value={editing.codice} onChange={(e) => setEditing({ ...editing, codice: e.target.value.toUpperCase() })} placeholder="Es. CC001" className="h-9 text-sm font-mono" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Descrizione *</Label>
-                <Input value={editing.descrizione} onChange={(e) => setEditing({ ...editing, descrizione: e.target.value })} placeholder="Es. Ufficio Amministrativo" className="h-9 text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Responsabile</Label>
-                <Input value={editing.responsabile} onChange={(e) => setEditing({ ...editing, responsabile: e.target.value })} placeholder="Nome responsabile" className="h-9 text-sm" />
-              </div>
-              <div className="space-y-1 md:col-span-2">
-                <Label className="text-xs">Note</Label>
-                <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              {editing.id && (
-                <Button variant="destructive" size="sm" onClick={() => { handleDelete(editing.id); setEditing(null); }}>
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
-                </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
-              <Button size="sm" onClick={handleSave}><Save className="h-3.5 w-3.5 mr-1" />Salva</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {centri.length === 0 && !editing ? (
-        <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
-          <Building2 className="h-10 w-10 mb-3 opacity-30" />
-          <p className="text-sm">Nessun centro configurato</p>
-        </div>
-      ) : centri.length > 0 && (
-        <DataTable<CentroCR>
-          columns={columns}
-          data={centri}
-          rowKey={(r) => r.id}
-          onRowClick={(r) => setEditing(r)}
-        />
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {renderTable("costo")}
+        {renderTable("ricavo")}
+      </div>
     </div>
   );
 }
