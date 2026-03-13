@@ -512,7 +512,7 @@ function CentriCostoRicavoTab() {
                   <Input value={newDescrizione} onChange={(e) => setNewDescrizione(e.target.value)} className="h-8 text-sm" placeholder="Descrizione..." />
                 </TableCell>
                 <TableCell>
-                  <Input value={newResponsabile} onChange={(e) => setNewResponsabile(e.target.value)} className="h-8 text-sm" placeholder="Responsabile..." />
+                  <Input value={newParoleChiave} onChange={(e) => setNewParoleChiave(e.target.value)} className="h-8 text-sm" placeholder="parole chiave, separate, da virgola" />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
