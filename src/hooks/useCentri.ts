@@ -1,5 +1,12 @@
 import { useState, useCallback, useMemo } from "react";
 
+export interface CategoriaCentro {
+  id: string;
+  tipo: "costo" | "ricavo";
+  codice: string;
+  descrizione: string;
+}
+
 export interface CentroCR {
   id: string;
   tipo: "costo" | "ricavo";
@@ -7,9 +14,11 @@ export interface CentroCR {
   descrizione: string;
   paroleChiaveMatching: string;
   note: string;
+  categoriaId?: string;
 }
 
 const CENTRI_KEY = "centri-costo-ricavo";
+const CATEGORIE_KEY = "centri-categorie";
 const CENTRO_MAP_PREFIX = "centro-map-";
 
 export function loadCentri(): CentroCR[] {
@@ -18,6 +27,22 @@ export function loadCentri(): CentroCR[] {
   } catch {
     return [];
   }
+}
+
+export function loadCategorie(): CategoriaCentro[] {
+  try {
+    return JSON.parse(localStorage.getItem(CATEGORIE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function saveCategorie(categorie: CategoriaCentro[]) {
+  localStorage.setItem(CATEGORIE_KEY, JSON.stringify(categorie));
+}
+
+export function saveCentri(centri: CentroCR[]) {
+  localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
 }
 
 function storageKey(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
@@ -65,7 +90,8 @@ export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acq
 
 export function useCentriData() {
   const centri = useMemo(() => loadCentri(), []);
+  const categorie = useMemo(() => loadCategorie(), []);
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
-  return { centri, centriCosto, centriRicavo };
+  return { centri, categorie, centriCosto, centriRicavo };
 }
