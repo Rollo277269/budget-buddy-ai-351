@@ -6,7 +6,7 @@ import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatNumber } from "@/lib/format";
 
 export interface Commessa {
   numero: string;
@@ -22,7 +22,7 @@ export interface Commessa {
 }
 
 const columns: ColumnDef<Commessa>[] = [
-  { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero}</span>, sortable: true },
+  { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero && r.numero !== "—" ? formatNumber(parseFloat(r.numero)).replace(/,00$/, "") : "—"}</span>, sortable: true },
   { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[280px] truncate block">{r.oggetto}</span> },
   { key: "committente", label: "Committente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.committente}</span> },
   { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
