@@ -680,10 +680,10 @@ function CentriCostoRicavoTab() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[30%] pl-12">Codice</TableHead>
-                        <TableHead className="w-[30%]">Descrizione</TableHead>
-                        <TableHead>Parole Chiave Matching</TableHead>
-                        <TableHead className="w-20" />
+                    <TableHead className="w-[30%] pl-12 text-[11px] h-8">Codice</TableHead>
+                        <TableHead className="w-[30%] text-[11px] h-8">Descrizione</TableHead>
+                        <TableHead className="text-[11px] h-8">Parole Chiave Matching</TableHead>
+                        <TableHead className="w-20 h-8" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
