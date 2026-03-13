@@ -29,7 +29,7 @@ function invoiceKey(anno: number, numero: number) {
 }
 
 interface Commessa {
-  numero: number;
+  numero: string | number;
   oggetto: string;
   committente: string;
   assegnataria: string;

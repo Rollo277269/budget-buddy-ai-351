@@ -9,21 +9,23 @@ import { Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
 export interface Commessa {
-  numero: number;
+  numero: string;
   oggetto: string;
   committente: string;
   assegnataria: string;
   cig: string;
   fattureVendita: number;
   fattureAcquisto: number;
+  totaleVendite: number;
+  totaleAcquisti: number;
   cssrData?: CssrCommessa;
 }
 
 const columns: ColumnDef<Commessa>[] = [
-  { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}</span>, sortable: true },
-  { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[300px] truncate block">{r.oggetto}</span> },
-  { key: "committente", label: "Committente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.committente}</span> },
-  { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.assegnataria}</span> },
+  { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero}</span>, sortable: true },
+  { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[280px] truncate block">{r.oggetto}</span> },
+  { key: "committente", label: "Committente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.committente}</span> },
+  { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
   { key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig || "—"}</span> },
   {
     key: "cssrStato" as any, label: "Stato", sortable: true,
@@ -43,7 +45,9 @@ const columns: ColumnDef<Commessa>[] = [
     },
   },
   { key: "fattureVendita", label: "Fatt. Vendita", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureVendita}</span> },
+  { key: "totaleVendite", label: "Tot. Vendite", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleVendite ? formatCurrency(r.totaleVendite) : "—"}</span> },
   { key: "fattureAcquisto", label: "Fatt. Acquisto", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureAcquisto}</span> },
+  { key: "totaleAcquisti", label: "Tot. Acquisti", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleAcquisti ? formatCurrency(r.totaleAcquisti) : "—"}</span> },
 ];
 
 const ListaCommessePage = () => {
@@ -53,36 +57,39 @@ const ListaCommessePage = () => {
   const [selected, setSelected] = useState<Commessa | null>(null);
 
   const rows = useMemo(() => {
-    // Count invoices per CIG
-    const cigCounts = new Map<string, { v: number; a: number }>();
+    const cigCounts = new Map<string, { fv: number; fa: number; tv: number; ta: number }>();
     allSales.forEach((s) => {
       if (s.cig) {
-        const e = cigCounts.get(s.cig) || { v: 0, a: 0 };
-        e.v++;
+        const e = cigCounts.get(s.cig) || { fv: 0, fa: 0, tv: 0, ta: 0 };
+        e.fv++;
+        e.tv += s.totale || 0;
         cigCounts.set(s.cig, e);
       }
     });
     allPurchases.forEach((p) => {
       if (p.cig) {
-        const e = cigCounts.get(p.cig) || { v: 0, a: 0 };
-        e.a++;
+        const e = cigCounts.get(p.cig) || { fv: 0, fa: 0, tv: 0, ta: 0 };
+        e.fa++;
+        e.ta += p.totale || 0;
         cigCounts.set(p.cig, e);
       }
     });
 
-    return cssrCommesse.map((c, idx) => {
+    return cssrCommesse.map((c) => {
       const cig = c.cig || "";
-      const counts = cigCounts.get(cig) || { v: 0, a: 0 };
-      // Also count cig_derivato
-      const countsDeriv = c.cig_derivato ? cigCounts.get(c.cig_derivato) || { v: 0, a: 0 } : { v: 0, a: 0 };
+      const counts = cig ? cigCounts.get(cig) || { fv: 0, fa: 0, tv: 0, ta: 0 } : { fv: 0, fa: 0, tv: 0, ta: 0 };
+      const countsDeriv = c.cig_derivato ? cigCounts.get(c.cig_derivato) || { fv: 0, fa: 0, tv: 0, ta: 0 } : { fv: 0, fa: 0, tv: 0, ta: 0 };
+
       return {
-        numero: idx + 1,
+        numero: c.commessa_consortile || "—",
         oggetto: c.oggetto_lavori || "—",
         committente: c.committente || "—",
         assegnataria: c.impresa_assegnataria || "—",
         cig,
-        fattureVendita: counts.v + countsDeriv.v,
-        fattureAcquisto: counts.a + countsDeriv.a,
+        fattureVendita: counts.fv + countsDeriv.fv,
+        fattureAcquisto: counts.fa + countsDeriv.fa,
+        totaleVendite: counts.tv + countsDeriv.tv,
+        totaleAcquisti: counts.ta + countsDeriv.ta,
         cssrData: c,
       };
     });
@@ -99,12 +106,12 @@ const ListaCommessePage = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-lg font-bold tracking-tight">Commesse (CSSR)</h2>
+        <h2 className="text-lg font-bold tracking-tight">Commesse</h2>
         <p className="text-sm text-muted-foreground">
           {rows.length} commesse dal progetto CSSR
         </p>
       </div>
-      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} />
+      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || r.numero} onRowClick={setSelected} />
       <CommessaDetailSheet
         commessa={selected}
         open={!!selected}
