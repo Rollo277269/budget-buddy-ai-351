@@ -334,7 +334,7 @@ function CentriCostoRicavoTab() {
     setEditingId(c.id);
     setEditCodice(c.codice);
     setEditDescrizione(c.descrizione);
-    setEditResponsabile(c.responsabile);
+    setEditParoleChiave(c.paroleChiaveMatching);
     setEditNote(c.note);
   };
 
