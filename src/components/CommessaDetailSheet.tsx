@@ -20,8 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { ManualLink } from "@/hooks/useCommessaLinks";
-import { Link2, Link2Off, Plus, Search, X } from "lucide-react";
-
+import { CssrCommessa } from "@/hooks/useCssrCommesse";
+import { Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
 function invoiceKey(anno: number, numero: number) {
@@ -34,6 +34,7 @@ interface Commessa {
   committente: string;
   assegnataria: string;
   cig: string;
+  cssrData?: CssrCommessa;
 }
 
 interface CommessaDetailSheetProps {
@@ -66,11 +67,9 @@ export function CommessaDetailSheet({
   const manualSaleKeys = new Set(cigLinks.filter((l) => l.invoiceType === "vendita").map((l) => l.invoiceKey));
   const manualPurchaseKeys = new Set(cigLinks.filter((l) => l.invoiceType === "acquisto").map((l) => l.invoiceKey));
 
-  // Auto-linked (by CIG match)
   const autoSales = allSales.filter((s) => s.cig === commessa.cig);
   const autoPurchases = allPurchases.filter((p) => p.cig === commessa.cig);
 
-  // Manual-linked
   const manualSales = allSales.filter((s) => manualSaleKeys.has(invoiceKey(s.anno, s.numero)) && s.cig !== commessa.cig);
   const manualPurchases = allPurchases.filter((p) => manualPurchaseKeys.has(invoiceKey(p.anno, p.numero)) && p.cig !== commessa.cig);
 
@@ -80,7 +79,6 @@ export function CommessaDetailSheet({
   const totalVendite = linkedSales.reduce((s, i) => s + i.totale, 0);
   const totalAcquisti = linkedPurchases.reduce((s, i) => s + i.totale, 0);
 
-  // Unlinked invoices for manual association
   const allLinkedSaleKeys = new Set([
     ...autoSales.map((s) => invoiceKey(s.anno, s.numero)),
     ...manualSaleKeys,
@@ -108,6 +106,9 @@ export function CommessaDetailSheet({
       ).slice(0, 20)
     : [];
 
+  const cssr = commessa.cssrData;
+  const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
+
   return (
     <Sheet open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
       <SheetContent side="right" className="w-full sm:max-w-[55vw] overflow-y-auto">
@@ -115,11 +116,41 @@ export function CommessaDetailSheet({
           <SheetTitle className="flex items-center gap-2">
             <Badge variant="outline" className="font-mono">{commessa.cig}</Badge>
             Commessa #{commessa.numero}
+            {cssr && <Badge variant="secondary" className="text-[10px]">CSSR</Badge>}
           </SheetTitle>
           <SheetDescription>{commessa.oggetto}</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 mt-2">
+          {/* CSSR Data Section */}
+          {cssr && (
+            <>
+              <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa (CSSR)</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                  <CssrField icon={Building2} label="Committente" value={cssr.committente} />
+                  <CssrField icon={Building2} label="Impresa Assegnataria" value={cssr.impresa_assegnataria} />
+                  <CssrField icon={User} label="RUP" value={cssr.rup} />
+                  <CssrField icon={User} label="Direttore Lavori" value={cssr.direttore_lavori} />
+                  <CssrField icon={FileText} label="CUP" value={cssr.cup} />
+                  <CssrField icon={FileText} label="N° Repertorio" value={cssr.numero_repertorio} />
+                  <CssrField icon={Calendar} label="Data Contratto" value={cssr.data_contratto} />
+                  <CssrField icon={Calendar} label="Scadenza Contratto" value={cssr.data_scadenza_contratto} />
+                  <CssrField icon={Calendar} label="Consegna Lavori" value={cssr.data_consegna_lavori} />
+                  <CssrField icon={Calendar} label="Durata" value={cssr.durata_contrattuale} />
+                </div>
+                <Separator />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <MiniCard label="Importo Contrattuale" value={importoContratto != null && !isNaN(importoContratto) ? formatCurrency(importoContratto) : (cssr.importo_contrattuale || "—")} />
+                  <MiniCard label="Base Gara" value={cssr.importo_base_gara ? (isNaN(parseFloat(cssr.importo_base_gara)) ? cssr.importo_base_gara : formatCurrency(parseFloat(cssr.importo_base_gara))) : "—"} />
+                  <MiniCard label="Ribasso" value={cssr.ribasso ? `${cssr.ribasso}%` : "—"} />
+                  <MiniCard label="Stato" value={cssr.stato} highlight />
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
           {/* Summary */}
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl border bg-card p-3 text-center">
@@ -134,9 +165,14 @@ export function CommessaDetailSheet({
             </div>
             <div className="rounded-xl border bg-card p-3 text-center">
               <p className="text-xs text-muted-foreground">Saldo</p>
-              <p className={`text-sm font-bold font-mono ${totalVendite - totalAcquisti >= 0 ? "text-green-600" : "text-red-600"}`}>
+              <p className={`text-sm font-bold font-mono ${totalVendite - totalAcquisti >= 0 ? "text-income" : "text-expense"}`}>
                 {formatCurrency(totalVendite - totalAcquisti)}
               </p>
+              {importoContratto != null && !isNaN(importoContratto) && importoContratto > 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  {Math.round((totalVendite / importoContratto) * 100)}% fatturato
+                </p>
+              )}
             </div>
           </div>
 
@@ -163,7 +199,6 @@ export function CommessaDetailSheet({
             />
           </div>
 
-          {/* Manual link sales */}
           {addMode === "vendita" && (
             <LinkSearchPanel
               searchQuery={searchQuery}
@@ -201,7 +236,6 @@ export function CommessaDetailSheet({
             />
           </div>
 
-          {/* Manual link purchases */}
           {addMode === "acquisto" && (
             <LinkSearchPanel
               searchQuery={searchQuery}
@@ -216,6 +250,28 @@ export function CommessaDetailSheet({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/* ── CSSR field helpers ── */
+function CssrField({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | null }) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <p className="text-[10px] text-muted-foreground">{label}</p>
+        <p className="text-xs font-medium truncate">{value || "—"}</p>
+      </div>
+    </div>
+  );
+}
+
+function MiniCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="rounded-lg border bg-card p-2 text-center">
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className={`text-xs font-bold font-mono ${highlight ? "text-primary" : ""}`}>{value}</p>
+    </div>
   );
 }
 
