@@ -536,7 +536,7 @@ function CentriCostoRicavoTab() {
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold">Centri di Costo e Ricavo</h3>
-        <p className="text-xs text-muted-foreground">Configura i Centri di Costo e di Ricavo per le sezioni CSSR e Consorziata. Per ogni centro puoi definire delle parole chiave (separate da virgola) per l'assegnamento automatico delle fatture caricate.es. materiale, cemento, calcestruzzo
+        <p className="text-xs text-muted-foreground">Configura i Centri di Costo e di Ricavo. Per ogni centro puoi definire delle parole chiave (separate da virgola) per l'assegnamento automatico delle fatture caricate. Ad es. materiale, cemento, calcestruzzo
 
         </p>
       </div>
