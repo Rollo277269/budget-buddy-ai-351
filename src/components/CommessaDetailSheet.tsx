@@ -667,6 +667,103 @@ export function CommessaDetailSheet({
             </div>
           </div>
 
+          {/* ── Grafici Analisi ── */}
+          {/* Andamento Mensile - Bar chart */}
+          {data.monthlyData.length > 0 && (() => {
+            const maxMonth = Math.max(...data.monthlyData.map(m => Math.max(m.vendite, m.acquisti)), 1);
+            return (
+              <section className="pdf-section pdf-full-width">
+                <h2>Grafico Andamento Mensile</h2>
+                <div className="pdf-bar-chart">
+                  {data.monthlyData.map((m) => (
+                    <div key={m.mese} className="pdf-bar-row">
+                      <span className="pdf-bar-label">{m.mese}</span>
+                      <div className="pdf-bar-tracks">
+                        <div className="pdf-bar is-positive" style={{ width: `${(m.vendite / maxMonth) * 100}%` }}>
+                          <span className="pdf-bar-value">{formatCurrency(m.vendite)}</span>
+                        </div>
+                        <div className="pdf-bar is-negative" style={{ width: `${(m.acquisti / maxMonth) * 100}%` }}>
+                          <span className="pdf-bar-value">{formatCurrency(m.acquisti)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pdf-bar-legend">
+                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive"></span>Vendite</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative"></span>Acquisti</span>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* Centro Ricavo / Costo - Horizontal bars */}
+          {(ricavoRows.length > 0 || costoRows.length > 0) && (() => {
+            const maxCentro = Math.max(
+              ...ricavoRows.map(r => r.value),
+              ...costoRows.map(r => r.value),
+              1
+            );
+            return (
+              <div className="pdf-table-grid">
+                {ricavoRows.length > 0 && (
+                  <section className="pdf-section">
+                    <h2>Grafico Centri di Ricavo</h2>
+                    <div className="pdf-bar-chart">
+                      {ricavoRows.map((r) => (
+                        <div key={r.name} className="pdf-bar-row">
+                          <span className="pdf-bar-label">{r.name}</span>
+                          <div className="pdf-bar-tracks">
+                            <div className="pdf-bar is-positive" style={{ width: `${(r.value / maxCentro) * 100}%` }}>
+                              <span className="pdf-bar-value">{formatCurrency(r.value)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {costoRows.length > 0 && (
+                  <section className="pdf-section">
+                    <h2>Grafico Centri di Costo</h2>
+                    <div className="pdf-bar-chart">
+                      {costoRows.map((r) => (
+                        <div key={r.name} className="pdf-bar-row">
+                          <span className="pdf-bar-label">{r.name}</span>
+                          <div className="pdf-bar-tracks">
+                            <div className="pdf-bar is-negative" style={{ width: `${(r.value / maxCentro) * 100}%` }}>
+                              <span className="pdf-bar-value">{formatCurrency(r.value)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Avanzamento Contratto - Progress bar */}
+          {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
+            <section className="pdf-section pdf-full-width">
+              <h2>Avanzamento Contratto</h2>
+              <div className="pdf-progress-wrap">
+                <div className="pdf-progress-info">
+                  <span>Fatturato: {formatCurrency(data.totalVendite)}</span>
+                  <span>Contratto: {formatCurrency(data.importoContratto)}</span>
+                </div>
+                <div className="pdf-progress-track">
+                  <div className="pdf-progress-fill" style={{ width: `${Math.min(data.percentualeFatturato || 0, 100)}%` }}></div>
+                </div>
+                <div className="pdf-progress-info">
+                  <span style={{ fontWeight: 700 }}>{(data.percentualeFatturato || 0).toFixed(1)}%</span>
+                  <span>Residuo: {formatCurrency(data.importoContratto - data.totalVendite)}</span>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Andamento Mensile */}
           {data.monthlyData.length > 0 && (
             <section className="pdf-section pdf-full-width">
