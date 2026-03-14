@@ -9,6 +9,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
+import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 
 import { Badge } from "@/components/ui/badge";
