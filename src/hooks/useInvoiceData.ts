@@ -176,6 +176,7 @@ export interface Filters {
   fornitore: string;
   cig: string;
   centroCosto: string;
+  centroRicavo: string;
 }
 
 export function useInvoiceData() {
@@ -188,6 +189,7 @@ export function useInvoiceData() {
     fornitore: "",
     cig: "",
     centroCosto: "",
+    centroRicavo: "",
   });
 
   useEffect(() => {

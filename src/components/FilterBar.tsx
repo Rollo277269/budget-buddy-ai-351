@@ -110,11 +110,24 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
         </div>
       )}
 
+      {options.centriRicavo && options.centriRicavo.length > 0 && (
+        <div className="space-y-1.5 min-w-[180px] max-w-[240px]">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Centro Ricavo</label>
+          <Combobox
+            value={filters.centroRicavo}
+            onValueChange={(v) => update("centroRicavo", v)}
+            options={[{ value: "", label: "Tutti i centri" }, ...options.centriRicavo]}
+            placeholder="Tutti i centri"
+            searchPlaceholder="Cerca centro..."
+          />
+        </div>
+      )}
+
       {hasFilters && (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onFiltersChange({ anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "" })}
+          onClick={() => onFiltersChange({ anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "", centroRicavo: "" })}
           className="text-muted-foreground hover:text-foreground"
         >
           <RotateCcw className="h-4 w-4 mr-1" />
