@@ -240,33 +240,13 @@ export default function BilancioPage() {
 
 
 
-      {/* Centro breakdown */}
-      <Tabs defaultValue="ricavi" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="ricavi">Centri di Ricavo</TabsTrigger>
-          <TabsTrigger value="costi">Centri di Costo</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="ricavi">
-          <CentroBreakdownCard
-            title="Ripartizione Ricavi per Centro"
-            data={ricavoBreakdown}
-            colors={COLORS_RICAVO}
-            total={globalKpis.ricavi}
-            emptyMessage="Nessun centro di ricavo configurato o fatture non classificate"
-          />
-        </TabsContent>
-
-        <TabsContent value="costi">
-          <CentroBreakdownCard
-            title="Ripartizione Costi per Centro"
-            data={costoBreakdown}
-            colors={COLORS_COSTO}
-            total={globalKpis.costi}
-            emptyMessage="Nessun centro di costo configurato o fatture non classificate"
-          />
-        </TabsContent>
-      </Tabs>
+      {/* Centro breakdown — side by side, drag to reorder */}
+      <CentriSideBySide
+        ricavoBreakdown={ricavoBreakdown}
+        costoBreakdown={costoBreakdown}
+        totalRicavi={globalKpis.ricavi}
+        totalCosti={globalKpis.costi}
+      />
 
       {/* ── Hidden PDF Report ── */}
       <div className="pdf-report">
