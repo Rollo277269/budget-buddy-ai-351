@@ -593,7 +593,7 @@ function MiniCard({ label, value, highlight }: { label: string; value: string; h
   );
 }
 
-/* ── Invoice list sub-component ── */
+/* ── Invoice list sub-component with sort & filter ── */
 function InvoiceList({
   invoices, type, autoKeys, cig, onRemoveLink,
 }: {
@@ -603,30 +603,116 @@ function InvoiceList({
   cig: string;
   onRemoveLink: (key: string, type: "vendita" | "acquisto", cig: string) => void;
 }) {
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortAsc, setSortAsc] = useState(true);
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
   if (invoices.length === 0) {
     return <p className="text-xs text-muted-foreground py-4 text-center">Nessuna fattura collegata</p>;
   }
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(true);
+    }
+  };
+
+  const toggleFilter = (key: string) => {
+    setActiveFilter(activeFilter === key ? null : key);
+  };
+
+  const getVal = (inv: SaleInvoice | PurchaseInvoice, key: string): string | number => {
+    if (key === "numero_display") return inv.numero;
+    if (key === "data") return inv.data || "";
+    if (key === "counterpart") return type === "vendita" ? (inv as SaleInvoice).cliente || "" : (inv as PurchaseInvoice).fornitore || "";
+    if (key === "descrizione") return inv.descrizione || "";
+    if (key === "stato") return inv.stato || "";
+    if (key === "imponibile") return inv.imponibile || 0;
+    if (key === "imposta") return inv.imposta || 0;
+    if (key === "totale") return inv.totale || 0;
+    return "";
+  };
+
+  const filtered = invoices.filter((inv) => {
+    return Object.entries(filters).every(([key, filterVal]) => {
+      if (!filterVal) return true;
+      const val = String(getVal(inv, key)).toLowerCase();
+      return val.includes(filterVal.toLowerCase());
+    });
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (!sortKey) return 0;
+    const aVal = getVal(a, sortKey);
+    const bVal = getVal(b, sortKey);
+    const cmp = typeof aVal === "number" && typeof bVal === "number"
+      ? aVal - bVal
+      : String(aVal).localeCompare(String(bVal), "it");
+    return sortAsc ? cmp : -cmp;
+  });
+
+  const columns = [
+    { key: "numero_display", label: "N°", filterable: true },
+    { key: "data", label: "Data", filterable: true },
+    { key: "counterpart", label: type === "vendita" ? "Cliente" : "Fornitore", filterable: true },
+    { key: "descrizione", label: "Descrizione", filterable: true },
+    { key: "stato", label: "Stato", filterable: true },
+    { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
+    { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
+    { key: "totale", label: "Totale", filterable: false, align: "right" as const },
+  ];
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       <div className="max-h-[400px] overflow-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
-              <TableHead className="text-xs">N°</TableHead>
-              <TableHead className="text-xs">Data</TableHead>
-              <TableHead className="text-xs">{type === "vendita" ? "Cliente" : "Fornitore"}</TableHead>
-              <TableHead className="text-xs">Descrizione</TableHead>
-              <TableHead className="text-xs">Stato</TableHead>
-              <TableHead className="text-xs text-right">Imponibile</TableHead>
-              <TableHead className="text-xs text-right">IVA</TableHead>
-              <TableHead className="text-xs text-right">Totale</TableHead>
+              {columns.map((col) => (
+                <TableHead key={col.key} className={`text-xs ${col.align === "right" ? "text-right" : ""}`}>
+                  <div className="space-y-1">
+                    <button
+                      className="flex items-center gap-1 hover:text-foreground transition-colors font-semibold"
+                      onClick={() => handleSort(col.key)}
+                    >
+                      {col.label}
+                      {sortKey === col.key ? (
+                        <span className="text-[10px]">{sortAsc ? "▲" : "▼"}</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/40">⇅</span>
+                      )}
+                    </button>
+                    {col.filterable && activeFilter === col.key && (
+                      <Input
+                        autoFocus
+                        placeholder="Filtra..."
+                        value={filters[col.key] || ""}
+                        onChange={(e) => setFilters((f) => ({ ...f, [col.key]: e.target.value }))}
+                        className="h-5 text-[10px] px-1 py-0 w-full"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    {col.filterable && activeFilter !== col.key && (
+                      <button
+                        className="text-[9px] text-muted-foreground hover:text-foreground"
+                        onClick={(e) => { e.stopPropagation(); toggleFilter(col.key); }}
+                      >
+                        <Search className="h-2.5 w-2.5 inline" />
+                      </button>
+                    )}
+                  </div>
+                </TableHead>
+              ))}
               <TableHead className="text-xs w-[80px]">Tipo</TableHead>
               <TableHead className="text-xs w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((inv) => {
+            {sorted.map((inv) => {
               const key = invoiceKey(inv.anno, inv.numero);
               const isAuto = autoKeys.has(key);
               const counterpart = type === "vendita"
