@@ -318,7 +318,7 @@ const BanchePage = () => {
   }, [movements]);
 
   const filteredMovements = useMemo(() => {
-    if (!filterYear) return movements;
+    if (!filterYear || filterYear === "all") return movements;
     return movements.filter((m) => {
       const parts = m.data?.split("/");
       if (parts && parts.length >= 3) return parts[2] === filterYear;
