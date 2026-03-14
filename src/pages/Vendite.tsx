@@ -9,12 +9,13 @@ import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
+import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, Link2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +61,7 @@ const VenditePage = () => {
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData, findXml, hasXml } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<SaleInvoice | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
     const parsed = await fetchParsedData(record.id);
@@ -186,6 +188,13 @@ const VenditePage = () => {
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
             </Button>
           );
+          if (xmlRecords.some(x => !x.matched)) {
+            return (
+              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setXmlPickerInvoice(r); }}>
+                <Link2 className="h-3.5 w-3.5" />
+              </Button>
+            );
+          }
           return <span className="text-muted-foreground text-[11px]">—</span>;
         },
       },
@@ -367,6 +376,16 @@ const VenditePage = () => {
         />
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={sales} xmlMap={xmlMap} tipo="vendita" onManualMatch={manualMatch} />
+        <XmlPickerSheet
+          open={!!xmlPickerInvoice}
+          onOpenChange={(open) => !open && setXmlPickerInvoice(null)}
+          xmlRecords={xmlRecords}
+          invoiceAnno={xmlPickerInvoice?.anno || 0}
+          invoiceNumero={xmlPickerInvoice?.numero || 0}
+          invoiceName={xmlPickerInvoice?.cliente || ""}
+          invoiceTotale={xmlPickerInvoice?.totale || 0}
+          onMatch={manualMatch}
+        />
         <SchedaSoggettoSheet tipo="cliente" nome={selectedCliente} allSales={allSales} allPurchases={allPurchases} open={!!selectedCliente} onOpenChange={(open) => !open && setSelectedCliente(null)} />
       </div>
 

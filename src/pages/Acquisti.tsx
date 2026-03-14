@@ -9,13 +9,14 @@ import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
+import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -60,6 +61,7 @@ const AcquistiPage = () => {
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(purchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
     const parsed = await fetchParsedData(record.id);
@@ -188,6 +190,13 @@ const AcquistiPage = () => {
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
             </Button>);
 
+        if (xmlRecords.some(x => !x.matched)) {
+          return (
+            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setXmlPickerInvoice(r); }}>
+              <Link2 className="h-3.5 w-3.5" />
+            </Button>
+          );
+        }
         return <span className="text-muted-foreground text-[11px]">—</span>;
       }
     },
@@ -346,6 +355,16 @@ const AcquistiPage = () => {
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={purchases} xmlMap={xmlMap} tipo="acquisto" onManualMatch={manualMatch} />
+        <XmlPickerSheet
+          open={!!xmlPickerInvoice}
+          onOpenChange={(open) => !open && setXmlPickerInvoice(null)}
+          xmlRecords={xmlRecords}
+          invoiceAnno={xmlPickerInvoice?.anno || 0}
+          invoiceNumero={xmlPickerInvoice?.numero || 0}
+          invoiceName={xmlPickerInvoice?.fornitore || ""}
+          invoiceTotale={xmlPickerInvoice?.totale || 0}
+          onMatch={manualMatch}
+        />
         <SchedaSoggettoSheet tipo="fornitore" nome={selectedFornitore} allSales={allSales} allPurchases={allPurchases} open={!!selectedFornitore} onOpenChange={(open) => !open && setSelectedFornitore(null)} />
       </div>
 
