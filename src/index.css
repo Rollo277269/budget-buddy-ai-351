@@ -115,18 +115,18 @@
     print-color-adjust: exact;
   }
 
-  body.print-commessa-report #root {
+  body.print-report #root {
     display: none !important;
   }
 
-  body.print-commessa-report .dialog-overlay,
-  body.print-commessa-report .no-print,
-  body.print-commessa-report .screen-report,
-  body.print-commessa-report [role="dialog"] > :not(.pdf-report) {
+  body.print-report .dialog-overlay,
+  body.print-report .no-print,
+  body.print-report .screen-report,
+  body.print-report [role="dialog"] > :not(.pdf-report) {
     display: none !important;
   }
 
-  body.print-commessa-report [role="dialog"] {
+  body.print-report [role="dialog"] {
     position: static !important;
     inset: auto !important;
     transform: none !important;
@@ -141,7 +141,7 @@
     padding: 0 !important;
   }
 
-  body.print-commessa-report .pdf-report {
+  body.print-report .pdf-report {
     display: block !important;
     background: hsl(0 0% 100%) !important;
     color: hsl(var(--foreground)) !important;
@@ -149,7 +149,7 @@
     font-family: var(--font-sans), sans-serif;
   }
 
-  body.print-commessa-report .pdf-header {
+  body.print-report .pdf-header {
     display: flex;
     align-items: center;
     gap: 16px;
@@ -158,29 +158,29 @@
     margin-bottom: 14px;
   }
 
-  body.print-commessa-report .pdf-header-logo svg {
+  body.print-report .pdf-header-logo svg {
     display: block;
     flex-shrink: 0;
   }
 
-  body.print-commessa-report .pdf-header-text {
+  body.print-report .pdf-header-text {
     flex: 1;
   }
 
-  body.print-commessa-report .pdf-header h1 {
+  body.print-report .pdf-header h1 {
     margin: 0;
     font-size: 20px;
     line-height: 1.2;
     color: hsl(var(--foreground));
   }
 
-  body.print-commessa-report .pdf-header p {
+  body.print-report .pdf-header p {
     margin: 4px 0 0;
     font-size: 12px;
     color: hsl(var(--muted-foreground));
   }
 
-  body.print-commessa-report .pdf-meta {
+  body.print-report .pdf-meta {
     margin-top: 8px;
     display: flex;
     gap: 14px;
@@ -190,7 +190,7 @@
   }
 
   /* Footer fixed on every page */
-  body.print-commessa-report .pdf-footer {
+  body.print-report .pdf-footer {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -205,44 +205,44 @@
     background: hsl(0 0% 100%);
   }
 
-  body.print-commessa-report .pdf-footer-left,
-  body.print-commessa-report .pdf-footer-center,
-  body.print-commessa-report .pdf-footer-right {
+  body.print-report .pdf-footer-left,
+  body.print-report .pdf-footer-center,
+  body.print-report .pdf-footer-right {
     flex: 1;
   }
 
-  body.print-commessa-report .pdf-footer-center {
+  body.print-report .pdf-footer-center {
     text-align: center;
   }
 
-  body.print-commessa-report .pdf-footer-right {
+  body.print-report .pdf-footer-right {
     text-align: right;
   }
 
-  body.print-commessa-report .pdf-page-number::after {
+  body.print-report .pdf-page-number::after {
     content: counter(page);
   }
 
   /* Add bottom padding to content so it doesn't overlap the fixed footer */
-  body.print-commessa-report .pdf-report {
+  body.print-report .pdf-report {
     padding-bottom: 30px;
   }
 
-  body.print-commessa-report .pdf-kpi-grid {
+  body.print-report .pdf-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 14px;
   }
 
-  body.print-commessa-report .pdf-kpi-card {
+  body.print-report .pdf-kpi-card {
     border: 1px solid hsl(var(--border));
     border-radius: 8px;
     padding: 8px 10px;
     background: hsl(var(--card));
   }
 
-  body.print-commessa-report .pdf-kpi-label {
+  body.print-report .pdf-kpi-label {
     margin: 0;
     font-size: 10px;
     text-transform: uppercase;
@@ -250,7 +250,7 @@
     color: hsl(var(--muted-foreground));
   }
 
-  body.print-commessa-report .pdf-kpi-value {
+  body.print-report .pdf-kpi-value {
     margin: 2px 0 0;
     font-size: 15px;
     font-weight: 700;
@@ -258,21 +258,21 @@
     color: hsl(var(--foreground));
   }
 
-  body.print-commessa-report .pdf-kpi-value.is-positive {
+  body.print-report .pdf-kpi-value.is-positive {
     color: hsl(var(--income));
   }
 
-  body.print-commessa-report .pdf-kpi-value.is-negative {
+  body.print-report .pdf-kpi-value.is-negative {
     color: hsl(var(--expense));
   }
 
-  body.print-commessa-report .pdf-table-grid {
+  body.print-report .pdf-table-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 
-  body.print-commessa-report .pdf-section {
+  body.print-report .pdf-section {
     border: 1px solid hsl(var(--border));
     border-radius: 8px;
     overflow: hidden;
@@ -281,7 +281,7 @@
     page-break-inside: avoid;
   }
 
-  body.print-commessa-report .pdf-section h2 {
+  body.print-report .pdf-section h2 {
     margin: 0;
     padding: 8px 10px;
     font-size: 11px;
@@ -292,39 +292,39 @@
     border-bottom: 1px solid hsl(var(--border));
   }
 
-  body.print-commessa-report .pdf-table {
+  body.print-report .pdf-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 10px;
   }
 
-  body.print-commessa-report .pdf-table th,
-  body.print-commessa-report .pdf-table td {
+  body.print-report .pdf-table th,
+  body.print-report .pdf-table td {
     padding: 6px 8px;
     border-bottom: 1px solid hsl(var(--border));
     color: hsl(var(--foreground));
   }
 
-  body.print-commessa-report .pdf-table th {
+  body.print-report .pdf-table th {
     font-weight: 600;
     background: hsl(var(--muted));
     text-align: left;
   }
 
-  body.print-commessa-report .pdf-table .is-right {
+  body.print-report .pdf-table .is-right {
     text-align: right;
     font-family: var(--font-mono), monospace;
   }
 
-  body.print-commessa-report .pdf-table tbody tr:nth-child(even) {
+  body.print-report .pdf-table tbody tr:nth-child(even) {
     background: hsl(var(--accent));
   }
 
-  body.print-commessa-report .pdf-full-width {
+  body.print-report .pdf-full-width {
     margin-bottom: 12px;
   }
 
-  body.print-commessa-report .pdf-data-grid {
+  body.print-report .pdf-data-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 6px 16px;
@@ -332,68 +332,68 @@
     font-size: 10px;
   }
 
-  body.print-commessa-report .pdf-data-item {
+  body.print-report .pdf-data-item {
     display: flex;
     flex-direction: column;
     gap: 1px;
   }
 
-  body.print-commessa-report .pdf-data-label {
+  body.print-report .pdf-data-label {
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: hsl(var(--muted-foreground));
   }
 
-  body.print-commessa-report .pdf-data-value {
+  body.print-report .pdf-data-value {
     font-weight: 600;
     color: hsl(var(--foreground));
   }
 
-  body.print-commessa-report .pdf-data-highlight {
+  body.print-report .pdf-data-highlight {
     color: hsl(var(--primary));
   }
 
-  body.print-commessa-report .pdf-kpi-sub {
+  body.print-report .pdf-kpi-sub {
     margin: 2px 0 0;
     font-size: 9px;
     color: hsl(var(--muted-foreground));
   }
 
-  body.print-commessa-report .pdf-desc-cell {
+  body.print-report .pdf-desc-cell {
     max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  body.print-commessa-report .pdf-table-total td {
+  body.print-report .pdf-table-total td {
     font-weight: 700;
     border-top: 2px solid hsl(var(--foreground));
     border-bottom: none;
   }
 
-  body.print-commessa-report .is-positive {
+  body.print-report .is-positive {
     color: hsl(var(--income));
   }
 
-  body.print-commessa-report .is-negative {
+  body.print-report .is-negative {
     color: hsl(var(--expense));
   }
 
   /* ── PDF Bar Charts ── */
-  body.print-commessa-report .pdf-bar-chart {
+  body.print-report .pdf-bar-chart {
     padding: 10px;
   }
 
-  body.print-commessa-report .pdf-bar-row {
+  body.print-report .pdf-bar-row {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 5px;
   }
 
-  body.print-commessa-report .pdf-bar-label {
+  body.print-report .pdf-bar-label {
     flex: 0 0 100px;
     font-size: 9px;
     text-align: right;
@@ -403,14 +403,14 @@
     color: hsl(var(--foreground));
   }
 
-  body.print-commessa-report .pdf-bar-tracks {
+  body.print-report .pdf-bar-tracks {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
 
-  body.print-commessa-report .pdf-bar {
+  body.print-report .pdf-bar {
     height: 14px;
     border-radius: 3px;
     min-width: 2px;
@@ -420,15 +420,15 @@
     transition: none;
   }
 
-  body.print-commessa-report .pdf-bar.is-positive {
+  body.print-report .pdf-bar.is-positive {
     background: hsl(var(--income));
   }
 
-  body.print-commessa-report .pdf-bar.is-negative {
+  body.print-report .pdf-bar.is-negative {
     background: hsl(var(--expense));
   }
 
-  body.print-commessa-report .pdf-bar-value {
+  body.print-report .pdf-bar-value {
     font-size: 8px;
     font-family: var(--font-mono), monospace;
     color: hsl(0 0% 100%);
@@ -436,7 +436,7 @@
     white-space: nowrap;
   }
 
-  body.print-commessa-report .pdf-bar-legend {
+  body.print-report .pdf-bar-legend {
     display: flex;
     gap: 14px;
     margin-top: 8px;
@@ -444,33 +444,33 @@
     color: hsl(var(--muted-foreground));
   }
 
-  body.print-commessa-report .pdf-legend-item {
+  body.print-report .pdf-legend-item {
     display: flex;
     align-items: center;
     gap: 4px;
   }
 
-  body.print-commessa-report .pdf-legend-swatch {
+  body.print-report .pdf-legend-swatch {
     display: inline-block;
     width: 10px;
     height: 10px;
     border-radius: 2px;
   }
 
-  body.print-commessa-report .pdf-legend-swatch.is-positive {
+  body.print-report .pdf-legend-swatch.is-positive {
     background: hsl(var(--income));
   }
 
-  body.print-commessa-report .pdf-legend-swatch.is-negative {
+  body.print-report .pdf-legend-swatch.is-negative {
     background: hsl(var(--expense));
   }
 
   /* ── PDF Progress Bar ── */
-  body.print-commessa-report .pdf-progress-wrap {
+  body.print-report .pdf-progress-wrap {
     padding: 10px;
   }
 
-  body.print-commessa-report .pdf-progress-info {
+  body.print-report .pdf-progress-info {
     display: flex;
     justify-content: space-between;
     font-size: 9px;
@@ -478,22 +478,31 @@
     margin-bottom: 4px;
   }
 
-  body.print-commessa-report .pdf-progress-info + .pdf-progress-info {
+  body.print-report .pdf-progress-info + .pdf-progress-info {
     margin-top: 4px;
     margin-bottom: 0;
   }
 
-  body.print-commessa-report .pdf-progress-track {
+  body.print-report .pdf-progress-track {
     height: 12px;
     border-radius: 6px;
     background: hsl(var(--muted));
     overflow: hidden;
   }
 
-  body.print-commessa-report .pdf-progress-fill {
+  body.print-report .pdf-progress-fill {
     height: 100%;
     border-radius: 6px;
     background: hsl(var(--primary));
+  }
+
+  /* ── Scheda page print: hide main UI, show report div ── */
+  body.print-report .scheda-screen-content {
+    display: none !important;
+  }
+
+  body.print-report .scheda-pdf-report {
+    display: block !important;
   }
 
   @page {
