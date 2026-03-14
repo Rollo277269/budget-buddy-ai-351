@@ -296,8 +296,9 @@ function CentriCostoRicavoTab() {
     if (!itemId) return;
     const item = centri.find(c => c.id === itemId);
     if (!item || item.categoriaId === catId) { dragItemRef.current = null; setDragOverCatId(null); return; }
-    const updated = centri.map(c => c.id === itemId ? { ...c, categoriaId: catId } : c);
-    setCentri(updated); saveCentriLocal(updated);
+    const updatedItem = { ...item, categoriaId: catId };
+    setCentri(prev => prev.map(c => c.id === itemId ? updatedItem : c));
+    upsertCentro(updatedItem);
     dragItemRef.current = null; setDragOverCatId(null);
     const cat = categorie.find(c => c.id === catId);
     toast.success(`"${item.codice}" spostata in ${cat?.codice || "categoria"}`);
@@ -309,8 +310,9 @@ function CentriCostoRicavoTab() {
     if (!itemId) return;
     const item = centri.find(c => c.id === itemId);
     if (!item || !item.categoriaId) { dragItemRef.current = null; setDragOverUnclassified(null); return; }
-    const updated = centri.map(c => c.id === itemId ? { ...c, categoriaId: undefined } : c);
-    setCentri(updated); saveCentriLocal(updated);
+    const updatedItem = { ...item, categoriaId: undefined };
+    setCentri(prev => prev.map(c => c.id === itemId ? updatedItem : c));
+    upsertCentro(updatedItem);
     dragItemRef.current = null; setDragOverUnclassified(null);
     toast.success(`"${item.codice}" rimossa dalla categoria`);
   };
@@ -323,8 +325,8 @@ function CentriCostoRicavoTab() {
     const dup = categorie.find((c) => c.codice === newCatCodice.toUpperCase());
     if (dup) { toast.error("Codice categoria già esistente"); return; }
     const cat: CategoriaCentro = { id: crypto.randomUUID(), tipo, codice: newCatCodice.toUpperCase(), descrizione: newCatDescrizione };
-    const updated = [...categorie, cat];
-    setCategorie(updated); saveCategorieLocal(updated);
+    setCategorie(prev => [...prev, cat]);
+    upsertCategoria(cat);
     setAddingCatTo(null); setNewCatCodice(""); setNewCatDescrizione("");
     setExpandedCats((prev) => new Set([...prev, cat.id]));
     toast.success("Categoria aggiunta");
@@ -341,7 +343,10 @@ function CentriCostoRicavoTab() {
     const dup = categorie.find((c) => c.codice === editCatCodice.toUpperCase() && c.id !== editingCatId);
     if (dup) { toast.error("Codice già esistente"); return; }
     const updated = categorie.map((c) => c.id === editingCatId ? { ...c, codice: editCatCodice.toUpperCase(), descrizione: editCatDescrizione } : c);
-    setCategorie(updated); saveCategorieLocal(updated); setEditingCatId(null);
+    setCategorie(updated);
+    const editedCat = updated.find(c => c.id === editingCatId);
+    if (editedCat) upsertCategoria(editedCat);
+    setEditingCatId(null);
     toast.success("Categoria aggiornata");
   };
 
@@ -351,11 +356,12 @@ function CentriCostoRicavoTab() {
       ? `Questa categoria contiene ${subs.length} voci. Le voci verranno spostate tra le "Non classificate". Procedere?`
       : `Eliminare la categoria?`;
     if (!confirm(msg)) return;
-    // Move subs to unclassified instead of deleting them
     const updatedCentri = centri.map((c) => c.categoriaId === catId ? { ...c, categoriaId: undefined } : c);
-    const updatedCat = categorie.filter((c) => c.id !== catId);
-    setCategorie(updatedCat); saveCategorieLocal(updatedCat);
-    setCentri(updatedCentri); saveCentriLocal(updatedCentri);
+    setCentri(updatedCentri);
+    // Update each orphaned centro in DB
+    subs.forEach(s => upsertCentro({ ...s, categoriaId: undefined }));
+    setCategorie(prev => prev.filter(c => c.id !== catId));
+    deleteCategoriaDb(catId);
     toast.success("Categoria eliminata");
   };
 
@@ -371,8 +377,8 @@ function CentriCostoRicavoTab() {
       codice: newSubCodice.toUpperCase(), descrizione: newSubDescrizione,
       paroleChiaveMatching: newSubParoleChiave, note: ""
     };
-    const updated = [...centri, newItem];
-    setCentri(updated); saveCentriLocal(updated);
+    setCentri(prev => [...prev, newItem]);
+    upsertCentro(newItem);
     setAddingToCat(null); setAddingUnclassified(null);
     setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave("");
     toast.success("Voce aggiunta");
@@ -391,36 +397,22 @@ function CentriCostoRicavoTab() {
     const old = centri.find((c) => c.id === editingId);
     const oldCodice = old?.codice;
     const newCodice = editCodice.toUpperCase();
-    const updated = centri.map((c) =>
-      c.id === editingId ? { ...c, codice: newCodice, descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave } : c
-    );
-    setCentri(updated); saveCentriLocal(updated);
-    // Update centro maps if codice changed
+    const updatedItem: CentroCR = {
+      ...old!, codice: newCodice, descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave
+    };
+    setCentri(prev => prev.map(c => c.id === editingId ? updatedItem : c));
+    upsertCentro(updatedItem);
+    // Update centro assignments if codice changed
     if (oldCodice && oldCodice !== newCodice) {
-      const mapKeys = [
-        "centro-map-costo-vendite", "centro-map-costo-acquisti",
-        "centro-map-ricavo-vendite", "centro-map-ricavo-acquisti",
-      ];
-      mapKeys.forEach((mk) => {
-        try {
-          const raw = localStorage.getItem(mk);
-          if (!raw) return;
-          const map: Record<string, string> = JSON.parse(raw);
-          let changed = false;
-          Object.keys(map).forEach((k) => {
-            if (map[k] === oldCodice) { map[k] = newCodice; changed = true; }
-          });
-          if (changed) localStorage.setItem(mk, JSON.stringify(map));
-        } catch {}
-      });
+      updateCentroCodeInAssignments(oldCodice, newCodice);
     }
     setEditingId(null);
     toast.success("Voce aggiornata");
   };
 
   const deleteSub = (id: string) => {
-    const updated = centri.filter((c) => c.id !== id);
-    setCentri(updated); saveCentriLocal(updated);
+    setCentri(prev => prev.filter(c => c.id !== id));
+    deleteCentroDb(id);
     toast.success("Voce eliminata");
   };
 
