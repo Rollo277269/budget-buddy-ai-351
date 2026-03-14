@@ -10,16 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from "@/components/ui/sheet";
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from
+"@/components/ui/sheet";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from
+"@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  AlertDialogTrigger } from
+"@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
@@ -36,32 +36,32 @@ interface ContoCorrente {
 }
 const CONTI_KEY = "conti-correnti";
 function loadConti(): ContoCorrente[] {
-  try { return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]"); } catch { return []; }
+  try {return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]");} catch {return [];}
 }
 
-function ReconciliationBadge({ m }: { m: BankMovement }) {
+function ReconciliationBadge({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "auto") {
     return (
       <Badge variant="default" className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] text-[10px]">
         <CheckCircle2 className="h-3 w-3 mr-1" />Auto
-      </Badge>
-    );
+      </Badge>);
+
   }
   if (m.matchConfidence === "manual") {
     return (
       <Badge variant="secondary" className="text-[10px]">
         <CheckCircle2 className="h-3 w-3 mr-1" />Manuale
-      </Badge>
-    );
+      </Badge>);
+
   }
   return (
     <Badge variant="destructive" className="text-[10px]">
       <AlertCircle className="h-3 w-3 mr-1" />Da riconciliare
-    </Badge>
-  );
+    </Badge>);
+
 }
 
-function MatchedInvoiceLabel({ m }: { m: BankMovement }) {
+function MatchedInvoiceLabel({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "none" || !m.matchedInvoices.length) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <div className="flex flex-col gap-0.5">
@@ -70,11 +70,11 @@ function MatchedInvoiceLabel({ m }: { m: BankMovement }) {
         return (
           <span key={i} className="text-xs font-mono">
             {type} {inv.anno}/{inv.numero}
-          </span>
-        );
+          </span>);
+
       })}
-    </div>
-  );
+    </div>);
+
 }
 
 interface ReconcileSheetProps {
@@ -92,9 +92,9 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
   const [tab, setTab] = useState<"vendita" | "acquisto">("vendita");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const effectiveTab = movement
-    ? (movement.importo < 0 ? "acquisto" : "vendita")
-    : tab;
+  const effectiveTab = movement ?
+  movement.importo < 0 ? "acquisto" : "vendita" :
+  tab;
 
   const currentTab = tab === effectiveTab ? tab : effectiveTab;
 
@@ -116,15 +116,15 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
       const sc = scoreMatch(movement, inv, name);
       return { inv, score: sc, name };
     });
-    const filtered = search
-      ? scored.filter(({ inv, name }) => {
-          const q = search.toLowerCase();
-          return name.toLowerCase().includes(q) ||
-            String(inv.numero).includes(q) ||
-            inv.cig.toLowerCase().includes(q) ||
-            inv.descrizione.toLowerCase().includes(q);
-        })
-      : scored;
+    const filtered = search ?
+    scored.filter(({ inv, name }) => {
+      const q = search.toLowerCase();
+      return name.toLowerCase().includes(q) ||
+      String(inv.numero).includes(q) ||
+      inv.cig.toLowerCase().includes(q) ||
+      inv.descrizione.toLowerCase().includes(q);
+    }) :
+    scored;
     return filtered.sort((a, b) => b.score - a.score);
   }, [movement, currentTab, sales, purchases, search]);
 
@@ -147,8 +147,8 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
     const key = `${type}-${anno}-${numero}`;
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) next.delete(key);else
+      next.add(key);
       return next;
     });
   };
@@ -180,22 +180,22 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
               {isMatched && <MatchedInvoiceLabel m={movement} />}
             </div>
           </div>
-          {isMatched && (
-            <div className="space-y-1">
-              {movement.matchedInvoices.map((inv, i) => (
-                <div key={i} className="flex items-center justify-between text-xs rounded border px-2 py-1">
+          {isMatched &&
+          <div className="space-y-1">
+              {movement.matchedInvoices.map((inv, i) =>
+            <div key={i} className="flex items-center justify-between text-xs rounded border px-2 py-1">
                   <span className="font-mono">{inv.type === "vendita" ? "V" : "A"} {inv.anno}/{inv.numero}</span>
                   <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => onRemove(movement.id, `${inv.type}-${inv.anno}-${inv.numero}`)}>
+              onClick={() => onRemove(movement.id, `${inv.type}-${inv.anno}-${inv.numero}`)}>
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
-              ))}
-              <Button variant="outline" size="sm" className="text-xs w-full" onClick={() => { onRemove(movement.id); onOpenChange(false); }}>
+            )}
+              <Button variant="outline" size="sm" className="text-xs w-full" onClick={() => {onRemove(movement.id);onOpenChange(false);}}>
                 <X className="h-3 w-3 mr-1" />Rimuovi tutte le associazioni
               </Button>
             </div>
-          )}
+          }
           <div className="flex gap-1">
             <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Fatture Vendita</Button>
             <Button variant={currentTab === "acquisto" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("acquisto")}>Fatture Acquisto</Button>
@@ -204,8 +204,8 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input placeholder="Cerca fattura..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
           </div>
-          {selected.size > 0 && (
-            <div className="flex items-center justify-between rounded-lg border bg-primary/5 border-primary/30 p-2">
+          {selected.size > 0 &&
+          <div className="flex items-center justify-between rounded-lg border bg-primary/5 border-primary/30 p-2">
               <div className="text-xs">
                 <span className="font-medium">{selected.size} fattur{selected.size === 1 ? "a" : "e"}</span>
                 <span className="text-muted-foreground ml-2">Totale: {formatCurrency(selectedTotal)}</span>
@@ -217,7 +217,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
                 Conferma
               </Button>
             </div>
-          )}
+          }
           <ScrollArea className="h-[350px]">
             <div className="space-y-1 pr-3">
               {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
@@ -229,37 +229,37 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
                   <button
                     key={invKey}
                     className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
-                    onClick={() => toggleInvoice(currentTab, inv.anno, inv.numero)}
-                  >
+                    onClick={() => toggleInvoice(currentTab, inv.anno, inv.numero)}>
+                    
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Checkbox checked={isSelected} className="pointer-events-none" />
                         <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
-                        {score >= 35 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
-                        )}
+                        {score >= 35 &&
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
+                        }
                       </div>
                       <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate ml-6">{name}</p>
                     {inv.cig && <span className="text-[10px] font-mono text-muted-foreground ml-6">CIG: {inv.cig}</span>}
-                  </button>
-                );
+                  </button>);
+
               })}
             </div>
           </ScrollArea>
         </div>
       </SheetContent>
-    </Sheet>
-  );
+    </Sheet>);
+
 }
 
 const ACCEPTED_TYPES = [
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-excel",
-  "text/csv",
-  "application/pdf",
-];
+"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+"application/vnd.ms-excel",
+"text/csv",
+"application/pdf"];
+
 const ACCEPTED_EXT = [".xlsx", ".xls", ".csv", ".pdf"];
 
 function isAcceptedFile(file: File) {
@@ -273,7 +273,7 @@ const BanchePage = () => {
     movements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
-    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
+    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch
   } = useBankData(allSales, allPurchases);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
@@ -290,16 +290,16 @@ const BanchePage = () => {
     return () => window.removeEventListener("storage", handler);
   }, []);
 
-  const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some(c => c.id === activeAccountId);
+  const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some((c) => c.id === activeAccountId);
 
   const accountStats = useMemo(() => {
-    const map = new Map<string, { entrate: number; uscite: number; saldo: number; movimenti: number }>();
+    const map = new Map<string, {entrate: number;uscite: number;saldo: number;movimenti: number;}>();
     for (const m of rawMovements) {
       const aid = m.accountId || "default";
       const cur = map.get(aid) || { entrate: 0, uscite: 0, saldo: 0, movimenti: 0 };
       cur.movimenti++;
-      if (m.importo >= 0) cur.entrate += m.importo;
-      else cur.uscite += Math.abs(m.importo);
+      if (m.importo >= 0) cur.entrate += m.importo;else
+      cur.uscite += Math.abs(m.importo);
       cur.saldo += m.importo;
       map.set(aid, cur);
     }
@@ -327,81 +327,81 @@ const BanchePage = () => {
     });
   }, [movements, filterYear]);
 
-  const allIds = useMemo(() => filteredMovements.map(m => m.id), [filteredMovements]);
+  const allIds = useMemo(() => filteredMovements.map((m) => m.id), [filteredMovements]);
   const allSelected = filteredMovements.length > 0 && selectedRows.size === filteredMovements.length;
   const someSelected = selectedRows.size > 0 && !allSelected;
 
   const columns: ColumnDef<BankMovement>[] = useMemo(() => [
-    {
-      key: "_select", label: "", render: (r) => (
-        <input
-          type="checkbox"
-          className="h-3.5 w-3.5 rounded border-input accent-primary"
-          checked={selectedRows.has(r.id)}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => {
-            setSelectedRows(prev => {
-              const next = new Set(prev);
-              if (e.target.checked) next.add(r.id);
-              else next.delete(r.id);
-              return next;
-            });
-          }}
-        />
-      ),
-      headerRender: () => (
-        <input
-          type="checkbox"
-          className="h-3.5 w-3.5 rounded border-input accent-primary"
-          checked={allSelected}
-          ref={(el) => { if (el) el.indeterminate = someSelected; }}
-          onChange={(e) => {
-            if (e.target.checked) setSelectedRows(new Set(allIds));
-            else setSelectedRows(new Set());
-          }}
-        />
-      ),
-    },
-    { key: "data", label: "Data Operazione", render: (r) => <span className="text-xs font-mono whitespace-nowrap">{r.data}</span>, sortable: true, filterable: true },
-    { key: "dataValuta", label: "Data Valuta", render: (r) => <span className="text-xs font-mono whitespace-nowrap">{r.dataValuta || "—"}</span>, sortable: true, filterable: true },
-    {
-      key: "causale", label: "Causale", filterable: true,
-      render: (r) => r.causale ? <span className="text-xs font-mono">{r.causale}</span> : <span className="text-xs text-muted-foreground">—</span>,
-    },
-    {
-      key: "descrizione", label: "Descrizione", filterable: true, wrap: true, defaultWidth: 340,
-      render: (r) => <span className="text-xs">{r.descrizione}</span>,
-    },
-    {
-      key: "importo", label: "Importo", sortable: true, align: "right" as const,
-      render: (r) => (
-        <span className={`text-xs font-mono font-medium ${r.importo >= 0 ? "text-income" : "text-expense"}`}>
+  {
+    key: "_select", label: "", render: (r) =>
+    <input
+      type="checkbox"
+      className="h-3.5 w-3.5 rounded border-input accent-primary"
+      checked={selectedRows.has(r.id)}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => {
+        setSelectedRows((prev) => {
+          const next = new Set(prev);
+          if (e.target.checked) next.add(r.id);else
+          next.delete(r.id);
+          return next;
+        });
+      }} />,
+
+
+    headerRender: () =>
+    <input
+      type="checkbox"
+      className="h-3.5 w-3.5 rounded border-input accent-primary"
+      checked={allSelected}
+      ref={(el) => {if (el) el.indeterminate = someSelected;}}
+      onChange={(e) => {
+        if (e.target.checked) setSelectedRows(new Set(allIds));else
+        setSelectedRows(new Set());
+      }} />
+
+
+  },
+  { key: "data", label: "Data Operazione", render: (r) => <span className="text-xs font-mono whitespace-nowrap">{r.data}</span>, sortable: true, filterable: true },
+  { key: "dataValuta", label: "Data Valuta", render: (r) => <span className="text-xs font-mono whitespace-nowrap">{r.dataValuta || "—"}</span>, sortable: true, filterable: true },
+  {
+    key: "causale", label: "Causale", filterable: true,
+    render: (r) => r.causale ? <span className="text-xs font-mono">{r.causale}</span> : <span className="text-xs text-muted-foreground">—</span>
+  },
+  {
+    key: "descrizione", label: "Descrizione", filterable: true, wrap: true, defaultWidth: 340,
+    render: (r) => <span className="text-xs">{r.descrizione}</span>
+  },
+  {
+    key: "importo", label: "Importo", sortable: true, align: "right" as const,
+    render: (r) =>
+    <span className={`text-xs font-mono font-medium ${r.importo >= 0 ? "text-income" : "text-expense"}`}>
           {formatCurrency(r.importo)}
         </span>
-      ),
-    },
-    { key: "saldo", label: "Saldo", sortable: true, align: "right" as const, defaultHidden: true, render: (r) => <span className="text-xs font-mono">{formatCurrency(r.saldo)}</span> },
-    { key: "cig", label: "CIG", render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span>, filterable: true },
-    {
-      key: "matchConfidence", label: "Stato", sortable: true, filterable: true,
-      render: (r) => <ReconciliationBadge m={r} />,
-    },
-    {
-      key: "matchedType", label: "Fattura", sortable: true,
-      render: (r) => <MatchedInvoiceLabel m={r} />,
-    },
-    {
-      key: "_delete", label: "", render: (r) => (
-        <button
-          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-          title="Elimina movimento"
-          onClick={(e) => { e.stopPropagation(); deleteMovements([r.id]); }}
-        >
+
+  },
+  { key: "saldo", label: "Saldo", sortable: true, align: "right" as const, defaultHidden: true, render: (r) => <span className="text-xs font-mono">{formatCurrency(r.saldo)}</span> },
+  { key: "cig", label: "CIG", render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span>, filterable: true },
+  {
+    key: "matchConfidence", label: "Stato", sortable: true, filterable: true,
+    render: (r) => <ReconciliationBadge m={r} />
+  },
+  {
+    key: "matchedType", label: "Fattura", sortable: true,
+    render: (r) => <MatchedInvoiceLabel m={r} />
+  },
+  {
+    key: "_delete", label: "", render: (r) =>
+    <button
+      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+      title="Elimina movimento"
+      onClick={(e) => {e.stopPropagation();deleteMovements([r.id]);}}>
+      
           <Trash2 className="h-3.5 w-3.5" />
         </button>
-      ),
-    },
-  ], [selectedRows, deleteMovements, allIds, allSelected, someSelected]);
+
+  }],
+  [selectedRows, deleteMovements, allIds, allSelected, someSelected]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!hasValidAccount) {
@@ -419,15 +419,15 @@ const BanchePage = () => {
       movementId,
       invoiceType: inv.type,
       invoiceAnno: inv.anno,
-      invoiceNumero: inv.numero,
+      invoiceNumero: inv.numero
     }));
     addReconciliation(recs);
   };
 
-  const onDragOver = useCallback((e: DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }, []);
-  const onDragLeave = useCallback((e: DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }, []);
+  const onDragOver = useCallback((e: DragEvent) => {e.preventDefault();e.stopPropagation();setIsDragging(true);}, []);
+  const onDragLeave = useCallback((e: DragEvent) => {e.preventDefault();e.stopPropagation();setIsDragging(false);}, []);
   const onDrop = useCallback((e: DragEvent) => {
-    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+    e.preventDefault();e.stopPropagation();setIsDragging(false);
     if (!hasValidAccount) {
       toast.error("Seleziona prima un conto corrente o una carta");
       return;
@@ -446,23 +446,23 @@ const BanchePage = () => {
 
   return (
     <div className="p-6 space-y-6 relative min-h-full" onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
-      {isDragging && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-xl backdrop-blur-sm">
+      {isDragging &&
+      <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-xl backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 text-primary">
             <Upload className="h-12 w-12 animate-bounce" />
             <p className="text-lg font-semibold">Rilascia il file qui</p>
             <p className="text-sm text-muted-foreground">Excel (.xlsx, .xls, .csv) o PDF</p>
           </div>
         </div>
-      )}
+      }
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-bold tracking-tight">Banche</h2>
-          {fileNames.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Carica un estratto conto per iniziare</p>
-          ) : (
-            <Collapsible>
+          
+          {fileNames.length === 0 ?
+          <p className="text-sm text-muted-foreground">Carica un estratto conto per iniziare</p> :
+
+          <Collapsible>
               <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group">
                 <FileSpreadsheet className="h-3.5 w-3.5" />
                 <span>{fileNames.length} file caricati</span>
@@ -470,16 +470,16 @@ const BanchePage = () => {
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
                 <div className="flex flex-col gap-1">
-                  {[...fileNames].sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" })).map((fn) => (
-                    <AlertDialog key={fn}>
+                  {[...fileNames].sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" })).map((fn) =>
+                <AlertDialog key={fn}>
                       <div className="flex items-center gap-2 text-xs">
                         <FileSpreadsheet className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span className="truncate">{fn}</span>
                         <AlertDialogTrigger asChild>
                           <button
-                            className="ml-auto rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground"
-                            title={`Rimuovi ${fn} e i suoi movimenti`}
-                          >
+                        className="ml-auto rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground"
+                        title={`Rimuovi ${fn} e i suoi movimenti`}>
+                        
                             <X className="h-3 w-3" />
                           </button>
                         </AlertDialogTrigger>
@@ -497,11 +497,11 @@ const BanchePage = () => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  ))}
+                )}
                 </div>
               </CollapsibleContent>
             </Collapsible>
-          )}
+          }
         </div>
         <div className="flex items-center gap-2">
           {/* Account selector */}
@@ -510,17 +510,17 @@ const BanchePage = () => {
               <SelectValue placeholder="Seleziona conto..." />
             </SelectTrigger>
             <SelectContent>
-              {conti.length === 0 && (
-                <div className="px-3 py-2 text-xs text-muted-foreground">Nessun conto configurato</div>
-              )}
-              {conti.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
+              {conti.length === 0 &&
+              <div className="px-3 py-2 text-xs text-muted-foreground">Nessun conto configurato</div>
+              }
+              {conti.map((c) =>
+              <SelectItem key={c.id} value={c.id}>
                   <span className="flex items-center gap-1.5">
                     {c.tipo === "carta_credito" ? <CreditCard className="h-3 w-3" /> : <Landmark className="h-3 w-3" />}
                     {c.banca} — {c.iban.slice(-4)}
                   </span>
                 </SelectItem>
-              ))}
+              )}
               <SelectItem value="all">Tutti i conti</SelectItem>
             </SelectContent>
           </Select>
@@ -532,13 +532,13 @@ const BanchePage = () => {
           </Link>
 
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
-          {movements.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => { refreshAutoMatch(); toast.success("Riconciliazione automatica aggiornata"); }}>
+          {movements.length > 0 &&
+          <Button variant="outline" size="sm" onClick={() => {refreshAutoMatch();toast.success("Riconciliazione automatica aggiornata");}}>
               <RefreshCw className="h-4 w-4 mr-1" />Aggiorna riconciliazione
             </Button>
-          )}
+          }
           <Button onClick={() => {
-            if (!hasValidAccount) { toast.error("Seleziona prima un conto corrente o una carta"); return; }
+            if (!hasValidAccount) {toast.error("Seleziona prima un conto corrente o una carta");return;}
             fileInputRef.current?.click();
           }} disabled={isLoading} size="sm">
             <Upload className="h-4 w-4 mr-2" />Carica estratto
@@ -546,8 +546,8 @@ const BanchePage = () => {
         </div>
       </div>
 
-      {movements.length === 0 && !isLoading && conti.length === 0 && (
-        <div className="w-full flex flex-col items-center justify-center h-32 rounded-lg border-2 border-dashed bg-card text-muted-foreground">
+      {movements.length === 0 && !isLoading && conti.length === 0 &&
+      <div className="w-full flex flex-col items-center justify-center h-32 rounded-lg border-2 border-dashed bg-card text-muted-foreground">
           <Landmark className="h-8 w-8 mb-2 opacity-30" />
           <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
           <Link to="/strumenti">
@@ -556,16 +556,16 @@ const BanchePage = () => {
             </Button>
           </Link>
         </div>
-      )}
+      }
 
-      {movements.length === 0 && !isLoading && conti.length > 0 && (
-        <button
-          className="w-full flex items-center justify-center gap-3 h-24 rounded-lg border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
-          onClick={() => {
-            if (!hasValidAccount) { toast.error("Seleziona prima un conto dal menu in alto"); return; }
-            fileInputRef.current?.click();
-          }}
-        >
+      {movements.length === 0 && !isLoading && conti.length > 0 &&
+      <button
+        className="w-full flex items-center justify-center gap-3 h-24 rounded-lg border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
+        onClick={() => {
+          if (!hasValidAccount) {toast.error("Seleziona prima un conto dal menu in alto");return;}
+          fileInputRef.current?.click();
+        }}>
+        
           <Upload className="h-6 w-6 opacity-40" />
           <div className="text-left">
             <p className="text-sm font-medium">
@@ -574,20 +574,20 @@ const BanchePage = () => {
             <p className="text-[11px] mt-0.5">Excel (.xlsx, .xls, .csv) o PDF</p>
           </div>
         </button>
-      )}
+      }
 
       {/* Account balances */}
-      {conti.length > 0 && rawMovements.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      {conti.length > 0 && rawMovements.length > 0 &&
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {conti.map((c) => {
-            const st = accountStats.get(c.id);
-            if (!st) return null;
-            return (
-              <Card
-                key={c.id}
-                className={`cursor-pointer transition-colors ${activeAccountId === c.id ? "border-primary ring-1 ring-primary/30" : "hover:border-primary/30"}`}
-                onClick={() => setActiveAccountId(c.id)}
-              >
+          const st = accountStats.get(c.id);
+          if (!st) return null;
+          return (
+            <Card
+              key={c.id}
+              className={`cursor-pointer transition-colors ${activeAccountId === c.id ? "border-primary ring-1 ring-primary/30" : "hover:border-primary/30"}`}
+              onClick={() => setActiveAccountId(c.id)}>
+              
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -605,20 +605,20 @@ const BanchePage = () => {
                     <span>↓ {formatCurrency(st.uscite)}</span>
                   </div>
                 </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+              </Card>);
 
-      {isLoading && (
-        <div className="flex items-center justify-center h-64">
+        })}
+        </div>
+      }
+
+      {isLoading &&
+      <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
-      )}
+      }
 
-      {movements.length > 0 && !isLoading && (
-        <>
+      {movements.length > 0 && !isLoading &&
+      <>
           {/* Year filter + Stats */}
           <div className="flex items-center gap-3 flex-wrap">
             <Select value={filterYear} onValueChange={setFilterYear}>
@@ -627,16 +627,16 @@ const BanchePage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tutti gli anni</SelectItem>
-                {availableYears.map((y) => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
+                {availableYears.map((y) =>
+              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              )}
               </SelectContent>
             </Select>
-            {filterYear && filterYear !== "all" && (
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setFilterYear("")}>
+            {filterYear && filterYear !== "all" &&
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setFilterYear("")}>
                 Reset
               </Button>
-            )}
+          }
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Movimenti</p><p className="text-xl font-bold">{stats.total}</p></CardContent></Card>
@@ -647,8 +647,8 @@ const BanchePage = () => {
           </div>
 
           {/* Bulk actions */}
-          {selectedRows.size > 0 && (
-            <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+          {selectedRows.size > 0 &&
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
               <span className="text-xs font-medium">{selectedRows.size} righe selezionate</span>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -673,30 +673,30 @@ const BanchePage = () => {
                 Deseleziona tutto
               </Button>
             </div>
-          )}
+        }
 
           {/* Table */}
           <DataTable<BankMovement>
-            columns={columns}
-            data={filteredMovements}
-            rowKey={(r) => r.id}
-            onRowClick={setSelectedMovement}
-          />
+          columns={columns}
+          data={filteredMovements}
+          rowKey={(r) => r.id}
+          onRowClick={setSelectedMovement} />
+        
         </>
-      )}
+      }
 
       <ReconcileSheet
         movement={selectedMovement}
         open={!!selectedMovement}
-        onOpenChange={(open) => { if (!open) setSelectedMovement(null); }}
+        onOpenChange={(open) => {if (!open) setSelectedMovement(null);}}
         sales={allSales}
         purchases={allPurchases}
         onReconcile={handleReconcile}
-        onRemove={(id, invoiceKey) => { removeReconciliation(id, invoiceKey); if (!invoiceKey) setSelectedMovement(null); }}
-      />
+        onRemove={(id, invoiceKey) => {removeReconciliation(id, invoiceKey);if (!invoiceKey) setSelectedMovement(null);}} />
+      
 
       {/* Duplicate detection dialog */}
-      <AlertDialog open={!!pendingDuplicates} onOpenChange={(open) => { if (!open) dismissDuplicates(); }}>
+      <AlertDialog open={!!pendingDuplicates} onOpenChange={(open) => {if (!open) dismissDuplicates();}}>
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -708,26 +708,26 @@ const BanchePage = () => {
                 <p>
                   Nel file <span className="font-medium">{pendingDuplicates?.fileName}</span> sono stati trovati{" "}
                   <span className="font-bold text-foreground">{pendingDuplicates?.duplicates.length}</span> movimenti già presenti
-                  {pendingDuplicates?.unique && pendingDuplicates.unique.length > 0 && (
-                    <> ({pendingDuplicates.unique.length} nuovi già importati)</>
-                  )}.
+                  {pendingDuplicates?.unique && pendingDuplicates.unique.length > 0 &&
+                  <> ({pendingDuplicates.unique.length} nuovi già importati)</>
+                  }.
                 </p>
                 <ScrollArea className="max-h-[200px] rounded-md border">
                   <div className="p-2 space-y-1">
-                    {pendingDuplicates?.duplicates.slice(0, 20).map((d, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
+                    {pendingDuplicates?.duplicates.slice(0, 20).map((d, i) =>
+                    <div key={i} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
                         <span className="text-muted-foreground">{d.data}</span>
                         <span className="truncate max-w-[200px] mx-2">{d.descrizione}</span>
                         <span className={`font-mono font-medium ${d.importo >= 0 ? "text-income" : "text-expense"}`}>
                           {formatCurrency(d.importo)}
                         </span>
                       </div>
-                    ))}
-                    {(pendingDuplicates?.duplicates.length ?? 0) > 20 && (
-                      <p className="text-xs text-muted-foreground text-center py-1">
+                    )}
+                    {(pendingDuplicates?.duplicates.length ?? 0) > 20 &&
+                    <p className="text-xs text-muted-foreground text-center py-1">
                         ...e altri {(pendingDuplicates?.duplicates.length ?? 0) - 20}
                       </p>
-                    )}
+                    }
                   </div>
                 </ScrollArea>
               </div>
@@ -740,8 +740,8 @@ const BanchePage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-    </div>
-  );
+    </div>);
+
 };
 
 export default BanchePage;
