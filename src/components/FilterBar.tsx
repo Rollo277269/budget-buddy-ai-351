@@ -12,6 +12,7 @@ interface FilterBarProps {
     clients: string[];
     suppliers: string[];
     cigs: string[];
+    centriCosto?: { value: string; label: string }[];
   };
   hideCliente?: boolean;
   hideFornitore?: boolean;
@@ -95,11 +96,24 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
         />
       </div>
 
+      {options.centriCosto && options.centriCosto.length > 0 && (
+        <div className="space-y-1.5 min-w-[180px] max-w-[240px]">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Centro Costo</label>
+          <Combobox
+            value={filters.centroCosto}
+            onValueChange={(v) => update("centroCosto", v)}
+            options={[{ value: "", label: "Tutti i centri" }, ...options.centriCosto]}
+            placeholder="Tutti i centri"
+            searchPlaceholder="Cerca centro..."
+          />
+        </div>
+      )}
+
       {hasFilters && (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onFiltersChange({ anno: "", cliente: "", fornitore: "", cig: "" })}
+          onClick={() => onFiltersChange({ anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "" })}
           className="text-muted-foreground hover:text-foreground"
         >
           <RotateCcw className="h-4 w-4 mr-1" />

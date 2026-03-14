@@ -46,6 +46,11 @@ const AcquistiPage = () => {
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
 
+  const displayedPurchases = useMemo(() => {
+    if (!filters.centroCosto) return purchases;
+    return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
+  }, [purchases, filters.centroCosto, costoMap.map]);
+
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(purchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
@@ -318,13 +323,17 @@ const AcquistiPage = () => {
         {/* Documenti table (full section) */}
         <DocumentiAcquistoSection tableOnly />
 
-        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideCliente />
+        <FilterBar filters={filters} onFiltersChange={setFilters} options={{
+          ...filterOptions,
+          centriCosto: centriCosto.map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` })),
+        }} hideCliente />
         <DataTable<PurchaseInvoice>
           columns={columns}
-          data={purchases}
+          data={displayedPurchases}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
-          rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""} />
+          rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+        />
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={purchases} xmlMap={xmlMap} tipo="acquisto" onManualMatch={manualMatch} />
