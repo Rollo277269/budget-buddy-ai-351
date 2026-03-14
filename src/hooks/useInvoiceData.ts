@@ -189,12 +189,26 @@ export function useInvoiceData() {
   });
 
   useEffect(() => {
-    Promise.all([
-      loadExcel("/data/Fatture_Full.xlsx"),
-      loadExcel("/data/FattureAcquisto_Full.xlsx"),
-    ]).then(([salesRows, purchaseRows]) => {
-      setSales(parseSales(salesRows));
-      setPurchases(parsePurchases(purchaseRows));
+    if (cachedSales && cachedPurchases) {
+      setSales(cachedSales);
+      setPurchases(cachedPurchases);
+      setLoading(false);
+      return;
+    }
+
+    if (!loadPromise) {
+      loadPromise = Promise.all([
+        loadExcel("/data/Fatture_Full.xlsx"),
+        loadExcel("/data/FattureAcquisto_Full.xlsx"),
+      ]).then(([salesRows, purchaseRows]) => {
+        cachedSales = parseSales(salesRows);
+        cachedPurchases = parsePurchases(purchaseRows);
+      });
+    }
+
+    loadPromise.then(() => {
+      setSales(cachedSales!);
+      setPurchases(cachedPurchases!);
       setLoading(false);
     });
   }, []);
