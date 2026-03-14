@@ -32,8 +32,9 @@ function StatusBadge({ stato }: {stato: string;}) {
 
 const AcquistiPage = () => {
   const navigate = useNavigate();
-  const { purchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const { purchases, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
+  const [selectedFornitore, setSelectedFornitore] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const costoMap = useCentroMap("costo", "acquisti");
   const ricavoMap = useCentroMap("ricavo", "acquisti");
