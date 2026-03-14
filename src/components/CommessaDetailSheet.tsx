@@ -450,7 +450,7 @@ export function CommessaDetailSheet({
             <TabsContent value="dati" className="space-y-4">
               {cssr ? (
                 <div className="rounded-xl border bg-muted/30 p-5 space-y-4">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa (CSSR)</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
                     <CssrField icon={Building2} label="Committente" value={cssr.committente} />
                     <CssrField icon={Building2} label="Impresa Assegnataria" value={cssr.impresa_assegnataria} />
