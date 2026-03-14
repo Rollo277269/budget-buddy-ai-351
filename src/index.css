@@ -150,9 +150,21 @@
   }
 
   body.print-commessa-report .pdf-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     border-bottom: 2px solid hsl(var(--border));
-    padding-bottom: 10px;
+    padding-bottom: 12px;
     margin-bottom: 14px;
+  }
+
+  body.print-commessa-report .pdf-header-logo svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  body.print-commessa-report .pdf-header-text {
+    flex: 1;
   }
 
   body.print-commessa-report .pdf-header h1 {
@@ -175,6 +187,45 @@
     flex-wrap: wrap;
     font-size: 11px;
     color: hsl(var(--muted-foreground));
+  }
+
+  /* Footer fixed on every page */
+  body.print-commessa-report .pdf-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-top: 1px solid hsl(var(--border));
+    font-size: 9px;
+    color: hsl(var(--muted-foreground));
+    background: hsl(0 0% 100%);
+  }
+
+  body.print-commessa-report .pdf-footer-left,
+  body.print-commessa-report .pdf-footer-center,
+  body.print-commessa-report .pdf-footer-right {
+    flex: 1;
+  }
+
+  body.print-commessa-report .pdf-footer-center {
+    text-align: center;
+  }
+
+  body.print-commessa-report .pdf-footer-right {
+    text-align: right;
+  }
+
+  body.print-commessa-report .pdf-page-number::after {
+    content: counter(page);
+  }
+
+  /* Add bottom padding to content so it doesn't overlap the fixed footer */
+  body.print-commessa-report .pdf-report {
+    padding-bottom: 30px;
   }
 
   body.print-commessa-report .pdf-kpi-grid {
