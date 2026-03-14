@@ -12,52 +12,26 @@ import { toast } from "sonner";
 
 // ─── Conti Correnti ──────────────────────────────────────────────
 
-interface ContoCorrente {
-  id: string;
-  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali";
-  banca: string;
-  iban: string;
-  intestatario: string;
-  note: string;
-}
-
-const CONTI_KEY = "conti-correnti";
-
-function loadConti(): ContoCorrente[] {
-  try {return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]");}
-  catch {return [];}
-}
-
-function saveConti(conti: ContoCorrente[]) {
-  localStorage.setItem(CONTI_KEY, JSON.stringify(conti));
-}
+import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
 
 function ContiCorrentiTab() {
-  const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
+  const { conti, saveConto, deleteConto } = useContiCorrenti();
   const [editing, setEditing] = useState<ContoCorrente | null>(null);
 
   const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editing) return;
     if (!editing.banca || !editing.iban) {
       toast.error("Banca e IBAN sono obbligatori");
       return;
     }
-    const updated = editing.id ?
-    conti.map((c) => c.id === editing.id ? editing : c) :
-    [...conti, { ...editing, id: crypto.randomUUID() }];
-    setConti(updated);
-    saveConti(updated);
+    await saveConto(editing);
     setEditing(null);
-    toast.success(editing.id ? "Conto aggiornato" : "Conto aggiunto");
   };
 
-  const handleDelete = (id: string) => {
-    const updated = conti.filter((c) => c.id !== id);
-    setConti(updated);
-    saveConti(updated);
-    toast.success("Conto eliminato");
+  const handleDelete = async (id: string) => {
+    await deleteConto(id);
   };
 
   return (
@@ -150,59 +124,29 @@ function ContiCorrentiTab() {
   );
 }
 
+
 // ─── Regole Denominazione ────────────────────────────────────────
 
-interface NamingRule {
-  id: string;
-  tipo: string;
-  pattern: string;
-  esempio: string;
-}
-
-const RULES_KEY = "naming-rules";
-
-function loadRules(): NamingRule[] {
-  try {
-    const saved = JSON.parse(localStorage.getItem(RULES_KEY) || "null");
-    if (saved) return saved;
-  } catch {}
-  return [
-    { id: "1", tipo: "Fattura Vendita", pattern: "FV_{ANNO}_{NUMERO}_{CLIENTE}", esempio: "FV_2024_001_RossiSRL" },
-    { id: "2", tipo: "Fattura Acquisto", pattern: "FA_{ANNO}_{NUMERO}_{FORNITORE}", esempio: "FA_2024_042_BianchiSPA" },
-    { id: "3", tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" },
-  ];
-}
-
-function saveRules(rules: NamingRule[]) {
-  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
-}
+import { useNamingRules, NamingRule } from "@/hooks/useNamingRules";
 
 function NamingRulesTab() {
-  const [rules, setRules] = useState<NamingRule[]>(loadRules);
+  const { rules, saveRule, deleteRule } = useNamingRules();
   const [editing, setEditing] = useState<NamingRule | null>(null);
 
   const empty: NamingRule = { id: "", tipo: "", pattern: "", esempio: "" };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editing) return;
     if (!editing.tipo || !editing.pattern) {
       toast.error("Tipo documento e pattern sono obbligatori");
       return;
     }
-    const updated = editing.id ?
-    rules.map((r) => r.id === editing.id ? editing : r) :
-    [...rules, { ...editing, id: crypto.randomUUID() }];
-    setRules(updated);
-    saveRules(updated);
+    await saveRule(editing);
     setEditing(null);
-    toast.success("Regola salvata");
   };
 
-  const handleDelete = (id: string) => {
-    const updated = rules.filter((r) => r.id !== id);
-    setRules(updated);
-    saveRules(updated);
-    toast.success("Regola eliminata");
+  const handleDelete = async (id: string) => {
+    await deleteRule(id);
   };
 
   return (
@@ -289,45 +233,26 @@ function NamingRulesTab() {
 
 // ─── Centri di Costo / Ricavo ────────────────────────────────────
 
-interface CategoriaCentro {
-  id: string;
-  tipo: "costo" | "ricavo";
-  codice: string;
-  descrizione: string;
-}
-
-interface CentroCR {
-  id: string;
-  tipo: "costo" | "ricavo";
-  codice: string;
-  descrizione: string;
-  paroleChiaveMatching: string;
-  note: string;
-  categoriaId?: string;
-}
-
-const CENTRI_KEY = "centri-costo-ricavo";
-const CATEGORIE_KEY = "centri-categorie";
-
-function loadCentri(): CentroCR[] {
-  try { return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]"); }
-  catch { return []; }
-}
-function saveCentriLocal(centri: CentroCR[]) {
-  localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
-}
-function loadCategorie(): CategoriaCentro[] {
-  try { return JSON.parse(localStorage.getItem(CATEGORIE_KEY) || "[]"); }
-  catch { return []; }
-}
-function saveCategorieLocal(cat: CategoriaCentro[]) {
-  localStorage.setItem(CATEGORIE_KEY, JSON.stringify(cat));
-}
+import {
+  CategoriaCentro, CentroCR,
+  fetchCentriFromDb, fetchCategorieFromDb,
+  upsertCentro, deleteCentroDb,
+  upsertCategoria, deleteCategoriaDb,
+  updateCentroCodeInAssignments,
+} from "@/hooks/useCentri";
 
 function CentriCostoRicavoTab() {
-  const [centri, setCentri] = useState<CentroCR[]>(loadCentri);
-  const [categorie, setCategorie] = useState<CategoriaCentro[]>(loadCategorie);
-  const [expandedCats, setExpandedCats] = useState<Set<string>>(() => new Set(loadCategorie().map(c => c.id)));
+  const [centri, setCentri] = useState<CentroCR[]>([]);
+  const [categorie, setCategorie] = useState<CategoriaCentro[]>([]);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetchCentriFromDb().then(setCentri);
+    fetchCategorieFromDb().then((cats) => {
+      setCategorie(cats);
+      setExpandedCats(new Set(cats.map(c => c.id)));
+    });
+  }, []);
 
   // Editing subcategory
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -371,8 +296,9 @@ function CentriCostoRicavoTab() {
     if (!itemId) return;
     const item = centri.find(c => c.id === itemId);
     if (!item || item.categoriaId === catId) { dragItemRef.current = null; setDragOverCatId(null); return; }
-    const updated = centri.map(c => c.id === itemId ? { ...c, categoriaId: catId } : c);
-    setCentri(updated); saveCentriLocal(updated);
+    const updatedItem = { ...item, categoriaId: catId };
+    setCentri(prev => prev.map(c => c.id === itemId ? updatedItem : c));
+    upsertCentro(updatedItem);
     dragItemRef.current = null; setDragOverCatId(null);
     const cat = categorie.find(c => c.id === catId);
     toast.success(`"${item.codice}" spostata in ${cat?.codice || "categoria"}`);
@@ -384,8 +310,9 @@ function CentriCostoRicavoTab() {
     if (!itemId) return;
     const item = centri.find(c => c.id === itemId);
     if (!item || !item.categoriaId) { dragItemRef.current = null; setDragOverUnclassified(null); return; }
-    const updated = centri.map(c => c.id === itemId ? { ...c, categoriaId: undefined } : c);
-    setCentri(updated); saveCentriLocal(updated);
+    const updatedItem = { ...item, categoriaId: undefined };
+    setCentri(prev => prev.map(c => c.id === itemId ? updatedItem : c));
+    upsertCentro(updatedItem);
     dragItemRef.current = null; setDragOverUnclassified(null);
     toast.success(`"${item.codice}" rimossa dalla categoria`);
   };
@@ -398,8 +325,8 @@ function CentriCostoRicavoTab() {
     const dup = categorie.find((c) => c.codice === newCatCodice.toUpperCase());
     if (dup) { toast.error("Codice categoria già esistente"); return; }
     const cat: CategoriaCentro = { id: crypto.randomUUID(), tipo, codice: newCatCodice.toUpperCase(), descrizione: newCatDescrizione };
-    const updated = [...categorie, cat];
-    setCategorie(updated); saveCategorieLocal(updated);
+    setCategorie(prev => [...prev, cat]);
+    upsertCategoria(cat);
     setAddingCatTo(null); setNewCatCodice(""); setNewCatDescrizione("");
     setExpandedCats((prev) => new Set([...prev, cat.id]));
     toast.success("Categoria aggiunta");
@@ -416,7 +343,10 @@ function CentriCostoRicavoTab() {
     const dup = categorie.find((c) => c.codice === editCatCodice.toUpperCase() && c.id !== editingCatId);
     if (dup) { toast.error("Codice già esistente"); return; }
     const updated = categorie.map((c) => c.id === editingCatId ? { ...c, codice: editCatCodice.toUpperCase(), descrizione: editCatDescrizione } : c);
-    setCategorie(updated); saveCategorieLocal(updated); setEditingCatId(null);
+    setCategorie(updated);
+    const editedCat = updated.find(c => c.id === editingCatId);
+    if (editedCat) upsertCategoria(editedCat);
+    setEditingCatId(null);
     toast.success("Categoria aggiornata");
   };
 
@@ -426,11 +356,12 @@ function CentriCostoRicavoTab() {
       ? `Questa categoria contiene ${subs.length} voci. Le voci verranno spostate tra le "Non classificate". Procedere?`
       : `Eliminare la categoria?`;
     if (!confirm(msg)) return;
-    // Move subs to unclassified instead of deleting them
     const updatedCentri = centri.map((c) => c.categoriaId === catId ? { ...c, categoriaId: undefined } : c);
-    const updatedCat = categorie.filter((c) => c.id !== catId);
-    setCategorie(updatedCat); saveCategorieLocal(updatedCat);
-    setCentri(updatedCentri); saveCentriLocal(updatedCentri);
+    setCentri(updatedCentri);
+    // Update each orphaned centro in DB
+    subs.forEach(s => upsertCentro({ ...s, categoriaId: undefined }));
+    setCategorie(prev => prev.filter(c => c.id !== catId));
+    deleteCategoriaDb(catId);
     toast.success("Categoria eliminata");
   };
 
@@ -446,8 +377,8 @@ function CentriCostoRicavoTab() {
       codice: newSubCodice.toUpperCase(), descrizione: newSubDescrizione,
       paroleChiaveMatching: newSubParoleChiave, note: ""
     };
-    const updated = [...centri, newItem];
-    setCentri(updated); saveCentriLocal(updated);
+    setCentri(prev => [...prev, newItem]);
+    upsertCentro(newItem);
     setAddingToCat(null); setAddingUnclassified(null);
     setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave("");
     toast.success("Voce aggiunta");
@@ -466,36 +397,22 @@ function CentriCostoRicavoTab() {
     const old = centri.find((c) => c.id === editingId);
     const oldCodice = old?.codice;
     const newCodice = editCodice.toUpperCase();
-    const updated = centri.map((c) =>
-      c.id === editingId ? { ...c, codice: newCodice, descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave } : c
-    );
-    setCentri(updated); saveCentriLocal(updated);
-    // Update centro maps if codice changed
+    const updatedItem: CentroCR = {
+      ...old!, codice: newCodice, descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave
+    };
+    setCentri(prev => prev.map(c => c.id === editingId ? updatedItem : c));
+    upsertCentro(updatedItem);
+    // Update centro assignments if codice changed
     if (oldCodice && oldCodice !== newCodice) {
-      const mapKeys = [
-        "centro-map-costo-vendite", "centro-map-costo-acquisti",
-        "centro-map-ricavo-vendite", "centro-map-ricavo-acquisti",
-      ];
-      mapKeys.forEach((mk) => {
-        try {
-          const raw = localStorage.getItem(mk);
-          if (!raw) return;
-          const map: Record<string, string> = JSON.parse(raw);
-          let changed = false;
-          Object.keys(map).forEach((k) => {
-            if (map[k] === oldCodice) { map[k] = newCodice; changed = true; }
-          });
-          if (changed) localStorage.setItem(mk, JSON.stringify(map));
-        } catch {}
-      });
+      updateCentroCodeInAssignments(oldCodice, newCodice);
     }
     setEditingId(null);
     toast.success("Voce aggiornata");
   };
 
   const deleteSub = (id: string) => {
-    const updated = centri.filter((c) => c.id !== id);
-    setCentri(updated); saveCentriLocal(updated);
+    setCentri(prev => prev.filter(c => c.id !== id));
+    deleteCentroDb(id);
     toast.success("Voce eliminata");
   };
 

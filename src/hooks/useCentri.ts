@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface CategoriaCentro {
   id: string;
@@ -17,68 +18,108 @@ export interface CentroCR {
   categoriaId?: string;
 }
 
-const CENTRI_KEY = "centri-costo-ricavo";
-const CATEGORIE_KEY = "centri-categorie";
-const CENTRO_MAP_PREFIX = "centro-map-";
+// ── Load/Save centri from DB ──
 
-export function loadCentri(): CentroCR[] {
-  try {
-    return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]");
-  } catch {
-    return [];
+export async function fetchCentriFromDb(): Promise<CentroCR[]> {
+  const { data, error } = await supabase
+    .from("centri_cr" as any)
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) { console.error("Error loading centri:", error); return []; }
+  return (data as any[] || []).map((d: any) => ({
+    id: d.id,
+    tipo: d.tipo as "costo" | "ricavo",
+    codice: d.codice,
+    descrizione: d.descrizione || "",
+    paroleChiaveMatching: d.parole_chiave_matching || "",
+    note: d.note || "",
+    categoriaId: d.categoria_id || undefined,
+  }));
+}
+
+export async function fetchCategorieFromDb(): Promise<CategoriaCentro[]> {
+  const { data, error } = await supabase
+    .from("categorie_centri" as any)
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) { console.error("Error loading categorie:", error); return []; }
+  return (data as any[] || []).map((d: any) => ({
+    id: d.id,
+    tipo: d.tipo as "costo" | "ricavo",
+    codice: d.codice,
+    descrizione: d.descrizione || "",
+  }));
+}
+
+export async function upsertCentro(c: CentroCR) {
+  const row = {
+    id: c.id,
+    tipo: c.tipo,
+    codice: c.codice,
+    descrizione: c.descrizione,
+    parole_chiave_matching: c.paroleChiaveMatching,
+    note: c.note,
+    categoria_id: c.categoriaId || null,
+  };
+  await supabase.from("centri_cr" as any).upsert(row as any);
+}
+
+export async function deleteCentroDb(id: string) {
+  await supabase.from("centri_cr" as any).delete().eq("id", id);
+}
+
+export async function upsertCategoria(c: CategoriaCentro) {
+  await supabase.from("categorie_centri" as any).upsert({ id: c.id, tipo: c.tipo, codice: c.codice, descrizione: c.descrizione } as any);
+}
+
+export async function deleteCategoriaDb(id: string) {
+  await supabase.from("categorie_centri" as any).delete().eq("id", id);
+}
+
+// ── Centro assignment map (invoice_key → centro_codice) ──
+
+async function loadMapFromDb(tipo: "costo" | "ricavo", context: "vendite" | "acquisti"): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from("centro_assignments" as any)
+    .select("invoice_key, centro_codice")
+    .eq("tipo", tipo)
+    .eq("context", context);
+  if (error) { console.error("Error loading centro map:", error); return {}; }
+  const map: Record<string, string> = {};
+  for (const d of (data as any[] || [])) {
+    map[d.invoice_key] = d.centro_codice;
   }
+  return map;
 }
 
-export function loadCategorie(): CategoriaCentro[] {
-  try {
-    return JSON.parse(localStorage.getItem(CATEGORIE_KEY) || "[]");
-  } catch {
-    return [];
-  }
+async function saveAssignment(invoiceKey: string, tipo: "costo" | "ricavo", context: "vendite" | "acquisti", centroCodice: string) {
+  await supabase.from("centro_assignments" as any).upsert({
+    invoice_key: invoiceKey,
+    tipo,
+    context,
+    centro_codice: centroCodice,
+  } as any, { onConflict: "invoice_key,tipo,context" });
 }
 
-export function saveCategorie(categorie: CategoriaCentro[]) {
-  localStorage.setItem(CATEGORIE_KEY, JSON.stringify(categorie));
+export async function updateCentroCodeInAssignments(oldCodice: string, newCodice: string) {
+  await supabase
+    .from("centro_assignments" as any)
+    .update({ centro_codice: newCodice } as any)
+    .eq("centro_codice", oldCodice);
 }
-
-export function saveCentri(centri: CentroCR[]) {
-  localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
-}
-
-function storageKey(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
-  return `${CENTRO_MAP_PREFIX}${tipo}-${context}`;
-}
-
-function loadMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti"): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(storageKey(tipo, context)) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti", map: Record<string, string>) {
-  localStorage.setItem(storageKey(tipo, context), JSON.stringify(map));
-}
-
-// Migrate old key if exists
-function migrateOldKey() {
-  const old = localStorage.getItem("centro-ricavo-map");
-  if (old) {
-    localStorage.setItem(storageKey("ricavo", "vendite"), old);
-    localStorage.removeItem("centro-ricavo-map");
-  }
-}
-migrateOldKey();
 
 export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
-  const [map, setMap] = useState<Record<string, string>>(() => loadMap(tipo, context));
+  const [map, setMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    loadMapFromDb(tipo, context).then(setMap);
+  }, [tipo, context]);
 
   const assign = useCallback(
     (key: string, codice: string) => {
       setMap((prev) => {
         const next = { ...prev, [key]: codice };
-        saveMap(tipo, context, next);
+        saveAssignment(key, tipo, context, codice);
         return next;
       });
     },
@@ -89,8 +130,14 @@ export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acq
 }
 
 export function useCentriData() {
-  const centri = useMemo(() => loadCentri(), []);
-  const categorie = useMemo(() => loadCategorie(), []);
+  const [centri, setCentri] = useState<CentroCR[]>([]);
+  const [categorie, setCategorie] = useState<CategoriaCentro[]>([]);
+
+  useEffect(() => {
+    fetchCentriFromDb().then(setCentri);
+    fetchCategorieFromDb().then(setCategorie);
+  }, []);
+
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
   return { centri, categorie, centriCosto, centriRicavo };

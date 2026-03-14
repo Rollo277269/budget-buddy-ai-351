@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CentroCR, loadCentri } from "@/hooks/useCentri";
+import { CentroCR, fetchCentriFromDb } from "@/hooks/useCentri";
 
 export interface DocumentoAcquisto {
   id: string;
@@ -56,7 +56,7 @@ export function useDocumentiAcquisto() {
     // Call AI to parse
     let aiData: any = {};
     try {
-      const centri = loadCentri();
+      const centri = await fetchCentriFromDb();
       const { data, error } = await supabase.functions.invoke("parse-documento-acquisto", {
         body: { text: extractedText, centri },
       });

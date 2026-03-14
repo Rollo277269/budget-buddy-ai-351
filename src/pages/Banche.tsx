@@ -25,19 +25,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 
-// Load conti from localStorage (same key as Strumenti page)
-interface ContoCorrente {
-  id: string;
-  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali";
-  banca: string;
-  iban: string;
-  intestatario: string;
-  note: string;
-}
-const CONTI_KEY = "conti-correnti";
-function loadConti(): ContoCorrente[] {
-  try {return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]");} catch {return [];}
-}
+// Load conti from shared hook
+import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
 
 function ReconciliationBadge({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "auto") {
@@ -275,20 +264,12 @@ const BanchePage = () => {
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch
   } = useBankData(allSales, allPurchases);
+  const { conti } = useContiCorrenti();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [filterYear, setFilterYear] = useState<string>("");
-
-  const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
-
-  // Re-read conti when localStorage changes (e.g. edited in Strumenti)
-  useEffect(() => {
-    const handler = () => setConti(loadConti());
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some((c) => c.id === activeAccountId);
 

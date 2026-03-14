@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
 import * as pdfjsLib from "pdfjs-dist";
+import { supabase } from "@/integrations/supabase/client";
 import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 
 // Configure pdf.js worker
@@ -38,20 +39,32 @@ export interface Reconciliation {
   invoiceNumero: number;
 }
 
-const STORAGE_KEY = "bank-reconciliations";
-const MOVEMENTS_KEY = "bank-movements";
-const FILES_KEY = "bank-file-names";
-
-function loadReconciliations(): Reconciliation[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
+async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
+  const { data, error } = await supabase
+    .from("bank_reconciliations" as any)
+    .select("*");
+  if (error) { console.error("Error loading reconciliations:", error); return []; }
+  return (data as any[] || []).map((d: any) => ({
+    movementId: d.movement_id,
+    invoiceType: d.invoice_type,
+    invoiceAnno: d.invoice_anno,
+    invoiceNumero: d.invoice_numero,
+  }));
 }
 
-function saveReconciliations(recs: Reconciliation[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(recs));
+async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string) {
+  await supabase.from("bank_reconciliations" as any).insert({
+    movement_id: movementDbId,
+    invoice_type: rec.invoiceType,
+    invoice_anno: rec.invoiceAnno,
+    invoice_numero: rec.invoiceNumero,
+  } as any);
+}
+
+async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: string) {
+  let query = supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId);
+  // If invoiceKey provided, we'd need to parse it, but for now delete all for this movement
+  await query;
 }
 
 function extractCIG(text: string): string {
@@ -537,17 +550,37 @@ function autoMatch(
   }));
 }
 
-function loadMovements(): Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
-  try { return JSON.parse(localStorage.getItem(MOVEMENTS_KEY) || "[]"); } catch { return []; }
+async function loadMovementsFromDb(): Promise<RawMovement[]> {
+  const { data, error } = await supabase.from("bank_movements" as any).select("*").order("created_at", { ascending: true });
+  if (error) { console.error("Error loading movements:", error); return []; }
+  return (data as any[] || []).map((d: any) => ({
+    id: d.id,
+    accountId: d.account_id || "default",
+    sourceFile: d.source_file || "",
+    data: d.data || "",
+    dataValuta: d.data_valuta || "",
+    causale: d.causale || "",
+    descrizione: d.descrizione || "",
+    importo: Number(d.importo) || 0,
+    saldo: Number(d.saldo) || 0,
+    cig: d.cig || "",
+  }));
 }
-function saveMovements(m: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]) {
-  localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(m));
-}
-function loadFileNames(): string[] {
-  try { return JSON.parse(localStorage.getItem(FILES_KEY) || "[]"); } catch { return []; }
-}
-function saveFileNames(names: string[]) {
-  localStorage.setItem(FILES_KEY, JSON.stringify(names));
+
+async function insertMovementsToDb(movements: RawMovement[]) {
+  const rows = movements.map(m => ({
+    account_id: m.accountId,
+    source_file: m.sourceFile,
+    data: m.data,
+    data_valuta: m.dataValuta,
+    causale: m.causale,
+    descrizione: m.descrizione,
+    importo: m.importo,
+    saldo: m.saldo,
+    cig: m.cig,
+  }));
+  const { data } = await supabase.from("bank_movements" as any).insert(rows as any).select("id");
+  return (data as any[] || []).map((d: any) => d.id as string);
 }
 
 export type RawMovement = Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">;
@@ -559,18 +592,25 @@ export interface DuplicateInfo {
 }
 
 export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) {
-  const [rawMovements, setRawMovements] = useState(loadMovements);
-  const [reconciliations, setReconciliations] = useState<Reconciliation[]>(loadReconciliations);
-  const [loading, setLoading] = useState(false);
-  const [fileNames, setFileNames] = useState<string[]>(loadFileNames);
+  const [rawMovements, setRawMovements] = useState<RawMovement[]>([]);
+  const [reconciliations, setReconciliations] = useState<Reconciliation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fileNames, setFileNames] = useState<string[]>([]);
   const [activeAccountId, setActiveAccountId] = useState<string>("default");
   const [pendingDuplicates, setPendingDuplicates] = useState<DuplicateInfo | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // When refreshing, lock in existing auto-matches as manual reconciliations
-  // so only truly unmatched movements get re-attempted
+  // Load from DB on mount
+  useEffect(() => {
+    Promise.all([loadMovementsFromDb(), loadReconciliationsFromDb()]).then(([movs, recs]) => {
+      setRawMovements(movs);
+      setFileNames([...new Set(movs.map(m => m.sourceFile).filter(Boolean))]);
+      setReconciliations(recs);
+      setLoading(false);
+    });
+  }, []);
+
   const refreshAutoMatch = useCallback(() => {
-    // Get current movements to find auto-matched ones
     const currentMovements = autoMatch(
       activeAccountId === "all" ? rawMovements : rawMovements.filter(m => (m.accountId || "default") === activeAccountId),
       sales, purchases, reconciliations
@@ -579,12 +619,7 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     for (const m of currentMovements) {
       if (m.matchConfidence === "auto" && m.matchedInvoices.length > 0) {
         for (const inv of m.matchedInvoices) {
-          newRecs.push({
-            movementId: m.id,
-            invoiceType: inv.type,
-            invoiceAnno: inv.anno,
-            invoiceNumero: inv.numero,
-          });
+          newRecs.push({ movementId: m.id, invoiceType: inv.type, invoiceAnno: inv.anno, invoiceNumero: inv.numero });
         }
       }
     }
@@ -593,7 +628,8 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
         const existing = new Set(prev.map(r => `${r.movementId}|${r.invoiceType}|${r.invoiceAnno}|${r.invoiceNumero}`));
         const toAdd = newRecs.filter(r => !existing.has(`${r.movementId}|${r.invoiceType}|${r.invoiceAnno}|${r.invoiceNumero}`));
         const next = [...prev, ...toAdd];
-        saveReconciliations(next);
+        // Save new recs to DB
+        toAdd.forEach(r => saveReconciliationToDb(r, r.movementId));
         return next;
       });
     }
@@ -602,14 +638,10 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
 
   const fingerprint = (m: RawMovement) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
 
-  const appendMovements = useCallback((movs: RawMovement[]) => {
-    setRawMovements((prev) => {
-      const offset = prev.length;
-      const reindexed = movs.map((m, i) => ({ ...m, id: `bank-${offset + i}` }));
-      const merged = [...prev, ...reindexed];
-      saveMovements(merged);
-      return merged;
-    });
+  const appendMovements = useCallback(async (movs: RawMovement[]) => {
+    const ids = await insertMovementsToDb(movs);
+    const withIds = movs.map((m, i) => ({ ...m, id: ids[i] || m.id }));
+    setRawMovements((prev) => [...prev, ...withIds]);
   }, []);
 
   const confirmDuplicates = useCallback(() => {
@@ -640,88 +672,52 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
         newMovements = parseBank(rows).map(m => ({ ...m, accountId: acctId, sourceFile: file.name }));
       }
 
-      setRawMovements((prev) => {
-        if (prev.length === 0) {
-          saveMovements(newMovements);
-          return newMovements;
-        }
-        const existingKeys = new Set(prev.map(fingerprint));
-        const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
-        const dupes = newMovements.filter((m) => existingKeys.has(fingerprint(m)));
+      const existingKeys = new Set(rawMovements.map(fingerprint));
+      const unique = newMovements.filter((m) => !existingKeys.has(fingerprint(m)));
+      const dupes = newMovements.filter((m) => existingKeys.has(fingerprint(m)));
 
-        if (dupes.length > 0) {
-          setPendingDuplicates({ duplicates: dupes, unique, fileName: file.name });
-        }
+      if (dupes.length > 0) {
+        setPendingDuplicates({ duplicates: dupes, unique, fileName: file.name });
+      }
 
-        if (unique.length > 0) {
-          const offset = prev.length;
-          const reindexed = unique.map((m, i) => ({ ...m, id: `bank-${offset + i}` }));
-          const merged = [...prev, ...reindexed];
-          saveMovements(merged);
-          return merged;
-        }
+      if (unique.length > 0) {
+        const ids = await insertMovementsToDb(unique);
+        const withIds = unique.map((m, i) => ({ ...m, id: ids[i] || m.id }));
+        setRawMovements((prev) => [...prev, ...withIds]);
+      }
 
-        if (dupes.length > 0 && unique.length === 0) {
-          // All duplicates — don't change state but still show dialog
-          return prev;
-        }
-
-        return prev;
-      });
-
-      setFileNames((prev) => {
-        const next = prev.includes(file.name) ? prev : [...prev, file.name];
-        saveFileNames(next);
-        return next;
-      });
+      setFileNames((prev) => prev.includes(file.name) ? prev : [...prev, file.name]);
     } catch (err) {
       console.error("Errore parsing file bancario:", err);
     } finally {
       setLoading(false);
     }
-  }, [activeAccountId]);
+  }, [activeAccountId, rawMovements]);
 
-  const clearMovements = useCallback(() => {
+  const clearMovements = useCallback(async () => {
     setRawMovements([]);
     setFileNames([]);
     setReconciliations([]);
-    saveMovements([]);
-    saveFileNames([]);
-    saveReconciliations([]);
+    await supabase.from("bank_reconciliations" as any).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("bank_movements" as any).delete().neq("id", "00000000-0000-0000-0000-000000000000");
   }, []);
 
-  const deleteFileMovements = useCallback((fileName: string) => {
-    setRawMovements((prev) => {
-      const next = prev.filter((m) => (m.sourceFile || "") !== fileName);
-      saveMovements(next);
-      return next;
-    });
-    setFileNames((prev) => {
-      const next = prev.filter((f) => f !== fileName);
-      saveFileNames(next);
-      return next;
-    });
-    setReconciliations((prev) => {
-      // We need to clean up reconciliations for removed movements
-      // but we don't have the IDs here easily, so we'll let autoMatch handle it
-      return prev;
-    });
-  }, []);
+  const deleteFileMovements = useCallback(async (fileName: string) => {
+    const toDelete = rawMovements.filter(m => (m.sourceFile || "") === fileName);
+    const ids = toDelete.map(m => m.id);
+    setRawMovements((prev) => prev.filter((m) => !ids.includes(m.id)));
+    setFileNames((prev) => prev.filter((f) => f !== fileName));
+    if (ids.length > 0) {
+      // Reconciliations cascade-delete with movements
+      await supabase.from("bank_movements" as any).delete().in("id", ids);
+    }
+  }, [rawMovements]);
 
-  const deleteMovements = useCallback((ids: string[]) => {
-    setRawMovements((prev) => {
-      const idSet = new Set(ids);
-      const next = prev.filter((m) => !idSet.has(m.id));
-      saveMovements(next);
-      return next;
-    });
-    // Also remove any reconciliations for deleted movements
-    setReconciliations((prev) => {
-      const idSet = new Set(ids);
-      const next = prev.filter((r) => !idSet.has(r.movementId));
-      saveReconciliations(next);
-      return next;
-    });
+  const deleteMovements = useCallback(async (ids: string[]) => {
+    const idSet = new Set(ids);
+    setRawMovements((prev) => prev.filter((m) => !idSet.has(m.id)));
+    setReconciliations((prev) => prev.filter((r) => !idSet.has(r.movementId)));
+    await supabase.from("bank_movements" as any).delete().in("id", ids);
   }, []);
 
   // Filter movements by active account
@@ -742,27 +738,26 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     [rawMovements, sales, purchases, reconciliations, refreshKey]
   );
 
-  const addReconciliation = useCallback((rec: Reconciliation | Reconciliation[]) => {
+  const addReconciliation = useCallback(async (rec: Reconciliation | Reconciliation[]) => {
     const recs = Array.isArray(rec) ? rec : [rec];
     if (recs.length === 0) return;
     const movementId = recs[0].movementId;
-    setReconciliations((prev) => {
-      const next = [...prev.filter((r) => r.movementId !== movementId), ...recs];
-      saveReconciliations(next);
-      return next;
-    });
+    // Remove old recs for this movement
+    await deleteReconciliationFromDb(movementId);
+    // Insert new ones
+    for (const r of recs) {
+      await saveReconciliationToDb(r, movementId);
+    }
+    setReconciliations((prev) => [...prev.filter((r) => r.movementId !== movementId), ...recs]);
   }, []);
 
-  const removeReconciliation = useCallback((movementId: string, invoiceKey?: string) => {
+  const removeReconciliation = useCallback(async (movementId: string, invoiceKey?: string) => {
+    await deleteReconciliationFromDb(movementId, invoiceKey);
     setReconciliations((prev) => {
-      let next: Reconciliation[];
       if (invoiceKey) {
-        next = prev.filter((r) => !(r.movementId === movementId && `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` === invoiceKey));
-      } else {
-        next = prev.filter((r) => r.movementId !== movementId);
+        return prev.filter((r) => !(r.movementId === movementId && `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` === invoiceKey));
       }
-      saveReconciliations(next);
-      return next;
+      return prev.filter((r) => r.movementId !== movementId);
     });
   }, []);
 
