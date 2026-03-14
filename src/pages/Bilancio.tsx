@@ -250,6 +250,11 @@ export default function BilancioPage() {
         costoBreakdown={costoBreakdown}
         totalRicavi={globalKpis.ricavi}
         totalCosti={globalKpis.costi}
+        onRowClick={(codice, tipo) => {
+          if (codice === "__unassigned__") return;
+          if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}`);
+          else navigate(`/acquisti?centroCosto=${encodeURIComponent(codice)}`);
+        }}
       />
 
       {/* ── Hidden PDF Report ── */}
