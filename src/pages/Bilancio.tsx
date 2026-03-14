@@ -552,10 +552,11 @@ function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg
       <table className="pdf-table">
         <thead>
           <tr>
-            <th>Centro</th>
-            <th className="is-right">Importo</th>
-            <th className="is-right">%</th>
-          </tr>
+             <th>Codice</th>
+             <th>Centro</th>
+             <th className="is-right">Importo</th>
+             <th className="is-right">%</th>
+           </tr>
         </thead>
         <tbody>
           {data.map((d) => (
