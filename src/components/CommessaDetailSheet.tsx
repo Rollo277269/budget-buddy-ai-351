@@ -209,6 +209,42 @@ export function CommessaDetailSheet({
 
   const cssr = data.cssr;
 
+  const centroLabelMap = new Map(centri.map((c) => [c.codice, c.descrizione]));
+  const buildCentroRows = (
+    items: Array<SaleInvoice | PurchaseInvoice>,
+    map: Record<string, string>
+  ) => {
+    const agg = new Map<string, number>();
+    items.forEach((item) => {
+      const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
+      const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
+      agg.set(label, (agg.get(label) || 0) + item.totale);
+    });
+    return Array.from(agg.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  };
+
+  const applySavedOrder = (rows: { name: string; value: number }[], storageKey: string) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "null") as string[] | null;
+      if (!saved || !Array.isArray(saved) || saved.length === 0) return rows;
+      const lookup = new Map(rows.map((r) => [r.name, r]));
+      const ordered = saved.map((name) => lookup.get(name)).filter(Boolean) as { name: string; value: number }[];
+      const missing = rows.filter((r) => !saved.includes(r.name));
+      return [...ordered, ...missing];
+    } catch {
+      return rows;
+    }
+  };
+
+  const ricavoRows = applySavedOrder(buildCentroRows(data.linkedSales, ricavoMap.map), "centro-ricavo-order");
+  const costoRows = applySavedOrder(buildCentroRows(data.linkedPurchases, costoMap.map), "centro-costo-order");
+  const totalRicaviPrint = ricavoRows.reduce((s, r) => s + r.value, 0);
+  const totalCostiPrint = costoRows.reduce((s, r) => s + r.value, 0);
+  const saldoPrint = totalRicaviPrint - totalCostiPrint;
+  const marginePrint = totalRicaviPrint > 0 ? (saldoPrint / totalRicaviPrint) * 100 : 0;
+
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
       <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden p-0 border-none">
