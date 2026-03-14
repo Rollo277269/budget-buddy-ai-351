@@ -25,7 +25,7 @@ import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import {
