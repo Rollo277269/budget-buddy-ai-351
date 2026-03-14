@@ -32,8 +32,13 @@ const columns: ColumnDef<Commessa>[] = [
     render: (r) => {
       if (!r.cssrData) return <span className="text-xs text-muted-foreground">—</span>;
       const stato = r.cssrData.stato;
-      const variant = stato === "in_corso" ? "default" : stato === "completata" || stato === "completate" ? "secondary" : "outline";
-      return <Badge variant={variant} className="text-[10px]">{stato}</Badge>;
+      const colorClass =
+        stato === "completata" || stato === "completate"
+          ? "bg-success text-success-foreground border-success"
+          : stato === "in_corso"
+          ? "bg-warning text-warning-foreground border-warning"
+          : "bg-destructive text-destructive-foreground border-destructive";
+      return <Badge className={`text-[10px] ${colorClass}`}>{stato}</Badge>;
     },
   },
   {
