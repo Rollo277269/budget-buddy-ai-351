@@ -24,6 +24,8 @@ import { ManualLink } from "@/hooks/useCommessaLinks";
 import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
 import { CentroCell } from "@/components/CentroCell";
+import { PdfViewerPanel } from "@/components/PdfViewerPanel";
+import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
