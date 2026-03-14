@@ -765,7 +765,8 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           totalColor: string,
           dragIdx: number | null,
           setDragIdx: (i: number | null) => void,
-          setOrder: React.Dispatch<React.SetStateAction<string[] | null>>
+          setOrder: React.Dispatch<React.SetStateAction<string[] | null>>,
+          storageKey: string
         ) => (
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b bg-muted/30">
