@@ -106,7 +106,6 @@ export default function BilancioPage() {
 
   const annoFilter = selectedAnno !== "all" ? parseInt(selectedAnno) : undefined;
 
-  // Global KPIs
   const globalKpis = useMemo(() => {
     const src = annoFilter ? yearSummaries.filter((y) => y.anno === annoFilter) : yearSummaries;
     const ricavi = src.reduce((s, y) => s + y.ricavi, 0);
@@ -118,7 +117,6 @@ export default function BilancioPage() {
     return { ricavi, costi, saldo, margine, numVendite, numAcquisti };
   }, [yearSummaries, annoFilter]);
 
-  // Centro breakdown
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
 
@@ -131,7 +129,6 @@ export default function BilancioPage() {
     [allPurchases, costoMapAcquisti, centriCosto, annoFilter]
   );
 
-  // Bar chart data for yearly comparison
   const barData = useMemo(() => {
     const data = annoFilter
       ? yearSummaries.filter((y) => y.anno === annoFilter)
@@ -144,6 +141,14 @@ export default function BilancioPage() {
     }));
   }, [yearSummaries, annoFilter]);
 
+  const handleExportPdf = useCallback(() => {
+    document.body.classList.add("print-report");
+    setTimeout(() => {
+      window.print();
+      document.body.classList.remove("print-report");
+    }, 100);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -151,6 +156,9 @@ export default function BilancioPage() {
       </div>
     );
   }
+
+  const annoLabel = annoFilter ? String(annoFilter) : "Tutti gli anni";
+  const now = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="p-6 space-y-6 overflow-auto">
@@ -160,17 +168,22 @@ export default function BilancioPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Bilancio</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Riepilogo costi e ricavi con ripartizione per centri di competenza</p>
         </div>
-        <Select value={selectedAnno} onValueChange={setSelectedAnno}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Anno" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutti gli anni</SelectItem>
-            {years.map((y) => (
-              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="no-print">
+            <Printer className="h-4 w-4 mr-1" /> Stampa PDF
+          </Button>
+          <Select value={selectedAnno} onValueChange={setSelectedAnno}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Anno" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti gli anni</SelectItem>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* KPIs */}
