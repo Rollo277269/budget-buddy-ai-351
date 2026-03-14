@@ -625,6 +625,10 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   centri: CentroCR[];
 }) {
   const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
+  const [ricavoOrder, setRicavoOrder] = useState<string[] | null>(null);
+  const [costoOrder, setCostoOrder] = useState<string[] | null>(null);
+  const [dragRicavoIdx, setDragRicavoIdx] = useState<number | null>(null);
+  const [dragCostoIdx, setDragCostoIdx] = useState<number | null>(null);
 
   const centroLookup = useMemo(() => {
     const m = new Map<string, string>();
