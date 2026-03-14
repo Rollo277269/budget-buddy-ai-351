@@ -3,13 +3,11 @@ import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoice
 import { useCentriData, loadCentri } from "@/hooks/useCentri";
 import { StatCard } from "@/components/StatCard";
 import { formatCurrency } from "@/lib/format";
-import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, GripVertical } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  Cell, PieChart, Pie,
 } from "recharts";
 
 /* ────────── helpers ────────── */
