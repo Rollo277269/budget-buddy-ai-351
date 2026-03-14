@@ -361,16 +361,19 @@ export default function BilancioPage() {
   );
 }
 
-/* ────────── Side-by-side draggable centro tables ────────── */
+/* ────────── Side-by-side centro tables with row drag ────────── */
 
-const BILANCIO_ORDER_KEY = "bilancio-centri-order";
+const ROW_ORDER_KEY_PREFIX = "bilancio-row-order-";
 
-function loadOrder(): ["ricavi", "costi"] | ["costi", "ricavi"] {
+function loadRowOrder(id: string): string[] | null {
   try {
-    const v = JSON.parse(localStorage.getItem(BILANCIO_ORDER_KEY) || "null");
-    if (Array.isArray(v) && v.length === 2) return v as any;
-  } catch {}
-  return ["ricavi", "costi"];
+    const v = JSON.parse(localStorage.getItem(ROW_ORDER_KEY_PREFIX + id) || "null");
+    return Array.isArray(v) ? v : null;
+  } catch { return null; }
+}
+
+function saveRowOrder(id: string, order: string[]) {
+  localStorage.setItem(ROW_ORDER_KEY_PREFIX + id, JSON.stringify(order));
 }
 
 function CentriSideBySide({
@@ -379,81 +382,62 @@ function CentriSideBySide({
   ricavoBreakdown: CentroAgg[]; costoBreakdown: CentroAgg[];
   totalRicavi: number; totalCosti: number;
 }) {
-  const [order, setOrder] = useState(loadOrder);
-  const [dragging, setDragging] = useState<string | null>(null);
-
-  const handleDragStart = (id: string) => (e: React.DragEvent) => {
-    setDragging(id);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDrop = (targetId: string) => (e: React.DragEvent) => {
-    e.preventDefault();
-    if (dragging && dragging !== targetId) {
-      const next: ["ricavi", "costi"] | ["costi", "ricavi"] =
-        order[0] === targetId ? order : ([...order].reverse() as any);
-      const swapped = [next[1], next[0]] as typeof next;
-      setOrder(swapped);
-      localStorage.setItem(BILANCIO_ORDER_KEY, JSON.stringify(swapped));
-    }
-    setDragging(null);
-  };
-
-  const panels: Record<string, React.ReactNode> = {
-    ricavi: (
-      <CentroTableCard
-        key="ricavi"
-        id="ricavi"
-        title="Centri di Ricavo"
-        data={ricavoBreakdown}
-        total={totalRicavi}
-        accentClass="text-income"
-        onDragStart={handleDragStart("ricavi")}
-        onDrop={handleDrop("ricavi")}
-        isDragging={dragging === "ricavi"}
-      />
-    ),
-    costi: (
-      <CentroTableCard
-        key="costi"
-        id="costi"
-        title="Centri di Costo"
-        data={costoBreakdown}
-        total={totalCosti}
-        accentClass="text-expense"
-        onDragStart={handleDragStart("costi")}
-        onDrop={handleDrop("costi")}
-        isDragging={dragging === "costi"}
-      />
-    ),
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {order.map((id) => panels[id])}
+      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" />
+      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" />
     </div>
   );
 }
 
-function CentroTableCard({
-  id, title, data, total, accentClass,
-  onDragStart, onDrop, isDragging,
-}: {
+function CentroTableCard({ id, title, data, total, accentClass }: {
   id: string; title: string; data: CentroAgg[]; total: number; accentClass: string;
-  onDragStart: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
-  isDragging: boolean;
 }) {
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
+  const [rowOrder, setRowOrder] = useState<string[] | null>(() => loadRowOrder(id));
+
+  const sortedData = useMemo(() => {
+    if (!rowOrder) return data;
+    const byCode = new Map(data.map((d) => [d.codice, d]));
+    const ordered: CentroAgg[] = [];
+    rowOrder.forEach((code) => {
+      const item = byCode.get(code);
+      if (item) { ordered.push(item); byCode.delete(code); }
+    });
+    byCode.forEach((item) => ordered.push(item));
+    return ordered;
+  }, [data, rowOrder]);
+
+  const handleDragStart = (idx: number) => (e: React.DragEvent) => {
+    setDragIdx(idx);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (idx: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    setOverIdx(idx);
+  };
+
+  const handleDrop = (targetIdx: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragIdx !== null && dragIdx !== targetIdx) {
+      const next = [...sortedData];
+      const [moved] = next.splice(dragIdx, 1);
+      next.splice(targetIdx, 0, moved);
+      const newOrder = next.map((d) => d.codice);
+      setRowOrder(newOrder);
+      saveRowOrder(id, newOrder);
+    }
+    setDragIdx(null);
+    setOverIdx(null);
+  };
+
+  const handleDragEnd = () => { setDragIdx(null); setOverIdx(null); };
+
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={onDrop}
-      className={`rounded-xl border bg-card overflow-hidden transition-opacity ${isDragging ? "opacity-50" : ""}`}
-    >
-      <div className="p-3 border-b border-border bg-muted/30 flex items-center gap-2 cursor-grab active:cursor-grabbing">
-        <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="p-3 border-b border-border bg-muted/30">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
       {data.length === 0 ? (
@@ -463,14 +447,28 @@ function CentroTableCard({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20">
+                <th className="w-6"></th>
                 <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro</th>
                 <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
                 <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">%</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((d) => (
-                <tr key={d.codice} className="border-b border-border/50 hover:bg-muted/30">
+              {sortedData.map((d, i) => (
+                <tr
+                  key={d.codice}
+                  draggable
+                  onDragStart={handleDragStart(i)}
+                  onDragOver={handleDragOver(i)}
+                  onDrop={handleDrop(i)}
+                  onDragEnd={handleDragEnd}
+                  className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-grab active:cursor-grabbing ${
+                    dragIdx === i ? "opacity-40" : ""
+                  } ${overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""}`}
+                >
+                  <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
+                    <GripVertical className="h-3.5 w-3.5" />
+                  </td>
                   <td className="px-3 py-1.5 text-xs font-medium truncate max-w-[200px]">{d.descrizione}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
@@ -481,6 +479,7 @@ function CentroTableCard({
             </tbody>
             <tfoot>
               <tr className="bg-muted/40 font-semibold">
+                <td></td>
                 <td className="px-3 py-2 text-xs">TOTALE</td>
                 <td className={`px-3 py-2 text-right font-mono text-xs ${accentClass}`}>{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
                 <td className="px-3 py-2 text-right font-mono text-xs">100%</td>
