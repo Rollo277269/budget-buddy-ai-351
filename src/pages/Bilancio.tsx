@@ -80,6 +80,7 @@ const tooltipFormatter = (val: number) => formatCurrency(val);
 /* ────────── component ────────── */
 
 export default function BilancioPage() {
+  const navigate = useNavigate();
   const { allSales, allPurchases, loading, filterOptions } = useInvoiceData();
   const { centri } = useCentriData();
   const [selectedAnno, setSelectedAnno] = useState<string>("all");
