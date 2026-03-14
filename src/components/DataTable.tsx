@@ -66,6 +66,7 @@ export function DataTable<T extends Record<string, any>>({
   expandable,
   renderExpandedContent,
 }: DataTableProps<T>) {
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
   const [globalSearchInput, setGlobalSearchInput] = useState("");
