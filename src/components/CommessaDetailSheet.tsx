@@ -546,6 +546,7 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoSaleKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
+                onRowClick={(inv) => openPdf(inv, "vendita")}
               />
             </TabsContent>
 
