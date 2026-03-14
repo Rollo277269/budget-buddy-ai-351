@@ -488,6 +488,7 @@ export function CommessaDetailSheet({
                 invoices={data.linkedPurchases} type="acquisto"
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
+                centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
               />
             </TabsContent>
 
