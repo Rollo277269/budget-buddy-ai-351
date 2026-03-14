@@ -664,12 +664,12 @@ export function CommessaDetailSheet({
           </div>
 
           {/* ── Grafici Analisi ── */}
-          {/* Andamento Mensile - Bar chart */}
+          {/* Andamento Mensile Vendite/Acquisti - Bar chart */}
           {data.monthlyData.length > 0 && (() => {
             const maxMonth = Math.max(...data.monthlyData.map(m => Math.max(m.vendite, m.acquisti)), 1);
             return (
               <section className="pdf-section pdf-full-width">
-                <h2>Grafico Andamento Mensile</h2>
+                <h2>Grafico Andamento mensile Vendite/Acquisti</h2>
                 <div className="pdf-bar-chart">
                   {data.monthlyData.map((m) => (
                     <div key={m.mese} className="pdf-bar-row">
@@ -687,6 +687,35 @@ export function CommessaDetailSheet({
                   <div className="pdf-bar-legend">
                     <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive"></span>Vendite</span>
                     <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative"></span>Acquisti</span>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* Andamento Mensile Incassi/Pagamenti - Bar chart */}
+          {data.monthlyData.length > 0 && (() => {
+            const maxPayment = Math.max(...data.monthlyData.map(m => Math.max(m.incassato, m.pagato)), 1);
+            return (
+              <section className="pdf-section pdf-full-width">
+                <h2>Grafico Andamento mensile Incassi/Pagamenti</h2>
+                <div className="pdf-bar-chart">
+                  {data.monthlyData.map((m) => (
+                    <div key={m.mese} className="pdf-bar-row">
+                      <span className="pdf-bar-label">{m.mese}</span>
+                      <div className="pdf-bar-tracks">
+                        <div className="pdf-bar is-positive" style={{ width: `${(m.incassato / maxPayment) * 100}%` }}>
+                          <span className="pdf-bar-value">{formatCurrency(m.incassato)}</span>
+                        </div>
+                        <div className="pdf-bar is-negative" style={{ width: `${(m.pagato / maxPayment) * 100}%` }}>
+                          <span className="pdf-bar-value">{formatCurrency(m.pagato)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pdf-bar-legend">
+                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive"></span>Incassato</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative"></span>Pagato</span>
                   </div>
                 </div>
               </section>
