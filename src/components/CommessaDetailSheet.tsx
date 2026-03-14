@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -18,11 +18,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { ManualLink } from "@/hooks/useCommessaLinks";
 import { CssrCommessa } from "@/hooks/useCssrCommesse";
-import { Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User } from "lucide-react";
+import {
+  Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
+  TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
+  Percent, Target, AlertTriangle
+} from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
+  Legend, CartesianGrid, ComposedChart, Line,
+} from "recharts";
 
 function invoiceKey(anno: number, numero: number) {
   return `${anno}-${numero}`;
@@ -48,6 +57,17 @@ interface CommessaDetailSheetProps {
   onRemoveLink: (invoiceKey: string, invoiceType: "vendita" | "acquisto", cig: string) => void;
 }
 
+const CHART_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(210, 70%, 55%)",
+  "hsl(280, 60%, 55%)",
+  "hsl(45, 80%, 50%)",
+  "hsl(160, 60%, 45%)",
+  "hsl(340, 65%, 50%)",
+  "hsl(190, 70%, 45%)",
+];
+
 export function CommessaDetailSheet({
   commessa,
   open,
@@ -61,35 +81,109 @@ export function CommessaDetailSheet({
   const [addMode, setAddMode] = useState<"vendita" | "acquisto" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  if (!commessa) return null;
+  const data = useMemo(() => {
+    if (!commessa) return null;
 
-  const cigLinks = manualLinks.filter((l) => l.cig === commessa.cig);
-  const manualSaleKeys = new Set(cigLinks.filter((l) => l.invoiceType === "vendita").map((l) => l.invoiceKey));
-  const manualPurchaseKeys = new Set(cigLinks.filter((l) => l.invoiceType === "acquisto").map((l) => l.invoiceKey));
+    const cigLinks = manualLinks.filter((l) => l.cig === commessa.cig);
+    const manualSaleKeys = new Set(cigLinks.filter((l) => l.invoiceType === "vendita").map((l) => l.invoiceKey));
+    const manualPurchaseKeys = new Set(cigLinks.filter((l) => l.invoiceType === "acquisto").map((l) => l.invoiceKey));
 
-  const autoSales = allSales.filter((s) => s.cig === commessa.cig);
-  const autoPurchases = allPurchases.filter((p) => p.cig === commessa.cig);
+    const autoSales = allSales.filter((s) => s.cig === commessa.cig);
+    const autoPurchases = allPurchases.filter((p) => p.cig === commessa.cig);
 
-  const manualSales = allSales.filter((s) => manualSaleKeys.has(invoiceKey(s.anno, s.numero)) && s.cig !== commessa.cig);
-  const manualPurchases = allPurchases.filter((p) => manualPurchaseKeys.has(invoiceKey(p.anno, p.numero)) && p.cig !== commessa.cig);
+    const manualSales = allSales.filter((s) => manualSaleKeys.has(invoiceKey(s.anno, s.numero)) && s.cig !== commessa.cig);
+    const manualPurchases = allPurchases.filter((p) => manualPurchaseKeys.has(invoiceKey(p.anno, p.numero)) && p.cig !== commessa.cig);
 
-  const linkedSales = [...autoSales, ...manualSales];
-  const linkedPurchases = [...autoPurchases, ...manualPurchases];
+    const linkedSales = [...autoSales, ...manualSales];
+    const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
-  const totalVendite = linkedSales.reduce((s, i) => s + i.totale, 0);
-  const totalAcquisti = linkedPurchases.reduce((s, i) => s + i.totale, 0);
+    const totalVendite = linkedSales.reduce((s, i) => s + i.totale, 0);
+    const totalAcquisti = linkedPurchases.reduce((s, i) => s + i.totale, 0);
+    const saldo = totalVendite - totalAcquisti;
+    const margine = totalVendite > 0 ? (saldo / totalVendite) * 100 : 0;
 
-  const allLinkedSaleKeys = new Set([
-    ...autoSales.map((s) => invoiceKey(s.anno, s.numero)),
-    ...manualSaleKeys,
-  ]);
-  const allLinkedPurchaseKeys = new Set([
-    ...autoPurchases.map((p) => invoiceKey(p.anno, p.numero)),
-    ...manualPurchaseKeys,
-  ]);
+    const cssr = commessa.cssrData;
+    const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
+    const percentualeFatturato = importoContratto && !isNaN(importoContratto) && importoContratto > 0
+      ? (totalVendite / importoContratto) * 100 : null;
 
-  const availableSales = allSales.filter((s) => !allLinkedSaleKeys.has(invoiceKey(s.anno, s.numero)));
-  const availablePurchases = allPurchases.filter((p) => !allLinkedPurchaseKeys.has(invoiceKey(p.anno, p.numero)));
+    const allLinkedSaleKeys = new Set([
+      ...autoSales.map((s) => invoiceKey(s.anno, s.numero)),
+      ...manualSaleKeys,
+    ]);
+    const allLinkedPurchaseKeys = new Set([
+      ...autoPurchases.map((p) => invoiceKey(p.anno, p.numero)),
+      ...manualPurchaseKeys,
+    ]);
+
+    const autoSaleKeys = new Set(autoSales.map((s) => invoiceKey(s.anno, s.numero)));
+    const autoPurchaseKeys = new Set(autoPurchases.map((p) => invoiceKey(p.anno, p.numero)));
+
+    // Monthly breakdown
+    const monthlyMap = new Map<string, { vendite: number; acquisti: number }>();
+    linkedSales.forEach((s) => {
+      const parts = s.data?.split("/");
+      if (parts?.length === 3) {
+        const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
+        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0 };
+        e.vendite += s.totale;
+        monthlyMap.set(key, e);
+      }
+    });
+    linkedPurchases.forEach((p) => {
+      const parts = p.data?.split("/");
+      if (parts?.length === 3) {
+        const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
+        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0 };
+        e.acquisti += p.totale;
+        monthlyMap.set(key, e);
+      }
+    });
+    const monthlyData = Array.from(monthlyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, vals]) => ({
+        mese: month,
+        vendite: vals.vendite,
+        acquisti: vals.acquisti,
+        saldo: vals.vendite - vals.acquisti,
+      }));
+
+    // Supplier breakdown for purchases
+    const supplierMap = new Map<string, number>();
+    linkedPurchases.forEach((p) => {
+      const name = p.fornitore || "Sconosciuto";
+      supplierMap.set(name, (supplierMap.get(name) || 0) + p.totale);
+    });
+    const supplierData = Array.from(supplierMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, value]) => ({ name: name.length > 25 ? name.slice(0, 22) + "…" : name, value }));
+
+    // Status breakdown
+    const statusSales = { pagata: 0, nonPagata: 0 };
+    const statusPurchases = { pagata: 0, nonPagata: 0 };
+    linkedSales.forEach((s) => {
+      if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) statusSales.pagata += s.totale;
+      else statusSales.nonPagata += s.totale;
+    });
+    linkedPurchases.forEach((p) => {
+      if (p.stato?.toLowerCase().includes("pagat")) statusPurchases.pagata += p.totale;
+      else statusPurchases.nonPagata += p.totale;
+    });
+
+    return {
+      linkedSales, linkedPurchases, totalVendite, totalAcquisti, saldo, margine,
+      cssr, importoContratto, percentualeFatturato,
+      allLinkedSaleKeys, allLinkedPurchaseKeys,
+      autoSaleKeys, autoPurchaseKeys,
+      monthlyData, supplierData, statusSales, statusPurchases,
+    };
+  }, [commessa, allSales, allPurchases, manualLinks]);
+
+  if (!commessa || !data) return null;
+
+  const availableSales = allSales.filter((s) => !data.allLinkedSaleKeys.has(invoiceKey(s.anno, s.numero)));
+  const availablePurchases = allPurchases.filter((p) => !data.allLinkedPurchaseKeys.has(invoiceKey(p.anno, p.numero)));
 
   const lower = searchQuery.toLowerCase();
   const filteredAvailable = addMode === "vendita"
@@ -106,150 +200,335 @@ export function CommessaDetailSheet({
       ).slice(0, 20)
     : [];
 
-  const cssr = commessa.cssrData;
-  const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
+  const cssr = data.cssr;
 
   return (
-    <Sheet open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
-      <SheetContent side="right" className="w-full sm:max-w-[55vw] overflow-y-auto">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2">
-            <Badge variant="outline" className="font-mono">{commessa.cig}</Badge>
-            Commessa #{commessa.numero}
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[92vh] max-h-[92vh] flex flex-col overflow-hidden p-0">
+        {/* Header */}
+        <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Badge variant="outline" className="font-mono text-sm">{commessa.cig || "—"}</Badge>
+              Commessa #{commessa.numero}
+            </DialogTitle>
             {cssr && <Badge variant="secondary" className="text-[10px]">CSSR</Badge>}
-          </SheetTitle>
-          <SheetDescription>{commessa.oggetto}</SheetDescription>
-        </SheetHeader>
+          </div>
+          <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-6 mt-2">
-          {/* CSSR Data Section */}
-          {cssr && (
-            <>
-              <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa (CSSR)</h3>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                  <CssrField icon={Building2} label="Committente" value={cssr.committente} />
-                  <CssrField icon={Building2} label="Impresa Assegnataria" value={cssr.impresa_assegnataria} />
-                  <CssrField icon={User} label="RUP" value={cssr.rup} />
-                  <CssrField icon={User} label="Direttore Lavori" value={cssr.direttore_lavori} />
-                  <CssrField icon={FileText} label="CUP" value={cssr.cup} />
-                  <CssrField icon={FileText} label="N° Repertorio" value={cssr.numero_repertorio} />
-                  <CssrField icon={Calendar} label="Data Contratto" value={cssr.data_contratto} />
-                  <CssrField icon={Calendar} label="Scadenza Contratto" value={cssr.data_scadenza_contratto} />
-                  <CssrField icon={Calendar} label="Consegna Lavori" value={cssr.data_consegna_lavori} />
-                  <CssrField icon={Calendar} label="Durata" value={cssr.durata_contrattuale} />
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {/* KPI Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <KpiCard
+              icon={ArrowUpRight}
+              label="Totale Vendite"
+              value={formatCurrency(data.totalVendite)}
+              sub={`${data.linkedSales.length} fatture`}
+              color="text-income"
+              iconBg="bg-income/10"
+            />
+            <KpiCard
+              icon={ArrowDownRight}
+              label="Totale Acquisti"
+              value={formatCurrency(data.totalAcquisti)}
+              sub={`${data.linkedPurchases.length} fatture`}
+              color="text-expense"
+              iconBg="bg-expense/10"
+            />
+            <KpiCard
+              icon={TrendingUp}
+              label="Saldo"
+              value={formatCurrency(data.saldo)}
+              sub={data.saldo >= 0 ? "Attivo" : "Passivo"}
+              color={data.saldo >= 0 ? "text-income" : "text-expense"}
+              iconBg={data.saldo >= 0 ? "bg-income/10" : "bg-expense/10"}
+            />
+            <KpiCard
+              icon={Percent}
+              label="Margine"
+              value={`${data.margine.toFixed(1)}%`}
+              sub={data.margine >= 0 ? "Positivo" : "Negativo"}
+              color={data.margine >= 20 ? "text-income" : data.margine >= 0 ? "text-orange-600" : "text-expense"}
+              iconBg="bg-primary/10"
+            />
+            {data.importoContratto != null && !isNaN(data.importoContratto) && (
+              <KpiCard
+                icon={Target}
+                label="Importo Contratto"
+                value={formatCurrency(data.importoContratto)}
+                sub={cssr?.stato || "—"}
+                color="text-primary"
+                iconBg="bg-primary/10"
+              />
+            )}
+            {data.percentualeFatturato != null && (
+              <KpiCard
+                icon={BarChart3}
+                label="Fatturato"
+                value={`${data.percentualeFatturato.toFixed(1)}%`}
+                sub="del contratto"
+                color={data.percentualeFatturato >= 100 ? "text-income" : "text-primary"}
+                iconBg="bg-primary/10"
+              />
+            )}
+          </div>
+
+          <Tabs defaultValue="analisi" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="analisi" className="text-xs gap-1.5"><BarChart3 className="h-3.5 w-3.5" />Analisi</TabsTrigger>
+              <TabsTrigger value="vendite" className="text-xs gap-1.5"><ArrowUpRight className="h-3.5 w-3.5" />Vendite ({data.linkedSales.length})</TabsTrigger>
+              <TabsTrigger value="acquisti" className="text-xs gap-1.5"><ArrowDownRight className="h-3.5 w-3.5" />Acquisti ({data.linkedPurchases.length})</TabsTrigger>
+              <TabsTrigger value="dati" className="text-xs gap-1.5"><FileText className="h-3.5 w-3.5" />Dati Commessa</TabsTrigger>
+            </TabsList>
+
+            {/* ── TAB: Analisi ── */}
+            <TabsContent value="analisi" className="space-y-6">
+              {/* Monthly chart */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 rounded-xl border bg-card p-5">
+                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    Andamento Mensile
+                  </h3>
+                  {data.monthlyData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <ComposedChart data={data.monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                        <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Bar dataKey="vendite" name="Vendite" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="acquisti" name="Acquisti" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                        <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-12">Nessun dato mensile disponibile</p>
+                  )}
                 </div>
-                <Separator />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <MiniCard label="Importo Contrattuale" value={importoContratto != null && !isNaN(importoContratto) ? formatCurrency(importoContratto) : (cssr.importo_contrattuale || "—")} />
-                  <MiniCard label="Base Gara" value={cssr.importo_base_gara ? (isNaN(parseFloat(cssr.importo_base_gara)) ? cssr.importo_base_gara : formatCurrency(parseFloat(cssr.importo_base_gara))) : "—"} />
-                  <MiniCard label="Ribasso" value={cssr.ribasso ? `${cssr.ribasso}%` : "—"} />
-                  <MiniCard label="Stato" value={cssr.stato} highlight />
+
+                {/* Supplier breakdown */}
+                <div className="rounded-xl border bg-card p-5">
+                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                    <PieChart className="h-4 w-4 text-muted-foreground" />
+                    Fornitori
+                  </h3>
+                  {data.supplierData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <RechartsPie>
+                        <Pie
+                          data={data.supplierData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={90}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                          fontSize={10}
+                        >
+                          {data.supplierData.map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-12">Nessun fornitore</p>
+                  )}
                 </div>
               </div>
-              <Separator />
-            </>
-          )}
 
-          {/* Summary */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border bg-card p-3 text-center">
-              <p className="text-xs text-muted-foreground">Vendite</p>
-              <p className="text-sm font-bold font-mono">{formatCurrency(totalVendite)}</p>
-              <p className="text-[10px] text-muted-foreground">{linkedSales.length} fatture</p>
-            </div>
-            <div className="rounded-xl border bg-card p-3 text-center">
-              <p className="text-xs text-muted-foreground">Acquisti</p>
-              <p className="text-sm font-bold font-mono">{formatCurrency(totalAcquisti)}</p>
-              <p className="text-[10px] text-muted-foreground">{linkedPurchases.length} fatture</p>
-            </div>
-            <div className="rounded-xl border bg-card p-3 text-center">
-              <p className="text-xs text-muted-foreground">Saldo</p>
-              <p className={`text-sm font-bold font-mono ${totalVendite - totalAcquisti >= 0 ? "text-income" : "text-expense"}`}>
-                {formatCurrency(totalVendite - totalAcquisti)}
-              </p>
-              {importoContratto != null && !isNaN(importoContratto) && importoContratto > 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  {Math.round((totalVendite / importoContratto) * 100)}% fatturato
-                </p>
+              {/* Payment status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <PaymentStatusCard
+                  title="Stato Incassi (Vendite)"
+                  pagata={data.statusSales.pagata}
+                  nonPagata={data.statusSales.nonPagata}
+                  labelPagata="Incassato"
+                  labelNonPagata="Da incassare"
+                />
+                <PaymentStatusCard
+                  title="Stato Pagamenti (Acquisti)"
+                  pagata={data.statusPurchases.pagata}
+                  nonPagata={data.statusPurchases.nonPagata}
+                  labelPagata="Pagato"
+                  labelNonPagata="Da pagare"
+                />
+              </div>
+
+              {/* Contract progress if available */}
+              {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
+                <div className="rounded-xl border bg-card p-5 space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    Avanzamento Contratto
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Fatturato: {formatCurrency(data.totalVendite)}</span>
+                      <span>Contratto: {formatCurrency(data.importoContratto)}</span>
+                    </div>
+                    <div className="h-4 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${Math.min(data.percentualeFatturato || 0, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="font-mono font-semibold text-primary">{(data.percentualeFatturato || 0).toFixed(1)}%</span>
+                      <span className="text-muted-foreground">Residuo: {formatCurrency(data.importoContratto - data.totalVendite)}</span>
+                    </div>
+                    {(data.percentualeFatturato || 0) > 100 && (
+                      <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-500/10 rounded-lg px-3 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Fatturato superiore all'importo contrattuale
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
-          </div>
+            </TabsContent>
 
-          {/* Fatture di Vendita */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Fatture di Vendita ({linkedSales.length})</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => { setAddMode(addMode === "vendita" ? null : "vendita"); setSearchQuery(""); }}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Associa manualmente
-              </Button>
-            </div>
-            <InvoiceList
-              invoices={linkedSales}
-              type="vendita"
-              autoKeys={new Set(autoSales.map((s) => invoiceKey(s.anno, s.numero)))}
-              cig={commessa.cig}
-              onRemoveLink={onRemoveLink}
-            />
-          </div>
+            {/* ── TAB: Vendite ── */}
+            <TabsContent value="vendite" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Fatture di Vendita ({data.linkedSales.length})</h3>
+                <Button
+                  variant="outline" size="sm" className="text-xs h-7"
+                  onClick={() => { setAddMode(addMode === "vendita" ? null : "vendita"); setSearchQuery(""); }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />Associa manualmente
+                </Button>
+              </div>
+              {addMode === "vendita" && (
+                <LinkSearchPanel
+                  searchQuery={searchQuery} onSearchChange={setSearchQuery}
+                  items={filteredAvailable as SaleInvoice[]} type="vendita"
+                  cig={commessa.cig} onAdd={onAddLink}
+                  onClose={() => { setAddMode(null); setSearchQuery(""); }}
+                />
+              )}
+              <InvoiceList
+                invoices={data.linkedSales} type="vendita"
+                autoKeys={data.autoSaleKeys} cig={commessa.cig}
+                onRemoveLink={onRemoveLink}
+              />
+            </TabsContent>
 
-          {addMode === "vendita" && (
-            <LinkSearchPanel
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              items={filteredAvailable as SaleInvoice[]}
-              type="vendita"
-              cig={commessa.cig}
-              onAdd={onAddLink}
-              onClose={() => { setAddMode(null); setSearchQuery(""); }}
-            />
-          )}
+            {/* ── TAB: Acquisti ── */}
+            <TabsContent value="acquisti" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Fatture di Acquisto ({data.linkedPurchases.length})</h3>
+                <Button
+                  variant="outline" size="sm" className="text-xs h-7"
+                  onClick={() => { setAddMode(addMode === "acquisto" ? null : "acquisto"); setSearchQuery(""); }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />Associa manualmente
+                </Button>
+              </div>
+              {addMode === "acquisto" && (
+                <LinkSearchPanel
+                  searchQuery={searchQuery} onSearchChange={setSearchQuery}
+                  items={filteredAvailable as PurchaseInvoice[]} type="acquisto"
+                  cig={commessa.cig} onAdd={onAddLink}
+                  onClose={() => { setAddMode(null); setSearchQuery(""); }}
+                />
+              )}
+              <InvoiceList
+                invoices={data.linkedPurchases} type="acquisto"
+                autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
+                onRemoveLink={onRemoveLink}
+              />
+            </TabsContent>
 
-          <Separator />
-
-          {/* Fatture di Acquisto */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Fatture di Acquisto ({linkedPurchases.length})</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => { setAddMode(addMode === "acquisto" ? null : "acquisto"); setSearchQuery(""); }}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Associa manualmente
-              </Button>
-            </div>
-            <InvoiceList
-              invoices={linkedPurchases}
-              type="acquisto"
-              autoKeys={new Set(autoPurchases.map((p) => invoiceKey(p.anno, p.numero)))}
-              cig={commessa.cig}
-              onRemoveLink={onRemoveLink}
-            />
-          </div>
-
-          {addMode === "acquisto" && (
-            <LinkSearchPanel
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              items={filteredAvailable as PurchaseInvoice[]}
-              type="acquisto"
-              cig={commessa.cig}
-              onAdd={onAddLink}
-              onClose={() => { setAddMode(null); setSearchQuery(""); }}
-            />
-          )}
+            {/* ── TAB: Dati Commessa ── */}
+            <TabsContent value="dati" className="space-y-4">
+              {cssr ? (
+                <div className="rounded-xl border bg-muted/30 p-5 space-y-4">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa (CSSR)</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
+                    <CssrField icon={Building2} label="Committente" value={cssr.committente} />
+                    <CssrField icon={Building2} label="Impresa Assegnataria" value={cssr.impresa_assegnataria} />
+                    <CssrField icon={User} label="RUP" value={cssr.rup} />
+                    <CssrField icon={User} label="Direttore Lavori" value={cssr.direttore_lavori} />
+                    <CssrField icon={FileText} label="CUP" value={cssr.cup} />
+                    <CssrField icon={FileText} label="CIG Derivato" value={cssr.cig_derivato} />
+                    <CssrField icon={FileText} label="N° Repertorio" value={cssr.numero_repertorio} />
+                    <CssrField icon={Calendar} label="Data Contratto" value={cssr.data_contratto} />
+                    <CssrField icon={Calendar} label="Scadenza Contratto" value={cssr.data_scadenza_contratto} />
+                    <CssrField icon={Calendar} label="Consegna Lavori" value={cssr.data_consegna_lavori} />
+                    <CssrField icon={Calendar} label="Durata" value={cssr.durata_contrattuale} />
+                  </div>
+                  <Separator />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <MiniCard label="Importo Contrattuale" value={data.importoContratto != null && !isNaN(data.importoContratto) ? formatCurrency(data.importoContratto) : (cssr.importo_contrattuale || "—")} />
+                    <MiniCard label="Base Gara" value={cssr.importo_base_gara ? (isNaN(parseFloat(cssr.importo_base_gara)) ? cssr.importo_base_gara : formatCurrency(parseFloat(cssr.importo_base_gara))) : "—"} />
+                    <MiniCard label="Ribasso" value={cssr.ribasso ? `${cssr.ribasso}%` : "—"} />
+                    <MiniCard label="Stato" value={cssr.stato} highlight />
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+                  Nessun dato CSSR disponibile per questa commessa
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ── KPI Card ── */
+function KpiCard({ icon: Icon, label, value, sub, color, iconBg }: {
+  icon: React.ElementType; label: string; value: string; sub: string; color: string; iconBg: string;
+}) {
+  return (
+    <div className="rounded-xl border bg-card p-4 transition-all hover:shadow-md">
+      <div className="flex items-start justify-between mb-2">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <div className={`rounded-lg p-1.5 ${iconBg}`}>
+          <Icon className={`h-3.5 w-3.5 ${color}`} />
+        </div>
+      </div>
+      <p className={`text-lg font-bold font-mono ${color}`}>{value}</p>
+      <p className="text-[10px] text-muted-foreground">{sub}</p>
+    </div>
+  );
+}
+
+/* ── Payment Status Card ── */
+function PaymentStatusCard({ title, pagata, nonPagata, labelPagata, labelNonPagata }: {
+  title: string; pagata: number; nonPagata: number; labelPagata: string; labelNonPagata: string;
+}) {
+  const total = pagata + nonPagata;
+  const pctPagata = total > 0 ? (pagata / total) * 100 : 0;
+
+  return (
+    <div className="rounded-xl border bg-card p-5 space-y-3">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="h-3 rounded-full bg-muted overflow-hidden">
+        <div className="h-full rounded-full bg-income transition-all" style={{ width: `${pctPagata}%` }} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[10px] text-muted-foreground">{labelPagata}</p>
+          <p className="text-sm font-bold font-mono text-income">{formatCurrency(pagata)}</p>
+          <p className="text-[10px] text-muted-foreground">{pctPagata.toFixed(0)}%</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground">{labelNonPagata}</p>
+          <p className="text-sm font-bold font-mono text-expense">{formatCurrency(nonPagata)}</p>
+          <p className="text-[10px] text-muted-foreground">{(100 - pctPagata).toFixed(0)}%</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -277,11 +556,7 @@ function MiniCard({ label, value, highlight }: { label: string; value: string; h
 
 /* ── Invoice list sub-component ── */
 function InvoiceList({
-  invoices,
-  type,
-  autoKeys,
-  cig,
-  onRemoveLink,
+  invoices, type, autoKeys, cig, onRemoveLink,
 }: {
   invoices: (SaleInvoice | PurchaseInvoice)[];
   type: "vendita" | "acquisto";
@@ -295,13 +570,17 @@ function InvoiceList({
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
-      <div className="max-h-[250px] overflow-auto">
+      <div className="max-h-[400px] overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="text-xs">N°</TableHead>
               <TableHead className="text-xs">Data</TableHead>
               <TableHead className="text-xs">{type === "vendita" ? "Cliente" : "Fornitore"}</TableHead>
+              <TableHead className="text-xs">Descrizione</TableHead>
+              <TableHead className="text-xs">Stato</TableHead>
+              <TableHead className="text-xs text-right">Imponibile</TableHead>
+              <TableHead className="text-xs text-right">IVA</TableHead>
               <TableHead className="text-xs text-right">Totale</TableHead>
               <TableHead className="text-xs w-[80px]">Tipo</TableHead>
               <TableHead className="text-xs w-[40px]"></TableHead>
@@ -319,26 +598,25 @@ function InvoiceList({
                 <TableRow key={key}>
                   <TableCell className="font-mono text-xs">{inv.numero}/{inv.anno}</TableCell>
                   <TableCell className="text-xs">{inv.data}</TableCell>
-                  <TableCell className="text-xs max-w-[150px] truncate">{counterpart}</TableCell>
-                  <TableCell className="text-xs font-mono text-right">{formatCurrency(inv.totale)}</TableCell>
+                  <TableCell className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>
+                  <TableCell className="text-xs max-w-[200px] truncate" title={inv.descrizione}>{inv.descrizione || "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={inv.stato?.toLowerCase().includes("pagat") || inv.stato?.toLowerCase().includes("incass") ? "secondary" : "outline"} className="text-[9px]">
+                      {inv.stato || "—"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>
+                  <TableCell className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>
+                  <TableCell className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>
                   <TableCell>
                     <Badge variant={isAuto ? "secondary" : "outline"} className="text-[9px]">
-                      {isAuto ? (
-                        <><Link2 className="h-2.5 w-2.5 mr-0.5" />CIG</>
-                      ) : (
-                        <><Link2Off className="h-2.5 w-2.5 mr-0.5" />Man.</>
-                      )}
+                      {isAuto ? (<><Link2 className="h-2.5 w-2.5 mr-0.5" />CIG</>) : (<><Link2Off className="h-2.5 w-2.5 mr-0.5" />Man.</>)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {!isAuto && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => onRemoveLink(key, type, cig)}
-                        title="Rimuovi associazione"
-                      >
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => onRemoveLink(key, type, cig)} title="Rimuovi associazione">
                         <X className="h-3 w-3" />
                       </Button>
                     )}
@@ -355,36 +633,19 @@ function InvoiceList({
 
 /* ── Search panel for manual linking ── */
 function LinkSearchPanel({
-  searchQuery,
-  onSearchChange,
-  items,
-  type,
-  cig,
-  onAdd,
-  onClose,
+  searchQuery, onSearchChange, items, type, cig, onAdd, onClose,
 }: {
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  items: (SaleInvoice | PurchaseInvoice)[];
-  type: "vendita" | "acquisto";
-  cig: string;
-  onAdd: (link: ManualLink) => void;
-  onClose: () => void;
+  searchQuery: string; onSearchChange: (q: string) => void;
+  items: (SaleInvoice | PurchaseInvoice)[]; type: "vendita" | "acquisto";
+  cig: string; onAdd: (link: ManualLink) => void; onClose: () => void;
 }) {
   return (
     <div className="rounded-xl border border-dashed bg-muted/30 p-3 space-y-2">
       <div className="flex items-center gap-2">
         <Search className="h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          autoFocus
-          placeholder={`Cerca fattura di ${type} per nome, numero o descrizione...`}
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="h-8 text-xs"
-        />
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose}>
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        <Input autoFocus placeholder={`Cerca fattura di ${type} per nome, numero o descrizione...`}
+          value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="h-8 text-xs" />
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose}><X className="h-3.5 w-3.5" /></Button>
       </div>
       {searchQuery.length > 0 && (
         <div className="max-h-[200px] overflow-auto space-y-1">
@@ -393,16 +654,11 @@ function LinkSearchPanel({
           ) : (
             items.map((inv) => {
               const key = invoiceKey(inv.anno, inv.numero);
-              const counterpart = type === "vendita"
-                ? (inv as SaleInvoice).cliente
-                : (inv as PurchaseInvoice).fornitore;
-
+              const counterpart = type === "vendita" ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
               return (
-                <div
-                  key={key}
+                <div key={key}
                   className="flex items-center justify-between rounded-lg border bg-card p-2 hover:bg-muted/50 cursor-pointer"
-                  onClick={() => onAdd({ invoiceKey: key, invoiceType: type, cig })}
-                >
+                  onClick={() => onAdd({ invoiceKey: key, invoiceType: type, cig })}>
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="font-mono text-xs shrink-0">{inv.numero}/{inv.anno}</span>
                     <span className="text-xs truncate">{counterpart}</span>
