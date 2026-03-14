@@ -576,7 +576,6 @@ export function CommessaDetailSheet({
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
                 onRowClick={(inv) => openPdf(inv, "acquisto")}
               />
-              />
             </TabsContent>
 
             {/* ── TAB: Dati Commessa ── */}
