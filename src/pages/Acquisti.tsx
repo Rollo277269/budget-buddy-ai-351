@@ -154,7 +154,7 @@ const AcquistiPage = () => {
     () => [
     { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
     { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
-    { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.fornitore}</span>, sortable: true, filterable: true },
+    { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
     { key: "cig", label: "CIG", render: (r) => r.cig ?
       <span
         className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
