@@ -32,7 +32,14 @@ function StatusBadge({ stato }: {stato: string;}) {
 
 const AcquistiPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { purchases, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+
+  // Read centroCosto from URL on mount
+  useEffect(() => {
+    const cc = searchParams.get("centroCosto");
+    if (cc) setFilters((f) => ({ ...f, centroCosto: cc }));
+  }, [searchParams, setFilters]);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
   const [selectedFornitore, setSelectedFornitore] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();

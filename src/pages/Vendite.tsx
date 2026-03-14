@@ -31,7 +31,14 @@ function StatusBadge({ stato }: { stato: string }) {
 
 const VenditePage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { sales, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+
+  // Read centroRicavo from URL on mount
+  useEffect(() => {
+    const cr = searchParams.get("centroRicavo");
+    if (cr) setFilters((f) => ({ ...f, centroRicavo: cr }));
+  }, [searchParams, setFilters]);
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
   const [selectedCliente, setSelectedCliente] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
