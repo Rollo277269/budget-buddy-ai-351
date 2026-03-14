@@ -11,9 +11,12 @@ const pageTitles: Record<string, string> = {
   "/scadenzario": "Scadenzario",
   "/vendite": "Vendite",
   "/acquisti": "Acquisti",
+  "/schede-contabili": "Schede Contabili",
+  "/bilancio": "Bilancio",
   "/banche": "Banche",
   "/commesse": "Riepiloghi per CIG",
   "/lista-commesse": "Lista Commesse",
+  "/offerte": "Offerte",
   "/strumenti": "Strumenti"
 };
 

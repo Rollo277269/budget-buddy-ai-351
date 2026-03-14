@@ -12,14 +12,14 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Cruscotto", url: "/", icon: LayoutDashboard },
+  { title: "Offerte", url: "/", icon: LayoutDashboard },
   { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
   { title: "Vendite", url: "/vendite", icon: FileText },
   { title: "Acquisti", url: "/acquisti", icon: ShoppingCart },
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
   { title: "Bilancio", url: "/bilancio", icon: PieChart },
   { title: "Banche", url: "/banche", icon: Landmark },
-  { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
+  { title: "Lista Commesse", url: "/lista-commesse", icon: ClipboardList },
   { title: "Offerte", url: "/offerte", icon: Send },
   { title: "Riepiloghi per CIG", url: "/commesse", icon: FolderKanban },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
