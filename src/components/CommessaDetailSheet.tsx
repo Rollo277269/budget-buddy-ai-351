@@ -80,6 +80,8 @@ export function CommessaDetailSheet({
 }: CommessaDetailSheetProps) {
   const [addMode, setAddMode] = useState<"vendita" | "acquisto" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   const data = useMemo(() => {
     if (!commessa) return null;
