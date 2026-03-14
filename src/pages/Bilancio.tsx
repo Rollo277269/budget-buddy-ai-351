@@ -240,56 +240,7 @@ export default function BilancioPage() {
         </div>
       )}
 
-      {/* Year table */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border bg-muted/30">
-          <h2 className="text-sm font-semibold text-foreground">Dettaglio per anno</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/20">
-                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Anno</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Ricavi</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Costi</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Risultato</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Margine %</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">N° Vendite</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">N° Acquisti</th>
-              </tr>
-            </thead>
-            <tbody>
-              {yearSummaries.map((y) => (
-                <tr
-                  key={y.anno}
-                  className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${annoFilter === y.anno ? "bg-primary/5" : ""}`}
-                  onClick={() => setSelectedAnno(selectedAnno === String(y.anno) ? "all" : String(y.anno))}
-                  style={{ cursor: "pointer" }}
-                >
-                  <td className="px-4 py-2.5 font-semibold font-mono">{y.anno}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-income">{formatCurrency(y.ricavi)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-expense">{formatCurrency(y.costi)}</td>
-                  <td className={`px-4 py-2.5 text-right font-mono font-semibold ${y.saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(y.saldo)}</td>
-                  <td className={`px-4 py-2.5 text-right font-mono ${y.marginePercent >= 0 ? "text-income" : "text-expense"}`}>{y.marginePercent.toFixed(1)}%</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{y.numVendite}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{y.numAcquisti}</td>
-                </tr>
-              ))}
-              {yearSummaries.length > 1 && (
-                <tr className="bg-muted/40 font-semibold border-t-2 border-foreground/20">
-                  <td className="px-4 py-2.5">TOTALE</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-income">{formatCurrency(globalKpis.ricavi)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-expense">{formatCurrency(globalKpis.costi)}</td>
-                  <td className={`px-4 py-2.5 text-right font-mono ${globalKpis.saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(globalKpis.saldo)}</td>
-                  <td className={`px-4 py-2.5 text-right font-mono ${globalKpis.margine >= 0 ? "text-income" : "text-expense"}`}>{globalKpis.margine.toFixed(1)}%</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{globalKpis.numVendite}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{globalKpis.numAcquisti}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+
 
       {/* Centro breakdown */}
       <Tabs defaultValue="ricavi" className="space-y-4">

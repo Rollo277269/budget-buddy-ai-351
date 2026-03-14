@@ -155,6 +155,9 @@ const Index = () => {
           <DeadlineAnalysis sales={sales} purchases={purchases} />
         </div>
 
+        {/* Year Summary */}
+        <YearSummaryTable allSales={allSales} allPurchases={allPurchases} />
+
         {/* CIG Detail */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold">Dettaglio per CIG / Commessa</h2>
