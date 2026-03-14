@@ -593,15 +593,29 @@ export function CommessaDetailSheet({
 
         {/* Print-only professional report */}
         <div className="pdf-report">
+          {/* Fixed footer repeats on every printed page */}
+          <div className="pdf-footer">
+            <span className="pdf-footer-left">Report generato da Gestione Commesse</span>
+            <span className="pdf-footer-center">Esportato il {new Date().toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+            <span className="pdf-footer-right pdf-page-number"></span>
+          </div>
+
           <div className="pdf-header">
-            <h1>Report Economico Commessa {commessa.numero}</h1>
-            <p>{commessa.oggetto}</p>
-            <div className="pdf-meta">
-              <span>CIG: {commessa.cig || "—"}</span>
-              {cssr?.cig_derivato && <span>CIG Derivato: {cssr.cig_derivato}</span>}
-              <span>Committente: {commessa.committente}</span>
-              <span>Assegnataria: {commessa.assegnataria}</span>
-              <span>Data report: {new Date().toLocaleDateString("it-IT")}</span>
+            <div className="pdf-header-logo">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="48" rx="10" fill="hsl(220 60% 28%)"/>
+                <text x="24" y="30" textAnchor="middle" fill="white" fontSize="20" fontWeight="700" fontFamily="DM Sans, sans-serif">GC</text>
+              </svg>
+            </div>
+            <div className="pdf-header-text">
+              <h1>Report Economico Commessa {commessa.numero}</h1>
+              <p>{commessa.oggetto}</p>
+              <div className="pdf-meta">
+                <span>CIG: {commessa.cig || "—"}</span>
+                {cssr?.cig_derivato && <span>CIG Derivato: {cssr.cig_derivato}</span>}
+                <span>Committente: {commessa.committente}</span>
+                <span>Assegnataria: {commessa.assegnataria}</span>
+              </div>
             </div>
           </div>
 
