@@ -289,6 +289,7 @@ export function CommessaDetailSheet({
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); setPdfData(null); } }}>
       <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-row overflow-hidden p-0 border-none">
+        <div className={`flex flex-col ${pdfData ? "w-1/2" : "w-full"} transition-all overflow-hidden`}>
         {/* Header */}
         <DialogHeader className="px-6 pt-4 pb-3 border-b shrink-0">
           <div className="flex items-center justify-between">
@@ -313,7 +314,6 @@ export function CommessaDetailSheet({
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
 
-        <div className={`flex flex-col ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
