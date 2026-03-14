@@ -393,16 +393,17 @@ function saveRowOrder(id: string, order: string[]) {
 }
 
 function CentriSideBySide({
-  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti,
+  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti, onRowClick,
 }: {
   ricavoBreakdown: CentroAgg[]; costoBreakdown: CentroAgg[];
   totalRicavi: number; totalCosti: number;
+  onRowClick?: (codice: string, tipo: "ricavo" | "costo") => void;
 }) {
   const maxRows = Math.max(ricavoBreakdown.length, costoBreakdown.length);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} />
-      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} />
+      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "ricavo") : undefined} />
+      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "costo") : undefined} />
     </div>
   );
 }
