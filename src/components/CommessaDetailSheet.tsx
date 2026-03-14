@@ -853,6 +853,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
               </div>
             )}
           </>
+        );
       })()}
     </div>
   );
