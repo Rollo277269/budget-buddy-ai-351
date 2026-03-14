@@ -462,37 +462,45 @@ const BanchePage = () => {
           {fileNames.length === 0 ? (
             <p className="text-sm text-muted-foreground">Carica un estratto conto per iniziare</p>
           ) : (
-            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              {[...fileNames].sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" })).map((fn) => (
-                <AlertDialog key={fn}>
-                  <Badge variant="secondary" className="text-[11px] gap-1 pr-1">
-                    <FileSpreadsheet className="h-3 w-3" />
-                    {fn}
-                    <AlertDialogTrigger asChild>
-                      <button
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors"
-                        title={`Rimuovi ${fn} e i suoi movimenti`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </AlertDialogTrigger>
-                  </Badge>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Eliminare il file?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Vuoi rimuovere <span className="font-medium">{fn}</span> e tutti i movimenti importati da questo file? L'azione non può essere annullata.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annulla</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteFileMovements(fn)}>Elimina</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ))}
-            </div>
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                <span>{fileNames.length} file caricati</span>
+                <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="flex flex-col gap-1">
+                  {[...fileNames].sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" })).map((fn) => (
+                    <AlertDialog key={fn}>
+                      <div className="flex items-center gap-2 text-xs">
+                        <FileSpreadsheet className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="truncate">{fn}</span>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="ml-auto rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground"
+                            title={`Rimuovi ${fn} e i suoi movimenti`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </AlertDialogTrigger>
+                      </div>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Eliminare il file?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Vuoi rimuovere <span className="font-medium">{fn}</span> e tutti i movimenti importati da questo file? L'azione non può essere annullata.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annulla</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteFileMovements(fn)}>Elimina</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
         <div className="flex items-center gap-2">
