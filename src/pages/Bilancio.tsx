@@ -383,7 +383,7 @@ function CentriSideBySide({
   totalRicavi: number; totalCosti: number;
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
       <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" />
       <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" />
     </div>
