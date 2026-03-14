@@ -666,7 +666,7 @@ const BanchePage = () => {
           {/* Table */}
           <DataTable<BankMovement>
             columns={columns}
-            data={movements}
+            data={filteredMovements}
             rowKey={(r) => r.id}
             onRowClick={setSelectedMovement}
           />
