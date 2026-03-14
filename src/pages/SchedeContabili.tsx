@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { useSearchParams } from "react-router-dom";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -437,6 +438,7 @@ function SchedaDetail({
 
 export default function SchedeContabiliPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState("clienti");
   const [selectedCliente, setSelectedCliente] = useState("");
   const [selectedFornitore, setSelectedFornitore] = useState("");
@@ -462,6 +464,35 @@ export default function SchedeContabiliPage() {
     { value: "", label: "Seleziona fornitore..." },
     ...fornitori.map((f) => ({ value: f, label: f })),
   ], [fornitori]);
+
+  // Handle URL param ?soggetto=Name to auto-select
+  useEffect(() => {
+    const soggetto = searchParams.get("soggetto");
+    if (soggetto && clienti.length + fornitori.length > 0) {
+      if (clienti.includes(soggetto)) {
+        setTab("clienti");
+        setSelectedCliente(soggetto);
+      } else if (fornitori.includes(soggetto)) {
+        setTab("fornitori");
+        setSelectedFornitore(soggetto);
+      } else {
+        // Try case-insensitive partial match
+        const matchC = clienti.find((c) => c.toLowerCase().includes(soggetto.toLowerCase()));
+        if (matchC) {
+          setTab("clienti");
+          setSelectedCliente(matchC);
+        } else {
+          const matchF = fornitori.find((f) => f.toLowerCase().includes(soggetto.toLowerCase()));
+          if (matchF) {
+            setTab("fornitori");
+            setSelectedFornitore(matchF);
+          }
+        }
+      }
+      searchParams.delete("soggetto");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, clienti, fornitori]);
 
   if (loading) {
     return (
