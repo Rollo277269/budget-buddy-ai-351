@@ -1,3 +1,4 @@
+import React from "react";
 import {
   ComposedChart,
   Bar,
@@ -19,7 +20,7 @@ interface Props {
   movements?: BankMovement[];
 }
 
-export function MonthlyChart({ sales, purchases, movements = [] }: Props) {
+export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases, movements = [] }: Props) {
   const data = useMemo(() => {
     const months: Record<string, { vendite: number; acquisti: number; incassato: number; pagato: number }> = {};
 
@@ -127,4 +128,4 @@ export function MonthlyChart({ sales, purchases, movements = [] }: Props) {
       </ComposedChart>
     </ResponsiveContainer>
   );
-}
+});

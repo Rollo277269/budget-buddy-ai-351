@@ -68,6 +68,11 @@ function extractCUP(desc: string): string {
   return match ? match[1] : "";
 }
 
+// Cache parsed Excel data across component mounts to avoid re-parsing on navigation
+let cachedSales: SaleInvoice[] | null = null;
+let cachedPurchases: PurchaseInvoice[] | null = null;
+let loadPromise: Promise<void> | null = null;
+
 async function loadExcel(url: string): Promise<any[]> {
   const res = await fetch(url);
   const buf = await res.arrayBuffer();
@@ -184,12 +189,26 @@ export function useInvoiceData() {
   });
 
   useEffect(() => {
-    Promise.all([
-      loadExcel("/data/Fatture_Full.xlsx"),
-      loadExcel("/data/FattureAcquisto_Full.xlsx"),
-    ]).then(([salesRows, purchaseRows]) => {
-      setSales(parseSales(salesRows));
-      setPurchases(parsePurchases(purchaseRows));
+    if (cachedSales && cachedPurchases) {
+      setSales(cachedSales);
+      setPurchases(cachedPurchases);
+      setLoading(false);
+      return;
+    }
+
+    if (!loadPromise) {
+      loadPromise = Promise.all([
+        loadExcel("/data/Fatture_Full.xlsx"),
+        loadExcel("/data/FattureAcquisto_Full.xlsx"),
+      ]).then(([salesRows, purchaseRows]) => {
+        cachedSales = parseSales(salesRows);
+        cachedPurchases = parsePurchases(purchaseRows);
+      });
+    }
+
+    loadPromise.then(() => {
+      setSales(cachedSales!);
+      setPurchases(cachedPurchases!);
       setLoading(false);
     });
   }, []);

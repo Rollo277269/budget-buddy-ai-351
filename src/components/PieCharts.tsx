@@ -1,3 +1,4 @@
+import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { loadCentri } from "@/hooks/useCentri";
@@ -39,7 +40,7 @@ function CustomTooltip({ active, payload }: any) {
   );
 }
 
-export function ClientPieChart({ sales }: { sales: SaleInvoice[] }) {
+export const ClientPieChart = React.memo(function ClientPieChart({ sales }: { sales: SaleInvoice[] }) {
   const data = useMemo(() => {
     const map: Record<string, number> = {};
     sales.forEach((s) => {
@@ -84,9 +85,9 @@ export function ClientPieChart({ sales }: { sales: SaleInvoice[] }) {
       </PieChart>
     </ResponsiveContainer>
   );
-}
+});
 
-export function SupplierPieChart({ purchases }: { purchases: PurchaseInvoice[] }) {
+export const SupplierPieChart = React.memo(function SupplierPieChart({ purchases }: { purchases: PurchaseInvoice[] }) {
   const data = useMemo(() => {
     const map: Record<string, number> = {};
     purchases.forEach((p) => {
@@ -131,7 +132,7 @@ export function SupplierPieChart({ purchases }: { purchases: PurchaseInvoice[] }
       </PieChart>
     </ResponsiveContainer>
   );
-}
+});
 
 const COLORS_CENTRI = [
   "hsl(152 60% 36%)", "hsl(200 50% 45%)", "hsl(270 45% 50%)",
@@ -140,7 +141,7 @@ const COLORS_CENTRI = [
   "hsl(0 50% 50%)",
 ];
 
-export function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
+export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
   const data = useMemo(() => {
     const centri = loadCentri().filter((c) => c.tipo === "ricavo");
     if (centri.length === 0) return [];
@@ -213,4 +214,4 @@ export function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
       </BarChart>
     </ResponsiveContainer>
   );
-}
+});
