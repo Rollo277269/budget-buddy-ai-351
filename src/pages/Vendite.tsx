@@ -257,7 +257,7 @@ const VenditePage = () => {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <p className="text-sm text-muted-foreground">
-              {sales.length} fatture trovate
+              {displayedSales.length} fatture trovate
               {xmlRecords.length > 0 && (
                 <span className="ml-2">
                   · <FileText className="inline h-3 w-3 mb-0.5" /> {xmlMatchedCount} XML associati
