@@ -594,6 +594,21 @@ function MiniCard({ label, value, highlight }: { label: string; value: string; h
   );
 }
 
+/* ── Stato badge with colors ── */
+function StatoBadge({ stato }: { stato?: string }) {
+  const s = (stato || "").toLowerCase();
+  if (s.includes("pagat") || s.includes("incassat")) {
+    return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">{stato}</span>;
+  }
+  if (s.includes("scadut")) {
+    return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">{stato}</span>;
+  }
+  if (s.includes("da incassar") || s.includes("da pagare") || s.includes("emess") || stato) {
+    return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{stato}</span>;
+  }
+  return <span className="text-[9px] text-muted-foreground">—</span>;
+}
+
 /* ── Invoice list sub-component with sort & filter ── */
 function InvoiceList({
   invoices, type, autoKeys, cig, onRemoveLink,
@@ -759,7 +774,7 @@ function InvoiceList({
                 data: <TableCell key="d" className="text-xs">{inv.data}</TableCell>,
                 counterpart: <TableCell key="c" className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>,
                 descrizione: <TableCell key="desc" className="text-xs max-w-[200px] truncate" title={inv.descrizione}>{inv.descrizione || "—"}</TableCell>,
-                stato: <TableCell key="s"><Badge variant={inv.stato?.toLowerCase().includes("pagat") || inv.stato?.toLowerCase().includes("incass") ? "secondary" : "outline"} className="text-[9px]">{inv.stato || "—"}</Badge></TableCell>,
+                stato: <TableCell key="s"><StatoBadge stato={inv.stato} /></TableCell>,
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
