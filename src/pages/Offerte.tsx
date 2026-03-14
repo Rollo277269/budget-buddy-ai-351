@@ -18,16 +18,16 @@ interface Offerta {
 }
 
 const columns: ColumnDef<Offerta>[] = [
-  { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}</span>, sortable: true },
-  { key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig}</span> },
-  { key: "oggetto", label: "Oggetto / Descrizione", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[300px] truncate block">{r.oggetto}</span> },
-  { key: "cliente", label: "Cliente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.cliente}</span> },
-  { key: "fornitore", label: "Fornitore", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.fornitore}</span> },
-  { key: "fattureVendita", label: "N° Fatt. Vendita", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureVendita}</span> },
-  { key: "totaleVendite", label: "Tot. Vendite", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{formatCurrency(r.totaleVendite)}</span> },
-  { key: "fattureAcquisto", label: "N° Fatt. Acquisto", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureAcquisto}</span> },
-  { key: "totaleAcquisti", label: "Tot. Acquisti", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{formatCurrency(r.totaleAcquisti)}</span> },
-];
+{ key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}</span>, sortable: true },
+{ key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig}</span> },
+{ key: "oggetto", label: "Oggetto / Descrizione", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[300px] truncate block">{r.oggetto}</span> },
+{ key: "cliente", label: "Cliente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.cliente}</span> },
+{ key: "fornitore", label: "Fornitore", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.fornitore}</span> },
+{ key: "fattureVendita", label: "N° Fatt. Vendita", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureVendita}</span> },
+{ key: "totaleVendite", label: "Tot. Vendite", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{formatCurrency(r.totaleVendite)}</span> },
+{ key: "fattureAcquisto", label: "N° Fatt. Acquisto", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureAcquisto}</span> },
+{ key: "totaleAcquisti", label: "Tot. Acquisti", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{formatCurrency(r.totaleAcquisti)}</span> }];
+
 
 const OffertePage = () => {
   const { allSales, allPurchases, loading } = useInvoiceData();
@@ -35,7 +35,7 @@ const OffertePage = () => {
 
   const rows = useMemo(() => {
     // Collect CIGs from invoices that do NOT appear in CSSR
-    const cigMap = new Map<string, { oggetto: string; cliente: string; fornitore: string; tv: number; ta: number; fv: number; fa: number }>();
+    const cigMap = new Map<string, {oggetto: string;cliente: string;fornitore: string;tv: number;ta: number;fv: number;fa: number;}>();
 
     allSales.forEach((s) => {
       if (s.cig && !byCig.has(s.cig)) {
@@ -69,7 +69,7 @@ const OffertePage = () => {
         totaleVendite: val.tv,
         totaleAcquisti: val.ta,
         fattureVendita: val.fv,
-        fattureAcquisto: val.fa,
+        fattureAcquisto: val.fa
       });
     });
     return result;
@@ -79,21 +79,21 @@ const OffertePage = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h2 className="text-lg font-bold tracking-tight">Offerte</h2>
+        
         <p className="text-sm text-muted-foreground">
           {rows.length} CIG presenti nelle fatture ma non ancora registrati come commesse CSSR
         </p>
       </div>
       <DataTable<Offerta> columns={columns} data={rows} rowKey={(r) => r.cig} />
-    </div>
-  );
+    </div>);
+
 };
 
 export default OffertePage;
