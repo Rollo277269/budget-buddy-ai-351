@@ -381,6 +381,121 @@
     color: hsl(var(--expense));
   }
 
+  /* ── PDF Bar Charts ── */
+  body.print-commessa-report .pdf-bar-chart {
+    padding: 10px;
+  }
+
+  body.print-commessa-report .pdf-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  body.print-commessa-report .pdf-bar-label {
+    flex: 0 0 100px;
+    font-size: 9px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: hsl(var(--foreground));
+  }
+
+  body.print-commessa-report .pdf-bar-tracks {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  body.print-commessa-report .pdf-bar {
+    height: 14px;
+    border-radius: 3px;
+    min-width: 2px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    transition: none;
+  }
+
+  body.print-commessa-report .pdf-bar.is-positive {
+    background: hsl(var(--income));
+  }
+
+  body.print-commessa-report .pdf-bar.is-negative {
+    background: hsl(var(--expense));
+  }
+
+  body.print-commessa-report .pdf-bar-value {
+    font-size: 8px;
+    font-family: var(--font-mono), monospace;
+    color: hsl(0 0% 100%);
+    padding-left: 4px;
+    white-space: nowrap;
+  }
+
+  body.print-commessa-report .pdf-bar-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    font-size: 9px;
+    color: hsl(var(--muted-foreground));
+  }
+
+  body.print-commessa-report .pdf-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  body.print-commessa-report .pdf-legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  body.print-commessa-report .pdf-legend-swatch.is-positive {
+    background: hsl(var(--income));
+  }
+
+  body.print-commessa-report .pdf-legend-swatch.is-negative {
+    background: hsl(var(--expense));
+  }
+
+  /* ── PDF Progress Bar ── */
+  body.print-commessa-report .pdf-progress-wrap {
+    padding: 10px;
+  }
+
+  body.print-commessa-report .pdf-progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 4px;
+  }
+
+  body.print-commessa-report .pdf-progress-info + .pdf-progress-info {
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
+
+  body.print-commessa-report .pdf-progress-track {
+    height: 12px;
+    border-radius: 6px;
+    background: hsl(var(--muted));
+    overflow: hidden;
+  }
+
+  body.print-commessa-report .pdf-progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: hsl(var(--primary));
+  }
+
   @page {
     size: A4 landscape;
     margin: 1.2cm;
