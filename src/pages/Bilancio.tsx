@@ -85,19 +85,20 @@ export default function BilancioPage() {
   const { centri } = useCentriData();
   const [selectedAnno, setSelectedAnno] = useState<string>("all");
 
-  const [ricavoMapVendite, setRicavoMapVendite] = useState(() => loadCentroMap("ricavo", "vendite"));
-  const [costoMapAcquisti, setCostoMapAcquisti] = useState(() => loadCentroMap("costo", "acquisti"));
+  const [ricavoMapVendite, setRicavoMapVendite] = useState<Record<string, string>>({});
+  const [costoMapAcquisti, setCostoMapAcquisti] = useState<Record<string, string>>({});
 
-  // Re-read maps when the page gains focus (user may have changed assignments on other pages)
+  // Load maps from DB
   useEffect(() => {
-    const refresh = () => {
-      setRicavoMapVendite(loadCentroMap("ricavo", "vendite"));
-      setCostoMapAcquisti(loadCentroMap("costo", "acquisti"));
+    const refresh = async () => {
+      setRicavoMapVendite(await loadCentroMap("ricavo", "vendite"));
+      setCostoMapAcquisti(await loadCentroMap("costo", "acquisti"));
     };
-    window.addEventListener("focus", refresh);
-    window.addEventListener("storage", refresh);
+    refresh();
+    const onFocus = () => { refresh(); };
+    window.addEventListener("focus", onFocus);
     return () => {
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener("focus", onFocus);
       window.removeEventListener("storage", refresh);
     };
   }, []);
