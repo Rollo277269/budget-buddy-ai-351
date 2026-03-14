@@ -260,7 +260,7 @@ export function DataTable<T extends Record<string, any>>({
                 >
                   <div className={`flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
                     <GripVertical className="h-3 w-3 opacity-30 cursor-grab shrink-0" />
-                    {col.headerRender ? col.headerRender() : <span className="truncate">{col.label}</span>}
+                    {col.headerRender ? col.headerRender() : <span className="whitespace-normal break-words leading-tight">{col.label}</span>}
                     <div className="flex items-center shrink-0">
                       {col.sortable && (
                         <Button
