@@ -16,7 +16,7 @@ const pageTitles: Record<string, string> = {
   "/banche": "Banche",
   "/commesse": "Riepiloghi per CIG",
   "/lista-commesse": "Commesse",
-  "/offerte": "Cruscotto",
+  "/offerte": "Gare",
   "/strumenti": "Strumenti"
 };
 
