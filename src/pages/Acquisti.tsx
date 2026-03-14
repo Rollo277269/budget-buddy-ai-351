@@ -355,6 +355,16 @@ const AcquistiPage = () => {
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={purchases} xmlMap={xmlMap} tipo="acquisto" onManualMatch={manualMatch} />
+        <XmlPickerSheet
+          open={!!xmlPickerInvoice}
+          onOpenChange={(open) => !open && setXmlPickerInvoice(null)}
+          xmlRecords={xmlRecords}
+          invoiceAnno={xmlPickerInvoice?.anno || 0}
+          invoiceNumero={xmlPickerInvoice?.numero || 0}
+          invoiceName={xmlPickerInvoice?.fornitore || ""}
+          invoiceTotale={xmlPickerInvoice?.totale || 0}
+          onMatch={manualMatch}
+        />
         <SchedaSoggettoSheet tipo="fornitore" nome={selectedFornitore} allSales={allSales} allPurchases={allPurchases} open={!!selectedFornitore} onOpenChange={(open) => !open && setSelectedFornitore(null)} />
       </div>
 
