@@ -550,17 +550,37 @@ function autoMatch(
   }));
 }
 
-function loadMovements(): Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[] {
-  try { return JSON.parse(localStorage.getItem(MOVEMENTS_KEY) || "[]"); } catch { return []; }
+async function loadMovementsFromDb(): Promise<RawMovement[]> {
+  const { data, error } = await supabase.from("bank_movements" as any).select("*").order("created_at", { ascending: true });
+  if (error) { console.error("Error loading movements:", error); return []; }
+  return (data as any[] || []).map((d: any) => ({
+    id: d.id,
+    accountId: d.account_id || "default",
+    sourceFile: d.source_file || "",
+    data: d.data || "",
+    dataValuta: d.data_valuta || "",
+    causale: d.causale || "",
+    descrizione: d.descrizione || "",
+    importo: Number(d.importo) || 0,
+    saldo: Number(d.saldo) || 0,
+    cig: d.cig || "",
+  }));
 }
-function saveMovements(m: Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">[]) {
-  localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(m));
-}
-function loadFileNames(): string[] {
-  try { return JSON.parse(localStorage.getItem(FILES_KEY) || "[]"); } catch { return []; }
-}
-function saveFileNames(names: string[]) {
-  localStorage.setItem(FILES_KEY, JSON.stringify(names));
+
+async function insertMovementsToDb(movements: RawMovement[]) {
+  const rows = movements.map(m => ({
+    account_id: m.accountId,
+    source_file: m.sourceFile,
+    data: m.data,
+    data_valuta: m.dataValuta,
+    causale: m.causale,
+    descrizione: m.descrizione,
+    importo: m.importo,
+    saldo: m.saldo,
+    cig: m.cig,
+  }));
+  const { data } = await supabase.from("bank_movements" as any).insert(rows as any).select("id");
+  return (data as any[] || []).map((d: any) => d.id as string);
 }
 
 export type RawMovement = Omit<BankMovement, "matchedInvoices" | "matchedType" | "matchedAnno" | "matchedNumero" | "matchConfidence">;
@@ -572,10 +592,10 @@ export interface DuplicateInfo {
 }
 
 export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) {
-  const [rawMovements, setRawMovements] = useState(loadMovements);
-  const [reconciliations, setReconciliations] = useState<Reconciliation[]>(loadReconciliations);
-  const [loading, setLoading] = useState(false);
-  const [fileNames, setFileNames] = useState<string[]>(loadFileNames);
+  const [rawMovements, setRawMovements] = useState<RawMovement[]>([]);
+  const [reconciliations, setReconciliations] = useState<Reconciliation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fileNames, setFileNames] = useState<string[]>([]);
   const [activeAccountId, setActiveAccountId] = useState<string>("default");
   const [pendingDuplicates, setPendingDuplicates] = useState<DuplicateInfo | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
