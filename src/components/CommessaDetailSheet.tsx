@@ -1007,14 +1007,18 @@ function MiniCard({ label, value, highlight }: { label: string; value: string; h
 }
 
 /* ── Centro Ricavo/Costo breakdown charts ── */
-function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoMap, centri }: {
+function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoMap, centri, onAssignRicavo, onAssignCosto }: {
   linkedSales: SaleInvoice[];
   linkedPurchases: PurchaseInvoice[];
   ricavoMap: Record<string, string>;
   costoMap: Record<string, string>;
   centri: CentroCR[];
+  onAssignRicavo: (key: string, codice: string) => void;
+  onAssignCosto: (key: string, codice: string) => void;
 }) {
   const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
+  const [expandedRicavo, setExpandedRicavo] = useState<string | null>(null);
+  const [expandedCosto, setExpandedCosto] = useState<string | null>(null);
   const [ricavoOrder, setRicavoOrder] = useState<string[] | null>(() => {
     try { return JSON.parse(localStorage.getItem("centro-ricavo-order") || "null"); } catch { return null; }
   });
@@ -1054,9 +1058,31 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       .sort((a, b) => b.value - a.value);
   }, [linkedPurchases, costoMap, centroLookup]);
 
+  // Group invoices by centro label
+  const ricavoInvoiceGroups = useMemo(() => {
+    const groups = new Map<string, SaleInvoice[]>();
+    linkedSales.forEach((s) => {
+      const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(s);
+    });
+    return groups;
+  }, [linkedSales, ricavoMap, centroLookup]);
+
+  const costoInvoiceGroups = useMemo(() => {
+    const groups = new Map<string, PurchaseInvoice[]>();
+    linkedPurchases.forEach((p) => {
+      const codice = costoMap[`${p.anno}-${p.numero}`];
+      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(p);
+    });
+    return groups;
+  }, [linkedPurchases, costoMap, centroLookup]);
+
   if (ricavoData.length === 0 && costoData.length === 0) return null;
 
-  // Shared scale: max value across both datasets
   const maxValue = Math.max(
     ...ricavoData.map((d) => d.value),
     ...costoData.map((d) => d.value),
@@ -1105,14 +1131,13 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
         {costoData.length > 0 && renderChart(costoData, "Centri di Costo", CHART_COLORS.slice(3))}
       </div>
 
-      {/* Comparison tables with drag reorder */}
+      {/* Comparison tables with drag reorder + expandable invoice detail */}
       {(() => {
         const totalRicavi = ricavoData.reduce((s, r) => s + r.value, 0);
         const totalCosti = costoData.reduce((s, r) => s + r.value, 0);
         const saldo = totalRicavi - totalCosti;
         const margine = totalRicavi > 0 ? (saldo / totalRicavi) * 100 : 0;
 
-        // Apply custom ordering
         const orderedRicavo = ricavoOrder
           ? ricavoOrder.map((n) => ricavoData.find((d) => d.name === n)).filter(Boolean) as typeof ricavoData
           : ricavoData;
@@ -1120,7 +1145,6 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           ? costoOrder.map((n) => costoData.find((d) => d.name === n)).filter(Boolean) as typeof costoData
           : costoData;
 
-        // Sync order state when data changes
         if (ricavoData.length > 0 && !ricavoOrder) {
           setTimeout(() => setRicavoOrder(ricavoData.map((d) => d.name)), 0);
         }
@@ -1151,12 +1175,18 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           total: number,
           title: string,
           icon: React.ReactNode,
-          totalLabel: string,
-          totalColor: string,
+          _totalLabel: string,
+          _totalColor: string,
           dragIdx: number | null,
           setDragIdx: (i: number | null) => void,
           setOrder: React.Dispatch<React.SetStateAction<string[] | null>>,
-          storageKey: string
+          storageKey: string,
+          invoiceGroups: Map<string, (SaleInvoice | PurchaseInvoice)[]>,
+          expanded: string | null,
+          setExpanded: (v: string | null) => void,
+          tipo: "ricavo" | "costo",
+          centroMapObj: Record<string, string>,
+          onAssign: (key: string, codice: string) => void
         ) => (
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b bg-muted/30">
@@ -1172,26 +1202,64 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                   <TableHead className="text-[10px]">Centro</TableHead>
                   <TableHead className="text-[10px] text-right">Importo</TableHead>
                   <TableHead className="text-[10px] text-right">%</TableHead>
+                  <TableHead className="text-[10px] w-[30px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ordered.map((d, idx) => {
                   const pct = total > 0 ? (d.value / total) * 100 : 0;
+                  const isExpanded = expanded === d.name;
+                  const groupInvoices = invoiceGroups.get(d.name) || [];
                   return (
-                    <TableRow
-                      key={d.name}
-                      className={`cursor-grab active:cursor-grabbing ${dragIdx === idx ? "opacity-40" : ""}`}
-                      draggable
-                      onDragStart={(e) => { setDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
-                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-                      onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data, storageKey); setDragIdx(null); }}
-                      onDragEnd={() => setDragIdx(null)}
-                    >
-                      <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
-                      <TableCell className="text-xs">{d.name}</TableCell>
-                      <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
-                      <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
-                    </TableRow>
+                    <>
+                      <TableRow
+                        key={d.name}
+                        className={`cursor-grab active:cursor-grabbing ${dragIdx === idx ? "opacity-40" : ""} ${isExpanded ? "bg-muted/30" : ""}`}
+                        draggable
+                        onDragStart={(e) => { setDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
+                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                        onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data, storageKey); setDragIdx(null); }}
+                        onDragEnd={() => setDragIdx(null)}
+                      >
+                        <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
+                        <TableCell className="text-xs">{d.name}</TableCell>
+                        <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
+                        <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
+                        <TableCell className="px-1">
+                          <Button
+                            variant="ghost" size="sm"
+                            className="h-5 w-5 p-0"
+                            onClick={(e) => { e.stopPropagation(); setExpanded(isExpanded ? null : d.name); }}
+                            title="Espandi per modificare centri"
+                          >
+                            <span className={`text-[10px] transition-transform ${isExpanded ? "rotate-180" : ""}`}>▼</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && groupInvoices.map((inv) => {
+                        const key = `${inv.anno}-${inv.numero}`;
+                        const counterpart = "cliente" in inv ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
+                        return (
+                          <TableRow key={`detail-${key}`} className="bg-muted/10">
+                            <TableCell></TableCell>
+                            <TableCell className="text-[11px]">
+                              <span className="font-mono">{inv.numero}/{inv.anno}</span>
+                              <span className="text-muted-foreground ml-2">{counterpart}</span>
+                            </TableCell>
+                            <TableCell className="text-[11px] font-mono text-right">{formatCurrency(inv.totale)}</TableCell>
+                            <TableCell colSpan={2}>
+                              <CentroCell
+                                invoiceKey={key}
+                                tipo={tipo}
+                                centri={centri}
+                                centroMap={centroMapObj}
+                                onAssign={onAssign}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </>
                   );
                 })}
               </TableBody>
@@ -1207,14 +1275,20 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                 "Riepilogo Centri di Ricavo",
                 <ArrowUpRight className="h-3.5 w-3.5 text-income" />,
                 "Totale Ricavi", "text-income",
-                dragRicavoIdx, setDragRicavoIdx, setRicavoOrder, "centro-ricavo-order"
+                dragRicavoIdx, setDragRicavoIdx, setRicavoOrder, "centro-ricavo-order",
+                ricavoInvoiceGroups as Map<string, (SaleInvoice | PurchaseInvoice)[]>,
+                expandedRicavo, setExpandedRicavo,
+                "ricavo", ricavoMap, onAssignRicavo
               )}
               {costoData.length > 0 && renderDraggableTable(
                 costoData, orderedCosto, totalCosti,
                 "Riepilogo Centri di Costo",
                 <ArrowDownRight className="h-3.5 w-3.5 text-expense" />,
                 "Totale Costi", "text-expense",
-                dragCostoIdx, setDragCostoIdx, setCostoOrder, "centro-costo-order"
+                dragCostoIdx, setDragCostoIdx, setCostoOrder, "centro-costo-order",
+                costoInvoiceGroups as Map<string, (SaleInvoice | PurchaseInvoice)[]>,
+                expandedCosto, setExpandedCosto,
+                "costo", costoMap, onAssignCosto
               )}
             </div>
 
