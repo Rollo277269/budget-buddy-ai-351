@@ -463,6 +463,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
             <thead>
               <tr className="border-b border-border bg-muted/20">
                 <th className="w-6"></th>
+                <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
                 <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro</th>
                 <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
                 <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">%</th>
@@ -484,6 +485,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
                   <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
                     <GripVertical className="h-3.5 w-3.5" />
                   </td>
+                  <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{d.codice === "__unassigned__" ? "—" : d.codice}</td>
                   <td className="px-3 py-1.5 text-xs font-medium truncate max-w-[200px]">{d.descrizione}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
@@ -517,6 +519,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
                   >
                     <td className="pl-2 pr-0 py-1.5">&nbsp;</td>
                     <td className="px-3 py-1.5">&nbsp;</td>
+                    <td className="px-3 py-1.5">&nbsp;</td>
                     <td className="px-3 py-1.5"></td>
                     <td className="px-3 py-1.5"></td>
                   </tr>
@@ -525,6 +528,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
             </tbody>
             <tfoot>
               <tr className="bg-muted/40 font-semibold">
+                <td></td>
                 <td></td>
                 <td className="px-3 py-2 text-xs">TOTALE</td>
                 <td className={`px-3 py-2 text-right font-mono text-xs ${accentClass}`}>{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
@@ -548,21 +552,24 @@ function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg
       <table className="pdf-table">
         <thead>
           <tr>
-            <th>Centro</th>
-            <th className="is-right">Importo</th>
-            <th className="is-right">%</th>
-          </tr>
+             <th>Codice</th>
+             <th>Centro</th>
+             <th className="is-right">Importo</th>
+             <th className="is-right">%</th>
+           </tr>
         </thead>
         <tbody>
           {data.map((d) => (
             <tr key={d.codice}>
+              <td style={{ fontFamily: "monospace", fontSize: "0.85em" }}>{d.codice === "__unassigned__" ? "—" : d.codice}</td>
               <td>{d.descrizione}</td>
               <td className="is-right">{formatCurrency(d.importo)}</td>
               <td className="is-right">{total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%</td>
             </tr>
           ))}
-          <tr className="pdf-table-total">
-            <td>TOTALE</td>
+           <tr className="pdf-table-total">
+             <td></td>
+             <td>TOTALE</td>
             <td className="is-right">{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
             <td className="is-right">100%</td>
           </tr>
