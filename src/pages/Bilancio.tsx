@@ -463,6 +463,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
             <thead>
               <tr className="border-b border-border bg-muted/20">
                 <th className="w-6"></th>
+                <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
                 <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro</th>
                 <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
                 <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">%</th>
