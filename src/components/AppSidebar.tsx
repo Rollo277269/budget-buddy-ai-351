@@ -1,4 +1,4 @@
-import { LayoutDashboard, CalendarClock, FileText, ShoppingCart, Landmark, FolderKanban, ClipboardList, Settings, Send, BookOpen } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileText, ShoppingCart, Landmark, FolderKanban, ClipboardList, Settings, Send, BookOpen, PieChart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
