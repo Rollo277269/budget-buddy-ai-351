@@ -618,13 +618,16 @@ function StatoBadge({ stato }: { stato?: string }) {
 
 /* ── Invoice list sub-component with sort & filter ── */
 function InvoiceList({
-  invoices, type, autoKeys, cig, onRemoveLink,
+  invoices, type, autoKeys, cig, onRemoveLink, centri, centroMap, onAssignCentro,
 }: {
   invoices: (SaleInvoice | PurchaseInvoice)[];
   type: "vendita" | "acquisto";
   autoKeys: Set<string>;
   cig: string;
   onRemoveLink: (key: string, type: "vendita" | "acquisto", cig: string) => void;
+  centri: CentroCR[];
+  centroMap: Record<string, string>;
+  onAssignCentro: (key: string, codice: string) => void;
 }) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
@@ -632,6 +635,9 @@ function InvoiceList({
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
   const [showColPicker, setShowColPicker] = useState(false);
+
+  const centroLabel = type === "vendita" ? "Centro Ricavo" : "Centro Costo";
+  const centroTipo = type === "vendita" ? "ricavo" as const : "costo" as const;
 
   const allColumns = [
     { key: "numero_display", label: "N°", filterable: true },
@@ -642,6 +648,7 @@ function InvoiceList({
     { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
     { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
     { key: "totale", label: "Totale", filterable: false, align: "right" as const },
+    { key: "centro", label: centroLabel, filterable: true },
   ];
 
   if (invoices.length === 0) {
