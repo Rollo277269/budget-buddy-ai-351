@@ -765,7 +765,7 @@ const StrumentiPage = () => {
             <Building2 className="h-3.5 w-3.5 mr-1.5" />Centri C/R
           </TabsTrigger>
           <TabsTrigger value="naming" className="text-xs">
-            <FileText className="h-3.5 w-3.5 mr-1.5" />Denominazione
+            <FileText className="h-3.5 w-3.5 mr-1.5" />Denominazione file
           </TabsTrigger>
         </TabsList>
 
