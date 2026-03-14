@@ -25,19 +25,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 
-// Load conti from localStorage (same key as Strumenti page)
-interface ContoCorrente {
-  id: string;
-  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali";
-  banca: string;
-  iban: string;
-  intestatario: string;
-  note: string;
-}
-const CONTI_KEY = "conti-correnti";
-function loadConti(): ContoCorrente[] {
-  try {return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]");} catch {return [];}
-}
+// Load conti from shared hook
+import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
 
 function ReconciliationBadge({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "auto") {
