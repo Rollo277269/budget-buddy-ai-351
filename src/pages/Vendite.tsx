@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useInvoiceData, SaleInvoice } from "@/hooks/useInvoiceData";
+import { useInvoiceData, SaleInvoice, SaleInvoiceRiga } from "@/hooks/useInvoiceData";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
@@ -13,6 +13,7 @@ import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -324,6 +325,45 @@ const VenditePage = () => {
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
           rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+          expandable={(r) => r.righe.length > 1}
+          renderExpandedContent={(r) => (
+            <div className="px-4 py-2">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/50">
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground">Riga</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground">Descrizione</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Imponibile</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">IVA</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Totale</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground">CIG</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground">Centro Ricavo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {r.righe.map((riga, idx) => (
+                    <TableRow key={idx} className="border-b border-border/30">
+                      <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
+                      <TableCell className="text-[11px] max-w-[300px] whitespace-normal break-words leading-snug py-1.5">{riga.descrizione || "—"}</TableCell>
+                      <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imponibile)}</TableCell>
+                      <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imposta)}</TableCell>
+                      <TableCell className="text-[11px] font-mono font-semibold text-right py-1.5">{formatCurrency(riga.totale)}</TableCell>
+                      <TableCell className="text-[11px] font-mono py-1.5">{riga.cig || "—"}</TableCell>
+                      <TableCell className="py-1.5">
+                        <CentroCell
+                          invoiceKey={`${r.anno}-${r.numero}-${idx}`}
+                          tipo="ricavo"
+                          centri={centri}
+                          centroMap={ricavoMap.map}
+                          onAssign={ricavoMap.assign}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         />
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={sales} xmlMap={xmlMap} tipo="vendita" onManualMatch={manualMatch} />

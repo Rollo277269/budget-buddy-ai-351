@@ -1,6 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 
+export interface SaleInvoiceRiga {
+  descrizione: string;
+  imponibile: number;
+  imposta: number;
+  totale: number;
+  cig: string;
+  cup: string;
+}
+
 export interface SaleInvoice {
   tipo: string;
   anno: number;
@@ -17,6 +26,7 @@ export interface SaleInvoice {
   stato: string;
   scadenza: string;
   pagamento: string;
+  righe: SaleInvoiceRiga[];
 }
 
 export interface PurchaseInvoice {
@@ -92,8 +102,7 @@ function parseSales(rows: any[]): SaleInvoice[] {
   }
   if (headerIdx === -1) return [];
 
-  const invoices: SaleInvoice[] = [];
-  const seen = new Set<string>();
+  const invoiceMap = new Map<string, SaleInvoice>();
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
@@ -101,29 +110,40 @@ function parseSales(rows: any[]): SaleInvoice[] {
     const anno = parseInt(String(r[1]));
     const numero = parseInt(String(r[2]));
     const key = `${anno}-${numero}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
     const desc = String(r[13] || "");
-    invoices.push({
-      tipo: String(r[0]),
-      anno,
-      numero,
-      data: formatDate(r[4]),
-      cliente: String(r[6] || ""),
-      partitaIva: String(r[8] || ""),
-      totale: parseNumber(r[21]),
+    const riga: SaleInvoiceRiga = {
+      descrizione: desc,
       imponibile: parseNumber(r[22]),
       imposta: parseNumber(r[23]),
-      descrizione: desc,
+      totale: parseNumber(r[21]),
       cig: extractCIG(desc),
       cup: extractCUP(desc),
-      stato: String(r[44] || ""),
-      scadenza: String(r[9] || ""),
-      pagamento: String(r[10] || ""),
-    });
+    };
+
+    if (invoiceMap.has(key)) {
+      invoiceMap.get(key)!.righe.push(riga);
+    } else {
+      invoiceMap.set(key, {
+        tipo: String(r[0]),
+        anno,
+        numero,
+        data: formatDate(r[4]),
+        cliente: String(r[6] || ""),
+        partitaIva: String(r[8] || ""),
+        totale: parseNumber(r[21]),
+        imponibile: parseNumber(r[22]),
+        imposta: parseNumber(r[23]),
+        descrizione: desc,
+        cig: extractCIG(desc),
+        cup: extractCUP(desc),
+        stato: String(r[44] || ""),
+        scadenza: String(r[9] || ""),
+        pagamento: String(r[10] || ""),
+        righe: [riga],
+      });
+    }
   }
-  return invoices;
+  return Array.from(invoiceMap.values());
 }
 
 function parsePurchases(rows: any[]): PurchaseInvoice[] {
