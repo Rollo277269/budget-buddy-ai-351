@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { RitaAssistant } from "@/components/RitaAssistant";
 
 const pageTitles: Record<string, string> = {
   "/": "Riepilogo Economico-Finanziario",
