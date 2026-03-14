@@ -817,7 +817,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                 "Riepilogo Centri di Ricavo",
                 <ArrowUpRight className="h-3.5 w-3.5 text-income" />,
                 "Totale Ricavi", "text-income",
-                dragRicavoIdx, setDragRicavoIdx, setRicavoOrder
+                dragRicavoIdx, setDragRicavoIdx, setRicavoOrder, "centro-ricavo-order"
               )}
               {costoData.length > 0 && renderDraggableTable(
                 costoData, orderedCosto, totalCosti,
