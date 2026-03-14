@@ -742,13 +742,15 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           fromIdx: number,
           toIdx: number,
           setOrder: React.Dispatch<React.SetStateAction<string[] | null>>,
-          currentData: typeof ricavoData
+          currentData: typeof ricavoData,
+          storageKey: string
         ) => {
           setOrder((prev) => {
             const arr = prev || currentData.map((d) => d.name);
             const next = [...arr];
             const [moved] = next.splice(fromIdx, 1);
             next.splice(toIdx, 0, moved);
+            localStorage.setItem(storageKey, JSON.stringify(next));
             return next;
           });
         };
