@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { useSearchParams } from "react-router-dom";
 import {
   ResponsiveContainer,
   ComposedChart,
