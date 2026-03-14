@@ -565,6 +565,8 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
   const [fileNames, setFileNames] = useState<string[]>(loadFileNames);
   const [activeAccountId, setActiveAccountId] = useState<string>("default");
   const [pendingDuplicates, setPendingDuplicates] = useState<DuplicateInfo | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refreshAutoMatch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   const fingerprint = (m: RawMovement) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
 
