@@ -349,7 +349,7 @@ function getPageName(path: string): string {
     "/acquisti": "Acquisti",
     "/commesse": "Riepiloghi per CIG",
     "/lista-commesse": "Lista Commesse",
-    "/offerte": "Offerte",
+    "/offerte": "Cruscotto",
     "/schede-contabili": "Schede Contabili",
     "/bilancio": "Bilancio",
     "/scadenzario": "Scadenzario",
