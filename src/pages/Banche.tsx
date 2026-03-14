@@ -607,7 +607,25 @@ const BanchePage = () => {
 
       {movements.length > 0 && !isLoading && (
         <>
-          {/* Stats */}
+          {/* Year filter + Stats */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Tutti gli anni" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti gli anni</SelectItem>
+                {availableYears.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filterYear && filterYear !== "all" && (
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setFilterYear("")}>
+                Reset
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Movimenti</p><p className="text-xl font-bold">{stats.total}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Riconciliati</p><p className="text-xl font-bold text-income">{stats.matched}</p></CardContent></Card>
