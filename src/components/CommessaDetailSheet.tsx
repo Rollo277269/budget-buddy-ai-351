@@ -787,6 +787,7 @@ function InvoiceList({
         </Table>
       </div>
     </div>
+    </div>
   );
 }
 
