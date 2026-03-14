@@ -540,3 +540,37 @@ function CentroBreakdownCard({
     </div>
   );
 }
+
+/* ────────── PDF Centro table sub-component ────────── */
+
+function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg[]; total: number }) {
+  if (data.length === 0) return null;
+  return (
+    <div className="pdf-section">
+      <h2>{title}</h2>
+      <table className="pdf-table">
+        <thead>
+          <tr>
+            <th>Centro</th>
+            <th className="is-right">Importo</th>
+            <th className="is-right">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.codice}>
+              <td>{d.descrizione}</td>
+              <td className="is-right">{formatCurrency(d.importo)}</td>
+              <td className="is-right">{total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%</td>
+            </tr>
+          ))}
+          <tr className="pdf-table-total">
+            <td>TOTALE</td>
+            <td className="is-right">{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
+            <td className="is-right">100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
