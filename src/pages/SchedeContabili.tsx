@@ -182,6 +182,50 @@ function SchedaDetail({
         </div>
       </div>
 
+      {/* Grafico andamento saldo */}
+      {rows.length > 1 && (() => {
+        const chartData = rows.map((r) => ({
+          data: r.data,
+          Dare: Math.round(r.dare),
+          Avere: Math.round(r.avere),
+          Saldo: Math.round(r.saldo),
+        }));
+        return (
+          <div className="rounded-xl border bg-card p-5">
+            <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+              Andamento Saldo Progressivo
+            </h3>
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+                <XAxis dataKey="data" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                <YAxis
+                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 10 }}
+                  width={50}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value)}
+                  contentStyle={{ borderRadius: "0.5rem", border: "1px solid hsl(220 14% 89%)", fontSize: "0.75rem" }}
+                />
+                <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <Bar dataKey="Dare" fill="hsl(152 60% 36%)" radius={[3, 3, 0, 0]} barSize={14} />
+                <Bar dataKey="Avere" fill="hsl(0 72% 51%)" radius={[3, 3, 0, 0]} barSize={14} />
+                <Area
+                  type="monotone"
+                  dataKey="Saldo"
+                  stroke="hsl(210 80% 50%)"
+                  fill="hsl(210 80% 50% / 0.1)"
+                  strokeWidth={2}
+                  dot={{ r: 2.5 }}
+                  name="Saldo"
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      })()}
+
       <Separator />
 
       {/* Prima nota */}
