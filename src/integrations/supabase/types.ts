@@ -14,6 +14,197 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_movements: {
+        Row: {
+          account_id: string
+          causale: string
+          cig: string
+          created_at: string
+          data: string
+          data_valuta: string
+          descrizione: string
+          id: string
+          importo: number
+          saldo: number
+          source_file: string
+        }
+        Insert: {
+          account_id?: string
+          causale?: string
+          cig?: string
+          created_at?: string
+          data?: string
+          data_valuta?: string
+          descrizione?: string
+          id?: string
+          importo?: number
+          saldo?: number
+          source_file?: string
+        }
+        Update: {
+          account_id?: string
+          causale?: string
+          cig?: string
+          created_at?: string
+          data?: string
+          data_valuta?: string
+          descrizione?: string
+          id?: string
+          importo?: number
+          saldo?: number
+          source_file?: string
+        }
+        Relationships: []
+      }
+      bank_reconciliations: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_anno: number
+          invoice_numero: number
+          invoice_type: string
+          movement_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_anno: number
+          invoice_numero: number
+          invoice_type: string
+          movement_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_anno?: number
+          invoice_numero?: number
+          invoice_type?: string
+          movement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliations_movement_id_fkey"
+            columns: ["movement_id"]
+            isOneToOne: false
+            referencedRelation: "bank_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categorie_centri: {
+        Row: {
+          codice: string
+          created_at: string
+          descrizione: string
+          id: string
+          tipo: string
+        }
+        Insert: {
+          codice: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          tipo: string
+        }
+        Update: {
+          codice?: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      centri_cr: {
+        Row: {
+          categoria_id: string | null
+          codice: string
+          created_at: string
+          descrizione: string
+          id: string
+          note: string
+          parole_chiave_matching: string
+          tipo: string
+        }
+        Insert: {
+          categoria_id?: string | null
+          codice: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          note?: string
+          parole_chiave_matching?: string
+          tipo: string
+        }
+        Update: {
+          categoria_id?: string | null
+          codice?: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          note?: string
+          parole_chiave_matching?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      centro_assignments: {
+        Row: {
+          centro_codice: string
+          context: string
+          created_at: string
+          id: string
+          invoice_key: string
+          tipo: string
+        }
+        Insert: {
+          centro_codice: string
+          context: string
+          created_at?: string
+          id?: string
+          invoice_key: string
+          tipo: string
+        }
+        Update: {
+          centro_codice?: string
+          context?: string
+          created_at?: string
+          id?: string
+          invoice_key?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      conti_correnti: {
+        Row: {
+          banca: string
+          created_at: string
+          iban: string
+          id: string
+          intestatario: string
+          note: string
+          tipo: string
+        }
+        Insert: {
+          banca: string
+          created_at?: string
+          iban: string
+          id?: string
+          intestatario?: string
+          note?: string
+          tipo?: string
+        }
+        Update: {
+          banca?: string
+          created_at?: string
+          iban?: string
+          id?: string
+          intestatario?: string
+          note?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       documenti_acquisto: {
         Row: {
           ai_summary: string | null
@@ -103,6 +294,30 @@ export type Database = {
           numero?: number | null
           parsed_data?: Json | null
           storage_path?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      naming_rules: {
+        Row: {
+          created_at: string
+          esempio: string
+          id: string
+          pattern: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          esempio?: string
+          id?: string
+          pattern: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          esempio?: string
+          id?: string
+          pattern?: string
           tipo?: string
         }
         Relationships: []
