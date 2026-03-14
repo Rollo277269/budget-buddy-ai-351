@@ -305,8 +305,29 @@ const BanchePage = () => {
     return map;
   }, [rawMovements]);
 
-  const allIds = useMemo(() => movements.map(m => m.id), [movements]);
-  const allSelected = movements.length > 0 && selectedRows.size === movements.length;
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    for (const m of movements) {
+      const parts = m.data?.split("/");
+      if (parts && parts.length >= 3) {
+        const y = parseInt(parts[2], 10);
+        if (!isNaN(y)) years.add(y);
+      }
+    }
+    return Array.from(years).sort((a, b) => b - a);
+  }, [movements]);
+
+  const filteredMovements = useMemo(() => {
+    if (!filterYear) return movements;
+    return movements.filter((m) => {
+      const parts = m.data?.split("/");
+      if (parts && parts.length >= 3) return parts[2] === filterYear;
+      return false;
+    });
+  }, [movements, filterYear]);
+
+  const allIds = useMemo(() => filteredMovements.map(m => m.id), [filteredMovements]);
+  const allSelected = filteredMovements.length > 0 && selectedRows.size === filteredMovements.length;
   const someSelected = selectedRows.size > 0 && !allSelected;
 
   const columns: ColumnDef<BankMovement>[] = useMemo(() => [
