@@ -61,6 +61,7 @@ const AcquistiPage = () => {
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(purchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
     const parsed = await fetchParsedData(record.id);
