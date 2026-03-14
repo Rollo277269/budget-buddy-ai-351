@@ -463,10 +463,33 @@ function CentriCostoRicavoTab() {
     }
     const dup = centri.find((c) => c.codice === editCodice.toUpperCase() && c.id !== editingId);
     if (dup) { toast.error("Codice già esistente"); return; }
+    const old = centri.find((c) => c.id === editingId);
+    const oldCodice = old?.codice;
+    const newCodice = editCodice.toUpperCase();
     const updated = centri.map((c) =>
-      c.id === editingId ? { ...c, codice: editCodice.toUpperCase(), descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave } : c
+      c.id === editingId ? { ...c, codice: newCodice, descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave } : c
     );
-    setCentri(updated); saveCentriLocal(updated); setEditingId(null);
+    setCentri(updated); saveCentriLocal(updated);
+    // Update centro maps if codice changed
+    if (oldCodice && oldCodice !== newCodice) {
+      const mapKeys = [
+        "centro-map-costo-vendite", "centro-map-costo-acquisti",
+        "centro-map-ricavo-vendite", "centro-map-ricavo-acquisti",
+      ];
+      mapKeys.forEach((mk) => {
+        try {
+          const raw = localStorage.getItem(mk);
+          if (!raw) return;
+          const map: Record<string, string> = JSON.parse(raw);
+          let changed = false;
+          Object.keys(map).forEach((k) => {
+            if (map[k] === oldCodice) { map[k] = newCodice; changed = true; }
+          });
+          if (changed) localStorage.setItem(mk, JSON.stringify(map));
+        } catch {}
+      });
+    }
+    setEditingId(null);
     toast.success("Voce aggiornata");
   };
 
