@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInvoiceData, SaleInvoice } from "@/hooks/useInvoiceData";
+import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CentroCell } from "@/components/CentroCell";
@@ -30,8 +31,9 @@ function StatusBadge({ stato }: { stato: string }) {
 
 const VenditePage = () => {
   const navigate = useNavigate();
-  const { sales, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const { sales, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
+  const [selectedCliente, setSelectedCliente] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "vendite");
@@ -149,7 +151,7 @@ const VenditePage = () => {
     () => [
       { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
       { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
-      { key: "cliente", label: "Cliente", render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.cliente}</span>, sortable: true, filterable: true },
+      { key: "cliente", label: "Cliente", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedCliente(r.cliente); }}>{r.cliente}</span>, sortable: true, filterable: true },
       { key: "cig", label: "CIG", render: (r) => r.cig ? (
         <span
           className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
@@ -308,6 +310,7 @@ const VenditePage = () => {
         />
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={sales} xmlMap={xmlMap} tipo="vendita" onManualMatch={manualMatch} />
+        <SchedaSoggettoSheet tipo="cliente" nome={selectedCliente} allSales={allSales} allPurchases={allPurchases} open={!!selectedCliente} onOpenChange={(open) => !open && setSelectedCliente(null)} />
       </div>
 
       {/* PDF side panel */}

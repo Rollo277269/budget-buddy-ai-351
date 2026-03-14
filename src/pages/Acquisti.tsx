@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInvoiceData, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CentroCell } from "@/components/CentroCell";
@@ -31,8 +32,9 @@ function StatusBadge({ stato }: {stato: string;}) {
 
 const AcquistiPage = () => {
   const navigate = useNavigate();
-  const { purchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const { purchases, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
+  const [selectedFornitore, setSelectedFornitore] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const costoMap = useCentroMap("costo", "acquisti");
   const ricavoMap = useCentroMap("ricavo", "acquisti");
@@ -152,7 +154,7 @@ const AcquistiPage = () => {
     () => [
     { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
     { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
-    { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block">{r.fornitore}</span>, sortable: true, filterable: true },
+    { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
     { key: "cig", label: "CIG", render: (r) => r.cig ?
       <span
         className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
@@ -326,6 +328,7 @@ const AcquistiPage = () => {
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={purchases} xmlMap={xmlMap} tipo="acquisto" onManualMatch={manualMatch} />
+        <SchedaSoggettoSheet tipo="fornitore" nome={selectedFornitore} allSales={allSales} allPurchases={allPurchases} open={!!selectedFornitore} onOpenChange={(open) => !open && setSelectedFornitore(null)} />
       </div>
 
       {/* PDF side panel */}
