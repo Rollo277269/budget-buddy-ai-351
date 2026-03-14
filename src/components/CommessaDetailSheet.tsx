@@ -485,7 +485,7 @@ export function CommessaDetailSheet({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Fatture di Acquisto ({data.linkedPurchases.length})</h3>
                 <Button
-                  variant="outline" size="sm" className="text-xs h-7"
+                  variant="outline" size="sm" className="text-xs h-7 no-print"
                   onClick={() => { setAddMode(addMode === "acquisto" ? null : "acquisto"); setSearchQuery(""); }}
                 >
                   <Plus className="h-3 w-3 mr-1" />Associa manualmente
