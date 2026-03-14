@@ -45,7 +45,7 @@ const VenditePage = () => {
   const dragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData } = useXmlInvoices(sales, "vendita");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData, findXml, hasXml } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
@@ -164,10 +164,10 @@ const VenditePage = () => {
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       {
         key: "xml", label: "XML", filterable: true,
-        filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
         render: (r) => {
           const k = `${r.anno}-${r.numero}`;
-          const xml = xmlMap.get(k);
+          const xml = findXml(k, r.cliente);
           if (xml) return (
             <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
@@ -178,9 +178,9 @@ const VenditePage = () => {
       },
       {
         key: "pdf", label: "PDF", filterable: true,
-        filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
         render: (r) => {
-          const xml = xmlMap.get(`${r.anno}-${r.numero}`);
+          const xml = findXml(`${r.anno}-${r.numero}`, r.cliente);
           if (xml) {
             return (
               <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
@@ -203,7 +203,7 @@ const VenditePage = () => {
       { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[250px] truncate block">{r.descrizione || "—"}</span>, defaultHidden: true },
       { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true },
     ],
-    [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, xmlMap, navigate, openXmlSheet, openPdf]
+    [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf]
   );
 
   if (loading) {
@@ -306,7 +306,7 @@ const VenditePage = () => {
           data={sales}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
-          rowClassName={(r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+          rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
         />
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={sales} xmlMap={xmlMap} tipo="vendita" onManualMatch={manualMatch} />
