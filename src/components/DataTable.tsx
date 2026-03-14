@@ -294,8 +294,9 @@ export function DataTable<T extends Record<string, any>>({
         onScroll={useVirtual ? handleScroll : undefined}
       >
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-card">
+           <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow className="shadow-[0_2px_0_0_hsl(var(--border))] border-b-2 border-border">
+              {expandable && <TableHead className="w-8 text-xs" />}
               {activeColumns.map((col) => (
                 <TableHead
                   key={col.key}
