@@ -49,7 +49,7 @@ function useFullscreen() {
 
 export function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
-  const title = pageTitles[location.pathname] || "Schede contabili";
+  const title = pageTitles[location.pathname] || "Bilancio";
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
 
