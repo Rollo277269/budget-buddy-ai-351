@@ -115,18 +115,23 @@
     print-color-adjust: exact;
   }
 
-  body.print-report #root {
+  body.print-report-dialog #root {
     display: none !important;
   }
 
-  body.print-report .dialog-overlay,
   body.print-report .no-print,
-  body.print-report .screen-report,
-  body.print-report [role="dialog"] > :not(.pdf-report) {
+  body.print-report .screen-report {
     display: none !important;
   }
 
-  body.print-report [role="dialog"] {
+  body.print-report-dialog .dialog-overlay,
+  body.print-report-dialog .no-print,
+  body.print-report-dialog .screen-report,
+  body.print-report-dialog [role="dialog"] > :not(.pdf-report) {
+    display: none !important;
+  }
+
+  body.print-report-dialog [role="dialog"] {
     position: static !important;
     inset: auto !important;
     transform: none !important;
@@ -497,12 +502,21 @@
   }
 
   /* ── Scheda page print: hide main UI, show report div ── */
-  body.print-report .scheda-screen-content {
+  body.print-report .scheda-screen-content,
+  body.print-report [data-sidebar],
+  body.print-report header,
+  body.print-report [role="tablist"],
+  body.print-report .no-print {
     display: none !important;
   }
 
   body.print-report .scheda-pdf-report {
     display: block !important;
+  }
+
+  body.print-report main {
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   @page {

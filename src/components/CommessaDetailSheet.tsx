@@ -275,10 +275,10 @@ export function CommessaDetailSheet({
   const marginePrint = totalRicaviPrint > 0 ? (saldoPrint / totalRicaviPrint) * 100 : 0;
 
   const handleExportPdf = () => {
-    document.body.classList.add("print-report");
+    document.body.classList.add("print-report", "print-report-dialog");
 
     const cleanup = () => {
-      document.body.classList.remove("print-report");
+      document.body.classList.remove("print-report", "print-report-dialog");
       window.removeEventListener("afterprint", cleanup);
     };
 
