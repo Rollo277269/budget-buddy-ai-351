@@ -39,20 +39,32 @@ export interface Reconciliation {
   invoiceNumero: number;
 }
 
-const STORAGE_KEY = "bank-reconciliations";
-const MOVEMENTS_KEY = "bank-movements";
-const FILES_KEY = "bank-file-names";
-
-function loadReconciliations(): Reconciliation[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
+async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
+  const { data, error } = await supabase
+    .from("bank_reconciliations" as any)
+    .select("*");
+  if (error) { console.error("Error loading reconciliations:", error); return []; }
+  return (data as any[] || []).map((d: any) => ({
+    movementId: d.movement_id,
+    invoiceType: d.invoice_type,
+    invoiceAnno: d.invoice_anno,
+    invoiceNumero: d.invoice_numero,
+  }));
 }
 
-function saveReconciliations(recs: Reconciliation[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(recs));
+async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string) {
+  await supabase.from("bank_reconciliations" as any).insert({
+    movement_id: movementDbId,
+    invoice_type: rec.invoiceType,
+    invoice_anno: rec.invoiceAnno,
+    invoice_numero: rec.invoiceNumero,
+  } as any);
+}
+
+async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: string) {
+  let query = supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId);
+  // If invoiceKey provided, we'd need to parse it, but for now delete all for this movement
+  await query;
 }
 
 function extractCIG(text: string): string {
