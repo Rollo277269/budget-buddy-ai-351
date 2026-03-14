@@ -443,7 +443,7 @@ function CentroTableCard({ id, title, data, total, accentClass }: {
       {data.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto flex-1 flex flex-col">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20">
