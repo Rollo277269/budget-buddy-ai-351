@@ -46,6 +46,11 @@ const AcquistiPage = () => {
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
 
+  const displayedPurchases = useMemo(() => {
+    if (!filters.centroCosto) return purchases;
+    return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
+  }, [purchases, filters.centroCosto, costoMap.map]);
+
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(purchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
