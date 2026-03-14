@@ -25,7 +25,7 @@ import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -607,6 +607,19 @@ function InvoiceList({
   const [sortAsc, setSortAsc] = useState(true);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const [showColPicker, setShowColPicker] = useState(false);
+
+  const allColumns = [
+    { key: "numero_display", label: "N°", filterable: true },
+    { key: "data", label: "Data", filterable: true },
+    { key: "counterpart", label: type === "vendita" ? "Cliente" : "Fornitore", filterable: true },
+    { key: "descrizione", label: "Descrizione", filterable: true },
+    { key: "stato", label: "Stato", filterable: true },
+    { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
+    { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
+    { key: "totale", label: "Totale", filterable: false, align: "right" as const },
+  ];
 
   if (invoices.length === 0) {
     return <p className="text-xs text-muted-foreground py-4 text-center">Nessuna fattura collegata</p>;
@@ -623,6 +636,14 @@ function InvoiceList({
 
   const toggleFilter = (key: string) => {
     setActiveFilter(activeFilter === key ? null : key);
+  };
+
+  const toggleCol = (key: string) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
   };
 
   const getVal = (inv: SaleInvoice | PurchaseInvoice, key: string): string | number => {
@@ -655,24 +676,37 @@ function InvoiceList({
     return sortAsc ? cmp : -cmp;
   });
 
-  const columns = [
-    { key: "numero_display", label: "N°", filterable: true },
-    { key: "data", label: "Data", filterable: true },
-    { key: "counterpart", label: type === "vendita" ? "Cliente" : "Fornitore", filterable: true },
-    { key: "descrizione", label: "Descrizione", filterable: true },
-    { key: "stato", label: "Stato", filterable: true },
-    { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
-    { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
-    { key: "totale", label: "Totale", filterable: false, align: "right" as const },
-  ];
+  const visibleColumns = allColumns.filter((c) => !hiddenCols.has(c.key));
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
+    <div className="space-y-2">
+      {/* Column visibility toggle */}
+      <div className="flex justify-end relative">
+        <Button variant="outline" size="sm" className="text-xs h-7 gap-1.5" onClick={() => setShowColPicker(!showColPicker)}>
+          <SlidersHorizontal className="h-3 w-3" />Colonne
+        </Button>
+        {showColPicker && (
+          <div className="absolute right-0 top-8 z-20 rounded-lg border bg-popover shadow-md p-2 space-y-1 min-w-[160px]">
+            {allColumns.map((col) => (
+              <button
+                key={col.key}
+                className="flex items-center gap-2 w-full text-xs px-2 py-1.5 rounded hover:bg-muted transition-colors"
+                onClick={() => toggleCol(col.key)}
+              >
+                {hiddenCols.has(col.key) ? <EyeOff className="h-3 w-3 text-muted-foreground" /> : <Eye className="h-3 w-3 text-primary" />}
+                <span className={hiddenCols.has(col.key) ? "text-muted-foreground" : ""}>{col.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border bg-card overflow-hidden">
       <div className="max-h-[400px] overflow-auto">
         <Table>
           <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
-              {columns.map((col) => (
+              {visibleColumns.map((col) => (
                 <TableHead key={col.key} className={`text-xs ${col.align === "right" ? "text-right" : ""}`}>
                   <div className="space-y-1">
                     <button
@@ -719,20 +753,20 @@ function InvoiceList({
                 ? (inv as SaleInvoice).cliente
                 : (inv as PurchaseInvoice).fornitore;
 
+              const cellMap: Record<string, React.ReactNode> = {
+                numero_display: <TableCell key="n" className="font-mono text-xs">{inv.numero}/{inv.anno}</TableCell>,
+                data: <TableCell key="d" className="text-xs">{inv.data}</TableCell>,
+                counterpart: <TableCell key="c" className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>,
+                descrizione: <TableCell key="desc" className="text-xs max-w-[200px] truncate" title={inv.descrizione}>{inv.descrizione || "—"}</TableCell>,
+                stato: <TableCell key="s"><Badge variant={inv.stato?.toLowerCase().includes("pagat") || inv.stato?.toLowerCase().includes("incass") ? "secondary" : "outline"} className="text-[9px]">{inv.stato || "—"}</Badge></TableCell>,
+                imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
+                imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
+                totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
+              };
+
               return (
                 <TableRow key={key}>
-                  <TableCell className="font-mono text-xs">{inv.numero}/{inv.anno}</TableCell>
-                  <TableCell className="text-xs">{inv.data}</TableCell>
-                  <TableCell className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>
-                  <TableCell className="text-xs max-w-[200px] truncate" title={inv.descrizione}>{inv.descrizione || "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant={inv.stato?.toLowerCase().includes("pagat") || inv.stato?.toLowerCase().includes("incass") ? "secondary" : "outline"} className="text-[9px]">
-                      {inv.stato || "—"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>
-                  <TableCell className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>
-                  <TableCell className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>
+                  {visibleColumns.map((col) => cellMap[col.key])}
                   <TableCell>
                     <Badge variant={isAuto ? "secondary" : "outline"} className="text-[9px]">
                       {isAuto ? (<><Link2 className="h-2.5 w-2.5 mr-0.5" />CIG</>) : (<><Link2Off className="h-2.5 w-2.5 mr-0.5" />Man.</>)}
@@ -752,6 +786,7 @@ function InvoiceList({
           </TableBody>
         </Table>
       </div>
+    </div>
     </div>
   );
 }
