@@ -373,99 +373,134 @@ export default function BilancioPage() {
   );
 }
 
-/* ────────── Centro breakdown sub-component ────────── */
+/* ────────── Side-by-side draggable centro tables ────────── */
 
-function CentroBreakdownCard({
-  title,
-  data,
-  colors,
-  total,
-  emptyMessage,
+const BILANCIO_ORDER_KEY = "bilancio-centri-order";
+
+function loadOrder(): ["ricavi", "costi"] | ["costi", "ricavi"] {
+  try {
+    const v = JSON.parse(localStorage.getItem(BILANCIO_ORDER_KEY) || "null");
+    if (Array.isArray(v) && v.length === 2) return v as any;
+  } catch {}
+  return ["ricavi", "costi"];
+}
+
+function CentriSideBySide({
+  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti,
 }: {
-  title: string;
-  data: CentroAgg[];
-  colors: string[];
-  total: number;
-  emptyMessage: string;
+  ricavoBreakdown: CentroAgg[]; costoBreakdown: CentroAgg[];
+  totalRicavi: number; totalCosti: number;
 }) {
-  if (data.length === 0) {
-    return (
-      <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground text-sm">
-        {emptyMessage}
-      </div>
-    );
-  }
+  const [order, setOrder] = useState(loadOrder);
+  const [dragging, setDragging] = useState<string | null>(null);
 
-  const pieData = data.map((d, i) => ({
-    name: d.descrizione,
-    value: d.importo,
-    fill: colors[i % colors.length],
-  }));
+  const handleDragStart = (id: string) => (e: React.DragEvent) => {
+    setDragging(id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDrop = (targetId: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragging && dragging !== targetId) {
+      const next: ["ricavi", "costi"] | ["costi", "ricavi"] =
+        order[0] === targetId ? order : ([...order].reverse() as any);
+      const swapped = [next[1], next[0]] as typeof next;
+      setOrder(swapped);
+      localStorage.setItem(BILANCIO_ORDER_KEY, JSON.stringify(swapped));
+    }
+    setDragging(null);
+  };
+
+  const panels: Record<string, React.ReactNode> = {
+    ricavi: (
+      <CentroTableCard
+        key="ricavi"
+        id="ricavi"
+        title="Centri di Ricavo"
+        data={ricavoBreakdown}
+        total={totalRicavi}
+        accentClass="text-income"
+        onDragStart={handleDragStart("ricavi")}
+        onDrop={handleDrop("ricavi")}
+        isDragging={dragging === "ricavi"}
+      />
+    ),
+    costi: (
+      <CentroTableCard
+        key="costi"
+        id="costi"
+        title="Centri di Costo"
+        data={costoBreakdown}
+        total={totalCosti}
+        accentClass="text-expense"
+        onDragStart={handleDragStart("costi")}
+        onDrop={handleDrop("costi")}
+        isDragging={dragging === "costi"}
+      />
+    ),
+  };
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
-      <div className="p-4 border-b border-border bg-muted/30">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {order.map((id) => panels[id])}
+    </div>
+  );
+}
+
+function CentroTableCard({
+  id, title, data, total, accentClass,
+  onDragStart, onDrop, isDragging,
+}: {
+  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string;
+  onDragStart: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  isDragging: boolean;
+}) {
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+      className={`rounded-xl border bg-card overflow-hidden transition-opacity ${isDragging ? "opacity-50" : ""}`}
+    >
+      <div className="p-3 border-b border-border bg-muted/30 flex items-center gap-2 cursor-grab active:cursor-grabbing">
+        <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-        {/* Pie chart */}
-        <div className="p-4 flex items-center justify-center">
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                innerRadius={50}
-                paddingAngle={2}
-                label={({ name, percent }) => `${name.substring(0, 16)}${name.length > 16 ? "…" : ""} ${(percent * 100).toFixed(0)}%`}
-                labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 0.5 }}
-                style={{ fontSize: 10 }}
-              >
-                {pieData.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Tooltip formatter={tooltipFormatter} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Table */}
-        <div className="border-l border-border overflow-x-auto">
+      {data.length === 0 ? (
+        <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div>
+      ) : (
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20">
-                <th className="text-left px-4 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro</th>
-                <th className="text-right px-4 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
-                <th className="text-right px-4 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">%</th>
+                <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro</th>
+                <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
+                <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">%</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((d, i) => (
+              {data.map((d) => (
                 <tr key={d.codice} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="px-4 py-2 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: colors[i % colors.length] }} />
-                    <span className="text-xs font-medium truncate">{d.descrizione}</span>
-                  </td>
-                  <td className="px-4 py-2 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
-                  <td className="px-4 py-2 text-right font-mono text-xs text-muted-foreground">
+                  <td className="px-3 py-1.5 text-xs font-medium truncate max-w-[200px]">{d.descrizione}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
                     {total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%
                   </td>
                 </tr>
               ))}
-              <tr className="bg-muted/40 font-semibold">
-                <td className="px-4 py-2 text-xs">TOTALE</td>
-                <td className="px-4 py-2 text-right font-mono text-xs">{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
-                <td className="px-4 py-2 text-right font-mono text-xs">100%</td>
-              </tr>
             </tbody>
+            <tfoot>
+              <tr className="bg-muted/40 font-semibold">
+                <td className="px-3 py-2 text-xs">TOTALE</td>
+                <td className={`px-3 py-2 text-right font-mono text-xs ${accentClass}`}>{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
+                <td className="px-3 py-2 text-right font-mono text-xs">100%</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-      </div>
+      )}
     </div>
   );
 }
