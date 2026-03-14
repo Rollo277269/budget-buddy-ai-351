@@ -146,8 +146,19 @@ export function DataTable<T extends Record<string, any>>({
     }
   };
 
+  const globalFiltered = useMemo(() => {
+    if (!globalSearch) return data;
+    const lower = globalSearch.toLowerCase();
+    return data.filter((row) => {
+      return columns.some((col) => {
+        const cellVal = col.filterValue ? col.filterValue(row) : String(row[col.key] ?? "");
+        return cellVal.toLowerCase().includes(lower);
+      });
+    });
+  }, [data, globalSearch, columns]);
+
   const filtered = useMemo(() => {
-    let result = data;
+    let result = globalFiltered;
     for (const [key, val] of Object.entries(columnFilters)) {
       if (val) {
         const lower = val.toLowerCase();
@@ -159,7 +170,7 @@ export function DataTable<T extends Record<string, any>>({
       }
     }
     return result;
-  }, [data, columnFilters, columns]);
+  }, [globalFiltered, columnFilters, columns]);
 
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return filtered;
