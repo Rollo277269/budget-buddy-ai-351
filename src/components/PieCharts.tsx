@@ -141,7 +141,7 @@ const COLORS_CENTRI = [
   "hsl(0 50% 50%)",
 ];
 
-export function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
+export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
   const data = useMemo(() => {
     const centri = loadCentri().filter((c) => c.tipo === "ricavo");
     if (centri.length === 0) return [];
