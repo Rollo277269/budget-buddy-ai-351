@@ -405,6 +405,15 @@ export function CommessaDetailSheet({
                 />
               </div>
 
+              {/* Centro Ricavo / Costo breakdown */}
+              <CentroBreakdownCharts
+                linkedSales={data.linkedSales}
+                linkedPurchases={data.linkedPurchases}
+                ricavoMap={ricavoMap.map}
+                costoMap={costoMap.map}
+                centri={centri}
+              />
+
               {/* Contract progress if available */}
               {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
                 <div className="rounded-xl border bg-card p-5 space-y-3">
