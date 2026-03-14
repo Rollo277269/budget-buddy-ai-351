@@ -618,6 +618,8 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   costoMap: Record<string, string>;
   centri: CentroCR[];
 }) {
+  const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
+
   const centroLookup = useMemo(() => {
     const m = new Map<string, string>();
     centri.forEach((c) => m.set(c.codice, c.descrizione));
@@ -650,50 +652,54 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
 
   if (ricavoData.length === 0 && costoData.length === 0) return null;
 
+  // Shared scale: max value across both datasets
+  const maxValue = Math.max(
+    ...ricavoData.map((d) => d.value),
+    ...costoData.map((d) => d.value),
+    0
+  );
+
+  const isVertical = layout === "vertical";
+
+  const renderChart = (data: { name: string; value: string | number }[], title: string, colors: string[]) => {
+    const chartHeight = Math.max(data.length * 36, 120);
+    return (
+      <div className="rounded-xl border bg-card p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+          <PieChart className="h-4 w-4 text-muted-foreground" />
+          {title}
+        </h3>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={data} layout="vertical" margin={{ left: 10, right: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} horizontal={false} />
+            <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={[0, maxValue * 1.05]} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={140} />
+            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+            <Bar dataKey="value" name={title} radius={[0, 4, 4, 0]}>
+              {data.map((_, i) => (
+                <Cell key={i} fill={colors[i % colors.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {ricavoData.length > 0 && (
-        <div className="rounded-xl border bg-card p-5">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-            Centri di Ricavo
-          </h3>
-          <ResponsiveContainer width="100%" height={Math.max(ricavoData.length * 36, 120)}>
-            <BarChart data={ricavoData} layout="vertical" margin={{ left: 10, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={140} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              <Bar dataKey="value" name="Ricavo" radius={[0, 4, 4, 0]}>
-                {ricavoData.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-      {costoData.length > 0 && (
-        <div className="rounded-xl border bg-card p-5">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-            Centri di Costo
-          </h3>
-          <ResponsiveContainer width="100%" height={Math.max(costoData.length * 36, 120)}>
-            <BarChart data={costoData} layout="vertical" margin={{ left: 10, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={140} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              <Bar dataKey="value" name="Costo" radius={[0, 4, 4, 0]}>
-                {costoData.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button
+          variant="outline" size="sm" className="text-xs h-7 gap-1.5"
+          onClick={() => setLayout(isVertical ? "horizontal" : "vertical")}
+        >
+          {isVertical ? "⬌ Affiancati" : "⬍ Sovrapposti"}
+        </Button>
+      </div>
+      <div className={isVertical ? "space-y-4" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
+        {ricavoData.length > 0 && renderChart(ricavoData, "Centri di Ricavo", CHART_COLORS)}
+        {costoData.length > 0 && renderChart(costoData, "Centri di Costo", CHART_COLORS.slice(3))}
+      </div>
     </div>
   );
 }
