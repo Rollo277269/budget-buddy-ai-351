@@ -376,6 +376,16 @@ const VenditePage = () => {
         />
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={sales} xmlMap={xmlMap} tipo="vendita" onManualMatch={manualMatch} />
+        <XmlPickerSheet
+          open={!!xmlPickerInvoice}
+          onOpenChange={(open) => !open && setXmlPickerInvoice(null)}
+          xmlRecords={xmlRecords}
+          invoiceAnno={xmlPickerInvoice?.anno || 0}
+          invoiceNumero={xmlPickerInvoice?.numero || 0}
+          invoiceName={xmlPickerInvoice?.cliente || ""}
+          invoiceTotale={xmlPickerInvoice?.totale || 0}
+          onMatch={manualMatch}
+        />
         <SchedaSoggettoSheet tipo="cliente" nome={selectedCliente} allSales={allSales} allPurchases={allPurchases} open={!!selectedCliente} onOpenChange={(open) => !open && setSelectedCliente(null)} />
       </div>
 
