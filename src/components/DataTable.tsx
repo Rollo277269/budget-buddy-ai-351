@@ -194,7 +194,7 @@ export function DataTable<T extends Record<string, any>>({
       .map((key) => colMap.get(key)!);
   }, [columns, columnOrder, visibleColumns]);
 
-  const hasActiveFilters = Object.values(columnFilters).some(Boolean);
+  const hasActiveFilters = Object.values(columnFilters).some(Boolean) || !!globalSearch;
 
   const isReordered = useMemo(() => {
     const defaultOrder = columns.map((c) => c.key);
