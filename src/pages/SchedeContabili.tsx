@@ -421,6 +421,8 @@ function SchedaDetail({
         )}
       </div>
     </div>
+    <PdfReport tipo={tipo} nome={nome} rows={rows} stats={stats} />
+    </>
   );
 }
 
