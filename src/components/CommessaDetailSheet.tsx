@@ -685,8 +685,8 @@ function InvoiceList({
     if (key === "imponibile") return inv.imponibile || 0;
     if (key === "imposta") return inv.imposta || 0;
     if (key === "totale") return inv.totale || 0;
+    if (key === "centro") return centroMap[`${inv.anno}-${inv.numero}`] || "";
     return "";
-  };
 
   const filtered = invoices.filter((inv) => {
     return Object.entries(filters).every(([key, filterVal]) => {
