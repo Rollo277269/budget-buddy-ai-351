@@ -389,11 +389,11 @@ export function CommessaDetailSheet({
             {/* ── TAB: Analisi ── */}
             <TabsContent value="analisi" className="space-y-6">
               {/* Monthly chart */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2 rounded-xl border bg-card p-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded-xl border bg-card p-5">
                   <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    Andamento Mensile
+                    Andamento mensile Vendite/Acquisti
                   </h3>
                   {data.monthlyData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
@@ -413,35 +413,26 @@ export function CommessaDetailSheet({
                   )}
                 </div>
 
-                {/* Supplier breakdown */}
                 <div className="rounded-xl border bg-card p-5">
                   <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <PieChart className="h-4 w-4 text-muted-foreground" />
-                    Fornitori
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    Andamento mensile Incassi/Pagamenti
                   </h3>
-                  {data.supplierData.length > 0 ? (
+                  {data.monthlyData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
-                      <RechartsPie>
-                        <Pie
-                          data={data.supplierData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={90}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          labelLine={false}
-                          fontSize={10}
-                        >
-                          {data.supplierData.map((_, i) => (
-                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                          ))}
-                        </Pie>
+                      <ComposedChart data={data.monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                         <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                      </RechartsPie>
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Bar dataKey="incassato" name="Incassato" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="pagato" name="Pagato" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                        <Line type="monotone" dataKey="saldoCassa" name="Saldo Cassa" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                      </ComposedChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-12">Nessun fornitore</p>
+                    <p className="text-sm text-muted-foreground text-center py-12">Nessun dato mensile disponibile</p>
                   )}
                 </div>
               </div>
