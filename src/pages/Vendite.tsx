@@ -1,5 +1,5 @@
-import { useMemo, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useInvoiceData, SaleInvoice } from "@/hooks/useInvoiceData";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
@@ -31,7 +31,14 @@ function StatusBadge({ stato }: { stato: string }) {
 
 const VenditePage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { sales, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+
+  // Read centroRicavo from URL on mount
+  useEffect(() => {
+    const cr = searchParams.get("centroRicavo");
+    if (cr) setFilters((f) => ({ ...f, centroRicavo: cr }));
+  }, [searchParams, setFilters]);
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
   const [selectedCliente, setSelectedCliente] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
@@ -44,6 +51,11 @@ const VenditePage = () => {
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
+
+  const displayedSales = useMemo(() => {
+    if (!filters.centroRicavo) return sales;
+    return sales.filter((s) => ricavoMap.map[`${s.anno}-${s.numero}`] === filters.centroRicavo);
+  }, [sales, filters.centroRicavo, ricavoMap.map]);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData, findXml, hasXml } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
@@ -245,7 +257,7 @@ const VenditePage = () => {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <p className="text-sm text-muted-foreground">
-              {sales.length} fatture trovate
+              {displayedSales.length} fatture trovate
               {xmlRecords.length > 0 && (
                 <span className="ml-2">
                   · <FileText className="inline h-3 w-3 mb-0.5" /> {xmlMatchedCount} XML associati
@@ -300,10 +312,15 @@ const VenditePage = () => {
           </div>
         )}
 
-        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideFornitore />
+        <FilterBar filters={filters} onFiltersChange={setFilters} options={{
+          ...filterOptions,
+          centriRicavo: centriRicavo
+            .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
+        }} hideFornitore />
         <DataTable<SaleInvoice>
           columns={columns}
-          data={sales}
+          data={displayedSales}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
           rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}

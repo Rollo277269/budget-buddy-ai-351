@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, loadCentri } from "@/hooks/useCentri";
 import { StatCard } from "@/components/StatCard";
@@ -79,6 +80,7 @@ const tooltipFormatter = (val: number) => formatCurrency(val);
 /* ────────── component ────────── */
 
 export default function BilancioPage() {
+  const navigate = useNavigate();
   const { allSales, allPurchases, loading, filterOptions } = useInvoiceData();
   const { centri } = useCentriData();
   const [selectedAnno, setSelectedAnno] = useState<string>("all");
@@ -248,6 +250,11 @@ export default function BilancioPage() {
         costoBreakdown={costoBreakdown}
         totalRicavi={globalKpis.ricavi}
         totalCosti={globalKpis.costi}
+        onRowClick={(codice, tipo) => {
+          if (codice === "__unassigned__") return;
+          if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}`);
+          else navigate(`/acquisti?centroCosto=${encodeURIComponent(codice)}`);
+        }}
       />
 
       {/* ── Hidden PDF Report ── */}
@@ -391,22 +398,23 @@ function saveRowOrder(id: string, order: string[]) {
 }
 
 function CentriSideBySide({
-  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti,
+  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti, onRowClick,
 }: {
   ricavoBreakdown: CentroAgg[]; costoBreakdown: CentroAgg[];
   totalRicavi: number; totalCosti: number;
+  onRowClick?: (codice: string, tipo: "ricavo" | "costo") => void;
 }) {
   const maxRows = Math.max(ricavoBreakdown.length, costoBreakdown.length);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} />
-      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} />
+      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "ricavo") : undefined} />
+      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "costo") : undefined} />
     </div>
   );
 }
 
-function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
-  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string; minRows?: number;
+function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onRowClick }: {
+  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string; minRows?: number; onRowClick?: (codice: string) => void;
 }) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -478,15 +486,18 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
                   onDragOver={handleDragOver(i)}
                   onDrop={handleDrop(i)}
                   onDragEnd={handleDragEnd}
+                  onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
                   className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-grab active:cursor-grabbing ${
                     dragIdx === i ? "opacity-40" : ""
-                  } ${overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""}`}
+                  } ${overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""} ${
+                    onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""
+                  }`}
                 >
                   <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
                     <GripVertical className="h-3.5 w-3.5" />
                   </td>
                   <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{d.codice === "__unassigned__" ? "—" : d.codice}</td>
-                  <td className="px-3 py-1.5 text-xs font-medium truncate max-w-[200px]">{d.descrizione}</td>
+                  <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[200px] ${onRowClick && d.codice !== "__unassigned__" ? "text-primary underline decoration-dotted" : ""}`}>{d.descrizione}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
                     {total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%
