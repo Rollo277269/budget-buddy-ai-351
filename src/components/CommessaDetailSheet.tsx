@@ -255,7 +255,6 @@ export function CommessaDetailSheet({
 
     window.addEventListener("afterprint", cleanup);
     window.print();
-    window.setTimeout(cleanup, 1200);
   };
 
   return (
