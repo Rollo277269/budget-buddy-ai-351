@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
 
 const pageTitles: Record<string, string> = {
-  "/": "Riepilogo Economico-Finanziario",
+  "/": "Schede contabili",
   "/scadenzario": "Scadenzario",
   "/vendite": "Vendite",
   "/acquisti": "Acquisti",
@@ -49,7 +49,7 @@ function useFullscreen() {
 
 export function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
-  const title = pageTitles[location.pathname] || "Riepilogo Economico-Finanziario";
+  const title = pageTitles[location.pathname] || "Schede contabili";
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
 
