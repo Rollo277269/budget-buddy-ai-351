@@ -143,14 +143,22 @@ const COLORS_CENTRI = [
 ];
 
 export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
-  const data = useMemo(() => {
-    const centri = loadCentri().filter((c) => c.tipo === "ricavo");
-    if (centri.length === 0) return [];
+  const [centri, setCentri] = useState<CentroCR[]>([]);
+  const [mapRaw, setMapRaw] = useState<Record<string, string>>({});
 
-    let mapRaw: Record<string, string> = {};
-    try {
-      mapRaw = JSON.parse(localStorage.getItem("centro-map-ricavo-vendite") || "{}");
-    } catch {}
+  useEffect(() => {
+    fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.from("centro_assignments" as any).select("invoice_key, centro_codice").eq("tipo", "ricavo").eq("context", "vendite").then(({ data }) => {
+        const m: Record<string, string> = {};
+        for (const d of (data as any[] || [])) m[d.invoice_key] = d.centro_codice;
+        setMapRaw(m);
+      });
+    });
+  }, []);
+
+  const data = useMemo(() => {
+    if (centri.length === 0) return [];
 
     const totals: Record<string, number> = {};
     let nonClassificato = 0;
@@ -176,7 +184,7 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
     }
 
     return sorted;
-  }, [sales]);
+  }, [sales, centri, mapRaw]);
 
   if (data.length === 0) {
     return (
