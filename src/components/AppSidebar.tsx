@@ -1,4 +1,4 @@
-import { LayoutDashboard, CalendarClock, FileText, ShoppingCart, Landmark, FolderKanban, ClipboardList, Settings, Send, BookOpen } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileText, ShoppingCart, Landmark, FolderKanban, ClipboardList, Settings, Send, BookOpen, PieChart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -17,6 +17,7 @@ const items = [
   { title: "Vendite", url: "/vendite", icon: FileText },
   { title: "Acquisti", url: "/acquisti", icon: ShoppingCart },
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
+  { title: "Bilancio", url: "/bilancio", icon: PieChart },
   { title: "Banche", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
   { title: "Offerte", url: "/offerte", icon: Send },

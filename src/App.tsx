@@ -12,6 +12,7 @@ import CommessePage from "./pages/Commesse";
 import ListaCommessePage from "./pages/ListaCommesse";
 import OffertePage from "./pages/Offerte";
 import SchedeContabiliPage from "./pages/SchedeContabili";
+import BilancioPage from "./pages/Bilancio";
 
 import StrumentiPage from "./pages/Strumenti";
 import ScadenzarioPage from "./pages/Scadenzario";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/lista-commesse" element={<ListaCommessePage />} />
             <Route path="/offerte" element={<OffertePage />} />
             <Route path="/schede-contabili" element={<SchedeContabiliPage />} />
+            <Route path="/bilancio" element={<BilancioPage />} />
             
             <Route path="/strumenti" element={<StrumentiPage />} />
             <Route path="*" element={<NotFound />} />
