@@ -486,15 +486,18 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
                   onDragOver={handleDragOver(i)}
                   onDrop={handleDrop(i)}
                   onDragEnd={handleDragEnd}
+                  onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
                   className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-grab active:cursor-grabbing ${
                     dragIdx === i ? "opacity-40" : ""
-                  } ${overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""}`}
+                  } ${overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""} ${
+                    onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""
+                  }`}
                 >
                   <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
                     <GripVertical className="h-3.5 w-3.5" />
                   </td>
                   <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{d.codice === "__unassigned__" ? "—" : d.codice}</td>
-                  <td className="px-3 py-1.5 text-xs font-medium truncate max-w-[200px]">{d.descrizione}</td>
+                  <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[200px] ${onRowClick && d.codice !== "__unassigned__" ? "text-primary underline decoration-dotted" : ""}`}>{d.descrizione}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
                     {total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%
