@@ -60,7 +60,14 @@ export async function runLocalStorageMigration() {
   // Skip if already done
   if (localStorage.getItem(MIGRATION_FLAG)) return;
 
-  console.log("[Migration] Checking localStorage for data to migrate...");
+  // Log all localStorage keys for debugging
+  const allKeys = Object.keys(localStorage);
+  console.log("[Migration] All localStorage keys:", allKeys);
+  console.log("[Migration] localStorage contents preview:", allKeys.reduce((acc, k) => {
+    const val = localStorage.getItem(k);
+    acc[k] = val ? val.substring(0, 100) : null;
+    return acc;
+  }, {} as Record<string, string | null>));
 
   let migrated = 0;
 
