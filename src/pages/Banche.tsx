@@ -547,13 +547,12 @@ const BanchePage = () => {
       </div>
 
       {movements.length === 0 && !isLoading && conti.length === 0 && (
-        <div className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground">
-          <Landmark className="h-12 w-12 mb-4 opacity-30" />
+        <div className="w-full flex flex-col items-center justify-center h-32 rounded-lg border-2 border-dashed bg-card text-muted-foreground">
+          <Landmark className="h-8 w-8 mb-2 opacity-30" />
           <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
-          <p className="text-xs mt-1 text-muted-foreground">Vai in Strumenti per aggiungere un conto</p>
           <Link to="/strumenti">
-            <Button size="sm" className="mt-4">
-              <Settings className="h-4 w-4 mr-1" />Vai a Strumenti
+            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs">
+              <Settings className="h-3.5 w-3.5 mr-1" />Vai a Strumenti
             </Button>
           </Link>
         </div>
@@ -561,20 +560,19 @@ const BanchePage = () => {
 
       {movements.length === 0 && !isLoading && conti.length > 0 && (
         <button
-          className="w-full flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-center gap-3 h-24 rounded-lg border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
           onClick={() => {
             if (!hasValidAccount) { toast.error("Seleziona prima un conto dal menu in alto"); return; }
             fileInputRef.current?.click();
           }}
         >
-          <div className="flex gap-3 mb-4">
-            <FileSpreadsheet className="h-10 w-10 opacity-30" />
-            <FileText className="h-10 w-10 opacity-30" />
+          <Upload className="h-6 w-6 opacity-40" />
+          <div className="text-left">
+            <p className="text-sm font-medium">
+              {hasValidAccount ? "Carica o trascina un estratto conto" : "Seleziona un conto, poi carica l'estratto"}
+            </p>
+            <p className="text-[11px] mt-0.5">Excel (.xlsx, .xls, .csv) o PDF</p>
           </div>
-          <p className="text-sm font-medium">
-            {hasValidAccount ? "Carica o trascina un estratto conto" : "Seleziona un conto dal menu, poi carica l'estratto"}
-          </p>
-          <p className="text-xs mt-1">Formati supportati: Excel (.xlsx, .xls, .csv) e PDF</p>
         </button>
       )}
 
