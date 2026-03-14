@@ -214,4 +214,4 @@ export function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
       </BarChart>
     </ResponsiveContainer>
   );
-}
+});

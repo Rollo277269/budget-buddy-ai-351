@@ -128,4 +128,4 @@ export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases,
       </ComposedChart>
     </ResponsiveContainer>
   );
-}
+});
