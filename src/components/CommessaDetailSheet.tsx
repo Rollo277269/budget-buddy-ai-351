@@ -22,6 +22,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { ManualLink } from "@/hooks/useCommessaLinks";
 import { CssrCommessa } from "@/hooks/useCssrCommesse";
+import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
+import { CentroCell } from "@/components/CentroCell";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
@@ -82,6 +84,9 @@ export function CommessaDetailSheet({
   const [searchQuery, setSearchQuery] = useState("");
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const { centri } = useCentriData();
+  const ricavoMap = useCentroMap("ricavo", "vendite");
+  const costoMap = useCentroMap("costo", "acquisti");
 
   const data = useMemo(() => {
     if (!commessa) return null;
@@ -456,6 +461,7 @@ export function CommessaDetailSheet({
                 invoices={data.linkedSales} type="vendita"
                 autoKeys={data.autoSaleKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
+                centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
               />
             </TabsContent>
 
@@ -482,6 +488,7 @@ export function CommessaDetailSheet({
                 invoices={data.linkedPurchases} type="acquisto"
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
+                centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
               />
             </TabsContent>
 
@@ -611,13 +618,16 @@ function StatoBadge({ stato }: { stato?: string }) {
 
 /* ── Invoice list sub-component with sort & filter ── */
 function InvoiceList({
-  invoices, type, autoKeys, cig, onRemoveLink,
+  invoices, type, autoKeys, cig, onRemoveLink, centri, centroMap, onAssignCentro,
 }: {
   invoices: (SaleInvoice | PurchaseInvoice)[];
   type: "vendita" | "acquisto";
   autoKeys: Set<string>;
   cig: string;
   onRemoveLink: (key: string, type: "vendita" | "acquisto", cig: string) => void;
+  centri: CentroCR[];
+  centroMap: Record<string, string>;
+  onAssignCentro: (key: string, codice: string) => void;
 }) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
@@ -625,6 +635,9 @@ function InvoiceList({
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
   const [showColPicker, setShowColPicker] = useState(false);
+
+  const centroLabel = type === "vendita" ? "Centro Ricavo" : "Centro Costo";
+  const centroTipo = type === "vendita" ? "ricavo" as const : "costo" as const;
 
   const allColumns = [
     { key: "numero_display", label: "N°", filterable: true },
@@ -635,6 +648,7 @@ function InvoiceList({
     { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
     { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
     { key: "totale", label: "Totale", filterable: false, align: "right" as const },
+    { key: "centro", label: centroLabel, filterable: true },
   ];
 
   if (invoices.length === 0) {
@@ -671,9 +685,9 @@ function InvoiceList({
     if (key === "imponibile") return inv.imponibile || 0;
     if (key === "imposta") return inv.imposta || 0;
     if (key === "totale") return inv.totale || 0;
+    if (key === "centro") return centroMap[`${inv.anno}-${inv.numero}`] || "";
     return "";
   };
-
   const filtered = invoices.filter((inv) => {
     return Object.entries(filters).every(([key, filterVal]) => {
       if (!filterVal) return true;
@@ -778,6 +792,7 @@ function InvoiceList({
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
+                centro: <TableCell key="centro"><CentroCell invoiceKey={key} tipo={centroTipo} centri={centri} centroMap={centroMap} onAssign={onAssignCentro} /></TableCell>,
               };
 
               return (
