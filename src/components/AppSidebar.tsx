@@ -19,7 +19,7 @@ const items = [
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
   { title: "Bilancio", url: "/bilancio", icon: PieChart },
   { title: "Banche", url: "/banche", icon: Landmark },
-  { title: "Lista Commesse", url: "/lista-commesse", icon: ClipboardList },
+  { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
   { title: "Offerte", url: "/offerte", icon: Send },
   { title: "Riepiloghi per CIG", url: "/commesse", icon: FolderKanban },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
