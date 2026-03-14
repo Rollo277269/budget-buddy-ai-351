@@ -14,6 +14,7 @@ export interface Commessa {
   committente: string;
   assegnataria: string;
   cig: string;
+  cssrStato: string;
   fattureVendita: number;
   fattureAcquisto: number;
   totaleVendite: number;
