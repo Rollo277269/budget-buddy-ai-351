@@ -264,20 +264,12 @@ const BanchePage = () => {
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch
   } = useBankData(allSales, allPurchases);
+  const { conti } = useContiCorrenti();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [filterYear, setFilterYear] = useState<string>("");
-
-  const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
-
-  // Re-read conti when localStorage changes (e.g. edited in Strumenti)
-  useEffect(() => {
-    const handler = () => setConti(loadConti());
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some((c) => c.id === activeAccountId);
 
