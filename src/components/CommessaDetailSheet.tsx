@@ -204,15 +204,21 @@ export function CommessaDetailSheet({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[92vh] max-h-[92vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden p-0 border-none">
         {/* Header */}
-        <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              Commessa {commessa.numero}
-            </DialogTitle>
-            <Badge variant="outline" className="font-mono text-sm">CIG: {commessa.cig || "—"}</Badge>
-            {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
+        <DialogHeader className="px-6 pt-4 pb-3 border-b shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 flex-wrap">
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                Commessa {commessa.numero}
+              </DialogTitle>
+              <Badge variant="outline" className="font-mono text-sm">CIG: {commessa.cig || "—"}</Badge>
+              {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5">
+              <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
+              Torna a Commesse
+            </Button>
           </div>
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
