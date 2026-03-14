@@ -312,10 +312,15 @@ const VenditePage = () => {
           </div>
         )}
 
-        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideFornitore />
+        <FilterBar filters={filters} onFiltersChange={setFilters} options={{
+          ...filterOptions,
+          centriRicavo: centriRicavo
+            .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
+        }} hideFornitore />
         <DataTable<SaleInvoice>
           columns={columns}
-          data={sales}
+          data={displayedSales}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
           rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
