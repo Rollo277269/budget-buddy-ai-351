@@ -700,12 +700,14 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
 
   const movements = useMemo(
     () => autoMatch(accountMovements, sales, purchases, reconciliations),
-    [accountMovements, sales, purchases, reconciliations]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [accountMovements, sales, purchases, reconciliations, refreshKey]
   );
 
   const allMovements = useMemo(
     () => autoMatch(rawMovements, sales, purchases, reconciliations),
-    [rawMovements, sales, purchases, reconciliations]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawMovements, sales, purchases, reconciliations, refreshKey]
   );
 
   const addReconciliation = useCallback((rec: Reconciliation | Reconciliation[]) => {
