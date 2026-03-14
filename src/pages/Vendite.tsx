@@ -31,7 +31,7 @@ function StatusBadge({ stato }: { stato: string }) {
 
 const VenditePage = () => {
   const navigate = useNavigate();
-  const { sales, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const { sales, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
   const [selectedCliente, setSelectedCliente] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
