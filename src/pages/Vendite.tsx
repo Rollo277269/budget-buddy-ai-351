@@ -188,6 +188,13 @@ const VenditePage = () => {
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
             </Button>
           );
+          if (xmlRecords.some(x => !x.matched)) {
+            return (
+              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setXmlPickerInvoice(r); }}>
+                <Link2 className="h-3.5 w-3.5" />
+              </Button>
+            );
+          }
           return <span className="text-muted-foreground text-[11px]">—</span>;
         },
       },
