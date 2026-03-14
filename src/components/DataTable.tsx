@@ -51,6 +51,7 @@ export function DataTable<T extends Record<string, any>>({
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
+  const [globalSearch, setGlobalSearch] = useState("");
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
