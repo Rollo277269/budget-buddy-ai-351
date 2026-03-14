@@ -794,7 +794,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                       draggable
                       onDragStart={(e) => { setDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
                       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-                      onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data); setDragIdx(null); }}
+                      onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data, storageKey); setDragIdx(null); }}
                       onDragEnd={() => setDragIdx(null)}
                     >
                       <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
