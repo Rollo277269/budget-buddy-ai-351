@@ -209,10 +209,10 @@ export function CommessaDetailSheet({
         <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
           <div className="flex items-center gap-3 flex-wrap">
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <Badge variant="outline" className="font-mono text-sm">{commessa.cig || "—"}</Badge>
-              Commessa #{commessa.numero}
+              Commessa {commessa.numero}
             </DialogTitle>
-            {cssr && <Badge variant="secondary" className="text-[10px]">CSSR</Badge>}
+            <Badge variant="outline" className="font-mono text-sm">CIG: {commessa.cig || "—"}</Badge>
+            {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
           </div>
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
@@ -450,7 +450,7 @@ export function CommessaDetailSheet({
             <TabsContent value="dati" className="space-y-4">
               {cssr ? (
                 <div className="rounded-xl border bg-muted/30 p-5 space-y-4">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa (CSSR)</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
                     <CssrField icon={Building2} label="Committente" value={cssr.committente} />
                     <CssrField icon={Building2} label="Impresa Assegnataria" value={cssr.impresa_assegnataria} />
@@ -474,7 +474,7 @@ export function CommessaDetailSheet({
                 </div>
               ) : (
                 <div className="rounded-xl border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-                  Nessun dato CSSR disponibile per questa commessa
+                  Nessun dato disponibile per questa commessa
                 </div>
               )}
             </TabsContent>

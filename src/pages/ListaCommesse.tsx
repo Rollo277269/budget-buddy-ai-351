@@ -108,7 +108,7 @@ const ListaCommessePage = () => {
       <div>
         <h2 className="text-lg font-bold tracking-tight">Commesse</h2>
         <p className="text-sm text-muted-foreground">
-          {rows.length} commesse dal progetto CSSR
+          {rows.length} commesse
         </p>
       </div>
       <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} />
