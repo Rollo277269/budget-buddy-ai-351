@@ -625,8 +625,12 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   centri: CentroCR[];
 }) {
   const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
-  const [ricavoOrder, setRicavoOrder] = useState<string[] | null>(null);
-  const [costoOrder, setCostoOrder] = useState<string[] | null>(null);
+  const [ricavoOrder, setRicavoOrder] = useState<string[] | null>(() => {
+    try { return JSON.parse(localStorage.getItem("centro-ricavo-order") || "null"); } catch { return null; }
+  });
+  const [costoOrder, setCostoOrder] = useState<string[] | null>(() => {
+    try { return JSON.parse(localStorage.getItem("centro-costo-order") || "null"); } catch { return null; }
+  });
   const [dragRicavoIdx, setDragRicavoIdx] = useState<number | null>(null);
   const [dragCostoIdx, setDragCostoIdx] = useState<number | null>(null);
 
