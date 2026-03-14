@@ -382,10 +382,11 @@ function CentriSideBySide({
   ricavoBreakdown: CentroAgg[]; costoBreakdown: CentroAgg[];
   totalRicavi: number; totalCosti: number;
 }) {
+  const maxRows = Math.max(ricavoBreakdown.length, costoBreakdown.length);
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" />
-      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} />
+      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} />
     </div>
   );
 }
