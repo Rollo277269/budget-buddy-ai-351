@@ -465,7 +465,35 @@ export default function SchedeContabiliPage() {
     ...fornitori.map((f) => ({ value: f, label: f })),
   ], [fornitori]);
 
-  if (loading) {
+  // Handle URL param ?soggetto=Name to auto-select
+  useEffect(() => {
+    const soggetto = searchParams.get("soggetto");
+    if (soggetto && clienti.length + fornitori.length > 0) {
+      if (clienti.includes(soggetto)) {
+        setTab("clienti");
+        setSelectedCliente(soggetto);
+      } else if (fornitori.includes(soggetto)) {
+        setTab("fornitori");
+        setSelectedFornitore(soggetto);
+      } else {
+        // Try case-insensitive partial match
+        const matchC = clienti.find((c) => c.toLowerCase().includes(soggetto.toLowerCase()));
+        if (matchC) {
+          setTab("clienti");
+          setSelectedCliente(matchC);
+        } else {
+          const matchF = fornitori.find((f) => f.toLowerCase().includes(soggetto.toLowerCase()));
+          if (matchF) {
+            setTab("fornitori");
+            setSelectedFornitore(matchF);
+          }
+        }
+      }
+      searchParams.delete("soggetto");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, clienti, fornitori]);
+
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
