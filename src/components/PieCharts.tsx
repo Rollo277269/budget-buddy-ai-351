@@ -85,9 +85,9 @@ export const ClientPieChart = React.memo(function ClientPieChart({ sales }: { sa
       </PieChart>
     </ResponsiveContainer>
   );
-}
+});
 
-export function SupplierPieChart({ purchases }: { purchases: PurchaseInvoice[] }) {
+export const SupplierPieChart = React.memo(function SupplierPieChart({ purchases }: { purchases: PurchaseInvoice[] }) {
   const data = useMemo(() => {
     const map: Record<string, number> = {};
     purchases.forEach((p) => {
