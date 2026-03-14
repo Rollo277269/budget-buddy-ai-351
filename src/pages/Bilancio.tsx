@@ -529,6 +529,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
             <tfoot>
               <tr className="bg-muted/40 font-semibold">
                 <td></td>
+                <td></td>
                 <td className="px-3 py-2 text-xs">TOTALE</td>
                 <td className={`px-3 py-2 text-right font-mono text-xs ${accentClass}`}>{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
                 <td className="px-3 py-2 text-right font-mono text-xs">100%</td>
