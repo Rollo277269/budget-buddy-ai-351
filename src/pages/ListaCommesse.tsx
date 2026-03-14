@@ -23,7 +23,7 @@ export interface Commessa {
 
 const columns: ColumnDef<Commessa>[] = [
   { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero ? formatNumber(r.numero).replace(/,00$/, "") : "—"}</span>, sortable: true },
-  { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[280px] truncate block">{r.oggetto}</span> },
+  { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[280px] whitespace-normal break-words block leading-snug py-1">{r.oggetto}</span> },
   { key: "committente", label: "Committente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.committente}</span> },
   { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
   { key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig || "—"}</span> },
