@@ -4,8 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { runLocalStorageMigration } from "@/lib/localStorageMigration";
 
 // Lazy load all pages for faster initial render
 const Index = lazy(() => import("./pages/Index"));
@@ -31,7 +32,12 @@ function PageLoader() {
   );
 }
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    runLocalStorageMigration();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -58,6 +64,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
