@@ -175,6 +175,7 @@ export interface Filters {
   cliente: string;
   fornitore: string;
   cig: string;
+  centroCosto: string;
 }
 
 export function useInvoiceData() {
