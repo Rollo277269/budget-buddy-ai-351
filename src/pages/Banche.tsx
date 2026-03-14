@@ -440,7 +440,7 @@ const BanchePage = () => {
             <p className="text-sm text-muted-foreground">Carica un estratto conto per iniziare</p>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              {fileNames.map((fn) => (
+              {[...fileNames].sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" })).map((fn) => (
                 <AlertDialog key={fn}>
                   <Badge variant="secondary" className="text-[11px] gap-1 pr-1">
                     <FileSpreadsheet className="h-3 w-3" />
