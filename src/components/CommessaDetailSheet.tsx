@@ -759,7 +759,7 @@ function InvoiceList({
                 data: <TableCell key="d" className="text-xs">{inv.data}</TableCell>,
                 counterpart: <TableCell key="c" className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>,
                 descrizione: <TableCell key="desc" className="text-xs max-w-[200px] truncate" title={inv.descrizione}>{inv.descrizione || "—"}</TableCell>,
-                stato: <TableCell key="s"><Badge variant={inv.stato?.toLowerCase().includes("pagat") || inv.stato?.toLowerCase().includes("incass") ? "secondary" : "outline"} className="text-[9px]">{inv.stato || "—"}</Badge></TableCell>,
+                stato: <TableCell key="s"><StatoBadge stato={inv.stato} /></TableCell>,
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
