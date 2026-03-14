@@ -477,15 +477,37 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
                   </td>
                 </tr>
               ))}
-              {/* Empty padding rows to align totals */}
-              {Array.from({ length: Math.max(0, minRows - sortedData.length) }).map((_, i) => (
-                <tr key={`empty-${i}`} className="border-b border-border/50">
-                  <td className="pl-2 pr-0 py-1.5">&nbsp;</td>
-                  <td className="px-3 py-1.5">&nbsp;</td>
-                  <td className="px-3 py-1.5"></td>
-                  <td className="px-3 py-1.5"></td>
-                </tr>
-              ))}
+              {/* Empty padding rows to align totals — accept drops */}
+              {Array.from({ length: Math.max(0, minRows - sortedData.length) }).map((_, i) => {
+                const emptyIdx = sortedData.length + i;
+                // dropping on an empty row = moving to end (last real position)
+                const dropTarget = Math.min(sortedData.length - 1, sortedData.length);
+                return (
+                  <tr
+                    key={`empty-${i}`}
+                    className={`border-b border-border/50 ${overIdx === emptyIdx && dragIdx !== null ? "border-t-2 border-t-primary" : ""}`}
+                    onDragOver={(e) => { e.preventDefault(); setOverIdx(emptyIdx); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragIdx !== null && dragIdx !== sortedData.length - 1) {
+                        const next = [...sortedData];
+                        const [moved] = next.splice(dragIdx, 1);
+                        next.push(moved);
+                        const newOrder = next.map((d) => d.codice);
+                        setRowOrder(newOrder);
+                        saveRowOrder(id, newOrder);
+                      }
+                      setDragIdx(null);
+                      setOverIdx(null);
+                    }}
+                  >
+                    <td className="pl-2 pr-0 py-1.5">&nbsp;</td>
+                    <td className="px-3 py-1.5">&nbsp;</td>
+                    <td className="px-3 py-1.5"></td>
+                    <td className="px-3 py-1.5"></td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot>
               <tr className="bg-muted/40 font-semibold">
