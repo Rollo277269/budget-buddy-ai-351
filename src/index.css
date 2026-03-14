@@ -115,7 +115,8 @@
   }
 
   /* Hide app chrome and interactive UI */
-  [data-sidebar], nav, .sidebar-trigger, .no-print, .screen-report, [role="tablist"] {
+  [data-sidebar], nav, .sidebar-trigger, .no-print, .screen-report, [role="tablist"],
+  [role="dialog"] > div:first-child /* DialogHeader */ {
     display: none !important;
   }
 
