@@ -578,6 +578,90 @@ export function CommessaDetailSheet({
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Print-only professional report */}
+        <div className="pdf-report">
+          <div className="pdf-header">
+            <h1>Report Economico Commessa {commessa.numero}</h1>
+            <p>{commessa.oggetto}</p>
+            <div className="pdf-meta">
+              <span>CIG: {commessa.cig || "—"}</span>
+              {cssr?.cig_derivato && <span>CIG Derivato: {cssr.cig_derivato}</span>}
+              <span>Data report: {new Date().toLocaleDateString("it-IT")}</span>
+            </div>
+          </div>
+
+          <div className="pdf-kpi-grid">
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Totale Ricavi</p>
+              <p className="pdf-kpi-value is-positive">{formatCurrency(totalRicaviPrint)}</p>
+            </div>
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Totale Costi</p>
+              <p className="pdf-kpi-value is-negative">{formatCurrency(totalCostiPrint)}</p>
+            </div>
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Saldo</p>
+              <p className={`pdf-kpi-value ${saldoPrint >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(saldoPrint)}</p>
+            </div>
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Margine</p>
+              <p className={`pdf-kpi-value ${marginePrint >= 0 ? "is-positive" : "is-negative"}`}>{marginePrint.toFixed(1)}%</p>
+            </div>
+          </div>
+
+          <div className="pdf-table-grid">
+            <section className="pdf-section">
+              <h2>Riepilogo Centri di Ricavo</h2>
+              <table className="pdf-table">
+                <thead>
+                  <tr>
+                    <th>Centro</th>
+                    <th className="is-right">Importo</th>
+                    <th className="is-right">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ricavoRows.map((r) => {
+                    const pct = totalRicaviPrint > 0 ? (r.value / totalRicaviPrint) * 100 : 0;
+                    return (
+                      <tr key={r.name}>
+                        <td>{r.name}</td>
+                        <td className="is-right">{formatCurrency(r.value)}</td>
+                        <td className="is-right">{pct.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="pdf-section">
+              <h2>Riepilogo Centri di Costo</h2>
+              <table className="pdf-table">
+                <thead>
+                  <tr>
+                    <th>Centro</th>
+                    <th className="is-right">Importo</th>
+                    <th className="is-right">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {costoRows.map((r) => {
+                    const pct = totalCostiPrint > 0 ? (r.value / totalCostiPrint) * 100 : 0;
+                    return (
+                      <tr key={r.name}>
+                        <td>{r.name}</td>
+                        <td className="is-right">{formatCurrency(r.value)}</td>
+                        <td className="is-right">{pct.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </section>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
