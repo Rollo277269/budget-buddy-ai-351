@@ -607,6 +607,19 @@ function InvoiceList({
   const [sortAsc, setSortAsc] = useState(true);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const [showColPicker, setShowColPicker] = useState(false);
+
+  const allColumns = [
+    { key: "numero_display", label: "N°", filterable: true },
+    { key: "data", label: "Data", filterable: true },
+    { key: "counterpart", label: type === "vendita" ? "Cliente" : "Fornitore", filterable: true },
+    { key: "descrizione", label: "Descrizione", filterable: true },
+    { key: "stato", label: "Stato", filterable: true },
+    { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
+    { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
+    { key: "totale", label: "Totale", filterable: false, align: "right" as const },
+  ];
 
   if (invoices.length === 0) {
     return <p className="text-xs text-muted-foreground py-4 text-center">Nessuna fattura collegata</p>;
@@ -623,6 +636,14 @@ function InvoiceList({
 
   const toggleFilter = (key: string) => {
     setActiveFilter(activeFilter === key ? null : key);
+  };
+
+  const toggleCol = (key: string) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
   };
 
   const getVal = (inv: SaleInvoice | PurchaseInvoice, key: string): string | number => {
@@ -655,19 +676,32 @@ function InvoiceList({
     return sortAsc ? cmp : -cmp;
   });
 
-  const columns = [
-    { key: "numero_display", label: "N°", filterable: true },
-    { key: "data", label: "Data", filterable: true },
-    { key: "counterpart", label: type === "vendita" ? "Cliente" : "Fornitore", filterable: true },
-    { key: "descrizione", label: "Descrizione", filterable: true },
-    { key: "stato", label: "Stato", filterable: true },
-    { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
-    { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
-    { key: "totale", label: "Totale", filterable: false, align: "right" as const },
-  ];
+  const visibleColumns = allColumns.filter((c) => !hiddenCols.has(c.key));
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
+    <div className="space-y-2">
+      {/* Column visibility toggle */}
+      <div className="flex justify-end relative">
+        <Button variant="outline" size="sm" className="text-xs h-7 gap-1.5" onClick={() => setShowColPicker(!showColPicker)}>
+          <SlidersHorizontal className="h-3 w-3" />Colonne
+        </Button>
+        {showColPicker && (
+          <div className="absolute right-0 top-8 z-20 rounded-lg border bg-popover shadow-md p-2 space-y-1 min-w-[160px]">
+            {allColumns.map((col) => (
+              <button
+                key={col.key}
+                className="flex items-center gap-2 w-full text-xs px-2 py-1.5 rounded hover:bg-muted transition-colors"
+                onClick={() => toggleCol(col.key)}
+              >
+                {hiddenCols.has(col.key) ? <EyeOff className="h-3 w-3 text-muted-foreground" /> : <Eye className="h-3 w-3 text-primary" />}
+                <span className={hiddenCols.has(col.key) ? "text-muted-foreground" : ""}>{col.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border bg-card overflow-hidden">
       <div className="max-h-[400px] overflow-auto">
         <Table>
           <TableHeader className="sticky top-0 bg-card z-10">
