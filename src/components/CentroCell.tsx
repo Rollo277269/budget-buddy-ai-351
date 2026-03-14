@@ -10,7 +10,7 @@ interface CentroCellProps {
 }
 
 export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign }: CentroCellProps) {
-  const filtered = centri.filter((c) => c.tipo === tipo);
+  const filtered = centri.filter((c) => c.tipo === tipo).sort((a, b) => a.descrizione.localeCompare(b.descrizione));
   const assigned = centroMap[invoiceKey];
 
   if (filtered.length === 0) {
