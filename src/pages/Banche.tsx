@@ -523,6 +523,11 @@ const BanchePage = () => {
           </Link>
 
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
+          {movements.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => { refreshAutoMatch(); toast.success("Riconciliazione automatica aggiornata"); }}>
+              <RefreshCw className="h-4 w-4 mr-1" />Aggiorna riconciliazione
+            </Button>
+          )}
           <Button onClick={() => {
             if (!hasValidAccount) { toast.error("Seleziona prima un conto corrente o una carta"); return; }
             fileInputRef.current?.click();
