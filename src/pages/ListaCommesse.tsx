@@ -112,12 +112,9 @@ const ListaCommessePage = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-lg font-bold tracking-tight">Commesse</h2>
-        <p className="text-sm text-muted-foreground">
-          {rows.length} commesse
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {rows.length} commesse
+      </p>
       <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} />
       <CommessaDetailSheet
         commessa={selected}
