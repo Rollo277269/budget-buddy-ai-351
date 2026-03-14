@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
 import * as pdfjsLib from "pdfjs-dist";
+import { supabase } from "@/integrations/supabase/client";
 import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 
 // Configure pdf.js worker
