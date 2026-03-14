@@ -127,13 +127,14 @@ export function CommessaDetailSheet({
     const autoPurchaseKeys = new Set(autoPurchases.map((p) => invoiceKey(p.anno, p.numero)));
 
     // Monthly breakdown
-    const monthlyMap = new Map<string, { vendite: number; acquisti: number }>();
+    const monthlyMap = new Map<string, { vendite: number; acquisti: number; incassato: number; pagato: number }>();
     linkedSales.forEach((s) => {
       const parts = s.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
-        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0 };
+        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
         e.vendite += s.totale;
+        if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) e.incassato += s.totale;
         monthlyMap.set(key, e);
       }
     });
@@ -141,8 +142,9 @@ export function CommessaDetailSheet({
       const parts = p.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
-        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0 };
+        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
         e.acquisti += p.totale;
+        if (p.stato?.toLowerCase().includes("pagat")) e.pagato += p.totale;
         monthlyMap.set(key, e);
       }
     });
@@ -153,6 +155,9 @@ export function CommessaDetailSheet({
         vendite: vals.vendite,
         acquisti: vals.acquisti,
         saldo: vals.vendite - vals.acquisti,
+        incassato: vals.incassato,
+        pagato: vals.pagato,
+        saldoCassa: vals.incassato - vals.pagato,
       }));
 
     // Supplier breakdown for purchases
@@ -384,11 +389,11 @@ export function CommessaDetailSheet({
             {/* ── TAB: Analisi ── */}
             <TabsContent value="analisi" className="space-y-6">
               {/* Monthly chart */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2 rounded-xl border bg-card p-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded-xl border bg-card p-5">
                   <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    Andamento Mensile
+                    Andamento mensile Vendite/Acquisti
                   </h3>
                   {data.monthlyData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
@@ -408,35 +413,26 @@ export function CommessaDetailSheet({
                   )}
                 </div>
 
-                {/* Supplier breakdown */}
                 <div className="rounded-xl border bg-card p-5">
                   <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <PieChart className="h-4 w-4 text-muted-foreground" />
-                    Fornitori
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    Andamento mensile Incassi/Pagamenti
                   </h3>
-                  {data.supplierData.length > 0 ? (
+                  {data.monthlyData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
-                      <RechartsPie>
-                        <Pie
-                          data={data.supplierData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={90}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          labelLine={false}
-                          fontSize={10}
-                        >
-                          {data.supplierData.map((_, i) => (
-                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                          ))}
-                        </Pie>
+                      <ComposedChart data={data.monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                         <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                      </RechartsPie>
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Bar dataKey="incassato" name="Incassato" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="pagato" name="Pagato" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                        <Line type="monotone" dataKey="saldoCassa" name="Saldo Cassa" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                      </ComposedChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-12">Nessun fornitore</p>
+                    <p className="text-sm text-muted-foreground text-center py-12">Nessun dato mensile disponibile</p>
                   )}
                 </div>
               </div>
@@ -668,12 +664,12 @@ export function CommessaDetailSheet({
           </div>
 
           {/* ── Grafici Analisi ── */}
-          {/* Andamento Mensile - Bar chart */}
+          {/* Andamento Mensile Vendite/Acquisti - Bar chart */}
           {data.monthlyData.length > 0 && (() => {
             const maxMonth = Math.max(...data.monthlyData.map(m => Math.max(m.vendite, m.acquisti)), 1);
             return (
               <section className="pdf-section pdf-full-width">
-                <h2>Grafico Andamento Mensile</h2>
+                <h2>Grafico Andamento mensile Vendite/Acquisti</h2>
                 <div className="pdf-bar-chart">
                   {data.monthlyData.map((m) => (
                     <div key={m.mese} className="pdf-bar-row">
@@ -691,6 +687,35 @@ export function CommessaDetailSheet({
                   <div className="pdf-bar-legend">
                     <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive"></span>Vendite</span>
                     <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative"></span>Acquisti</span>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* Andamento Mensile Incassi/Pagamenti - Bar chart */}
+          {data.monthlyData.length > 0 && (() => {
+            const maxPayment = Math.max(...data.monthlyData.map(m => Math.max(m.incassato, m.pagato)), 1);
+            return (
+              <section className="pdf-section pdf-full-width">
+                <h2>Grafico Andamento mensile Incassi/Pagamenti</h2>
+                <div className="pdf-bar-chart">
+                  {data.monthlyData.map((m) => (
+                    <div key={m.mese} className="pdf-bar-row">
+                      <span className="pdf-bar-label">{m.mese}</span>
+                      <div className="pdf-bar-tracks">
+                        <div className="pdf-bar is-positive" style={{ width: `${(m.incassato / maxPayment) * 100}%` }}>
+                          <span className="pdf-bar-value">{formatCurrency(m.incassato)}</span>
+                        </div>
+                        <div className="pdf-bar is-negative" style={{ width: `${(m.pagato / maxPayment) * 100}%` }}>
+                          <span className="pdf-bar-value">{formatCurrency(m.pagato)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pdf-bar-legend">
+                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive"></span>Incassato</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative"></span>Pagato</span>
                   </div>
                 </div>
               </section>
