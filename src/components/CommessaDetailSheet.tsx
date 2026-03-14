@@ -272,7 +272,7 @@ export function CommessaDetailSheet({
               {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5 no-print">
+              <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 no-print">
                 <Printer className="h-3.5 w-3.5" />
                 Esporta PDF
               </Button>
