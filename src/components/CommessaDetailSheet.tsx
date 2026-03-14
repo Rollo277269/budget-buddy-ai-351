@@ -245,6 +245,18 @@ export function CommessaDetailSheet({
   const saldoPrint = totalRicaviPrint - totalCostiPrint;
   const marginePrint = totalRicaviPrint > 0 ? (saldoPrint / totalRicaviPrint) * 100 : 0;
 
+  const handleExportPdf = () => {
+    document.body.classList.add("print-commessa-report");
+
+    const cleanup = () => {
+      document.body.classList.remove("print-commessa-report");
+      window.removeEventListener("afterprint", cleanup);
+    };
+
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+  };
+
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
       <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden p-0 border-none">
@@ -259,7 +271,7 @@ export function CommessaDetailSheet({
               {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5 no-print">
+              <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 no-print">
                 <Printer className="h-3.5 w-3.5" />
                 Esporta PDF
               </Button>

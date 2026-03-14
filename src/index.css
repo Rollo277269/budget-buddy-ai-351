@@ -107,164 +107,166 @@
 }
 
 @media print {
-  html, body {
-    background: #ffffff !important;
-    color: #111111 !important;
+  html,
+  body {
+    background: hsl(0 0% 100%) !important;
+    color: hsl(var(--foreground)) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Hide app chrome and interactive UI */
-  [data-sidebar], nav, .sidebar-trigger, .no-print, .screen-report, [role="tablist"],
-  [role="dialog"] > div:first-child /* DialogHeader */ {
+  body.print-commessa-report #root {
     display: none !important;
   }
 
-  /* Keep dialog container neutral */
-  [data-radix-dialog-overlay] {
+  body.print-commessa-report .dialog-overlay,
+  body.print-commessa-report .no-print,
+  body.print-commessa-report .screen-report,
+  body.print-commessa-report [role="dialog"] > :not(.pdf-report) {
     display: none !important;
   }
 
-  [role="dialog"] {
+  body.print-commessa-report [role="dialog"] {
     position: static !important;
+    inset: auto !important;
+    transform: none !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
     max-height: none !important;
-    transform: none !important;
     border: 0 !important;
     box-shadow: none !important;
-    background: #ffffff !important;
+    background: transparent !important;
     overflow: visible !important;
     padding: 0 !important;
   }
 
-  [role="dialog"] > button {
-    display: none !important;
-  }
-
-  /* Show dedicated printable report */
-  .pdf-report {
+  body.print-commessa-report .pdf-report {
     display: block !important;
-    background: #ffffff !important;
-    color: #111111 !important;
+    background: hsl(0 0% 100%) !important;
+    color: hsl(var(--foreground)) !important;
     padding: 0 !important;
     font-family: var(--font-sans), sans-serif;
   }
 
-  .pdf-header {
-    border-bottom: 2px solid #d1d5db;
+  body.print-commessa-report .pdf-header {
+    border-bottom: 2px solid hsl(var(--border));
     padding-bottom: 10px;
     margin-bottom: 14px;
   }
 
-  .pdf-header h1 {
+  body.print-commessa-report .pdf-header h1 {
     margin: 0;
     font-size: 20px;
     line-height: 1.2;
-    color: #111827;
+    color: hsl(var(--foreground));
   }
 
-  .pdf-header p {
+  body.print-commessa-report .pdf-header p {
     margin: 4px 0 0;
     font-size: 12px;
-    color: #374151;
+    color: hsl(var(--muted-foreground));
   }
 
-  .pdf-meta {
+  body.print-commessa-report .pdf-meta {
     margin-top: 8px;
     display: flex;
     gap: 14px;
     flex-wrap: wrap;
     font-size: 11px;
-    color: #4b5563;
+    color: hsl(var(--muted-foreground));
   }
 
-  .pdf-kpi-grid {
+  body.print-commessa-report .pdf-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 14px;
   }
 
-  .pdf-kpi-card {
-    border: 1px solid #d1d5db;
+  body.print-commessa-report .pdf-kpi-card {
+    border: 1px solid hsl(var(--border));
     border-radius: 8px;
     padding: 8px 10px;
-    background: #ffffff;
+    background: hsl(var(--card));
   }
 
-  .pdf-kpi-label {
+  body.print-commessa-report .pdf-kpi-label {
     margin: 0;
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
   }
 
-  .pdf-kpi-value {
+  body.print-commessa-report .pdf-kpi-value {
     margin: 2px 0 0;
     font-size: 15px;
     font-weight: 700;
     font-family: var(--font-mono), monospace;
-    color: #111827;
+    color: hsl(var(--foreground));
   }
 
-  .pdf-kpi-value.is-positive { color: #166534; }
-  .pdf-kpi-value.is-negative { color: #b91c1c; }
+  body.print-commessa-report .pdf-kpi-value.is-positive {
+    color: hsl(var(--income));
+  }
 
-  .pdf-table-grid {
+  body.print-commessa-report .pdf-kpi-value.is-negative {
+    color: hsl(var(--expense));
+  }
+
+  body.print-commessa-report .pdf-table-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 
-  .pdf-section {
-    border: 1px solid #d1d5db;
+  body.print-commessa-report .pdf-section {
+    border: 1px solid hsl(var(--border));
     border-radius: 8px;
     overflow: hidden;
-    background: #ffffff;
+    background: hsl(var(--card));
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  .pdf-section h2 {
+  body.print-commessa-report .pdf-section h2 {
     margin: 0;
     padding: 8px 10px;
     font-size: 11px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    background: #f3f4f6;
-    color: #374151;
-    border-bottom: 1px solid #d1d5db;
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    border-bottom: 1px solid hsl(var(--border));
   }
 
-  .pdf-table {
+  body.print-commessa-report .pdf-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 10px;
   }
 
-  .pdf-table th,
-  .pdf-table td {
+  body.print-commessa-report .pdf-table th,
+  body.print-commessa-report .pdf-table td {
     padding: 6px 8px;
-    border-bottom: 1px solid #e5e7eb;
-    color: #111827;
+    border-bottom: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
   }
 
-  .pdf-table th {
+  body.print-commessa-report .pdf-table th {
     font-weight: 600;
-    background: #f9fafb;
+    background: hsl(var(--muted));
     text-align: left;
   }
 
-  .pdf-table .is-right {
+  body.print-commessa-report .pdf-table .is-right {
     text-align: right;
     font-family: var(--font-mono), monospace;
   }
 
-  .pdf-table tbody tr:nth-child(even) {
-    background: #fcfcfd;
+  body.print-commessa-report .pdf-table tbody tr:nth-child(even) {
+    background: hsl(var(--accent));
   }
 
   @page {
