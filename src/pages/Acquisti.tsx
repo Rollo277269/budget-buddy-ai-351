@@ -322,20 +322,13 @@ const AcquistiPage = () => {
           ...filterOptions,
           centriCosto: centriCosto.map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` })),
         }} hideCliente />
-        {(() => {
-          const filtered = filters.centroCosto
-            ? purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto)
-            : purchases;
-          return (
-            <DataTable<PurchaseInvoice>
-              columns={columns}
-              data={filtered}
-              rowKey={(r) => `${r.anno}-${r.numero}`}
-              onRowClick={setSelectedInvoice}
-              rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
-            />
-          );
-        })()}
+        <DataTable<PurchaseInvoice>
+          columns={columns}
+          data={displayedPurchases}
+          rowKey={(r) => `${r.anno}-${r.numero}`}
+          onRowClick={setSelectedInvoice}
+          rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+        />
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={purchases} xmlMap={xmlMap} tipo="acquisto" onManualMatch={manualMatch} />
