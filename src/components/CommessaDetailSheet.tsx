@@ -245,6 +245,28 @@ export function CommessaDetailSheet({
   const saldoPrint = totalRicaviPrint - totalCostiPrint;
   const marginePrint = totalRicaviPrint > 0 ? (saldoPrint / totalRicaviPrint) * 100 : 0;
 
+  const handleExportPdf = useCallback(() => {
+    document.body.classList.add("print-commessa-report");
+
+    const cleanup = () => {
+      document.body.classList.remove("print-commessa-report");
+    };
+
+    window.addEventListener("afterprint", cleanup, { once: true });
+    window.print();
+    window.setTimeout(cleanup, 1200);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      document.body.classList.remove("print-commessa-report");
+    }
+
+    return () => {
+      document.body.classList.remove("print-commessa-report");
+    };
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
       <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden p-0 border-none">
