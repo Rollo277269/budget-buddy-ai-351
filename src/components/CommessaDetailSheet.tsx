@@ -711,108 +711,150 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
         {costoData.length > 0 && renderChart(costoData, "Centri di Costo", CHART_COLORS.slice(3))}
       </div>
 
-      {/* Comparison tables */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {ricavoData.length > 0 && (
-          <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b bg-muted/30">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <ArrowUpRight className="h-3.5 w-3.5 text-income" />
-                Riepilogo Centri di Ricavo
-              </h3>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-[10px]">Centro</TableHead>
-                  <TableHead className="text-[10px] text-right">Importo</TableHead>
-                  <TableHead className="text-[10px] text-right">%</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ricavoData.map((d) => {
-                  const totalRicavi = ricavoData.reduce((s, r) => s + r.value, 0);
-                  const pct = totalRicavi > 0 ? (d.value / totalRicavi) * 100 : 0;
-                  return (
-                    <TableRow key={d.name}>
-                      <TableCell className="text-xs">{d.name}</TableCell>
-                      <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
-                      <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
-                    </TableRow>
-                  );
-                })}
-                <TableRow className="border-t-2 font-semibold bg-muted/20">
-                  <TableCell className="text-xs font-bold">Totale Ricavi</TableCell>
-                  <TableCell className="text-xs font-mono text-right font-bold text-income">{formatCurrency(ricavoData.reduce((s, r) => s + r.value, 0))}</TableCell>
-                  <TableCell className="text-xs font-mono text-right">100%</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {costoData.length > 0 && (
-          <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b bg-muted/30">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <ArrowDownRight className="h-3.5 w-3.5 text-expense" />
-                Riepilogo Centri di Costo
-              </h3>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-[10px]">Centro</TableHead>
-                  <TableHead className="text-[10px] text-right">Importo</TableHead>
-                  <TableHead className="text-[10px] text-right">%</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {costoData.map((d) => {
-                  const totalCosti = costoData.reduce((s, r) => s + r.value, 0);
-                  const pct = totalCosti > 0 ? (d.value / totalCosti) * 100 : 0;
-                  return (
-                    <TableRow key={d.name}>
-                      <TableCell className="text-xs">{d.name}</TableCell>
-                      <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
-                      <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
-                    </TableRow>
-                  );
-                })}
-                <TableRow className="border-t-2 font-semibold bg-muted/20">
-                  <TableCell className="text-xs font-bold">Totale Costi</TableCell>
-                  <TableCell className="text-xs font-mono text-right font-bold text-expense">{formatCurrency(costoData.reduce((s, r) => s + r.value, 0))}</TableCell>
-                  <TableCell className="text-xs font-mono text-right">100%</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
+      {/* Comparison tables with drag reorder */}
+      {(() => {
+        const totalRicavi = ricavoData.reduce((s, r) => s + r.value, 0);
+        const totalCosti = costoData.reduce((s, r) => s + r.value, 0);
+        const saldo = totalRicavi - totalCosti;
+        const margine = totalRicavi > 0 ? (saldo / totalRicavi) * 100 : 0;
 
-      {/* Saldo comparison */}
-      {ricavoData.length > 0 && costoData.length > 0 && (() => {
-        const totRicavi = ricavoData.reduce((s, r) => s + r.value, 0);
-        const totCosti = costoData.reduce((s, r) => s + r.value, 0);
-        const saldo = totRicavi - totCosti;
-        const margine = totRicavi > 0 ? (saldo / totRicavi) * 100 : 0;
+        // Apply custom ordering
+        const orderedRicavo = ricavoOrder
+          ? ricavoOrder.map((n) => ricavoData.find((d) => d.name === n)).filter(Boolean) as typeof ricavoData
+          : ricavoData;
+        const orderedCosto = costoOrder
+          ? costoOrder.map((n) => costoData.find((d) => d.name === n)).filter(Boolean) as typeof costoData
+          : costoData;
+
+        // Sync order state when data changes
+        if (ricavoData.length > 0 && !ricavoOrder) {
+          setTimeout(() => setRicavoOrder(ricavoData.map((d) => d.name)), 0);
+        }
+        if (costoData.length > 0 && !costoOrder) {
+          setTimeout(() => setCostoOrder(costoData.map((d) => d.name)), 0);
+        }
+
+        const handleDrop = (
+          fromIdx: number,
+          toIdx: number,
+          setOrder: React.Dispatch<React.SetStateAction<string[] | null>>,
+          currentData: typeof ricavoData
+        ) => {
+          setOrder((prev) => {
+            const arr = prev || currentData.map((d) => d.name);
+            const next = [...arr];
+            const [moved] = next.splice(fromIdx, 1);
+            next.splice(toIdx, 0, moved);
+            return next;
+          });
+        };
+
+        const renderDraggableTable = (
+          data: typeof ricavoData,
+          ordered: typeof ricavoData,
+          total: number,
+          title: string,
+          icon: React.ReactNode,
+          totalLabel: string,
+          totalColor: string,
+          dragIdx: number | null,
+          setDragIdx: (i: number | null) => void,
+          setOrder: React.Dispatch<React.SetStateAction<string[] | null>>
+        ) => (
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b bg-muted/30">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                {icon}
+                {title}
+              </h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[10px] w-[20px]"></TableHead>
+                  <TableHead className="text-[10px]">Centro</TableHead>
+                  <TableHead className="text-[10px] text-right">Importo</TableHead>
+                  <TableHead className="text-[10px] text-right">%</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ordered.map((d, idx) => {
+                  const pct = total > 0 ? (d.value / total) * 100 : 0;
+                  return (
+                    <TableRow
+                      key={d.name}
+                      className={`cursor-grab active:cursor-grabbing ${dragIdx === idx ? "opacity-40" : ""}`}
+                      draggable
+                      onDragStart={(e) => { setDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
+                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                      onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data); setDragIdx(null); }}
+                      onDragEnd={() => setDragIdx(null)}
+                    >
+                      <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
+                      <TableCell className="text-xs">{d.name}</TableCell>
+                      <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
+                      <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        );
+
         return (
-          <div className="rounded-xl border bg-card p-4">
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Totale Ricavi</p>
-                <p className="text-sm font-bold font-mono text-income">{formatCurrency(totRicavi)}</p>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ricavoData.length > 0 && renderDraggableTable(
+                ricavoData, orderedRicavo, totalRicavi,
+                "Riepilogo Centri di Ricavo",
+                <ArrowUpRight className="h-3.5 w-3.5 text-income" />,
+                "Totale Ricavi", "text-income",
+                dragRicavoIdx, setDragRicavoIdx, setRicavoOrder
+              )}
+              {costoData.length > 0 && renderDraggableTable(
+                costoData, orderedCosto, totalCosti,
+                "Riepilogo Centri di Costo",
+                <ArrowDownRight className="h-3.5 w-3.5 text-expense" />,
+                "Totale Costi", "text-expense",
+                dragCostoIdx, setDragCostoIdx, setCostoOrder
+              )}
+            </div>
+
+            {/* Totals row aligned */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ricavoData.length > 0 && (
+                <div className="rounded-xl border bg-muted/20 p-3 flex items-center justify-between">
+                  <span className="text-xs font-bold">Totale Ricavi</span>
+                  <span className="text-sm font-bold font-mono text-income">{formatCurrency(totalRicavi)}</span>
+                </div>
+              )}
+              {costoData.length > 0 && (
+                <div className="rounded-xl border bg-muted/20 p-3 flex items-center justify-between">
+                  <span className="text-xs font-bold">Totale Costi</span>
+                  <span className="text-sm font-bold font-mono text-expense">{formatCurrency(totalCosti)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Saldo / Margine */}
+            {ricavoData.length > 0 && costoData.length > 0 && (
+              <div className="rounded-xl border bg-card p-4">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Saldo</p>
+                    <p className={`text-sm font-bold font-mono ${saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(saldo)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Margine</p>
+                    <p className={`text-sm font-bold font-mono ${margine >= 0 ? "text-income" : "text-expense"}`}>{margine.toFixed(1)}%</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Totale Costi</p>
-                <p className="text-sm font-bold font-mono text-expense">{formatCurrency(totCosti)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Saldo</p>
-                <p className={`text-sm font-bold font-mono ${saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(saldo)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Margine</p>
-                <p className={`text-sm font-bold font-mono ${margine >= 0 ? "text-income" : "text-expense"}`}>{margine.toFixed(1)}%</p>
+            )}
+          </>
+        );
+      })()}
               </div>
             </div>
           </div>
