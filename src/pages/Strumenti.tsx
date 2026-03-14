@@ -691,6 +691,171 @@ function CentriCostoRicavoTab() {
   );
 }
 
+// ─── Export / Import ──────────────────────────────────────────────
+
+function ExportImportSection() {
+  const fileInputRef = useFileRef<HTMLInputElement>(null);
+
+  const handleExport = async () => {
+    try {
+      const [centri, categorie, conti, naming, assignments] = await Promise.all([
+        supabase.from("centri_cr").select("*").then(r => r.data || []),
+        supabase.from("categorie_centri").select("*").then(r => r.data || []),
+        supabase.from("conti_correnti").select("*").then(r => r.data || []),
+        supabase.from("naming_rules").select("*").then(r => r.data || []),
+        supabase.from("centro_assignments").select("*").then(r => r.data || []),
+      ]);
+
+      const payload = {
+        version: 1,
+        exported_at: new Date().toISOString(),
+        centri_cr: centri,
+        categorie_centri: categorie,
+        conti_correnti: conti,
+        naming_rules: naming,
+        centro_assignments: assignments,
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `configurazione_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Configurazione esportata");
+    } catch (e) {
+      console.error("Export error:", e);
+      toast.error("Errore durante l'esportazione");
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!data.version || !data.centri_cr) {
+        toast.error("File non valido: formato non riconosciuto");
+        return;
+      }
+
+      const confirmed = confirm(
+        `Importare configurazione del ${data.exported_at?.slice(0, 10) || "?"}?\n\n` +
+        `• ${data.centri_cr?.length || 0} centri C/R\n` +
+        `• ${data.categorie_centri?.length || 0} categorie\n` +
+        `• ${data.conti_correnti?.length || 0} conti correnti\n` +
+        `• ${data.naming_rules?.length || 0} regole denominazione\n` +
+        `• ${data.centro_assignments?.length || 0} assegnazioni\n\n` +
+        `I dati esistenti verranno sovrascritti.`
+      );
+      if (!confirmed) return;
+
+      let imported = 0;
+
+      // Import categorie first (referenced by centri)
+      if (data.categorie_centri?.length) {
+        await supabase.from("categorie_centri").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const { error } = await supabase.from("categorie_centri").insert(
+          data.categorie_centri.map((r: any) => ({
+            id: r.id, tipo: r.tipo, codice: r.codice, descrizione: r.descrizione || "",
+          }))
+        );
+        if (error) console.error("Import categorie error:", error);
+        else imported += data.categorie_centri.length;
+      }
+
+      if (data.centri_cr?.length) {
+        await supabase.from("centri_cr").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const { error } = await supabase.from("centri_cr").insert(
+          data.centri_cr.map((r: any) => ({
+            id: r.id, tipo: r.tipo, codice: r.codice, descrizione: r.descrizione || "",
+            parole_chiave_matching: r.parole_chiave_matching || r.paroleChiaveMatching || "",
+            note: r.note || "", categoria_id: r.categoria_id || r.categoriaId || null,
+          }))
+        );
+        if (error) console.error("Import centri error:", error);
+        else imported += data.centri_cr.length;
+      }
+
+      if (data.conti_correnti?.length) {
+        await supabase.from("conti_correnti").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const { error } = await supabase.from("conti_correnti").insert(
+          data.conti_correnti.map((r: any) => ({
+            id: r.id, tipo: r.tipo || "conto_corrente", banca: r.banca, iban: r.iban,
+            intestatario: r.intestatario || "", note: r.note || "",
+          }))
+        );
+        if (error) console.error("Import conti error:", error);
+        else imported += data.conti_correnti.length;
+      }
+
+      if (data.naming_rules?.length) {
+        await supabase.from("naming_rules").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const { error } = await supabase.from("naming_rules").insert(
+          data.naming_rules.map((r: any) => ({
+            id: r.id, tipo: r.tipo, pattern: r.pattern, esempio: r.esempio || "",
+          }))
+        );
+        if (error) console.error("Import naming error:", error);
+        else imported += data.naming_rules.length;
+      }
+
+      if (data.centro_assignments?.length) {
+        await supabase.from("centro_assignments").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        for (let i = 0; i < data.centro_assignments.length; i += 100) {
+          const batch = data.centro_assignments.slice(i, i + 100).map((r: any) => ({
+            invoice_key: r.invoice_key, tipo: r.tipo, context: r.context, centro_codice: r.centro_codice,
+          }));
+          const { error } = await supabase.from("centro_assignments").insert(batch);
+          if (error) { console.error("Import assignments error:", error); break; }
+        }
+        imported += data.centro_assignments.length;
+      }
+
+      toast.success(`Importati ${imported} record. Ricarico la pagina...`);
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      console.error("Import error:", err);
+      toast.error("Errore durante l'importazione: file JSON non valido");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          Trasferimento Configurazione
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Esporta o importa tutte le configurazioni (centri C/R, conti, regole, assegnazioni) in formato JSON per trasferirle tra dispositivi.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex gap-3">
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-3.5 w-3.5 mr-1.5" />Esporta JSON
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+          <Upload className="h-3.5 w-3.5 mr-1.5" />Importa JSON
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          className="hidden"
+          onChange={handleImport}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────
 
 const StrumentiPage = () => {
@@ -720,6 +885,9 @@ const StrumentiPage = () => {
           <NamingRulesTab />
         </TabsContent>
       </Tabs>
+
+      <Separator />
+      <ExportImportSection />
     </div>
   );
 };
