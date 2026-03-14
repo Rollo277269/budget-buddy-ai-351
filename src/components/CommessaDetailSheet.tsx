@@ -700,6 +700,114 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
         {ricavoData.length > 0 && renderChart(ricavoData, "Centri di Ricavo", CHART_COLORS)}
         {costoData.length > 0 && renderChart(costoData, "Centri di Costo", CHART_COLORS.slice(3))}
       </div>
+
+      {/* Comparison tables */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {ricavoData.length > 0 && (
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b bg-muted/30">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <ArrowUpRight className="h-3.5 w-3.5 text-income" />
+                Riepilogo Centri di Ricavo
+              </h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[10px]">Centro</TableHead>
+                  <TableHead className="text-[10px] text-right">Importo</TableHead>
+                  <TableHead className="text-[10px] text-right">%</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ricavoData.map((d) => {
+                  const totalRicavi = ricavoData.reduce((s, r) => s + r.value, 0);
+                  const pct = totalRicavi > 0 ? (d.value / totalRicavi) * 100 : 0;
+                  return (
+                    <TableRow key={d.name}>
+                      <TableCell className="text-xs">{d.name}</TableCell>
+                      <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
+                      <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow className="border-t-2 font-semibold bg-muted/20">
+                  <TableCell className="text-xs font-bold">Totale Ricavi</TableCell>
+                  <TableCell className="text-xs font-mono text-right font-bold text-income">{formatCurrency(ricavoData.reduce((s, r) => s + r.value, 0))}</TableCell>
+                  <TableCell className="text-xs font-mono text-right">100%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        {costoData.length > 0 && (
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b bg-muted/30">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <ArrowDownRight className="h-3.5 w-3.5 text-expense" />
+                Riepilogo Centri di Costo
+              </h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[10px]">Centro</TableHead>
+                  <TableHead className="text-[10px] text-right">Importo</TableHead>
+                  <TableHead className="text-[10px] text-right">%</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {costoData.map((d) => {
+                  const totalCosti = costoData.reduce((s, r) => s + r.value, 0);
+                  const pct = totalCosti > 0 ? (d.value / totalCosti) * 100 : 0;
+                  return (
+                    <TableRow key={d.name}>
+                      <TableCell className="text-xs">{d.name}</TableCell>
+                      <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
+                      <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow className="border-t-2 font-semibold bg-muted/20">
+                  <TableCell className="text-xs font-bold">Totale Costi</TableCell>
+                  <TableCell className="text-xs font-mono text-right font-bold text-expense">{formatCurrency(costoData.reduce((s, r) => s + r.value, 0))}</TableCell>
+                  <TableCell className="text-xs font-mono text-right">100%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      {/* Saldo comparison */}
+      {ricavoData.length > 0 && costoData.length > 0 && (() => {
+        const totRicavi = ricavoData.reduce((s, r) => s + r.value, 0);
+        const totCosti = costoData.reduce((s, r) => s + r.value, 0);
+        const saldo = totRicavi - totCosti;
+        const margine = totRicavi > 0 ? (saldo / totRicavi) * 100 : 0;
+        return (
+          <div className="rounded-xl border bg-card p-4">
+            <div className="grid grid-cols-4 gap-4 text-center">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Totale Ricavi</p>
+                <p className="text-sm font-bold font-mono text-income">{formatCurrency(totRicavi)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Totale Costi</p>
+                <p className="text-sm font-bold font-mono text-expense">{formatCurrency(totCosti)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Saldo</p>
+                <p className={`text-sm font-bold font-mono ${saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(saldo)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Margine</p>
+                <p className={`text-sm font-bold font-mono ${margine >= 0 ? "text-income" : "text-expense"}`}>{margine.toFixed(1)}%</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
