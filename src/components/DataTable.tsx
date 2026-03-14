@@ -63,6 +63,8 @@ export function DataTable<T extends Record<string, any>>({
   rowKey,
   onRowClick,
   rowClassName,
+  expandable,
+  renderExpandedContent,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
