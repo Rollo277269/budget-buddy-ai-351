@@ -222,10 +222,16 @@ export function CommessaDetailSheet({
               <Badge variant="outline" className="font-mono text-sm">CIG: {commessa.cig || "—"}</Badge>
               {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
             </div>
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5">
-              <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
-              Torna a Commesse
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5 no-print">
+                <Printer className="h-3.5 w-3.5" />
+                Esporta PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 no-print">
+                <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
+                Torna a Commesse
+              </Button>
+            </div>
           </div>
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
