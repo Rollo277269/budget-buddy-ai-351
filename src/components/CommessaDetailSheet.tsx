@@ -599,80 +599,175 @@ export function CommessaDetailSheet({
             <div className="pdf-meta">
               <span>CIG: {commessa.cig || "—"}</span>
               {cssr?.cig_derivato && <span>CIG Derivato: {cssr.cig_derivato}</span>}
+              <span>Committente: {commessa.committente}</span>
+              <span>Assegnataria: {commessa.assegnataria}</span>
               <span>Data report: {new Date().toLocaleDateString("it-IT")}</span>
             </div>
           </div>
 
+          {/* Dati Commessa */}
+          {cssr && (
+            <section className="pdf-section pdf-full-width">
+              <h2>Dati Commessa</h2>
+              <div className="pdf-data-grid">
+                {[
+                  ["CIG", cssr.cig], ["CIG Derivato", cssr.cig_derivato], ["CUP", cssr.cup],
+                  ["RUP", cssr.rup], ["Direttore Lavori", cssr.direttore_lavori], ["N° Repertorio", cssr.numero_repertorio],
+                  ["Data Contratto", cssr.data_contratto], ["Scadenza", cssr.data_scadenza_contratto],
+                  ["Consegna Lavori", cssr.data_consegna_lavori], ["Durata", cssr.durata_contrattuale],
+                  ["Importo Contrattuale", data.importoContratto != null && !isNaN(data.importoContratto) ? formatCurrency(data.importoContratto) : cssr.importo_contrattuale],
+                  ["Base Gara", cssr.importo_base_gara ? (isNaN(parseFloat(cssr.importo_base_gara)) ? cssr.importo_base_gara : formatCurrency(parseFloat(cssr.importo_base_gara))) : null],
+                  ["Ribasso", cssr.ribasso ? `${cssr.ribasso}%` : null],
+                  ["Stato", cssr.stato],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="pdf-data-item">
+                    <span className="pdf-data-label">{label}</span>
+                    <span className="pdf-data-value">{value || "—"}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* KPI */}
           <div className="pdf-kpi-grid">
             <div className="pdf-kpi-card">
               <p className="pdf-kpi-label">Totale Ricavi</p>
-              <p className="pdf-kpi-value is-positive">{formatCurrency(totalRicaviPrint)}</p>
+              <p className="pdf-kpi-value is-positive">{formatCurrency(data.totalVendite)}</p>
+              <p className="pdf-kpi-sub">{data.linkedSales.length} fatture</p>
             </div>
             <div className="pdf-kpi-card">
               <p className="pdf-kpi-label">Totale Costi</p>
-              <p className="pdf-kpi-value is-negative">{formatCurrency(totalCostiPrint)}</p>
+              <p className="pdf-kpi-value is-negative">{formatCurrency(data.totalAcquisti)}</p>
+              <p className="pdf-kpi-sub">{data.linkedPurchases.length} fatture</p>
             </div>
             <div className="pdf-kpi-card">
               <p className="pdf-kpi-label">Saldo</p>
-              <p className={`pdf-kpi-value ${saldoPrint >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(saldoPrint)}</p>
+              <p className={`pdf-kpi-value ${data.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(data.saldo)}</p>
+              <p className="pdf-kpi-sub">{data.saldo >= 0 ? "Attivo" : "Passivo"}</p>
             </div>
             <div className="pdf-kpi-card">
               <p className="pdf-kpi-label">Margine</p>
-              <p className={`pdf-kpi-value ${marginePrint >= 0 ? "is-positive" : "is-negative"}`}>{marginePrint.toFixed(1)}%</p>
+              <p className={`pdf-kpi-value ${data.margine >= 0 ? "is-positive" : "is-negative"}`}>{data.margine.toFixed(1)}%</p>
+              <p className="pdf-kpi-sub">{data.importoContratto != null && !isNaN(data.importoContratto) ? `Fatturato: ${(data.percentualeFatturato || 0).toFixed(1)}% contratto` : ""}</p>
             </div>
           </div>
 
+          {/* Andamento Mensile */}
+          {data.monthlyData.length > 0 && (
+            <section className="pdf-section pdf-full-width">
+              <h2>Andamento Mensile</h2>
+              <table className="pdf-table">
+                <thead><tr><th>Mese</th><th className="is-right">Vendite</th><th className="is-right">Acquisti</th><th className="is-right">Saldo</th></tr></thead>
+                <tbody>
+                  {data.monthlyData.map((m) => (
+                    <tr key={m.mese}><td>{m.mese}</td><td className="is-right">{formatCurrency(m.vendite)}</td><td className="is-right">{formatCurrency(m.acquisti)}</td><td className={`is-right ${m.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(m.saldo)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
+          {/* Fornitori */}
+          {data.supplierData.length > 0 && (
+            <section className="pdf-section pdf-full-width">
+              <h2>Ripartizione Fornitori</h2>
+              <table className="pdf-table">
+                <thead><tr><th>Fornitore</th><th className="is-right">Importo</th><th className="is-right">%</th></tr></thead>
+                <tbody>
+                  {(() => { const total = data.supplierData.reduce((a, x) => a + x.value, 0); return data.supplierData.map((s) => (
+                    <tr key={s.name}><td>{s.name}</td><td className="is-right">{formatCurrency(s.value)}</td><td className="is-right">{total > 0 ? ((s.value / total) * 100).toFixed(1) : "0.0"}%</td></tr>
+                  )); })()}
+                </tbody>
+              </table>
+            </section>
+          )}
+
+          {/* Stato Incassi / Pagamenti */}
+          <div className="pdf-table-grid">
+            <section className="pdf-section">
+              <h2>Stato Incassi (Vendite)</h2>
+              <table className="pdf-table"><tbody>
+                <tr><td>Incassato</td><td className="is-right is-positive">{formatCurrency(data.statusSales.pagata)}</td></tr>
+                <tr><td>Da incassare</td><td className="is-right is-negative">{formatCurrency(data.statusSales.nonPagata)}</td></tr>
+              </tbody></table>
+            </section>
+            <section className="pdf-section">
+              <h2>Stato Pagamenti (Acquisti)</h2>
+              <table className="pdf-table"><tbody>
+                <tr><td>Pagato</td><td className="is-right is-positive">{formatCurrency(data.statusPurchases.pagata)}</td></tr>
+                <tr><td>Da pagare</td><td className="is-right is-negative">{formatCurrency(data.statusPurchases.nonPagata)}</td></tr>
+              </tbody></table>
+            </section>
+          </div>
+
+          {/* Riepilogo Centri */}
           <div className="pdf-table-grid">
             <section className="pdf-section">
               <h2>Riepilogo Centri di Ricavo</h2>
               <table className="pdf-table">
-                <thead>
-                  <tr>
-                    <th>Centro</th>
-                    <th className="is-right">Importo</th>
-                    <th className="is-right">%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ricavoRows.map((r) => {
-                    const pct = totalRicaviPrint > 0 ? (r.value / totalRicaviPrint) * 100 : 0;
-                    return (
-                      <tr key={r.name}>
-                        <td>{r.name}</td>
-                        <td className="is-right">{formatCurrency(r.value)}</td>
-                        <td className="is-right">{pct.toFixed(1)}%</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
+                <thead><tr><th>Centro</th><th className="is-right">Importo</th><th className="is-right">%</th></tr></thead>
+                <tbody>{ricavoRows.map((r) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
               </table>
             </section>
-
             <section className="pdf-section">
               <h2>Riepilogo Centri di Costo</h2>
               <table className="pdf-table">
-                <thead>
-                  <tr>
-                    <th>Centro</th>
-                    <th className="is-right">Importo</th>
-                    <th className="is-right">%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {costoRows.map((r) => {
-                    const pct = totalCostiPrint > 0 ? (r.value / totalCostiPrint) * 100 : 0;
-                    return (
-                      <tr key={r.name}>
-                        <td>{r.name}</td>
-                        <td className="is-right">{formatCurrency(r.value)}</td>
-                        <td className="is-right">{pct.toFixed(1)}%</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
+                <thead><tr><th>Centro</th><th className="is-right">Importo</th><th className="is-right">%</th></tr></thead>
+                <tbody>{costoRows.map((r) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
               </table>
             </section>
           </div>
+
+          {/* Elenco Vendite per Centro di Ricavo */}
+          {(() => {
+            const grouped = new Map<string, SaleInvoice[]>();
+            data.linkedSales.forEach((s) => {
+              const codice = ricavoMap.map[`${s.anno}-${s.numero}`] || "Non classificato";
+              const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
+              if (!grouped.has(label)) grouped.set(label, []);
+              grouped.get(label)!.push(s);
+            });
+            return Array.from(grouped.entries()).map(([centro, invoices]) => (
+              <section key={centro} className="pdf-section pdf-full-width">
+                <h2>Vendite — {centro}</h2>
+                <table className="pdf-table">
+                  <thead><tr><th>N°</th><th>Data</th><th>Cliente</th><th>Descrizione</th><th>Stato</th><th className="is-right">Imponibile</th><th className="is-right">Totale</th></tr></thead>
+                  <tbody>
+                    {invoices.map((s) => (
+                      <tr key={`${s.anno}-${s.numero}`}><td>{s.numero}/{s.anno}</td><td>{s.data}</td><td>{s.cliente}</td><td className="pdf-desc-cell">{s.descrizione}</td><td>{s.stato}</td><td className="is-right">{formatCurrency(s.imponibile)}</td><td className="is-right">{formatCurrency(s.totale)}</td></tr>
+                    ))}
+                    <tr className="pdf-table-total"><td colSpan={5}></td><td className="is-right">{formatCurrency(invoices.reduce((a, s) => a + s.imponibile, 0))}</td><td className="is-right">{formatCurrency(invoices.reduce((a, s) => a + s.totale, 0))}</td></tr>
+                  </tbody>
+                </table>
+              </section>
+            ));
+          })()}
+
+          {/* Elenco Acquisti per Centro di Costo */}
+          {(() => {
+            const grouped = new Map<string, PurchaseInvoice[]>();
+            data.linkedPurchases.forEach((p) => {
+              const codice = costoMap.map[`${p.anno}-${p.numero}`] || "Non classificato";
+              const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
+              if (!grouped.has(label)) grouped.set(label, []);
+              grouped.get(label)!.push(p);
+            });
+            return Array.from(grouped.entries()).map(([centro, invoices]) => (
+              <section key={centro} className="pdf-section pdf-full-width">
+                <h2>Acquisti — {centro}</h2>
+                <table className="pdf-table">
+                  <thead><tr><th>N°</th><th>Data</th><th>Fornitore</th><th>Descrizione</th><th>Stato</th><th className="is-right">Imponibile</th><th className="is-right">Totale</th></tr></thead>
+                  <tbody>
+                    {invoices.map((p) => (
+                      <tr key={`${p.anno}-${p.numero}`}><td>{p.numero}/{p.anno}</td><td>{p.data}</td><td>{p.fornitore}</td><td className="pdf-desc-cell">{p.descrizione}</td><td>{p.stato}</td><td className="is-right">{formatCurrency(p.imponibile)}</td><td className="is-right">{formatCurrency(p.totale)}</td></tr>
+                    ))}
+                    <tr className="pdf-table-total"><td colSpan={5}></td><td className="is-right">{formatCurrency(invoices.reduce((a, p) => a + p.imponibile, 0))}</td><td className="is-right">{formatCurrency(invoices.reduce((a, p) => a + p.totale, 0))}</td></tr>
+                  </tbody>
+                </table>
+              </section>
+            ));
+          })()}
         </div>
       </DialogContent>
     </Dialog>
