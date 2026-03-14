@@ -625,8 +625,12 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   centri: CentroCR[];
 }) {
   const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
-  const [ricavoOrder, setRicavoOrder] = useState<string[] | null>(null);
-  const [costoOrder, setCostoOrder] = useState<string[] | null>(null);
+  const [ricavoOrder, setRicavoOrder] = useState<string[] | null>(() => {
+    try { return JSON.parse(localStorage.getItem("centro-ricavo-order") || "null"); } catch { return null; }
+  });
+  const [costoOrder, setCostoOrder] = useState<string[] | null>(() => {
+    try { return JSON.parse(localStorage.getItem("centro-costo-order") || "null"); } catch { return null; }
+  });
   const [dragRicavoIdx, setDragRicavoIdx] = useState<number | null>(null);
   const [dragCostoIdx, setDragCostoIdx] = useState<number | null>(null);
 
@@ -738,13 +742,15 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           fromIdx: number,
           toIdx: number,
           setOrder: React.Dispatch<React.SetStateAction<string[] | null>>,
-          currentData: typeof ricavoData
+          currentData: typeof ricavoData,
+          storageKey: string
         ) => {
           setOrder((prev) => {
             const arr = prev || currentData.map((d) => d.name);
             const next = [...arr];
             const [moved] = next.splice(fromIdx, 1);
             next.splice(toIdx, 0, moved);
+            localStorage.setItem(storageKey, JSON.stringify(next));
             return next;
           });
         };
@@ -759,7 +765,8 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           totalColor: string,
           dragIdx: number | null,
           setDragIdx: (i: number | null) => void,
-          setOrder: React.Dispatch<React.SetStateAction<string[] | null>>
+          setOrder: React.Dispatch<React.SetStateAction<string[] | null>>,
+          storageKey: string
         ) => (
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b bg-muted/30">
@@ -787,7 +794,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                       draggable
                       onDragStart={(e) => { setDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
                       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-                      onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data); setDragIdx(null); }}
+                      onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data, storageKey); setDragIdx(null); }}
                       onDragEnd={() => setDragIdx(null)}
                     >
                       <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
@@ -810,14 +817,14 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                 "Riepilogo Centri di Ricavo",
                 <ArrowUpRight className="h-3.5 w-3.5 text-income" />,
                 "Totale Ricavi", "text-income",
-                dragRicavoIdx, setDragRicavoIdx, setRicavoOrder
+                dragRicavoIdx, setDragRicavoIdx, setRicavoOrder, "centro-ricavo-order"
               )}
               {costoData.length > 0 && renderDraggableTable(
                 costoData, orderedCosto, totalCosti,
                 "Riepilogo Centri di Costo",
                 <ArrowDownRight className="h-3.5 w-3.5 text-expense" />,
                 "Totale Costi", "text-expense",
-                dragCostoIdx, setDragCostoIdx, setCostoOrder
+                dragCostoIdx, setDragCostoIdx, setCostoOrder, "centro-costo-order"
               )}
             </div>
 
