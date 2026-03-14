@@ -342,35 +342,69 @@ export function DataTable<T extends Record<string, any>>({
           <TableBody>
             {sorted.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={activeColumns.length} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={activeColumns.length + (expandable ? 1 : 0)} className="text-center text-muted-foreground py-8">
                   Nessun risultato
                 </TableCell>
               </TableRow>
             ) : (
               <>
                 {topPadding > 0 && (
-                  <tr style={{ height: topPadding }}><td colSpan={activeColumns.length} /></tr>
+                  <tr style={{ height: topPadding }}><td colSpan={activeColumns.length + (expandable ? 1 : 0)} /></tr>
                 )}
-                {visibleRows.map((row) => (
-                  <TableRow
-                    key={rowKey(row)}
-                    className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
-                    onClick={() => onRowClick?.(row)}
-                    style={useVirtual ? { height: ROW_HEIGHT } : undefined}
-                  >
-                    {activeColumns.map((col) => (
-                      <TableCell
-                        key={col.key}
-                        className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""}`}
-                        style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
+                {visibleRows.map((row) => {
+                  const key = rowKey(row);
+                  const isExpandable = expandable?.(row) ?? false;
+                  const isExpanded = expandedRows.has(key);
+                  return (
+                    <Fragment key={key}>
+                      <TableRow
+                        className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
+                        onClick={() => onRowClick?.(row)}
+                        style={useVirtual ? { height: ROW_HEIGHT } : undefined}
                       >
-                        {col.render(row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                        {expandable && (
+                          <TableCell className="w-8 px-1">
+                            {isExpandable && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedRows((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(key)) next.delete(key); else next.add(key);
+                                    return next;
+                                  });
+                                }}
+                              >
+                                {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                        {activeColumns.map((col) => (
+                          <TableCell
+                            key={col.key}
+                            className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""}`}
+                            style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
+                          >
+                            {col.render(row)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {isExpanded && renderExpandedContent && (
+                        <TableRow className="bg-muted/30 hover:bg-muted/40">
+                          <TableCell colSpan={activeColumns.length + 1} className="p-0">
+                            {renderExpandedContent(row)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })}
                 {bottomPadding > 0 && (
-                  <tr style={{ height: bottomPadding }}><td colSpan={activeColumns.length} /></tr>
+                  <tr style={{ height: bottomPadding }}><td colSpan={activeColumns.length + (expandable ? 1 : 0)} /></tr>
                 )}
               </>
             )}
