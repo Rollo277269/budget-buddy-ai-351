@@ -325,7 +325,9 @@ const AcquistiPage = () => {
 
         <FilterBar filters={filters} onFiltersChange={setFilters} options={{
           ...filterOptions,
-          centriCosto: centriCosto.map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` })),
+          centriCosto: centriCosto
+            .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
         }} hideCliente />
         <DataTable<PurchaseInvoice>
           columns={columns}
