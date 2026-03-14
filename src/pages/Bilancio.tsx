@@ -382,16 +382,17 @@ function CentriSideBySide({
   ricavoBreakdown: CentroAgg[]; costoBreakdown: CentroAgg[];
   totalRicavi: number; totalCosti: number;
 }) {
+  const maxRows = Math.max(ricavoBreakdown.length, costoBreakdown.length);
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" />
-      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} />
+      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} />
     </div>
   );
 }
 
-function CentroTableCard({ id, title, data, total, accentClass }: {
-  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string;
+function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
+  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string; minRows?: number;
 }) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -436,15 +437,15 @@ function CentroTableCard({ id, title, data, total, accentClass }: {
   const handleDragEnd = () => { setDragIdx(null); setOverIdx(null); };
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden flex flex-col">
+    <div className="rounded-xl border bg-card overflow-hidden">
       <div className="p-3 border-b border-border bg-muted/30">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
       {data.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div>
       ) : (
-        <div className="overflow-x-auto flex-1 flex flex-col">
-          <table className="w-full text-sm flex-1">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20">
                 <th className="w-6"></th>
@@ -474,6 +475,15 @@ function CentroTableCard({ id, title, data, total, accentClass }: {
                   <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
                     {total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%
                   </td>
+                </tr>
+              ))}
+              {/* Empty padding rows to align totals */}
+              {Array.from({ length: Math.max(0, minRows - sortedData.length) }).map((_, i) => (
+                <tr key={`empty-${i}`} className="border-b border-border/50">
+                  <td className="pl-2 pr-0 py-1.5">&nbsp;</td>
+                  <td className="px-3 py-1.5">&nbsp;</td>
+                  <td className="px-3 py-1.5"></td>
+                  <td className="px-3 py-1.5"></td>
                 </tr>
               ))}
             </tbody>
