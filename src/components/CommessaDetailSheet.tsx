@@ -792,6 +792,7 @@ function InvoiceList({
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
+                centro: <TableCell key="centro"><CentroCell invoiceKey={key} tipo={centroTipo} centri={centri} centroMap={centroMap} onAssign={onAssignCentro} /></TableCell>,
               };
 
               return (
