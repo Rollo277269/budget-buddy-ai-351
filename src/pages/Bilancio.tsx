@@ -567,8 +567,9 @@ function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg
               <td className="is-right">{total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%</td>
             </tr>
           ))}
-          <tr className="pdf-table-total">
-            <td>TOTALE</td>
+           <tr className="pdf-table-total">
+             <td></td>
+             <td>TOTALE</td>
             <td className="is-right">{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
             <td className="is-right">100%</td>
           </tr>
