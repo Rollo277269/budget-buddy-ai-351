@@ -20,7 +20,7 @@ const items = [
   { title: "Bilancio", url: "/bilancio", icon: PieChart },
   { title: "Banche", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
-  { title: "Cruscotto", url: "/offerte", icon: Send },
+  { title: "Gare", url: "/offerte", icon: Send },
   { title: "Riepiloghi per CIG", url: "/commesse", icon: FolderKanban },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
