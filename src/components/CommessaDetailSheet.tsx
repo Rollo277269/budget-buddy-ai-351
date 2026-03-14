@@ -1460,7 +1460,7 @@ function InvoiceList({
               };
 
               return (
-                <TableRow key={key}>
+                <TableRow key={key} className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} onClick={() => onRowClick?.(inv)}>
                   {visibleColumns.map((col) => cellMap[col.key])}
                   <TableCell>
                     <Badge variant={isAuto ? "secondary" : "outline"} className="text-[9px]">
