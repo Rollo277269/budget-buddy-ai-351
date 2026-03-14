@@ -278,6 +278,7 @@ const BanchePage = () => {
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [filterYear, setFilterYear] = useState<string>("");
 
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
 
