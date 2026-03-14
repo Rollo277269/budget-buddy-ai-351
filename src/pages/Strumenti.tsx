@@ -151,32 +151,28 @@ function saveRules(rules: NamingRule[]) {
   localStorage.setItem(RULES_KEY, JSON.stringify(rules));
 }
 
+// ─── Regole Denominazione ────────────────────────────────────────
+
+import { useNamingRules, NamingRule } from "@/hooks/useNamingRules";
+
 function NamingRulesTab() {
-  const [rules, setRules] = useState<NamingRule[]>(loadRules);
+  const { rules, saveRule, deleteRule } = useNamingRules();
   const [editing, setEditing] = useState<NamingRule | null>(null);
 
   const empty: NamingRule = { id: "", tipo: "", pattern: "", esempio: "" };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editing) return;
     if (!editing.tipo || !editing.pattern) {
       toast.error("Tipo documento e pattern sono obbligatori");
       return;
     }
-    const updated = editing.id ?
-    rules.map((r) => r.id === editing.id ? editing : r) :
-    [...rules, { ...editing, id: crypto.randomUUID() }];
-    setRules(updated);
-    saveRules(updated);
+    await saveRule(editing);
     setEditing(null);
-    toast.success("Regola salvata");
   };
 
-  const handleDelete = (id: string) => {
-    const updated = rules.filter((r) => r.id !== id);
-    setRules(updated);
-    saveRules(updated);
-    toast.success("Regola eliminata");
+  const handleDelete = async (id: string) => {
+    await deleteRule(id);
   };
 
   return (
