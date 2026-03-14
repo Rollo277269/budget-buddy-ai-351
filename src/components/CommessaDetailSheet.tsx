@@ -209,10 +209,10 @@ export function CommessaDetailSheet({
         <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
           <div className="flex items-center gap-3 flex-wrap">
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <Badge variant="outline" className="font-mono text-sm">{commessa.cig || "—"}</Badge>
-              Commessa #{commessa.numero}
+              Commessa {commessa.numero}
             </DialogTitle>
-            {cssr && <Badge variant="secondary" className="text-[10px]">CSSR</Badge>}
+            <Badge variant="outline" className="font-mono text-sm">CIG: {commessa.cig || "—"}</Badge>
+            {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
           </div>
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
