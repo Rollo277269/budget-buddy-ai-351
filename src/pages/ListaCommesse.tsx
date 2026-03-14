@@ -29,7 +29,7 @@ const columns: ColumnDef<Commessa>[] = [
   { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
   { key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig || "—"}</span> },
   {
-    key: "cssrStato" as any, label: "Stato", sortable: true,
+    key: "cssrStato", label: "Stato", sortable: true,
     render: (r) => {
       if (!r.cssrData) return <span className="text-xs text-muted-foreground">—</span>;
       const stato = r.cssrData.stato;
