@@ -444,7 +444,7 @@ function CentroTableCard({ id, title, data, total, accentClass }: {
         <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div>
       ) : (
         <div className="overflow-x-auto flex-1 flex flex-col">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm flex-1">
             <thead>
               <tr className="border-b border-border bg-muted/20">
                 <th className="w-6"></th>
