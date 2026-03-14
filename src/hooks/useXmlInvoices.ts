@@ -264,11 +264,40 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     }
   }, [xmlRecords, invoices, tipo, fetchRecords]);
 
-  // Map: invoice_key -> XmlInvoiceRecord
-  const xmlMap = new Map<string, XmlInvoiceRecord>();
+  // Map: invoice_key -> XmlInvoiceRecord[] (multiple XMLs can share the same number/year)
+  const xmlMultiMap = new Map<string, XmlInvoiceRecord[]>();
   xmlRecords.forEach((r) => {
-    if (r.invoice_key) xmlMap.set(r.invoice_key, r);
+    if (r.invoice_key) {
+      const list = xmlMultiMap.get(r.invoice_key) || [];
+      list.push(r);
+      xmlMultiMap.set(r.invoice_key, list);
+    }
   });
 
-  return { xmlRecords, xmlMap, loading, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, refresh: fetchRecords, fetchParsedData };
+  /**
+   * Look up an XML record by invoice key + optional counterpart name.
+   * For sales, counterpart = cessionario (client).
+   * For purchases, counterpart = cedente (supplier).
+   */
+  const findXml = (key: string, counterpartName?: string): XmlInvoiceRecord | undefined => {
+    const list = xmlMultiMap.get(key);
+    if (!list || list.length === 0) return undefined;
+    if (list.length === 1 || !counterpartName) return list[0];
+    // Try matching by counterpart name
+    const cn = normalizeStr(counterpartName);
+    const field = tipo === "vendita" ? "cessionario_denominazione" : "cedente_denominazione";
+    const match = list.find((r) => {
+      const xmlName = normalizeStr(r[field] || "");
+      return xmlName && cn && (xmlName.includes(cn) || cn.includes(xmlName));
+    });
+    return match || list[0];
+  };
+
+  const hasXml = (key: string): boolean => xmlMultiMap.has(key);
+
+  // Legacy xmlMap for backward compatibility (single record per key, first match)
+  const xmlMap = new Map<string, XmlInvoiceRecord>();
+  xmlMultiMap.forEach((list, key) => xmlMap.set(key, list[0]));
+
+  return { xmlRecords, xmlMap, xmlMultiMap, loading, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, refresh: fetchRecords, fetchParsedData, findXml, hasXml };
 }
