@@ -269,6 +269,67 @@
     background: hsl(var(--accent));
   }
 
+  body.print-commessa-report .pdf-full-width {
+    margin-bottom: 12px;
+  }
+
+  body.print-commessa-report .pdf-data-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px 16px;
+    padding: 10px;
+    font-size: 10px;
+  }
+
+  body.print-commessa-report .pdf-data-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  body.print-commessa-report .pdf-data-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: hsl(var(--muted-foreground));
+  }
+
+  body.print-commessa-report .pdf-data-value {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  body.print-commessa-report .pdf-data-highlight {
+    color: hsl(var(--primary));
+  }
+
+  body.print-commessa-report .pdf-kpi-sub {
+    margin: 2px 0 0;
+    font-size: 9px;
+    color: hsl(var(--muted-foreground));
+  }
+
+  body.print-commessa-report .pdf-desc-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.print-commessa-report .pdf-table-total td {
+    font-weight: 700;
+    border-top: 2px solid hsl(var(--foreground));
+    border-bottom: none;
+  }
+
+  body.print-commessa-report .is-positive {
+    color: hsl(var(--income));
+  }
+
+  body.print-commessa-report .is-negative {
+    color: hsl(var(--expense));
+  }
+
   @page {
     size: A4 landscape;
     margin: 1.2cm;
