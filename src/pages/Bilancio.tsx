@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, loadCentri } from "@/hooks/useCentri";
 import { StatCard } from "@/components/StatCard";
 import { formatCurrency } from "@/lib/format";
-import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Cell, PieChart, Pie,
@@ -105,7 +106,6 @@ export default function BilancioPage() {
 
   const annoFilter = selectedAnno !== "all" ? parseInt(selectedAnno) : undefined;
 
-  // Global KPIs
   const globalKpis = useMemo(() => {
     const src = annoFilter ? yearSummaries.filter((y) => y.anno === annoFilter) : yearSummaries;
     const ricavi = src.reduce((s, y) => s + y.ricavi, 0);
@@ -117,7 +117,6 @@ export default function BilancioPage() {
     return { ricavi, costi, saldo, margine, numVendite, numAcquisti };
   }, [yearSummaries, annoFilter]);
 
-  // Centro breakdown
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
 
@@ -130,7 +129,6 @@ export default function BilancioPage() {
     [allPurchases, costoMapAcquisti, centriCosto, annoFilter]
   );
 
-  // Bar chart data for yearly comparison
   const barData = useMemo(() => {
     const data = annoFilter
       ? yearSummaries.filter((y) => y.anno === annoFilter)
@@ -143,6 +141,14 @@ export default function BilancioPage() {
     }));
   }, [yearSummaries, annoFilter]);
 
+  const handleExportPdf = useCallback(() => {
+    document.body.classList.add("print-report");
+    setTimeout(() => {
+      window.print();
+      document.body.classList.remove("print-report");
+    }, 100);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -150,6 +156,9 @@ export default function BilancioPage() {
       </div>
     );
   }
+
+  const annoLabel = annoFilter ? String(annoFilter) : "Tutti gli anni";
+  const now = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="p-6 space-y-6 overflow-auto">
@@ -159,17 +168,22 @@ export default function BilancioPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Bilancio</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Riepilogo costi e ricavi con ripartizione per centri di competenza</p>
         </div>
-        <Select value={selectedAnno} onValueChange={setSelectedAnno}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Anno" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutti gli anni</SelectItem>
-            {years.map((y) => (
-              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="no-print">
+            <Printer className="h-4 w-4 mr-1" /> Stampa PDF
+          </Button>
+          <Select value={selectedAnno} onValueChange={setSelectedAnno}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Anno" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti gli anni</SelectItem>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -304,6 +318,128 @@ export default function BilancioPage() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* ── Hidden PDF Report ── */}
+      <div className="pdf-report">
+        <div className="pdf-header">
+          <div className="pdf-header-text">
+            <h1>Bilancio — {annoLabel}</h1>
+            <p>Riepilogo costi e ricavi con ripartizione per centri di competenza</p>
+          </div>
+        </div>
+        <div className="pdf-meta">
+          <span>Generato il {now}</span>
+          <span>•</span>
+          <span>{globalKpis.numVendite} fatture vendita — {globalKpis.numAcquisti} fatture acquisto</span>
+        </div>
+
+        {/* KPIs */}
+        <div className="pdf-kpi-grid">
+          <div className="pdf-kpi-card">
+            <p className="pdf-kpi-label">Totale Ricavi</p>
+            <p className="pdf-kpi-value is-positive">{formatCurrency(globalKpis.ricavi)}</p>
+            <p className="pdf-kpi-sub">{globalKpis.numVendite} fatture</p>
+          </div>
+          <div className="pdf-kpi-card">
+            <p className="pdf-kpi-label">Totale Costi</p>
+            <p className="pdf-kpi-value is-negative">{formatCurrency(globalKpis.costi)}</p>
+            <p className="pdf-kpi-sub">{globalKpis.numAcquisti} fatture</p>
+          </div>
+          <div className="pdf-kpi-card">
+            <p className="pdf-kpi-label">Risultato</p>
+            <p className={`pdf-kpi-value ${globalKpis.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(globalKpis.saldo)}</p>
+            <p className="pdf-kpi-sub">{globalKpis.saldo >= 0 ? "Utile" : "Perdita"}</p>
+          </div>
+          <div className="pdf-kpi-card">
+            <p className="pdf-kpi-label">Margine</p>
+            <p className={`pdf-kpi-value ${globalKpis.margine >= 0 ? "is-positive" : "is-negative"}`}>{globalKpis.margine.toFixed(1)}%</p>
+            <p className="pdf-kpi-sub">Ricavi − Costi / Ricavi</p>
+          </div>
+        </div>
+
+        {/* Year bar chart (pure HTML) */}
+        {yearSummaries.length > 1 && (
+          <div className="pdf-section pdf-full-width">
+            <h2>Confronto Annuale</h2>
+            <div className="pdf-bar-chart">
+              {yearSummaries.map((y) => {
+                const maxVal = Math.max(...yearSummaries.map((s) => Math.max(s.ricavi, s.costi)));
+                return (
+                  <div className="pdf-bar-row" key={y.anno}>
+                    <span className="pdf-bar-label">{y.anno}</span>
+                    <div className="pdf-bar-tracks">
+                      <div className="pdf-bar is-positive" style={{ width: `${maxVal > 0 ? (y.ricavi / maxVal) * 100 : 0}%` }}>
+                        <span className="pdf-bar-value">{formatCurrency(y.ricavi)}</span>
+                      </div>
+                      <div className="pdf-bar is-negative" style={{ width: `${maxVal > 0 ? (y.costi / maxVal) * 100 : 0}%` }}>
+                        <span className="pdf-bar-value">{formatCurrency(y.costi)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="pdf-bar-legend">
+                <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive" /> Ricavi</span>
+                <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative" /> Costi</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Year detail table */}
+        <div className="pdf-section pdf-full-width">
+          <h2>Dettaglio per Anno</h2>
+          <table className="pdf-table">
+            <thead>
+              <tr>
+                <th>Anno</th>
+                <th className="is-right">Ricavi</th>
+                <th className="is-right">Costi</th>
+                <th className="is-right">Risultato</th>
+                <th className="is-right">Margine %</th>
+                <th className="is-right">N° Vendite</th>
+                <th className="is-right">N° Acquisti</th>
+              </tr>
+            </thead>
+            <tbody>
+              {yearSummaries.map((y) => (
+                <tr key={y.anno}>
+                  <td style={{ fontWeight: 600 }}>{y.anno}</td>
+                  <td className="is-right is-positive">{formatCurrency(y.ricavi)}</td>
+                  <td className="is-right is-negative">{formatCurrency(y.costi)}</td>
+                  <td className={`is-right ${y.saldo >= 0 ? "is-positive" : "is-negative"}`} style={{ fontWeight: 600 }}>{formatCurrency(y.saldo)}</td>
+                  <td className={`is-right ${y.marginePercent >= 0 ? "is-positive" : "is-negative"}`}>{y.marginePercent.toFixed(1)}%</td>
+                  <td className="is-right">{y.numVendite}</td>
+                  <td className="is-right">{y.numAcquisti}</td>
+                </tr>
+              ))}
+              {yearSummaries.length > 1 && (
+                <tr className="pdf-table-total">
+                  <td>TOTALE</td>
+                  <td className="is-right is-positive">{formatCurrency(globalKpis.ricavi)}</td>
+                  <td className="is-right is-negative">{formatCurrency(globalKpis.costi)}</td>
+                  <td className={`is-right ${globalKpis.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(globalKpis.saldo)}</td>
+                  <td className={`is-right ${globalKpis.margine >= 0 ? "is-positive" : "is-negative"}`}>{globalKpis.margine.toFixed(1)}%</td>
+                  <td className="is-right">{globalKpis.numVendite}</td>
+                  <td className="is-right">{globalKpis.numAcquisti}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Centro breakdown tables */}
+        <div className="pdf-table-grid">
+          <PdfCentroTable title="Centri di Ricavo" data={ricavoBreakdown} total={globalKpis.ricavi} />
+          <PdfCentroTable title="Centri di Costo" data={costoBreakdown} total={globalKpis.costi} />
+        </div>
+
+        <div className="pdf-footer">
+          <span className="pdf-footer-left">Bilancio — {annoLabel}</span>
+          <span className="pdf-footer-center">Generato il {now}</span>
+          <span className="pdf-footer-right">Pag. <span className="pdf-page-number" /></span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -401,6 +537,40 @@ function CentroBreakdownCard({
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ────────── PDF Centro table sub-component ────────── */
+
+function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg[]; total: number }) {
+  if (data.length === 0) return null;
+  return (
+    <div className="pdf-section">
+      <h2>{title}</h2>
+      <table className="pdf-table">
+        <thead>
+          <tr>
+            <th>Centro</th>
+            <th className="is-right">Importo</th>
+            <th className="is-right">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.codice}>
+              <td>{d.descrizione}</td>
+              <td className="is-right">{formatCurrency(d.importo)}</td>
+              <td className="is-right">{total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%</td>
+            </tr>
+          ))}
+          <tr className="pdf-table-total">
+            <td>TOTALE</td>
+            <td className="is-right">{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
+            <td className="is-right">100%</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
