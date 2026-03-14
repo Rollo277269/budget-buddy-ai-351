@@ -15,7 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search, GripVertical, RotateCcw } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search, GripVertical, RotateCcw, X } from "lucide-react";
 
 export interface ColumnDef<T> {
   key: string;
@@ -51,6 +51,7 @@ export function DataTable<T extends Record<string, any>>({
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
+  const [globalSearch, setGlobalSearch] = useState("");
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
@@ -145,8 +146,19 @@ export function DataTable<T extends Record<string, any>>({
     }
   };
 
+  const globalFiltered = useMemo(() => {
+    if (!globalSearch) return data;
+    const lower = globalSearch.toLowerCase();
+    return data.filter((row) => {
+      return columns.some((col) => {
+        const cellVal = col.filterValue ? col.filterValue(row) : String(row[col.key] ?? "");
+        return cellVal.toLowerCase().includes(lower);
+      });
+    });
+  }, [data, globalSearch, columns]);
+
   const filtered = useMemo(() => {
-    let result = data;
+    let result = globalFiltered;
     for (const [key, val] of Object.entries(columnFilters)) {
       if (val) {
         const lower = val.toLowerCase();
@@ -158,7 +170,7 @@ export function DataTable<T extends Record<string, any>>({
       }
     }
     return result;
-  }, [data, columnFilters, columns]);
+  }, [globalFiltered, columnFilters, columns]);
 
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return filtered;
@@ -182,7 +194,7 @@ export function DataTable<T extends Record<string, any>>({
       .map((key) => colMap.get(key)!);
   }, [columns, columnOrder, visibleColumns]);
 
-  const hasActiveFilters = Object.values(columnFilters).some(Boolean);
+  const hasActiveFilters = Object.values(columnFilters).some(Boolean) || !!globalSearch;
 
   const isReordered = useMemo(() => {
     const defaultOrder = columns.map((c) => c.key);
@@ -202,10 +214,29 @@ export function DataTable<T extends Record<string, any>>({
     <div className="space-y-3">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
-          {sorted.length} di {data.length} righe
-          {hasActiveFilters && " (filtrate)"}
-        </p>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="relative max-w-xs flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Cerca in tutte le colonne..."
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+              className="pl-8 h-9 text-xs"
+            />
+            {globalSearch && (
+              <button
+                onClick={() => setGlobalSearch("")}
+                className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+            {sorted.length} di {data.length} righe
+            {hasActiveFilters && " (filtrate)"}
+          </p>
+        </div>
         <div className="flex items-center gap-1.5">
           {(isReordered || Object.keys(columnWidths).length > 0) && (
             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={resetOrder} title="Ripristina ordine e larghezza colonne">
