@@ -383,7 +383,7 @@ function CentriSideBySide({
   totalRicavi: number; totalCosti: number;
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
       <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" />
       <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" />
     </div>
@@ -436,15 +436,15 @@ function CentroTableCard({ id, title, data, total, accentClass }: {
   const handleDragEnd = () => { setDragIdx(null); setOverIdx(null); };
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
+    <div className="rounded-xl border bg-card overflow-hidden flex flex-col">
       <div className="p-3 border-b border-border bg-muted/30">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
       {data.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto flex-1 flex flex-col">
+          <table className="w-full text-sm flex-1">
             <thead>
               <tr className="border-b border-border bg-muted/20">
                 <th className="w-6"></th>
