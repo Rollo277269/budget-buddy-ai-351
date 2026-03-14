@@ -566,7 +566,39 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
   const [activeAccountId, setActiveAccountId] = useState<string>("default");
   const [pendingDuplicates, setPendingDuplicates] = useState<DuplicateInfo | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const refreshAutoMatch = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  // When refreshing, lock in existing auto-matches as manual reconciliations
+  // so only truly unmatched movements get re-attempted
+  const refreshAutoMatch = useCallback(() => {
+    // Get current movements to find auto-matched ones
+    const currentMovements = autoMatch(
+      activeAccountId === "all" ? rawMovements : rawMovements.filter(m => (m.accountId || "default") === activeAccountId),
+      sales, purchases, reconciliations
+    );
+    const newRecs: Reconciliation[] = [];
+    for (const m of currentMovements) {
+      if (m.matchConfidence === "auto" && m.matchedInvoices.length > 0) {
+        for (const inv of m.matchedInvoices) {
+          newRecs.push({
+            movementId: m.id,
+            invoiceType: inv.type,
+            invoiceAnno: inv.anno,
+            invoiceNumero: inv.numero,
+          });
+        }
+      }
+    }
+    if (newRecs.length > 0) {
+      setReconciliations((prev) => {
+        const existing = new Set(prev.map(r => `${r.movementId}|${r.invoiceType}|${r.invoiceAnno}|${r.invoiceNumero}`));
+        const toAdd = newRecs.filter(r => !existing.has(`${r.movementId}|${r.invoiceType}|${r.invoiceAnno}|${r.invoiceNumero}`));
+        const next = [...prev, ...toAdd];
+        saveReconciliations(next);
+        return next;
+      });
+    }
+    setRefreshKey((k) => k + 1);
+  }, [rawMovements, sales, purchases, reconciliations, activeAccountId]);
 
   const fingerprint = (m: RawMovement) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
 
