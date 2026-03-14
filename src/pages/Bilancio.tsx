@@ -485,6 +485,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
                   <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
                     <GripVertical className="h-3.5 w-3.5" />
                   </td>
+                  <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{d.codice === "__unassigned__" ? "—" : d.codice}</td>
                   <td className="px-3 py-1.5 text-xs font-medium truncate max-w-[200px]">{d.descrizione}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
