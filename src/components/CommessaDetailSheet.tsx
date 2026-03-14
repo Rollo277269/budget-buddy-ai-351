@@ -32,6 +32,7 @@ import {
   Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, Printer, FileSearch
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
   Legend, CartesianGrid, ComposedChart, Line,
