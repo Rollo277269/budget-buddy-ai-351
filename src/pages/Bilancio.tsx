@@ -74,18 +74,6 @@ function aggregateByCentro(
     .sort((a, b) => b.importo - a.importo);
 }
 
-/* ────────── palette ────────── */
-const COLORS_RICAVO = [
-  "hsl(152, 60%, 36%)", "hsl(152, 50%, 45%)", "hsl(152, 40%, 55%)",
-  "hsl(170, 50%, 40%)", "hsl(140, 45%, 50%)", "hsl(160, 55%, 42%)",
-  "hsl(130, 40%, 48%)", "hsl(180, 45%, 38%)",
-];
-const COLORS_COSTO = [
-  "hsl(0, 72%, 51%)", "hsl(0, 60%, 58%)", "hsl(10, 65%, 50%)",
-  "hsl(20, 60%, 55%)", "hsl(350, 55%, 48%)", "hsl(5, 50%, 55%)",
-  "hsl(15, 55%, 50%)", "hsl(340, 50%, 52%)",
-];
-
 const tooltipFormatter = (val: number) => formatCurrency(val);
 
 /* ────────── component ────────── */
