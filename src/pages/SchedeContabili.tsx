@@ -316,7 +316,7 @@ export default function SchedeContabiliPage() {
           <div className="max-w-sm">
             <Combobox
               value={selectedFornitore}
-              onChange={setSelectedFornitore}
+              onValueChange={setSelectedFornitore}
               options={fornitoreOptions}
               placeholder="Cerca fornitore..."
             />
