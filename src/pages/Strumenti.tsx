@@ -124,32 +124,6 @@ function ContiCorrentiTab() {
   );
 }
 
-// ─── Regole Denominazione ────────────────────────────────────────
-
-interface NamingRule {
-  id: string;
-  tipo: string;
-  pattern: string;
-  esempio: string;
-}
-
-const RULES_KEY = "naming-rules";
-
-function loadRules(): NamingRule[] {
-  try {
-    const saved = JSON.parse(localStorage.getItem(RULES_KEY) || "null");
-    if (saved) return saved;
-  } catch {}
-  return [
-    { id: "1", tipo: "Fattura Vendita", pattern: "FV_{ANNO}_{NUMERO}_{CLIENTE}", esempio: "FV_2024_001_RossiSRL" },
-    { id: "2", tipo: "Fattura Acquisto", pattern: "FA_{ANNO}_{NUMERO}_{FORNITORE}", esempio: "FA_2024_042_BianchiSPA" },
-    { id: "3", tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" },
-  ];
-}
-
-function saveRules(rules: NamingRule[]) {
-  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
-}
 
 // ─── Regole Denominazione ────────────────────────────────────────
 
