@@ -233,45 +233,26 @@ function NamingRulesTab() {
 
 // ─── Centri di Costo / Ricavo ────────────────────────────────────
 
-interface CategoriaCentro {
-  id: string;
-  tipo: "costo" | "ricavo";
-  codice: string;
-  descrizione: string;
-}
-
-interface CentroCR {
-  id: string;
-  tipo: "costo" | "ricavo";
-  codice: string;
-  descrizione: string;
-  paroleChiaveMatching: string;
-  note: string;
-  categoriaId?: string;
-}
-
-const CENTRI_KEY = "centri-costo-ricavo";
-const CATEGORIE_KEY = "centri-categorie";
-
-function loadCentri(): CentroCR[] {
-  try { return JSON.parse(localStorage.getItem(CENTRI_KEY) || "[]"); }
-  catch { return []; }
-}
-function saveCentriLocal(centri: CentroCR[]) {
-  localStorage.setItem(CENTRI_KEY, JSON.stringify(centri));
-}
-function loadCategorie(): CategoriaCentro[] {
-  try { return JSON.parse(localStorage.getItem(CATEGORIE_KEY) || "[]"); }
-  catch { return []; }
-}
-function saveCategorieLocal(cat: CategoriaCentro[]) {
-  localStorage.setItem(CATEGORIE_KEY, JSON.stringify(cat));
-}
+import {
+  CategoriaCentro, CentroCR,
+  fetchCentriFromDb, fetchCategorieFromDb,
+  upsertCentro, deleteCentroDb,
+  upsertCategoria, deleteCategoriaDb,
+  updateCentroCodeInAssignments,
+} from "@/hooks/useCentri";
 
 function CentriCostoRicavoTab() {
-  const [centri, setCentri] = useState<CentroCR[]>(loadCentri);
-  const [categorie, setCategorie] = useState<CategoriaCentro[]>(loadCategorie);
-  const [expandedCats, setExpandedCats] = useState<Set<string>>(() => new Set(loadCategorie().map(c => c.id)));
+  const [centri, setCentri] = useState<CentroCR[]>([]);
+  const [categorie, setCategorie] = useState<CategoriaCentro[]>([]);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetchCentriFromDb().then(setCentri);
+    fetchCategorieFromDb().then((cats) => {
+      setCategorie(cats);
+      setExpandedCats(new Set(cats.map(c => c.id)));
+    });
+  }, []);
 
   // Editing subcategory
   const [editingId, setEditingId] = useState<string | null>(null);
