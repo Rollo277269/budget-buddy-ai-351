@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,12 +24,15 @@ import { ManualLink } from "@/hooks/useCommessaLinks";
 import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
 import { CentroCell } from "@/components/CentroCell";
+import { PdfViewerPanel } from "@/components/PdfViewerPanel";
+import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, Printer
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, Printer, FileSearch
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
   Legend, CartesianGrid, ComposedChart, Line,
@@ -84,9 +87,30 @@ export function CommessaDetailSheet({
   const [searchQuery, setSearchQuery] = useState("");
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const { centri } = useCentriData();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
+
+  const { xmlMap: xmlMapVendita, fetchParsedData: fetchParsedVendita } = useXmlInvoices(allSales, "vendita");
+  const { xmlMap: xmlMapAcquisto, fetchParsedData: fetchParsedAcquisto } = useXmlInvoices(allPurchases, "acquisto");
+
+  const openPdf = useCallback(async (inv: SaleInvoice | PurchaseInvoice, type: "vendita" | "acquisto") => {
+    const key = `${inv.anno}-${inv.numero}`;
+    const xmlRecord = type === "vendita" ? xmlMapVendita.get(key) : xmlMapAcquisto.get(key);
+    if (!xmlRecord) {
+      toast.error("Nessun XML associato a questa fattura");
+      return;
+    }
+    const fetchFn = type === "vendita" ? fetchParsedVendita : fetchParsedAcquisto;
+    const parsed = await fetchFn(xmlRecord.id);
+    const pdfAllegato = parsed?.allegati?.find((a: any) => a.formato?.toUpperCase() === "PDF");
+    if (pdfAllegato) {
+      setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || xmlRecord.file_name });
+    } else {
+      toast.error("Nessun PDF trovato in questo XML");
+    }
+  }, [xmlMapVendita, xmlMapAcquisto, fetchParsedVendita, fetchParsedAcquisto]);
 
   const data = useMemo(() => {
     if (!commessa) return null;
@@ -263,8 +287,9 @@ export function CommessaDetailSheet({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
-      <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden p-0 border-none">
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); setPdfData(null); } }}>
+      <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-row overflow-hidden p-0 border-none">
+        <div className={`flex flex-col ${pdfData ? "w-1/2" : "w-full"} transition-all overflow-hidden`}>
         {/* Header */}
         <DialogHeader className="px-6 pt-4 pb-3 border-b shrink-0">
           <div className="flex items-center justify-between">
@@ -521,6 +546,7 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoSaleKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
+                onRowClick={(inv) => openPdf(inv, "vendita")}
               />
             </TabsContent>
 
@@ -548,6 +574,7 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
+                onRowClick={(inv) => openPdf(inv, "acquisto")}
               />
             </TabsContent>
 
@@ -905,6 +932,14 @@ export function CommessaDetailSheet({
             ));
           })()}
         </div>
+        </div>
+
+        {/* PDF side panel */}
+        {pdfData && (
+          <div className="w-1/2 h-full">
+            <PdfViewerPanel base64={pdfData.base64} fileName={pdfData.fileName} onClose={() => setPdfData(null)} />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -1246,7 +1281,7 @@ function StatoBadge({ stato }: { stato?: string }) {
 
 /* ── Invoice list sub-component with sort & filter ── */
 function InvoiceList({
-  invoices, type, autoKeys, cig, onRemoveLink, centri, centroMap, onAssignCentro,
+  invoices, type, autoKeys, cig, onRemoveLink, centri, centroMap, onAssignCentro, onRowClick,
 }: {
   invoices: (SaleInvoice | PurchaseInvoice)[];
   type: "vendita" | "acquisto";
@@ -1256,6 +1291,7 @@ function InvoiceList({
   centri: CentroCR[];
   centroMap: Record<string, string>;
   onAssignCentro: (key: string, codice: string) => void;
+  onRowClick?: (inv: SaleInvoice | PurchaseInvoice) => void;
 }) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
@@ -1424,7 +1460,7 @@ function InvoiceList({
               };
 
               return (
-                <TableRow key={key}>
+                <TableRow key={key} className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} onClick={() => onRowClick?.(inv)}>
                   {visibleColumns.map((col) => cellMap[col.key])}
                   <TableCell>
                     <Badge variant={isAuto ? "secondary" : "outline"} className="text-[9px]">
