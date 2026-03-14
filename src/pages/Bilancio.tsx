@@ -8,8 +8,8 @@ import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from "recharts";
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from
+"recharts";
 
 /* ────────── helpers ────────── */
 
@@ -39,9 +39,9 @@ function buildYearSummaries(sales: SaleInvoice[], purchases: PurchaseInvoice[]):
     if (!map.has(a)) map.set(a, { anno: a, ricavi: 0, costi: 0, ivaRicavi: 0, ivaCosti: 0, saldo: 0, marginePercent: 0, numVendite: 0, numAcquisti: 0 });
     return map.get(a)!;
   };
-  sales.forEach((s) => { const y = ensure(s.anno); y.ricavi += s.imponibile; y.ivaRicavi += s.imposta; y.numVendite++; });
-  purchases.forEach((p) => { const y = ensure(p.anno); y.costi += p.imponibile; y.ivaCosti += p.imposta; y.numAcquisti++; });
-  map.forEach((y) => { y.saldo = y.ricavi - y.costi; y.marginePercent = y.ricavi ? (y.saldo / y.ricavi) * 100 : 0; });
+  sales.forEach((s) => {const y = ensure(s.anno);y.ricavi += s.imponibile;y.ivaRicavi += s.imposta;y.numVendite++;});
+  purchases.forEach((p) => {const y = ensure(p.anno);y.costi += p.imponibile;y.ivaCosti += p.imposta;y.numAcquisti++;});
+  map.forEach((y) => {y.saldo = y.ricavi - y.costi;y.marginePercent = y.ricavi ? y.saldo / y.ricavi * 100 : 0;});
   return Array.from(map.values()).sort((a, b) => a.anno - b.anno);
 }
 
@@ -52,11 +52,11 @@ interface CentroAgg {
 }
 
 function aggregateByCentro(
-  invoices: (SaleInvoice | PurchaseInvoice)[],
-  centroMap: Record<string, string>,
-  centri: { codice: string; descrizione: string }[],
-  anno?: number
-): CentroAgg[] {
+invoices: (SaleInvoice | PurchaseInvoice)[],
+centroMap: Record<string, string>,
+centri: {codice: string;descrizione: string;}[],
+anno?: number)
+: CentroAgg[] {
   const agg = new Map<string, number>();
   const filtered = anno ? invoices.filter((i) => i.anno === anno) : invoices;
   filtered.forEach((inv) => {
@@ -66,13 +66,13 @@ function aggregateByCentro(
   });
 
   const centroLookup = new Map(centri.map((c) => [c.codice, c.descrizione]));
-  return Array.from(agg.entries())
-    .map(([codice, importo]) => ({
-      codice,
-      descrizione: codice === "__unassigned__" ? "Non classificate" : centroLookup.get(codice) || codice,
-      importo,
-    }))
-    .sort((a, b) => b.importo - a.importo);
+  return Array.from(agg.entries()).
+  map(([codice, importo]) => ({
+    codice,
+    descrizione: codice === "__unassigned__" ? "Non classificate" : centroLookup.get(codice) || codice,
+    importo
+  })).
+  sort((a, b) => b.importo - a.importo);
 }
 
 const tooltipFormatter = (val: number) => formatCurrency(val);
@@ -113,7 +113,7 @@ export default function BilancioPage() {
     const ricavi = src.reduce((s, y) => s + y.ricavi, 0);
     const costi = src.reduce((s, y) => s + y.costi, 0);
     const saldo = ricavi - costi;
-    const margine = ricavi ? (saldo / ricavi) * 100 : 0;
+    const margine = ricavi ? saldo / ricavi * 100 : 0;
     const numVendite = src.reduce((s, y) => s + y.numVendite, 0);
     const numAcquisti = src.reduce((s, y) => s + y.numAcquisti, 0);
     return { ricavi, costi, saldo, margine, numVendite, numAcquisti };
@@ -132,14 +132,14 @@ export default function BilancioPage() {
   );
 
   const barData = useMemo(() => {
-    const data = annoFilter
-      ? yearSummaries.filter((y) => y.anno === annoFilter)
-      : yearSummaries;
+    const data = annoFilter ?
+    yearSummaries.filter((y) => y.anno === annoFilter) :
+    yearSummaries;
     return data.map((y) => ({
       name: String(y.anno),
       Ricavi: y.ricavi,
       Costi: y.costi,
-      Saldo: y.saldo,
+      Saldo: y.saldo
     }));
   }, [yearSummaries, annoFilter]);
 
@@ -155,8 +155,8 @@ export default function BilancioPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
+      </div>);
+
   }
 
   const annoLabel = annoFilter ? String(annoFilter) : "Tutti gli anni";
@@ -167,7 +167,7 @@ export default function BilancioPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Bilancio</h1>
+          
           <p className="text-sm text-muted-foreground mt-0.5">Riepilogo costi e ricavi con ripartizione per centri di competenza</p>
         </div>
         <div className="flex items-center gap-2">
@@ -180,9 +180,9 @@ export default function BilancioPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti gli anni</SelectItem>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              ))}
+              {years.map((y) =>
+              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -195,34 +195,34 @@ export default function BilancioPage() {
           value={formatCurrency(globalKpis.ricavi)}
           subtitle={`${globalKpis.numVendite} fatture`}
           icon={TrendingUp}
-          variant="income"
-        />
+          variant="income" />
+        
         <StatCard
           title="Totale Costi"
           value={formatCurrency(globalKpis.costi)}
           subtitle={`${globalKpis.numAcquisti} fatture`}
           icon={TrendingDown}
-          variant="expense"
-        />
+          variant="expense" />
+        
         <StatCard
           title="Risultato"
           value={formatCurrency(globalKpis.saldo)}
           subtitle={globalKpis.saldo >= 0 ? "Utile" : "Perdita"}
           icon={Scale}
-          variant={globalKpis.saldo >= 0 ? "balance" : "expense"}
-        />
+          variant={globalKpis.saldo >= 0 ? "balance" : "expense"} />
+        
         <StatCard
           title="Margine"
           value={`${globalKpis.margine.toFixed(1)}%`}
           subtitle="Ricavi − Costi / Ricavi"
           icon={Percent}
-          variant="neutral"
-        />
+          variant="neutral" />
+        
       </div>
 
       {/* Yearly comparison chart */}
-      {barData.length > 1 && (
-        <div className="rounded-xl border bg-card p-5">
+      {barData.length > 1 &&
+      <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
             Confronto annuale
@@ -240,7 +240,7 @@ export default function BilancioPage() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      )}
+      }
 
 
 
@@ -252,10 +252,10 @@ export default function BilancioPage() {
         totalCosti={globalKpis.costi}
         onRowClick={(codice, tipo) => {
           if (codice === "__unassigned__") return;
-          if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}`);
-          else navigate(`/acquisti?centroCosto=${encodeURIComponent(codice)}`);
-        }}
-      />
+          if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}`);else
+          navigate(`/acquisti?centroCosto=${encodeURIComponent(codice)}`);
+        }} />
+      
 
       {/* ── Hidden PDF Report ── */}
       <div className="pdf-report">
@@ -296,33 +296,33 @@ export default function BilancioPage() {
         </div>
 
         {/* Year bar chart (pure HTML) */}
-        {yearSummaries.length > 1 && (
-          <div className="pdf-section pdf-full-width">
+        {yearSummaries.length > 1 &&
+        <div className="pdf-section pdf-full-width">
             <h2>Confronto Annuale</h2>
             <div className="pdf-bar-chart">
               {yearSummaries.map((y) => {
-                const maxVal = Math.max(...yearSummaries.map((s) => Math.max(s.ricavi, s.costi)));
-                return (
-                  <div className="pdf-bar-row" key={y.anno}>
+              const maxVal = Math.max(...yearSummaries.map((s) => Math.max(s.ricavi, s.costi)));
+              return (
+                <div className="pdf-bar-row" key={y.anno}>
                     <span className="pdf-bar-label">{y.anno}</span>
                     <div className="pdf-bar-tracks">
-                      <div className="pdf-bar is-positive" style={{ width: `${maxVal > 0 ? (y.ricavi / maxVal) * 100 : 0}%` }}>
+                      <div className="pdf-bar is-positive" style={{ width: `${maxVal > 0 ? y.ricavi / maxVal * 100 : 0}%` }}>
                         <span className="pdf-bar-value">{formatCurrency(y.ricavi)}</span>
                       </div>
-                      <div className="pdf-bar is-negative" style={{ width: `${maxVal > 0 ? (y.costi / maxVal) * 100 : 0}%` }}>
+                      <div className="pdf-bar is-negative" style={{ width: `${maxVal > 0 ? y.costi / maxVal * 100 : 0}%` }}>
                         <span className="pdf-bar-value">{formatCurrency(y.costi)}</span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  </div>);
+
+            })}
               <div className="pdf-bar-legend">
                 <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive" /> Ricavi</span>
                 <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative" /> Costi</span>
               </div>
             </div>
           </div>
-        )}
+        }
 
         {/* Year detail table */}
         <div className="pdf-section pdf-full-width">
@@ -340,8 +340,8 @@ export default function BilancioPage() {
               </tr>
             </thead>
             <tbody>
-              {yearSummaries.map((y) => (
-                <tr key={y.anno}>
+              {yearSummaries.map((y) =>
+              <tr key={y.anno}>
                   <td style={{ fontWeight: 600 }}>{y.anno}</td>
                   <td className="is-right is-positive">{formatCurrency(y.ricavi)}</td>
                   <td className="is-right is-negative">{formatCurrency(y.costi)}</td>
@@ -350,9 +350,9 @@ export default function BilancioPage() {
                   <td className="is-right">{y.numVendite}</td>
                   <td className="is-right">{y.numAcquisti}</td>
                 </tr>
-              ))}
-              {yearSummaries.length > 1 && (
-                <tr className="pdf-table-total">
+              )}
+              {yearSummaries.length > 1 &&
+              <tr className="pdf-table-total">
                   <td>TOTALE</td>
                   <td className="is-right is-positive">{formatCurrency(globalKpis.ricavi)}</td>
                   <td className="is-right is-negative">{formatCurrency(globalKpis.costi)}</td>
@@ -361,7 +361,7 @@ export default function BilancioPage() {
                   <td className="is-right">{globalKpis.numVendite}</td>
                   <td className="is-right">{globalKpis.numAcquisti}</td>
                 </tr>
-              )}
+              }
             </tbody>
           </table>
         </div>
@@ -378,8 +378,8 @@ export default function BilancioPage() {
           <span className="pdf-footer-right">Pag. <span className="pdf-page-number" /></span>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 /* ────────── Side-by-side centro tables with row drag ────────── */
@@ -390,7 +390,7 @@ function loadRowOrder(id: string): string[] | null {
   try {
     const v = JSON.parse(localStorage.getItem(ROW_ORDER_KEY_PREFIX + id) || "null");
     return Array.isArray(v) ? v : null;
-  } catch { return null; }
+  } catch {return null;}
 }
 
 function saveRowOrder(id: string, order: string[]) {
@@ -398,24 +398,24 @@ function saveRowOrder(id: string, order: string[]) {
 }
 
 function CentriSideBySide({
-  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti, onRowClick,
-}: {
-  ricavoBreakdown: CentroAgg[]; costoBreakdown: CentroAgg[];
-  totalRicavi: number; totalCosti: number;
-  onRowClick?: (codice: string, tipo: "ricavo" | "costo") => void;
-}) {
+  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti, onRowClick
+
+
+
+
+}: {ricavoBreakdown: CentroAgg[];costoBreakdown: CentroAgg[];totalRicavi: number;totalCosti: number;onRowClick?: (codice: string, tipo: "ricavo" | "costo") => void;}) {
   const maxRows = Math.max(ricavoBreakdown.length, costoBreakdown.length);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "ricavo") : undefined} />
       <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "costo") : undefined} />
-    </div>
-  );
+    </div>);
+
 }
 
-function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onRowClick }: {
-  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string; minRows?: number; onRowClick?: (codice: string) => void;
-}) {
+function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onRowClick
+
+}: {id: string;title: string;data: CentroAgg[];total: number;accentClass: string;minRows?: number;onRowClick?: (codice: string) => void;}) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
   const [rowOrder, setRowOrder] = useState<string[] | null>(() => loadRowOrder(id));
@@ -426,7 +426,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
     const ordered: CentroAgg[] = [];
     rowOrder.forEach((code) => {
       const item = byCode.get(code);
-      if (item) { ordered.push(item); byCode.delete(code); }
+      if (item) {ordered.push(item);byCode.delete(code);}
     });
     byCode.forEach((item) => ordered.push(item));
     return ordered;
@@ -456,17 +456,17 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
     setOverIdx(null);
   };
 
-  const handleDragEnd = () => { setDragIdx(null); setOverIdx(null); };
+  const handleDragEnd = () => {setDragIdx(null);setOverIdx(null);};
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       <div className="p-3 border-b border-border bg-muted/30">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
-      {data.length === 0 ? (
-        <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div>
-      ) : (
-        <div className="overflow-x-auto">
+      {data.length === 0 ?
+      <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div> :
+
+      <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20">
@@ -478,21 +478,21 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
               </tr>
             </thead>
             <tbody>
-              {sortedData.map((d, i) => (
-                <tr
-                  key={d.codice}
-                  draggable
-                  onDragStart={handleDragStart(i)}
-                  onDragOver={handleDragOver(i)}
-                  onDrop={handleDrop(i)}
-                  onDragEnd={handleDragEnd}
-                  onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
-                  className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-grab active:cursor-grabbing ${
-                    dragIdx === i ? "opacity-40" : ""
-                  } ${overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""} ${
-                    onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""
-                  }`}
-                >
+              {sortedData.map((d, i) =>
+            <tr
+              key={d.codice}
+              draggable
+              onDragStart={handleDragStart(i)}
+              onDragOver={handleDragOver(i)}
+              onDrop={handleDrop(i)}
+              onDragEnd={handleDragEnd}
+              onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
+              className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-grab active:cursor-grabbing ${
+              dragIdx === i ? "opacity-40" : ""} ${
+              overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""} ${
+              onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""}`
+              }>
+              
                   <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
                     <GripVertical className="h-3.5 w-3.5" />
                   </td>
@@ -500,42 +500,42 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
                   <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[200px] ${onRowClick && d.codice !== "__unassigned__" ? "text-primary underline decoration-dotted" : ""}`}>{d.descrizione}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
-                    {total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%
+                    {total > 0 ? (d.importo / total * 100).toFixed(1) : "0.0"}%
                   </td>
                 </tr>
-              ))}
+            )}
               {/* Empty padding rows to align totals — accept drops */}
               {Array.from({ length: Math.max(0, minRows - sortedData.length) }).map((_, i) => {
-                const emptyIdx = sortedData.length + i;
-                // dropping on an empty row = moving to end (last real position)
-                const dropTarget = Math.min(sortedData.length - 1, sortedData.length);
-                return (
-                  <tr
-                    key={`empty-${i}`}
-                    className={`border-b border-border/50 ${overIdx === emptyIdx && dragIdx !== null ? "border-t-2 border-t-primary" : ""}`}
-                    onDragOver={(e) => { e.preventDefault(); setOverIdx(emptyIdx); }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (dragIdx !== null && dragIdx !== sortedData.length - 1) {
-                        const next = [...sortedData];
-                        const [moved] = next.splice(dragIdx, 1);
-                        next.push(moved);
-                        const newOrder = next.map((d) => d.codice);
-                        setRowOrder(newOrder);
-                        saveRowOrder(id, newOrder);
-                      }
-                      setDragIdx(null);
-                      setOverIdx(null);
-                    }}
-                  >
+              const emptyIdx = sortedData.length + i;
+              // dropping on an empty row = moving to end (last real position)
+              const dropTarget = Math.min(sortedData.length - 1, sortedData.length);
+              return (
+                <tr
+                  key={`empty-${i}`}
+                  className={`border-b border-border/50 ${overIdx === emptyIdx && dragIdx !== null ? "border-t-2 border-t-primary" : ""}`}
+                  onDragOver={(e) => {e.preventDefault();setOverIdx(emptyIdx);}}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragIdx !== null && dragIdx !== sortedData.length - 1) {
+                      const next = [...sortedData];
+                      const [moved] = next.splice(dragIdx, 1);
+                      next.push(moved);
+                      const newOrder = next.map((d) => d.codice);
+                      setRowOrder(newOrder);
+                      saveRowOrder(id, newOrder);
+                    }
+                    setDragIdx(null);
+                    setOverIdx(null);
+                  }}>
+                  
                     <td className="pl-2 pr-0 py-1.5">&nbsp;</td>
                     <td className="px-3 py-1.5">&nbsp;</td>
                     <td className="px-3 py-1.5">&nbsp;</td>
                     <td className="px-3 py-1.5"></td>
                     <td className="px-3 py-1.5"></td>
-                  </tr>
-                );
-              })}
+                  </tr>);
+
+            })}
             </tbody>
             <tfoot>
               <tr className="bg-muted/40 font-semibold">
@@ -548,14 +548,14 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
             </tfoot>
           </table>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 /* ────────── PDF Centro table sub-component ────────── */
 
-function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg[]; total: number }) {
+function PdfCentroTable({ title, data, total }: {title: string;data: CentroAgg[];total: number;}) {
   if (data.length === 0) return null;
   return (
     <div className="pdf-section">
@@ -570,14 +570,14 @@ function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg
            </tr>
         </thead>
         <tbody>
-          {data.map((d) => (
-            <tr key={d.codice}>
+          {data.map((d) =>
+          <tr key={d.codice}>
               <td style={{ fontFamily: "monospace", fontSize: "0.85em" }}>{d.codice === "__unassigned__" ? "—" : d.codice}</td>
               <td>{d.descrizione}</td>
               <td className="is-right">{formatCurrency(d.importo)}</td>
-              <td className="is-right">{total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%</td>
+              <td className="is-right">{total > 0 ? (d.importo / total * 100).toFixed(1) : "0.0"}%</td>
             </tr>
-          ))}
+          )}
            <tr className="pdf-table-total">
              <td></td>
              <td>TOTALE</td>
@@ -586,6 +586,6 @@ function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg
           </tr>
         </tbody>
       </table>
-    </div>
-  );
+    </div>);
+
 }
