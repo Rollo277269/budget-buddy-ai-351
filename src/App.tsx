@@ -32,7 +32,12 @@ function PageLoader() {
   );
 }
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    runLocalStorageMigration();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
