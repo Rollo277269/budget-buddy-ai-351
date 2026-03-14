@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, ReactNode } from "react";
+import { useState, useMemo, useRef, useCallback, ReactNode, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -42,6 +42,19 @@ interface DataTableProps<T> {
 
 type SortDir = "asc" | "desc" | null;
 
+// Debounce hook for search inputs
+function useDebouncedValue(value: string, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+const ROW_HEIGHT = 40;
+const OVERSCAN = 8;
+
 export function DataTable<T extends Record<string, any>>({
   columns,
   data,
@@ -51,29 +64,27 @@ export function DataTable<T extends Record<string, any>>({
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
-  const [globalSearch, setGlobalSearch] = useState("");
+  const [globalSearchInput, setGlobalSearchInput] = useState("");
+  const globalSearch = useDebouncedValue(globalSearchInput, 200);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
   });
   const [filterOpen, setFilterOpen] = useState<string | null>(null);
-
-  // Column order (array of keys)
   const [columnOrder, setColumnOrder] = useState<string[]>(() => columns.map((c) => c.key));
-
-  // Column widths
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     const w: Record<string, number> = {};
     columns.forEach((c) => { if (c.defaultWidth) w[c.key] = c.defaultWidth; });
     return w;
   });
-
-  // Drag-to-reorder state
   const [draggedCol, setDraggedCol] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
-
-  // Resize state
   const resizeRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+
+  // Virtual scroll state
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(600);
 
   const handleResizeStart = useCallback((key: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -81,7 +92,6 @@ export function DataTable<T extends Record<string, any>>({
     const th = (e.target as HTMLElement).closest("th");
     const startWidth = th?.getBoundingClientRect().width || 120;
     resizeRef.current = { key, startX: e.clientX, startWidth };
-
     const onMove = (ev: MouseEvent) => {
       if (!resizeRef.current) return;
       const diff = ev.clientX - resizeRef.current.startX;
@@ -99,24 +109,13 @@ export function DataTable<T extends Record<string, any>>({
     document.addEventListener("mouseup", onUp);
   }, [columns]);
 
-  // Drag handlers for reorder
-  const handleDragStart = useCallback((key: string) => {
-    setDraggedCol(key);
-  }, []);
-
+  const handleDragStart = useCallback((key: string) => { setDraggedCol(key); }, []);
   const handleDragOver = useCallback((key: string, e: React.DragEvent) => {
     e.preventDefault();
-    if (draggedCol && draggedCol !== key) {
-      setDragOverCol(key);
-    }
+    if (draggedCol && draggedCol !== key) setDragOverCol(key);
   }, [draggedCol]);
-
   const handleDrop = useCallback((targetKey: string) => {
-    if (!draggedCol || draggedCol === targetKey) {
-      setDraggedCol(null);
-      setDragOverCol(null);
-      return;
-    }
+    if (!draggedCol || draggedCol === targetKey) { setDraggedCol(null); setDragOverCol(null); return; }
     setColumnOrder((prev) => {
       const order = [...prev];
       const fromIdx = order.indexOf(draggedCol);
@@ -129,32 +128,23 @@ export function DataTable<T extends Record<string, any>>({
     setDraggedCol(null);
     setDragOverCol(null);
   }, [draggedCol]);
-
-  const handleDragEnd = useCallback(() => {
-    setDraggedCol(null);
-    setDragOverCol(null);
-  }, []);
+  const handleDragEnd = useCallback(() => { setDraggedCol(null); setDragOverCol(null); }, []);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {
       if (sortDir === "asc") setSortDir("desc");
       else if (sortDir === "desc") { setSortKey(null); setSortDir(null); }
       else setSortDir("asc");
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
+    } else { setSortKey(key); setSortDir("asc"); }
   };
 
   const globalFiltered = useMemo(() => {
     if (!globalSearch) return data;
     const lower = globalSearch.toLowerCase();
-    return data.filter((row) => {
-      return columns.some((col) => {
-        const cellVal = col.filterValue ? col.filterValue(row) : String(row[col.key] ?? "");
-        return cellVal.toLowerCase().includes(lower);
-      });
-    });
+    return data.filter((row) => columns.some((col) => {
+      const cellVal = col.filterValue ? col.filterValue(row) : String(row[col.key] ?? "");
+      return cellVal.toLowerCase().includes(lower);
+    }));
   }, [data, globalSearch, columns]);
 
   const filtered = useMemo(() => {
@@ -177,25 +167,19 @@ export function DataTable<T extends Record<string, any>>({
     return [...filtered].sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
-      if (typeof av === "number" && typeof bv === "number") {
-        return sortDir === "asc" ? av - bv : bv - av;
-      }
+      if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av;
       const as = String(av ?? "");
       const bs = String(bv ?? "");
       return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
     });
   }, [filtered, sortKey, sortDir]);
 
-  // Ordered + visible columns
   const activeColumns = useMemo(() => {
     const colMap = new Map(columns.map((c) => [c.key, c]));
-    return columnOrder
-      .filter((key) => visibleColumns.has(key) && colMap.has(key))
-      .map((key) => colMap.get(key)!);
+    return columnOrder.filter((key) => visibleColumns.has(key) && colMap.has(key)).map((key) => colMap.get(key)!);
   }, [columns, columnOrder, visibleColumns]);
 
   const hasActiveFilters = Object.values(columnFilters).some(Boolean) || !!globalSearch;
-
   const isReordered = useMemo(() => {
     const defaultOrder = columns.map((c) => c.key);
     return columnOrder.some((k, i) => k !== defaultOrder[i]);
@@ -210,6 +194,37 @@ export function DataTable<T extends Record<string, any>>({
     });
   }, [columns]);
 
+  // Virtual scroll calculations
+  const totalRows = sorted.length;
+  const useVirtual = totalRows > 100;
+
+  // Measure container
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) setContainerHeight(entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current) setScrollTop(scrollContainerRef.current.scrollTop);
+  }, []);
+
+  const { visibleRows, topPadding, bottomPadding } = useMemo(() => {
+    if (!useVirtual) return { visibleRows: sorted, topPadding: 0, bottomPadding: 0 };
+    const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+    const visibleCount = Math.ceil(containerHeight / ROW_HEIGHT) + OVERSCAN * 2;
+    const endIdx = Math.min(totalRows, startIdx + visibleCount);
+    return {
+      visibleRows: sorted.slice(startIdx, endIdx),
+      topPadding: startIdx * ROW_HEIGHT,
+      bottomPadding: Math.max(0, (totalRows - endIdx) * ROW_HEIGHT),
+    };
+  }, [sorted, scrollTop, containerHeight, totalRows, useVirtual]);
+
   return (
     <div className="space-y-3">
       {/* Toolbar */}
@@ -219,15 +234,12 @@ export function DataTable<T extends Record<string, any>>({
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Cerca in tutte le colonne..."
-              value={globalSearch}
-              onChange={(e) => setGlobalSearch(e.target.value)}
+              value={globalSearchInput}
+              onChange={(e) => setGlobalSearchInput(e.target.value)}
               className="pl-8 h-9 text-xs"
             />
-            {globalSearch && (
-              <button
-                onClick={() => setGlobalSearch("")}
-                className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
-              >
+            {globalSearchInput && (
+              <button onClick={() => setGlobalSearchInput("")} className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground">
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
@@ -240,15 +252,13 @@ export function DataTable<T extends Record<string, any>>({
         <div className="flex items-center gap-1.5">
           {(isReordered || Object.keys(columnWidths).length > 0) && (
             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={resetOrder} title="Ripristina ordine e larghezza colonne">
-              <RotateCcw className="h-3.5 w-3.5 mr-1" />
-              Reset
+              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
             </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="text-xs">
-                <Columns3 className="h-3.5 w-3.5 mr-1.5" />
-                Colonne
+                <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colonne
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -259,8 +269,7 @@ export function DataTable<T extends Record<string, any>>({
                   onCheckedChange={(checked) => {
                     setVisibleColumns((prev) => {
                       const next = new Set(prev);
-                      if (checked) next.add(col.key);
-                      else next.delete(col.key);
+                      if (checked) next.add(col.key); else next.delete(col.key);
                       return next;
                     });
                   }}
@@ -274,7 +283,11 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border bg-card [&>div]:max-h-[calc(100vh-280px)]">
+      <div
+        ref={scrollContainerRef}
+        className="rounded-xl border bg-card overflow-auto max-h-[calc(100vh-280px)]"
+        onScroll={useVirtual ? handleScroll : undefined}
+      >
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow className="shadow-[0_2px_0_0_hsl(var(--border))] border-b-2 border-border">
@@ -294,28 +307,12 @@ export function DataTable<T extends Record<string, any>>({
                     {col.headerRender ? col.headerRender() : <span className="whitespace-normal break-words leading-tight">{col.label}</span>}
                     <div className="flex items-center shrink-0">
                       {col.sortable && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={() => toggleSort(col.key)}
-                        >
-                          {sortKey === col.key && sortDir === "asc" ? (
-                            <ArrowUp className="h-3 w-3" />
-                          ) : sortKey === col.key && sortDir === "desc" ? (
-                            <ArrowDown className="h-3 w-3" />
-                          ) : (
-                            <ArrowUpDown className="h-3 w-3 opacity-40" />
-                          )}
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toggleSort(col.key)}>
+                          {sortKey === col.key && sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : sortKey === col.key && sortDir === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                         </Button>
                       )}
                       {col.filterable && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`}
-                          onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}
-                        >
+                        <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`} onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}>
                           <Search className="h-3 w-3" />
                         </Button>
                       )}
@@ -326,20 +323,12 @@ export function DataTable<T extends Record<string, any>>({
                       autoFocus
                       placeholder={`Filtra ${col.label.toLowerCase()}...`}
                       value={columnFilters[col.key] || ""}
-                      onChange={(e) =>
-                        setColumnFilters((f) => ({ ...f, [col.key]: e.target.value }))
-                      }
+                      onChange={(e) => setColumnFilters((f) => ({ ...f, [col.key]: e.target.value }))}
                       className="mt-1 h-7 text-xs"
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") setFilterOpen(null);
-                      }}
+                      onKeyDown={(e) => { if (e.key === "Escape") setFilterOpen(null); }}
                     />
                   )}
-                  {/* Resize handle */}
-                  <div
-                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 z-20"
-                    onMouseDown={(e) => handleResizeStart(col.key, e)}
-                  />
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 z-20" onMouseDown={(e) => handleResizeStart(col.key, e)} />
                 </TableHead>
               ))}
             </TableRow>
@@ -352,23 +341,32 @@ export function DataTable<T extends Record<string, any>>({
                 </TableCell>
               </TableRow>
             ) : (
-              sorted.map((row) => (
-                <TableRow
-                  key={rowKey(row)}
-                  className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
-                  onClick={() => onRowClick?.(row)}
-                >
-                  {activeColumns.map((col) => (
-                    <TableCell
-                      key={col.key}
-                      className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""}`}
-                      style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
-                    >
-                      {col.render(row)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              <>
+                {topPadding > 0 && (
+                  <tr style={{ height: topPadding }}><td colSpan={activeColumns.length} /></tr>
+                )}
+                {visibleRows.map((row) => (
+                  <TableRow
+                    key={rowKey(row)}
+                    className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${rowClassName?.(row) || ""}`}
+                    onClick={() => onRowClick?.(row)}
+                    style={useVirtual ? { height: ROW_HEIGHT } : undefined}
+                  >
+                    {activeColumns.map((col) => (
+                      <TableCell
+                        key={col.key}
+                        className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""}`}
+                        style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
+                      >
+                        {col.render(row)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {bottomPadding > 0 && (
+                  <tr style={{ height: bottomPadding }}><td colSpan={activeColumns.length} /></tr>
+                )}
+              </>
             )}
           </TableBody>
         </Table>
