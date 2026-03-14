@@ -118,16 +118,135 @@ function buildRows(
   };
 }
 
+function handleExportPdf() {
+  document.body.classList.add("print-report");
+  const cleanup = () => {
+    document.body.classList.remove("print-report");
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
+  window.print();
+}
+
+function PdfReport({ tipo, nome, rows, stats }: {
+  tipo: "cliente" | "fornitore";
+  nome: string;
+  rows: PrimaNotaRow[];
+  stats: ReturnType<typeof buildRows>["stats"];
+}) {
+  const label = tipo === "cliente" ? "Scheda Cliente" : "Scheda Fornitore";
+  const now = new Date().toLocaleString("it-IT");
+
+  return (
+    <div className="scheda-pdf-report pdf-report" style={{ display: "none" }}>
+      {/* Header */}
+      <div className="pdf-header">
+        <div className="pdf-header-logo">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="hsl(var(--primary))" />
+            <text x="18" y="24" textAnchor="middle" fill="white" fontSize="18" fontWeight="700" fontFamily="sans-serif">G</text>
+          </svg>
+        </div>
+        <div className="pdf-header-text">
+          <h1>{label}</h1>
+          <p>{nome}</p>
+          <div className="pdf-meta">
+            <span>Documenti: {stats.numFatture}</span>
+            <span>Esportato: {now}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI */}
+      <div className="pdf-kpi-grid">
+        <div className="pdf-kpi-card">
+          <p className="pdf-kpi-label">{tipo === "cliente" ? "Fatturato" : "Dare"}</p>
+          <p className="pdf-kpi-value is-positive">{formatCurrency(stats.totaleDare)}</p>
+        </div>
+        <div className="pdf-kpi-card">
+          <p className="pdf-kpi-label">{tipo === "fornitore" ? "Totale Acquisti" : "Avere"}</p>
+          <p className="pdf-kpi-value is-negative">{formatCurrency(stats.totaleAvere)}</p>
+        </div>
+        <div className="pdf-kpi-card">
+          <p className="pdf-kpi-label">Saldo</p>
+          <p className={`pdf-kpi-value ${stats.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(stats.saldo)}</p>
+        </div>
+        <div className="pdf-kpi-card">
+          <p className="pdf-kpi-label">Media Importo</p>
+          <p className="pdf-kpi-value">{formatCurrency(stats.mediaImporto)}</p>
+          <p className="pdf-kpi-sub">Imponibile: {formatCurrency(stats.totaleImponibile)} · IVA: {formatCurrency(stats.totaleImposta)}</p>
+        </div>
+      </div>
+
+      {/* Prima Nota Table */}
+      <div className="pdf-section pdf-full-width">
+        <h2>Prima Nota — Movimenti in ordine cronologico</h2>
+        <table className="pdf-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>N°</th>
+              <th>Descrizione</th>
+              <th>CIG</th>
+              <th>Scadenza</th>
+              <th>Stato</th>
+              <th className="is-right">Imponibile</th>
+              <th className="is-right">IVA</th>
+              <th className="is-right">Dare</th>
+              <th className="is-right">Avere</th>
+              <th className="is-right">Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                <td style={{ whiteSpace: "nowrap" }}>{row.data}</td>
+                <td>{row.numero}</td>
+                <td className="pdf-desc-cell">{row.descrizione}</td>
+                <td>{row.cig || "—"}</td>
+                <td style={{ whiteSpace: "nowrap" }}>{row.scadenza || "—"}</td>
+                <td>{row.stato}</td>
+                <td className="is-right">{formatCurrency(row.imponibile)}</td>
+                <td className="is-right">{formatCurrency(row.imposta)}</td>
+                <td className="is-right">{row.dare > 0 ? formatCurrency(row.dare) : "—"}</td>
+                <td className="is-right">{row.avere > 0 ? formatCurrency(row.avere) : "—"}</td>
+                <td className={`is-right ${row.saldo >= 0 ? "is-positive" : "is-negative"}`} style={{ fontWeight: 600 }}>{formatCurrency(row.saldo)}</td>
+              </tr>
+            ))}
+            <tr className="pdf-table-total">
+              <td colSpan={6}>TOTALE</td>
+              <td className="is-right">{formatCurrency(stats.totaleImponibile)}</td>
+              <td className="is-right">{formatCurrency(stats.totaleImposta)}</td>
+              <td className="is-right is-positive">{formatCurrency(stats.totaleDare)}</td>
+              <td className="is-right is-negative">{formatCurrency(stats.totaleAvere)}</td>
+              <td className={`is-right ${stats.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(stats.saldo)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div className="pdf-footer">
+        <div className="pdf-footer-left">{label} — {nome}</div>
+        <div className="pdf-footer-center">Esportato il {now}</div>
+        <div className="pdf-footer-right">Pag. <span className="pdf-page-number"></span></div>
+      </div>
+    </div>
+  );
+}
+
 function SchedaDetail({
   tipo,
   nome,
   allSales,
   allPurchases,
+  onExport,
 }: {
   tipo: "cliente" | "fornitore";
   nome: string;
   allSales: SaleInvoice[];
   allPurchases: PurchaseInvoice[];
+  onExport?: () => void;
 }) {
   const { rows, stats } = useMemo(
     () => buildRows(allSales, allPurchases, tipo, nome),
@@ -135,6 +254,15 @@ function SchedaDetail({
   );
 
   return (
+    <>
+    <div className="space-y-5 scheda-screen-content">
+      {/* Export button */}
+      <div className="flex justify-end no-print">
+        <Button variant="outline" size="sm" onClick={onExport} className="gap-1.5">
+          <Printer className="h-3.5 w-3.5" />
+          Esporta PDF
+        </Button>
+      </div>
     <div className="space-y-5">
       {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
