@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, loadCentri } from "@/hooks/useCentri";
 import { StatCard } from "@/components/StatCard";
@@ -83,8 +83,22 @@ export default function BilancioPage() {
   const { centri } = useCentriData();
   const [selectedAnno, setSelectedAnno] = useState<string>("all");
 
-  const ricavoMapVendite = useMemo(() => loadCentroMap("ricavo", "vendite"), []);
-  const costoMapAcquisti = useMemo(() => loadCentroMap("costo", "acquisti"), []);
+  const [ricavoMapVendite, setRicavoMapVendite] = useState(() => loadCentroMap("ricavo", "vendite"));
+  const [costoMapAcquisti, setCostoMapAcquisti] = useState(() => loadCentroMap("costo", "acquisti"));
+
+  // Re-read maps when the page gains focus (user may have changed assignments on other pages)
+  useEffect(() => {
+    const refresh = () => {
+      setRicavoMapVendite(loadCentroMap("ricavo", "vendite"));
+      setCostoMapAcquisti(loadCentroMap("costo", "acquisti"));
+    };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
 
   const years = filterOptions.years;
 
