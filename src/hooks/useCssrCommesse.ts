@@ -65,5 +65,6 @@ export function useCssrCommesse() {
     byCig,
     loading: isLoading,
     error,
+    refetch,
   };
 }
