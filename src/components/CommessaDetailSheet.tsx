@@ -1443,7 +1443,7 @@ function InvoiceList({
                 numero_display: <TableCell key="n" className="font-mono text-xs">{inv.numero}/{inv.anno}</TableCell>,
                 data: <TableCell key="d" className="text-xs">{inv.data}</TableCell>,
                 counterpart: <TableCell key="c" className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>,
-                descrizione: <TableCell key="desc" className="text-xs max-w-[200px] truncate" title={inv.descrizione}>{inv.descrizione || "—"}</TableCell>,
+                descrizione: <TableCell key="desc" className="text-xs max-w-[300px] whitespace-normal break-words leading-snug py-1">{inv.descrizione || "—"}</TableCell>,
                 stato: <TableCell key="s"><StatoBadge stato={inv.stato} /></TableCell>,
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
