@@ -103,31 +103,80 @@
 }
 
 @media print {
-  /* Hide sidebar, header, filters, buttons */
-  [data-sidebar], nav, .sidebar-trigger, button, a[href] {
+  /* Hide UI chrome */
+  [data-sidebar], nav, .sidebar-trigger, .no-print {
     display: none !important;
   }
+
+  /* Reset dialog to fill page */
+  [role="dialog"] {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  /* Dialog overlay transparent */
+  [data-radix-dialog-overlay] {
+    background: transparent !important;
+  }
+
+  /* Scrollable body becomes visible */
+  [role="dialog"] > div {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
   /* Show main content full width */
   main, [role="main"], .print-area {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 0.5rem !important;
+    padding: 0 !important;
   }
+
   body {
     background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .no-print {
-    display: none !important;
-  }
-  .print-area {
+
+  /* Print header styling */
+  .print-header {
     display: block !important;
+    margin-bottom: 1rem;
   }
-  /* Keep cards visible */
+
+  /* Keep cards together */
   .rounded-xl {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  /* Tabs: show only active content, hide tab triggers */
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  /* Charts fixed sizing for print */
+  .recharts-responsive-container {
+    height: 250px !important;
+  }
+
+  /* Table styling for print */
+  table {
+    font-size: 10px !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 1.5cm;
+    size: A4 landscape;
   }
 }

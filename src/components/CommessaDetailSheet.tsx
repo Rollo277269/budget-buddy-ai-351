@@ -27,7 +27,7 @@ import { CentroCell } from "@/components/CentroCell";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, Printer
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -222,10 +222,16 @@ export function CommessaDetailSheet({
               <Badge variant="outline" className="font-mono text-sm">CIG: {commessa.cig || "—"}</Badge>
               {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
             </div>
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5">
-              <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
-              Torna a Commesse
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5 no-print">
+                <Printer className="h-3.5 w-3.5" />
+                Esporta PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 no-print">
+                <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
+                Torna a Commesse
+              </Button>
+            </div>
           </div>
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
@@ -452,7 +458,7 @@ export function CommessaDetailSheet({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Fatture di Vendita ({data.linkedSales.length})</h3>
                 <Button
-                  variant="outline" size="sm" className="text-xs h-7"
+                  variant="outline" size="sm" className="text-xs h-7 no-print"
                   onClick={() => { setAddMode(addMode === "vendita" ? null : "vendita"); setSearchQuery(""); }}
                 >
                   <Plus className="h-3 w-3 mr-1" />Associa manualmente
@@ -479,7 +485,7 @@ export function CommessaDetailSheet({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Fatture di Acquisto ({data.linkedPurchases.length})</h3>
                 <Button
-                  variant="outline" size="sm" className="text-xs h-7"
+                  variant="outline" size="sm" className="text-xs h-7 no-print"
                   onClick={() => { setAddMode(addMode === "acquisto" ? null : "acquisto"); setSearchQuery(""); }}
                 >
                   <Plus className="h-3 w-3 mr-1" />Associa manualmente
