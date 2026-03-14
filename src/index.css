@@ -131,7 +131,7 @@
     display: none !important;
   }
 
-  body.print-report [role="dialog"] {
+  body.print-report-dialog [role="dialog"] {
     position: static !important;
     inset: auto !important;
     transform: none !important;

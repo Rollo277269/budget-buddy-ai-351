@@ -278,7 +278,7 @@ export function CommessaDetailSheet({
     document.body.classList.add("print-report", "print-report-dialog");
 
     const cleanup = () => {
-      document.body.classList.remove("print-report");
+      document.body.classList.remove("print-report", "print-report-dialog");
       window.removeEventListener("afterprint", cleanup);
     };
 
