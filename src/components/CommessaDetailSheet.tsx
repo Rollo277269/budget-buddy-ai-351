@@ -86,9 +86,30 @@ export function CommessaDetailSheet({
   const [searchQuery, setSearchQuery] = useState("");
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const { centri } = useCentriData();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
+
+  const { xmlMap: xmlMapVendita, fetchParsedData: fetchParsedVendita } = useXmlInvoices(allSales, "vendita");
+  const { xmlMap: xmlMapAcquisto, fetchParsedData: fetchParsedAcquisto } = useXmlInvoices(allPurchases, "acquisto");
+
+  const openPdf = useCallback(async (inv: SaleInvoice | PurchaseInvoice, type: "vendita" | "acquisto") => {
+    const key = `${inv.anno}-${inv.numero}`;
+    const xmlRecord = type === "vendita" ? xmlMapVendita.get(key) : xmlMapAcquisto.get(key);
+    if (!xmlRecord) {
+      toast.error("Nessun XML associato a questa fattura");
+      return;
+    }
+    const fetchFn = type === "vendita" ? fetchParsedVendita : fetchParsedAcquisto;
+    const parsed = await fetchFn(xmlRecord.id);
+    const pdfAllegato = parsed?.allegati?.find((a: any) => a.formato?.toUpperCase() === "PDF");
+    if (pdfAllegato) {
+      setPdfData({ base64: pdfAllegato.base64, fileName: pdfAllegato.nome || xmlRecord.file_name });
+    } else {
+      toast.error("Nessun PDF trovato in questo XML");
+    }
+  }, [xmlMapVendita, xmlMapAcquisto, fetchParsedVendita, fetchParsedAcquisto]);
 
   const data = useMemo(() => {
     if (!commessa) return null;
