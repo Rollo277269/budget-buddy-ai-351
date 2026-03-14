@@ -7,6 +7,7 @@ import { ClientPieChart, SupplierPieChart, CentroRicavoChart } from "@/component
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
 import { BankReconciliationSummary } from "@/components/BankReconciliationSummary";
+import { YearSummaryTable } from "@/components/YearSummaryTable";
 import { formatCurrency } from "@/lib/format";
 import {
   TrendingUp,
@@ -24,6 +25,8 @@ const Index = () => {
   const {
     sales,
     purchases,
+    allSales,
+    allPurchases,
     loading,
     filters,
     setFilters,
