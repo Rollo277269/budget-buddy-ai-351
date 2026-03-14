@@ -391,8 +391,8 @@ function CentriSideBySide({
   );
 }
 
-function CentroTableCard({ id, title, data, total, accentClass }: {
-  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string;
+function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
+  id: string; title: string; data: CentroAgg[]; total: number; accentClass: string; minRows?: number;
 }) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
