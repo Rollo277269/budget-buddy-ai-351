@@ -167,10 +167,10 @@ const AcquistiPage = () => {
     { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
     {
       key: "xml", label: "XML", filterable: true,
-      filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
+      filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
       render: (r) => {
         const k = `${r.anno}-${r.numero}`;
-        const xml = xmlMap.get(k);
+        const xml = findXml(k, r.fornitore);
         if (xml) return (
           <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {e.stopPropagation();openXmlSheet(xml);}}>
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
@@ -181,9 +181,9 @@ const AcquistiPage = () => {
     },
     {
       key: "pdf", label: "PDF", filterable: true,
-      filterValue: (r) => xmlMap.has(`${r.anno}-${r.numero}`) ? "sì" : "no",
+      filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
       render: (r) => {
-        const xml = xmlMap.get(`${r.anno}-${r.numero}`);
+        const xml = findXml(`${r.anno}-${r.numero}`, r.fornitore);
         if (xml) {
           return (
             <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
