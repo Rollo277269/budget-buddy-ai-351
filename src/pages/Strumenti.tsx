@@ -12,52 +12,26 @@ import { toast } from "sonner";
 
 // ─── Conti Correnti ──────────────────────────────────────────────
 
-interface ContoCorrente {
-  id: string;
-  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali";
-  banca: string;
-  iban: string;
-  intestatario: string;
-  note: string;
-}
-
-const CONTI_KEY = "conti-correnti";
-
-function loadConti(): ContoCorrente[] {
-  try {return JSON.parse(localStorage.getItem(CONTI_KEY) || "[]");}
-  catch {return [];}
-}
-
-function saveConti(conti: ContoCorrente[]) {
-  localStorage.setItem(CONTI_KEY, JSON.stringify(conti));
-}
+import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
 
 function ContiCorrentiTab() {
-  const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
+  const { conti, saveConto, deleteConto } = useContiCorrenti();
   const [editing, setEditing] = useState<ContoCorrente | null>(null);
 
   const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editing) return;
     if (!editing.banca || !editing.iban) {
       toast.error("Banca e IBAN sono obbligatori");
       return;
     }
-    const updated = editing.id ?
-    conti.map((c) => c.id === editing.id ? editing : c) :
-    [...conti, { ...editing, id: crypto.randomUUID() }];
-    setConti(updated);
-    saveConti(updated);
+    await saveConto(editing);
     setEditing(null);
-    toast.success(editing.id ? "Conto aggiornato" : "Conto aggiunto");
   };
 
-  const handleDelete = (id: string) => {
-    const updated = conti.filter((c) => c.id !== id);
-    setConti(updated);
-    saveConti(updated);
-    toast.success("Conto eliminato");
+  const handleDelete = async (id: string) => {
+    await deleteConto(id);
   };
 
   return (
