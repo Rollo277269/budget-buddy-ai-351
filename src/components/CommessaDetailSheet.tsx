@@ -925,7 +925,6 @@ export function CommessaDetailSheet({
             ));
           })()}
         </div>
-        </div>
 
         {/* PDF side panel */}
         {pdfData && (
