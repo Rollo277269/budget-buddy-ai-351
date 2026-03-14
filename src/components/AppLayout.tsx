@@ -12,7 +12,7 @@ const pageTitles: Record<string, string> = {
   "/vendite": "Vendite",
   "/acquisti": "Acquisti",
   "/banche": "Banche",
-  "/commesse": "Commesse",
+  "/commesse": "Riepiloghi per CIG",
   "/lista-commesse": "Lista Commesse",
   "/strumenti": "Strumenti"
 };
