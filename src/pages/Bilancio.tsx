@@ -561,6 +561,7 @@ function PdfCentroTable({ title, data, total }: { title: string; data: CentroAgg
         <tbody>
           {data.map((d) => (
             <tr key={d.codice}>
+              <td style={{ fontFamily: "monospace", fontSize: "0.85em" }}>{d.codice === "__unassigned__" ? "—" : d.codice}</td>
               <td>{d.descrizione}</td>
               <td className="is-right">{formatCurrency(d.importo)}</td>
               <td className="is-right">{total > 0 ? ((d.importo / total) * 100).toFixed(1) : "0.0"}%</td>
