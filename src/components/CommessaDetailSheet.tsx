@@ -313,6 +313,7 @@ export function CommessaDetailSheet({
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
 
+        <div className={`flex flex-col ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
