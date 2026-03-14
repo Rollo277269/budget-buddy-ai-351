@@ -824,7 +824,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                 "Riepilogo Centri di Costo",
                 <ArrowDownRight className="h-3.5 w-3.5 text-expense" />,
                 "Totale Costi", "text-expense",
-                dragCostoIdx, setDragCostoIdx, setCostoOrder
+                dragCostoIdx, setDragCostoIdx, setCostoOrder, "centro-costo-order"
               )}
             </div>
 
