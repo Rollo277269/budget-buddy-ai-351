@@ -1,7 +1,8 @@
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-import { loadCentri } from "@/hooks/useCentri";
+import { fetchCentriFromDb, CentroCR } from "@/hooks/useCentri";
+import { useState, useEffect } from "react";
 import { useMemo } from "react";
 
 import { formatCurrency } from "@/lib/format";

@@ -56,7 +56,7 @@ export function useDocumentiAcquisto() {
     // Call AI to parse
     let aiData: any = {};
     try {
-      const centri = loadCentri();
+      const centri = await fetchCentriFromDb();
       const { data, error } = await supabase.functions.invoke("parse-documento-acquisto", {
         body: { text: extractedText, centri },
       });
