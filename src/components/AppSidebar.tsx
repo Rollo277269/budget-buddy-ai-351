@@ -17,7 +17,7 @@ const items = [
   { title: "Vendite", url: "/vendite", icon: FileText },
   { title: "Acquisti", url: "/acquisti", icon: ShoppingCart },
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
-  { title: "Bilancio", url: "/bilancio", icon: PieChart },
+  { title: "Bilancio (storico)", url: "/bilancio", icon: PieChart },
   { title: "Banche", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
   { title: "Offerte", url: "/offerte", icon: Send },
