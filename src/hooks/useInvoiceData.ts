@@ -1,6 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 
+export interface SaleInvoiceRiga {
+  descrizione: string;
+  imponibile: number;
+  imposta: number;
+  totale: number;
+  cig: string;
+  cup: string;
+}
+
 export interface SaleInvoice {
   tipo: string;
   anno: number;
@@ -17,6 +26,7 @@ export interface SaleInvoice {
   stato: string;
   scadenza: string;
   pagamento: string;
+  righe: SaleInvoiceRiga[];
 }
 
 export interface PurchaseInvoice {
