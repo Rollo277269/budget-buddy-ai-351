@@ -127,13 +127,14 @@ export function CommessaDetailSheet({
     const autoPurchaseKeys = new Set(autoPurchases.map((p) => invoiceKey(p.anno, p.numero)));
 
     // Monthly breakdown
-    const monthlyMap = new Map<string, { vendite: number; acquisti: number }>();
+    const monthlyMap = new Map<string, { vendite: number; acquisti: number; incassato: number; pagato: number }>();
     linkedSales.forEach((s) => {
       const parts = s.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
-        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0 };
+        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
         e.vendite += s.totale;
+        if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) e.incassato += s.totale;
         monthlyMap.set(key, e);
       }
     });
@@ -141,8 +142,9 @@ export function CommessaDetailSheet({
       const parts = p.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
-        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0 };
+        const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
         e.acquisti += p.totale;
+        if (p.stato?.toLowerCase().includes("pagat")) e.pagato += p.totale;
         monthlyMap.set(key, e);
       }
     });
@@ -153,6 +155,9 @@ export function CommessaDetailSheet({
         vendite: vals.vendite,
         acquisti: vals.acquisti,
         saldo: vals.vendite - vals.acquisti,
+        incassato: vals.incassato,
+        pagato: vals.pagato,
+        saldoCassa: vals.incassato - vals.pagato,
       }));
 
     // Supplier breakdown for purchases
