@@ -91,6 +91,7 @@ const ListaCommessePage = () => {
         committente: c.committente || "—",
         assegnataria: c.impresa_assegnataria || "—",
         cig,
+        cssrStato: c.stato || "",
         fattureVendita: counts.fv + countsDeriv.fv,
         fattureAcquisto: counts.fa + countsDeriv.fa,
         totaleVendite: counts.tv + countsDeriv.tv,
