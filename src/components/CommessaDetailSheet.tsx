@@ -84,6 +84,9 @@ export function CommessaDetailSheet({
   const [searchQuery, setSearchQuery] = useState("");
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const { centri } = useCentriData();
+  const ricavoMap = useCentroMap("ricavo", "vendite");
+  const costoMap = useCentroMap("costo", "acquisti");
 
   const data = useMemo(() => {
     if (!commessa) return null;
