@@ -40,7 +40,7 @@ function CustomTooltip({ active, payload }: any) {
   );
 }
 
-export function ClientPieChart({ sales }: { sales: SaleInvoice[] }) {
+export const ClientPieChart = React.memo(function ClientPieChart({ sales }: { sales: SaleInvoice[] }) {
   const data = useMemo(() => {
     const map: Record<string, number> = {};
     sales.forEach((s) => {
