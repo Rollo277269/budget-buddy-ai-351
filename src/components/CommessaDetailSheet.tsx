@@ -405,6 +405,15 @@ export function CommessaDetailSheet({
                 />
               </div>
 
+              {/* Centro Ricavo / Costo breakdown */}
+              <CentroBreakdownCharts
+                linkedSales={data.linkedSales}
+                linkedPurchases={data.linkedPurchases}
+                ricavoMap={ricavoMap.map}
+                costoMap={costoMap.map}
+                centri={centri}
+              />
+
               {/* Contract progress if available */}
               {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
                 <div className="rounded-xl border bg-card p-5 space-y-3">
@@ -597,6 +606,94 @@ function MiniCard({ label, value, highlight }: { label: string; value: string; h
     <div className="rounded-lg border bg-card p-2 text-center">
       <p className="text-[10px] text-muted-foreground">{label}</p>
       <p className={`text-xs font-bold font-mono ${highlight ? "text-primary" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+/* ── Centro Ricavo/Costo breakdown charts ── */
+function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoMap, centri }: {
+  linkedSales: SaleInvoice[];
+  linkedPurchases: PurchaseInvoice[];
+  ricavoMap: Record<string, string>;
+  costoMap: Record<string, string>;
+  centri: CentroCR[];
+}) {
+  const centroLookup = useMemo(() => {
+    const m = new Map<string, string>();
+    centri.forEach((c) => m.set(c.codice, c.descrizione));
+    return m;
+  }, [centri]);
+
+  const ricavoData = useMemo(() => {
+    const map = new Map<string, number>();
+    linkedSales.forEach((s) => {
+      const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
+      map.set(label, (map.get(label) || 0) + s.totale);
+    });
+    return Array.from(map.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [linkedSales, ricavoMap, centroLookup]);
+
+  const costoData = useMemo(() => {
+    const map = new Map<string, number>();
+    linkedPurchases.forEach((p) => {
+      const codice = costoMap[`${p.anno}-${p.numero}`];
+      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
+      map.set(label, (map.get(label) || 0) + p.totale);
+    });
+    return Array.from(map.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [linkedPurchases, costoMap, centroLookup]);
+
+  if (ricavoData.length === 0 && costoData.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {ricavoData.length > 0 && (
+        <div className="rounded-xl border bg-card p-5">
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+            <PieChart className="h-4 w-4 text-muted-foreground" />
+            Centri di Ricavo
+          </h3>
+          <ResponsiveContainer width="100%" height={Math.max(ricavoData.length * 36, 120)}>
+            <BarChart data={ricavoData} layout="vertical" margin={{ left: 10, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={140} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Bar dataKey="value" name="Ricavo" radius={[0, 4, 4, 0]}>
+                {ricavoData.map((_, i) => (
+                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {costoData.length > 0 && (
+        <div className="rounded-xl border bg-card p-5">
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+            <PieChart className="h-4 w-4 text-muted-foreground" />
+            Centri di Costo
+          </h3>
+          <ResponsiveContainer width="100%" height={Math.max(costoData.length * 36, 120)}>
+            <BarChart data={costoData} layout="vertical" margin={{ left: 10, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={140} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Bar dataKey="value" name="Costo" radius={[0, 4, 4, 0]}>
+                {costoData.map((_, i) => (
+                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
