@@ -12,6 +12,7 @@ interface FilterBarProps {
     clients: string[];
     suppliers: string[];
     cigs: string[];
+    centriCosto?: { value: string; label: string }[];
   };
   hideCliente?: boolean;
   hideFornitore?: boolean;

@@ -187,6 +187,7 @@ export function useInvoiceData() {
     cliente: "",
     fornitore: "",
     cig: "",
+    centroCosto: "",
   });
 
   useEffect(() => {
