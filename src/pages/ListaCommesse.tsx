@@ -36,7 +36,7 @@ const columns: ColumnDef<Commessa>[] = [
         stato === "completata" || stato === "completate"
           ? "bg-success text-success-foreground border-success"
           : stato === "in_corso"
-          ? "bg-warning text-warning-foreground border-warning"
+          ? "bg-warning/30 text-warning-foreground border-warning"
           : "bg-destructive text-destructive-foreground border-destructive";
       return <Badge className={`text-[10px] ${colorClass}`}>{stato}</Badge>;
     },
