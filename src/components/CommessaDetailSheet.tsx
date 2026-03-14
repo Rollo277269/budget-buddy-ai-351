@@ -930,6 +930,14 @@ export function CommessaDetailSheet({
             ));
           })()}
         </div>
+        </div>
+
+        {/* PDF side panel */}
+        {pdfData && (
+          <div className="w-1/2 h-full">
+            <PdfViewerPanel base64={pdfData.base64} fileName={pdfData.fileName} onClose={() => setPdfData(null)} />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
