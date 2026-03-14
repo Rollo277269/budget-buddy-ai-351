@@ -438,6 +438,7 @@ function SchedaDetail({
 
 export default function SchedeContabiliPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState("clienti");
   const [selectedCliente, setSelectedCliente] = useState("");
   const [selectedFornitore, setSelectedFornitore] = useState("");
