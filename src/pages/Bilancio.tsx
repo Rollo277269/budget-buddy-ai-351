@@ -477,6 +477,15 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0 }: {
                   </td>
                 </tr>
               ))}
+              {/* Empty padding rows to align totals */}
+              {Array.from({ length: Math.max(0, minRows - sortedData.length) }).map((_, i) => (
+                <tr key={`empty-${i}`} className="border-b border-border/50">
+                  <td className="pl-2 pr-0 py-1.5">&nbsp;</td>
+                  <td className="px-3 py-1.5">&nbsp;</td>
+                  <td className="px-3 py-1.5"></td>
+                  <td className="px-3 py-1.5"></td>
+                </tr>
+              ))}
             </tbody>
             <tfoot>
               <tr className="bg-muted/40 font-semibold">
