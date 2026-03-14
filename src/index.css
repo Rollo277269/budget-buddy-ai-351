@@ -502,12 +502,21 @@
   }
 
   /* ── Scheda page print: hide main UI, show report div ── */
-  body.print-report .scheda-screen-content {
+  body.print-report .scheda-screen-content,
+  body.print-report [data-sidebar],
+  body.print-report header,
+  body.print-report [role="tablist"],
+  body.print-report .no-print {
     display: none !important;
   }
 
   body.print-report .scheda-pdf-report {
     display: block !important;
+  }
+
+  body.print-report main {
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   @page {
