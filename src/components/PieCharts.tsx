@@ -132,7 +132,7 @@ export const SupplierPieChart = React.memo(function SupplierPieChart({ purchases
       </PieChart>
     </ResponsiveContainer>
   );
-}
+});
 
 const COLORS_CENTRI = [
   "hsl(152 60% 36%)", "hsl(200 50% 45%)", "hsl(270 45% 50%)",
