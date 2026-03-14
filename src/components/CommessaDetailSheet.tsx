@@ -480,14 +480,6 @@ export function CommessaDetailSheet({
                 />
               </div>
 
-              {/* Centro Ricavo / Costo breakdown */}
-              <CentroBreakdownCharts
-                linkedSales={data.linkedSales}
-                linkedPurchases={data.linkedPurchases}
-                ricavoMap={ricavoMap.map}
-                costoMap={costoMap.map}
-                centri={centri}
-              />
 
               {/* Contract progress if available */}
               {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
