@@ -27,19 +27,19 @@ const CommessePage = () => {
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Caricamento dati...</span>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="p-6 space-y-6">
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold">Dettaglio per CIG / Commessa</h2>
+        <h2 className="text-sm font-semibold">Dettaglio per CIG (Gara / Commessa)</h2>
         <CigDetailTable sales={sales} purchases={purchases} />
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default CommessePage;
