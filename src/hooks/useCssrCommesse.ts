@@ -44,10 +44,11 @@ async function fetchCssrCommesse(): Promise<CssrCommessa[]> {
 }
 
 export function useCssrCommesse() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["cssr-commesse"],
     queryFn: fetchCssrCommesse,
-    staleTime: 5 * 60 * 1000, // 5 min cache
+    staleTime: 30 * 1000, // 30s cache
+    refetchOnWindowFocus: true,
   });
 
   // Build a map by CIG for fast lookup
