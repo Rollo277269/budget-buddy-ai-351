@@ -1299,7 +1299,7 @@ function InvoiceList({
     { key: "numero_display", label: "N°", filterable: true },
     { key: "data", label: "Data", filterable: true },
     { key: "counterpart", label: type === "vendita" ? "Cliente" : "Fornitore", filterable: true },
-    { key: "descrizione", label: "Descrizione", filterable: true },
+    { key: "descrizione", label: "Descrizione", filterable: true, render: (r: any) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span> },
     { key: "stato", label: "Stato", filterable: true },
     { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
     { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
