@@ -706,7 +706,7 @@ function InvoiceList({
         <Table>
           <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
-              {columns.map((col) => (
+              {visibleColumns.map((col) => (
                 <TableHead key={col.key} className={`text-xs ${col.align === "right" ? "text-right" : ""}`}>
                   <div className="space-y-1">
                     <button
