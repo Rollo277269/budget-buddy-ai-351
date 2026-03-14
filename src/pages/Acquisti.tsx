@@ -46,7 +46,7 @@ const AcquistiPage = () => {
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData } = useXmlInvoices(purchases, "acquisto");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(purchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
