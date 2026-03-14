@@ -436,7 +436,7 @@ function CentroTableCard({ id, title, data, total, accentClass }: {
   const handleDragEnd = () => { setDragIdx(null); setOverIdx(null); };
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
+    <div className="rounded-xl border bg-card overflow-hidden flex flex-col">
       <div className="p-3 border-b border-border bg-muted/30">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
