@@ -461,6 +461,7 @@ export function CommessaDetailSheet({
                 invoices={data.linkedSales} type="vendita"
                 autoKeys={data.autoSaleKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
+                centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
               />
             </TabsContent>
 
