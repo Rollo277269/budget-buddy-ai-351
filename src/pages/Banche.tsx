@@ -278,6 +278,7 @@ const BanchePage = () => {
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [filterYear, setFilterYear] = useState<string>("");
 
   const [conti, setConti] = useState<ContoCorrente[]>(loadConti);
 
@@ -304,8 +305,29 @@ const BanchePage = () => {
     return map;
   }, [rawMovements]);
 
-  const allIds = useMemo(() => movements.map(m => m.id), [movements]);
-  const allSelected = movements.length > 0 && selectedRows.size === movements.length;
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    for (const m of movements) {
+      const parts = m.data?.split("/");
+      if (parts && parts.length >= 3) {
+        const y = parseInt(parts[2], 10);
+        if (!isNaN(y)) years.add(y);
+      }
+    }
+    return Array.from(years).sort((a, b) => b - a);
+  }, [movements]);
+
+  const filteredMovements = useMemo(() => {
+    if (!filterYear || filterYear === "all") return movements;
+    return movements.filter((m) => {
+      const parts = m.data?.split("/");
+      if (parts && parts.length >= 3) return parts[2] === filterYear;
+      return false;
+    });
+  }, [movements, filterYear]);
+
+  const allIds = useMemo(() => filteredMovements.map(m => m.id), [filteredMovements]);
+  const allSelected = filteredMovements.length > 0 && selectedRows.size === filteredMovements.length;
   const someSelected = selectedRows.size > 0 && !allSelected;
 
   const columns: ColumnDef<BankMovement>[] = useMemo(() => [
@@ -585,7 +607,25 @@ const BanchePage = () => {
 
       {movements.length > 0 && !isLoading && (
         <>
-          {/* Stats */}
+          {/* Year filter + Stats */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Tutti gli anni" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti gli anni</SelectItem>
+                {availableYears.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filterYear && filterYear !== "all" && (
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setFilterYear("")}>
+                Reset
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Movimenti</p><p className="text-xl font-bold">{stats.total}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Riconciliati</p><p className="text-xl font-bold text-income">{stats.matched}</p></CardContent></Card>
@@ -626,7 +666,7 @@ const BanchePage = () => {
           {/* Table */}
           <DataTable<BankMovement>
             columns={columns}
-            data={movements}
+            data={filteredMovements}
             rowKey={(r) => r.id}
             onRowClick={setSelectedMovement}
           />
