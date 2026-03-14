@@ -29,7 +29,7 @@ import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, Printer
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, Printer, FileSearch
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import {
