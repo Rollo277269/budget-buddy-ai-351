@@ -474,7 +474,7 @@ export function CommessaDetailSheet({
                 </div>
               ) : (
                 <div className="rounded-xl border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-                  Nessun dato CSSR disponibile per questa commessa
+                  Nessun dato disponibile per questa commessa
                 </div>
               )}
             </TabsContent>
