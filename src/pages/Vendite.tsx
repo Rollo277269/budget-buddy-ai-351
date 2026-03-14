@@ -52,6 +52,11 @@ const VenditePage = () => {
   const dragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
+  const displayedSales = useMemo(() => {
+    if (!filters.centroRicavo) return sales;
+    return sales.filter((s) => ricavoMap.map[`${s.anno}-${s.numero}`] === filters.centroRicavo);
+  }, [sales, filters.centroRicavo, ricavoMap.map]);
+
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData, findXml, hasXml } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
 
