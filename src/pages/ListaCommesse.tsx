@@ -14,6 +14,7 @@ export interface Commessa {
   committente: string;
   assegnataria: string;
   cig: string;
+  cssrStato: string;
   fattureVendita: number;
   fattureAcquisto: number;
   totaleVendite: number;
@@ -28,7 +29,7 @@ const columns: ColumnDef<Commessa>[] = [
   { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
   { key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig || "—"}</span> },
   {
-    key: "cssrStato" as any, label: "Stato", sortable: true,
+    key: "cssrStato", label: "Stato", sortable: true,
     render: (r) => {
       if (!r.cssrData) return <span className="text-xs text-muted-foreground">—</span>;
       const stato = r.cssrData.stato;
@@ -91,6 +92,7 @@ const ListaCommessePage = () => {
         committente: c.committente || "—",
         assegnataria: c.impresa_assegnataria || "—",
         cig,
+        cssrStato: c.stato || "",
         fattureVendita: counts.fv + countsDeriv.fv,
         fattureAcquisto: counts.fa + countsDeriv.fa,
         totaleVendite: counts.tv + countsDeriv.tv,
