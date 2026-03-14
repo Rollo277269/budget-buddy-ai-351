@@ -565,6 +565,8 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
   const [fileNames, setFileNames] = useState<string[]>(loadFileNames);
   const [activeAccountId, setActiveAccountId] = useState<string>("default");
   const [pendingDuplicates, setPendingDuplicates] = useState<DuplicateInfo | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refreshAutoMatch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   const fingerprint = (m: RawMovement) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
 
@@ -698,12 +700,14 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
 
   const movements = useMemo(
     () => autoMatch(accountMovements, sales, purchases, reconciliations),
-    [accountMovements, sales, purchases, reconciliations]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [accountMovements, sales, purchases, reconciliations, refreshKey]
   );
 
   const allMovements = useMemo(
     () => autoMatch(rawMovements, sales, purchases, reconciliations),
-    [rawMovements, sales, purchases, reconciliations]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawMovements, sales, purchases, reconciliations, refreshKey]
   );
 
   const addReconciliation = useCallback((rec: Reconciliation | Reconciliation[]) => {
@@ -742,6 +746,6 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     movements, allMovements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
-    pendingDuplicates, confirmDuplicates, dismissDuplicates,
+    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
   };
 }

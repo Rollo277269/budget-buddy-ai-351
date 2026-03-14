@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect, DragEvent } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, CreditCard, Settings } from "lucide-react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, CreditCard, Settings, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, MatchedInvoice, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
@@ -272,7 +272,7 @@ const BanchePage = () => {
     movements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
-    pendingDuplicates, confirmDuplicates, dismissDuplicates,
+    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
   } = useBankData(allSales, allPurchases);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
@@ -523,6 +523,11 @@ const BanchePage = () => {
           </Link>
 
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
+          {movements.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => { refreshAutoMatch(); toast.success("Riconciliazione automatica aggiornata"); }}>
+              <RefreshCw className="h-4 w-4 mr-1" />Aggiorna riconciliazione
+            </Button>
+          )}
           <Button onClick={() => {
             if (!hasValidAccount) { toast.error("Seleziona prima un conto corrente o una carta"); return; }
             fileInputRef.current?.click();
