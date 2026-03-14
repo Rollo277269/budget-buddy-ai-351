@@ -512,6 +512,17 @@ export function CommessaDetailSheet({
                   </div>
                 </div>
               )}
+
+              {/* Centro Ricavo/Costo breakdown */}
+              <CentroBreakdownCharts
+                linkedSales={data.linkedSales}
+                linkedPurchases={data.linkedPurchases}
+                ricavoMap={ricavoMap.map}
+                costoMap={costoMap.map}
+                centri={centri}
+                onAssignRicavo={ricavoMap.assign}
+                onAssignCosto={costoMap.assign}
+              />
             </TabsContent>
 
             {/* ── TAB: Vendite ── */}
