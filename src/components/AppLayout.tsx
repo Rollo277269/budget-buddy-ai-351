@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
 
 const pageTitles: Record<string, string> = {
-  "/": "Bilancio",
+  "/": "Offerte",
   "/scadenzario": "Scadenzario",
   "/vendite": "Vendite",
   "/acquisti": "Acquisti",
