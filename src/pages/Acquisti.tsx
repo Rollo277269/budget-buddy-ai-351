@@ -328,6 +328,7 @@ const AcquistiPage = () => {
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={purchases} xmlMap={xmlMap} tipo="acquisto" onManualMatch={manualMatch} />
+        <SchedaSoggettoSheet tipo="fornitore" nome={selectedFornitore} allSales={allSales} allPurchases={allPurchases} open={!!selectedFornitore} onOpenChange={(open) => !open && setSelectedFornitore(null)} />
       </div>
 
       {/* PDF side panel */}
