@@ -605,8 +605,9 @@ export function CommessaDetailSheet({
             </TabsContent>
           </Tabs>
         </div>
+        </div>
 
-        {/* Print-only professional report */}
+        {/* Print-only professional report — must be direct child of DialogContent for CSS selectors */}
         <div className="pdf-report">
           {/* Fixed footer repeats on every printed page */}
           <div className="pdf-footer">
@@ -923,7 +924,6 @@ export function CommessaDetailSheet({
               </section>
             ));
           })()}
-        </div>
         </div>
 
         {/* PDF side panel */}
