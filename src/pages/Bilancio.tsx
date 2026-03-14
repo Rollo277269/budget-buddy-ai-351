@@ -99,7 +99,7 @@ export default function BilancioPage() {
     window.addEventListener("focus", onFocus);
     return () => {
       window.removeEventListener("focus", onFocus);
-      window.removeEventListener("storage", refresh);
+      
     };
   }, []);
 
