@@ -746,6 +746,6 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     movements, allMovements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
-    pendingDuplicates, confirmDuplicates, dismissDuplicates,
+    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
   };
 }
