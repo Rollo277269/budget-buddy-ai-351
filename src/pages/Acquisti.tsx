@@ -318,7 +318,10 @@ const AcquistiPage = () => {
         {/* Documenti table (full section) */}
         <DocumentiAcquistoSection tableOnly />
 
-        <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} hideCliente />
+        <FilterBar filters={filters} onFiltersChange={setFilters} options={{
+          ...filterOptions,
+          centriCosto: centriCosto.map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` })),
+        }} hideCliente />
         <DataTable<PurchaseInvoice>
           columns={columns}
           data={purchases}
