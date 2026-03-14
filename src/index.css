@@ -115,14 +115,19 @@
     print-color-adjust: exact;
   }
 
-  body.print-report #root {
+  body.print-report-dialog #root {
     display: none !important;
   }
 
-  body.print-report .dialog-overlay,
   body.print-report .no-print,
-  body.print-report .screen-report,
-  body.print-report [role="dialog"] > :not(.pdf-report) {
+  body.print-report .screen-report {
+    display: none !important;
+  }
+
+  body.print-report-dialog .dialog-overlay,
+  body.print-report-dialog .no-print,
+  body.print-report-dialog .screen-report,
+  body.print-report-dialog [role="dialog"] > :not(.pdf-report) {
     display: none !important;
   }
 
