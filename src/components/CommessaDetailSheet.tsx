@@ -209,6 +209,42 @@ export function CommessaDetailSheet({
 
   const cssr = data.cssr;
 
+  const centroLabelMap = new Map(centri.map((c) => [c.codice, c.descrizione]));
+  const buildCentroRows = (
+    items: Array<SaleInvoice | PurchaseInvoice>,
+    map: Record<string, string>
+  ) => {
+    const agg = new Map<string, number>();
+    items.forEach((item) => {
+      const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
+      const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
+      agg.set(label, (agg.get(label) || 0) + item.totale);
+    });
+    return Array.from(agg.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  };
+
+  const applySavedOrder = (rows: { name: string; value: number }[], storageKey: string) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "null") as string[] | null;
+      if (!saved || !Array.isArray(saved) || saved.length === 0) return rows;
+      const lookup = new Map(rows.map((r) => [r.name, r]));
+      const ordered = saved.map((name) => lookup.get(name)).filter(Boolean) as { name: string; value: number }[];
+      const missing = rows.filter((r) => !saved.includes(r.name));
+      return [...ordered, ...missing];
+    } catch {
+      return rows;
+    }
+  };
+
+  const ricavoRows = applySavedOrder(buildCentroRows(data.linkedSales, ricavoMap.map), "centro-ricavo-order");
+  const costoRows = applySavedOrder(buildCentroRows(data.linkedPurchases, costoMap.map), "centro-costo-order");
+  const totalRicaviPrint = ricavoRows.reduce((s, r) => s + r.value, 0);
+  const totalCostiPrint = costoRows.reduce((s, r) => s + r.value, 0);
+  const saldoPrint = totalRicaviPrint - totalCostiPrint;
+  const marginePrint = totalRicaviPrint > 0 ? (saldoPrint / totalRicaviPrint) * 100 : 0;
+
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); } }}>
       <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden p-0 border-none">
@@ -237,7 +273,7 @@ export function CommessaDetailSheet({
         </DialogHeader>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
             <KpiCard
@@ -541,6 +577,90 @@ export function CommessaDetailSheet({
               )}
             </TabsContent>
           </Tabs>
+        </div>
+
+        {/* Print-only professional report */}
+        <div className="pdf-report">
+          <div className="pdf-header">
+            <h1>Report Economico Commessa {commessa.numero}</h1>
+            <p>{commessa.oggetto}</p>
+            <div className="pdf-meta">
+              <span>CIG: {commessa.cig || "—"}</span>
+              {cssr?.cig_derivato && <span>CIG Derivato: {cssr.cig_derivato}</span>}
+              <span>Data report: {new Date().toLocaleDateString("it-IT")}</span>
+            </div>
+          </div>
+
+          <div className="pdf-kpi-grid">
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Totale Ricavi</p>
+              <p className="pdf-kpi-value is-positive">{formatCurrency(totalRicaviPrint)}</p>
+            </div>
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Totale Costi</p>
+              <p className="pdf-kpi-value is-negative">{formatCurrency(totalCostiPrint)}</p>
+            </div>
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Saldo</p>
+              <p className={`pdf-kpi-value ${saldoPrint >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(saldoPrint)}</p>
+            </div>
+            <div className="pdf-kpi-card">
+              <p className="pdf-kpi-label">Margine</p>
+              <p className={`pdf-kpi-value ${marginePrint >= 0 ? "is-positive" : "is-negative"}`}>{marginePrint.toFixed(1)}%</p>
+            </div>
+          </div>
+
+          <div className="pdf-table-grid">
+            <section className="pdf-section">
+              <h2>Riepilogo Centri di Ricavo</h2>
+              <table className="pdf-table">
+                <thead>
+                  <tr>
+                    <th>Centro</th>
+                    <th className="is-right">Importo</th>
+                    <th className="is-right">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ricavoRows.map((r) => {
+                    const pct = totalRicaviPrint > 0 ? (r.value / totalRicaviPrint) * 100 : 0;
+                    return (
+                      <tr key={r.name}>
+                        <td>{r.name}</td>
+                        <td className="is-right">{formatCurrency(r.value)}</td>
+                        <td className="is-right">{pct.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="pdf-section">
+              <h2>Riepilogo Centri di Costo</h2>
+              <table className="pdf-table">
+                <thead>
+                  <tr>
+                    <th>Centro</th>
+                    <th className="is-right">Importo</th>
+                    <th className="is-right">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {costoRows.map((r) => {
+                    const pct = totalCostiPrint > 0 ? (r.value / totalCostiPrint) * 100 : 0;
+                    return (
+                      <tr key={r.name}>
+                        <td>{r.name}</td>
+                        <td className="is-right">{formatCurrency(r.value)}</td>
+                        <td className="is-right">{pct.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </section>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
