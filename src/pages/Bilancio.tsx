@@ -5,7 +5,7 @@ import { useCentriData, CategoriaCentro, CentroCR } from "@/hooks/useCentri";
 import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { StatCard } from "@/components/StatCard";
 import { formatCurrency } from "@/lib/format";
-import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, ChevronRight, ChevronDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, FileText, ChevronRight, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
@@ -223,7 +223,7 @@ export default function BilancioPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="no-print">
-            <Printer className="h-4 w-4 mr-1" /> Stampa PDF
+            <FileText className="h-4 w-4 mr-1" /> Report
           </Button>
           <Select value={selectedAnno} onValueChange={setSelectedAnno}>
             <SelectTrigger className="w-[140px]">
