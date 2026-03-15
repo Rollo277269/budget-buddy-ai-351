@@ -1676,7 +1676,9 @@ function InvoiceList({
     if (key === "descrizione") return inv.descrizione || "";
     if (key === "stato") return inv.stato || "";
     if (key === "imponibile") return inv.imponibile || 0;
+    if (key === "cassa") return (inv as PurchaseInvoice).cassa || 0;
     if (key === "imposta") return inv.imposta || 0;
+    if (key === "ritenute") return (inv as PurchaseInvoice).ritenute || 0;
     if (key === "totale") return inv.totale || 0;
     if (key === "centro") return centroMap[`${inv.anno}-${inv.numero}`] || "";
     return "";
