@@ -662,7 +662,7 @@ export function CommessaDetailSheet({
                       ...DEFAULT_DATI_FIELDS.filter((k) => !datiFieldOrder.includes(k)),
                     ];
                     return (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
                         {orderedKeys.map((key, idx) => {
                           const meta = FIELD_META[key];
                           if (!meta) return null;
