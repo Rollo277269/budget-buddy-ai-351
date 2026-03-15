@@ -175,6 +175,30 @@ export type Database = {
         }
         Relationships: []
       }
+      commessa_links: {
+        Row: {
+          cig: string
+          created_at: string
+          id: string
+          invoice_key: string
+          invoice_type: string
+        }
+        Insert: {
+          cig: string
+          created_at?: string
+          id?: string
+          invoice_key: string
+          invoice_type: string
+        }
+        Update: {
+          cig?: string
+          created_at?: string
+          id?: string
+          invoice_key?: string
+          invoice_type?: string
+        }
+        Relationships: []
+      }
       conti_correnti: {
         Row: {
           banca: string
@@ -244,6 +268,135 @@ export type Database = {
           importo?: number | null
           parsed_text?: string | null
           storage_path?: string
+        }
+        Relationships: []
+      }
+      fatture_acquisto: {
+        Row: {
+          anno: number
+          cig: string
+          created_at: string
+          cup: string
+          data: string
+          descrizione: string
+          fornitore: string
+          id: string
+          imponibile: number
+          imposta: number
+          numero: number
+          pagamento: string
+          partita_iva: string
+          scadenza: string
+          source_file: string
+          stato: string
+          tipo: string
+          totale: number
+        }
+        Insert: {
+          anno: number
+          cig?: string
+          created_at?: string
+          cup?: string
+          data?: string
+          descrizione?: string
+          fornitore?: string
+          id?: string
+          imponibile?: number
+          imposta?: number
+          numero: number
+          pagamento?: string
+          partita_iva?: string
+          scadenza?: string
+          source_file?: string
+          stato?: string
+          tipo?: string
+          totale?: number
+        }
+        Update: {
+          anno?: number
+          cig?: string
+          created_at?: string
+          cup?: string
+          data?: string
+          descrizione?: string
+          fornitore?: string
+          id?: string
+          imponibile?: number
+          imposta?: number
+          numero?: number
+          pagamento?: string
+          partita_iva?: string
+          scadenza?: string
+          source_file?: string
+          stato?: string
+          tipo?: string
+          totale?: number
+        }
+        Relationships: []
+      }
+      fatture_vendita: {
+        Row: {
+          anno: number
+          cig: string
+          cliente: string
+          created_at: string
+          cup: string
+          data: string
+          descrizione: string
+          id: string
+          imponibile: number
+          imposta: number
+          numero: number
+          pagamento: string
+          partita_iva: string
+          righe: Json
+          scadenza: string
+          source_file: string
+          stato: string
+          tipo: string
+          totale: number
+        }
+        Insert: {
+          anno: number
+          cig?: string
+          cliente?: string
+          created_at?: string
+          cup?: string
+          data?: string
+          descrizione?: string
+          id?: string
+          imponibile?: number
+          imposta?: number
+          numero: number
+          pagamento?: string
+          partita_iva?: string
+          righe?: Json
+          scadenza?: string
+          source_file?: string
+          stato?: string
+          tipo?: string
+          totale?: number
+        }
+        Update: {
+          anno?: number
+          cig?: string
+          cliente?: string
+          created_at?: string
+          cup?: string
+          data?: string
+          descrizione?: string
+          id?: string
+          imponibile?: number
+          imposta?: number
+          numero?: number
+          pagamento?: string
+          partita_iva?: string
+          righe?: Json
+          scadenza?: string
+          source_file?: string
+          stato?: string
+          tipo?: string
+          totale?: number
         }
         Relationships: []
       }
