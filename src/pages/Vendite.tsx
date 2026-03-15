@@ -240,6 +240,17 @@ const VenditePage = () => {
     [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf]
   );
 
+  // Count duplicates by file_name (must be before early return to preserve hooks order)
+  const xmlDuplicateCount = useMemo(() => {
+    const seen = new Set<string>();
+    let dupes = 0;
+    for (const r of xmlRecords) {
+      if (seen.has(r.file_name)) dupes++;
+      else seen.add(r.file_name);
+    }
+    return dupes;
+  }, [xmlRecords]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -257,16 +268,6 @@ const VenditePage = () => {
   const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
-  // Count duplicates by file_name
-  const xmlDuplicateCount = useMemo(() => {
-    const seen = new Set<string>();
-    let dupes = 0;
-    for (const r of xmlRecords) {
-      if (seen.has(r.file_name)) dupes++;
-      else seen.add(r.file_name);
-    }
-    return dupes;
-  }, [xmlRecords]);
 
   return (
     <div className="flex h-full">
