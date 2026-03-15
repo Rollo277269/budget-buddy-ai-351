@@ -11,6 +11,7 @@ import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
+import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
