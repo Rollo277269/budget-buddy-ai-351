@@ -107,20 +107,33 @@
 }
 
 @media print {
-  html,
-  body {
-    background: hsl(0 0% 100%) !important;
-    color: hsl(var(--foreground)) !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm 18mm 10mm;
   }
 
-  body.print-report-dialog #root {
+  html,
+  body {
+    background: white !important;
+    color: #1a1a1a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 11px !important;
+  }
+
+  /* Hide ALL screen content when printing a report */
+  body.print-report #root > *:not(.pdf-report),
+  body.print-report .no-print,
+  body.print-report .screen-report,
+  body.print-report header,
+  body.print-report nav,
+  body.print-report aside,
+  body.print-report [data-sidebar],
+  body.print-report [data-radix-popper-content-wrapper] {
     display: none !important;
   }
 
-  body.print-report .no-print,
-  body.print-report .screen-report {
+  body.print-report-dialog #root {
     display: none !important;
   }
 
@@ -148,10 +161,16 @@
 
   body.print-report .pdf-report {
     display: block !important;
-    background: hsl(0 0% 100%) !important;
-    color: hsl(var(--foreground)) !important;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    z-index: 99999;
+    background: white !important;
+    color: #1a1a1a !important;
     padding: 0 !important;
-    font-family: var(--font-sans), sans-serif;
+    font-family: var(--font-sans), "Segoe UI", system-ui, sans-serif;
+    line-height: 1.5;
   }
 
   body.print-report .pdf-header {
