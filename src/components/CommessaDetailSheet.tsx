@@ -629,6 +629,10 @@ export function CommessaDetailSheet({
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
                 onRowClick={(inv) => openPdf(inv, "vendita")}
+                findXml={(k, name) => findXmlVendita(k, name)}
+                hasXml={hasXmlVendita}
+                onOpenXml={(record) => openXmlSheet(record, "vendita")}
+                onOpenXmlPicker={(inv) => setXmlPickerInvoice({ inv, type: "vendita" })}
               />
             </TabsContent>
 
