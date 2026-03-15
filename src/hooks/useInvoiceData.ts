@@ -102,9 +102,10 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
+    const tipo = String(r[0]);
     const anno = parseInt(String(r[1]));
     const numero = parseInt(String(r[2]));
-    const key = `${anno}-${numero}`;
+    const key = `${anno}-${numero}-${tipo}`;
     const desc = String(r[13] || "");
     const riga: SaleInvoiceRiga = {
       descrizione: desc, imponibile: parseNumber(r[22]),
@@ -115,7 +116,7 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
       invoiceMap.get(key)!.righe.push(riga);
     } else {
       invoiceMap.set(key, {
-        tipo: String(r[0]), anno, numero, data: formatDate(r[4]),
+        tipo, anno, numero, data: formatDate(r[4]),
         cliente: String(r[6] || ""), partitaIva: String(r[8] || ""),
         totale: parseNumber(r[21]), imponibile: parseNumber(r[22]),
         imposta: parseNumber(r[23]), descrizione: desc,
@@ -229,7 +230,7 @@ export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: s
   }));
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);
-    const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero" });
+    const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero,tipo" });
     if (error) console.error("Seed sales error:", error);
   }
 }

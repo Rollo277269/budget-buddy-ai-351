@@ -920,7 +920,7 @@ function UploadFattureSection() {
   ) => {
     const table = type === "vendita" ? "fatture_vendita" : "fatture_acquisto";
     const items = type === "vendita" ? sales : purchases;
-    const keys = items.map(i => `${i.anno}-${i.numero}`);
+    const keys = items.map((i: any) => `${i.anno}-${i.numero}-${i.tipo || ""}`);
 
     // Fetch existing records that might collide (include more fields for completeness comparison)
     const { data: existing } = await supabase
@@ -933,7 +933,7 @@ function UploadFattureSection() {
 
     const existingMap = new Map<string, { tipo: string; descrizione: string; imponibile: number; imposta: number; totale: number; cig: string; source_file: string }>();
     (existing || []).forEach((r: any) => {
-      existingMap.set(`${r.anno}-${r.numero}`, {
+      existingMap.set(`${r.anno}-${r.numero}-${r.tipo || ""}`, {
         tipo: r.tipo, descrizione: r.descrizione,
         imponibile: Number(r.imponibile) || 0, imposta: Number(r.imposta) || 0,
         totale: Number(r.totale) || 0, cig: r.cig || "", source_file: r.source_file || "",
@@ -944,7 +944,7 @@ function UploadFattureSection() {
     const newItems: typeof items = [];
 
     items.forEach((item: any) => {
-      const key = `${item.anno}-${item.numero}`;
+      const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
       if (existingMap.has(key)) {
         collidingItems.push(item);
       } else {
@@ -969,7 +969,7 @@ function UploadFattureSection() {
 
     // Build collision list for the dialog — auto-select when new data is more complete
     const collisionList: CollisionItem[] = collidingItems.map((item: any) => {
-      const key = `${item.anno}-${item.numero}`;
+      const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
       const ex = existingMap.get(key)!;
 
       // Determine if new data is more complete/updated
@@ -1020,7 +1020,7 @@ function UploadFattureSection() {
     try {
       const selectedKeys = new Set(collisions.filter(c => c.selected).map(c => c.key));
       const overwriteItems = (pendingUpload.colliding as any[]).filter(
-        (item: any) => selectedKeys.has(`${item.anno}-${item.numero}`)
+        (item: any) => selectedKeys.has(`${item.anno}-${item.numero}-${item.tipo || ""}`)
       );
       const allToSave = [...(pendingUpload.newOnly as any[]), ...overwriteItems];
 
