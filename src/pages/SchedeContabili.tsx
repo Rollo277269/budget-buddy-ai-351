@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, Printer } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /* ── Helpers ── */
@@ -265,8 +265,8 @@ function SchedaDetail({
         {/* Export button */}
         <div className="flex justify-end no-print">
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5">
-            <Printer className="h-3.5 w-3.5" />
-            Esporta PDF
+            <FileText className="h-3.5 w-3.5" />
+            Report
           </Button>
         </div>
 

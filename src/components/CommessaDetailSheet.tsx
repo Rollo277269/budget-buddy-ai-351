@@ -32,7 +32,7 @@ import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, Printer, FileSearch
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
@@ -369,8 +369,8 @@ export function CommessaDetailSheet({
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 no-print">
-                <Printer className="h-3.5 w-3.5" />
-                Esporta PDF
+                <FileText className="h-3.5 w-3.5" />
+                Report
               </Button>
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 no-print">
                 <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
