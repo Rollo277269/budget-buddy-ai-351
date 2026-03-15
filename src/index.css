@@ -261,64 +261,73 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
-    margin-bottom: 14px;
+    margin-bottom: 18px;
   }
 
   body.print-report .pdf-kpi-card {
-    border: 1px solid hsl(var(--border));
-    border-radius: 8px;
-    padding: 8px 10px;
-    background: hsl(var(--card));
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: #f9fafb;
   }
 
   body.print-report .pdf-kpi-label {
     margin: 0;
-    font-size: 10px;
+    font-size: 9px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: hsl(var(--muted-foreground));
+    letter-spacing: 0.05em;
+    color: #666;
+    font-weight: 600;
   }
 
   body.print-report .pdf-kpi-value {
-    margin: 2px 0 0;
-    font-size: 15px;
+    margin: 4px 0 0;
+    font-size: 16px;
     font-weight: 700;
     font-family: var(--font-mono), monospace;
-    color: hsl(var(--foreground));
+    color: #1a1a1a;
   }
 
   body.print-report .pdf-kpi-value.is-positive {
-    color: hsl(var(--income));
+    color: #15803d;
   }
 
   body.print-report .pdf-kpi-value.is-negative {
-    color: hsl(var(--expense));
+    color: #dc2626;
+  }
+
+  body.print-report .pdf-kpi-sub {
+    margin: 2px 0 0;
+    font-size: 9px;
+    color: #888;
   }
 
   body.print-report .pdf-table-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 14px;
+    margin-top: 18px;
   }
 
   body.print-report .pdf-section {
-    border: 1px solid hsl(var(--border));
-    border-radius: 8px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
     overflow: hidden;
-    background: hsl(var(--card));
+    background: white;
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
   body.print-report .pdf-section h2 {
     margin: 0;
-    padding: 8px 10px;
+    padding: 8px 12px;
     font-size: 11px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    background: hsl(var(--muted));
-    color: hsl(var(--foreground));
-    border-bottom: 1px solid hsl(var(--border));
+    font-weight: 700;
+    background: #1e3a5f;
+    color: white;
+    border-bottom: none;
   }
 
   body.print-report .pdf-table {
@@ -329,15 +338,19 @@
 
   body.print-report .pdf-table th,
   body.print-report .pdf-table td {
-    padding: 6px 8px;
-    border-bottom: 1px solid hsl(var(--border));
-    color: hsl(var(--foreground));
+    padding: 5px 8px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1a1a1a;
   }
 
   body.print-report .pdf-table th {
     font-weight: 600;
-    background: hsl(var(--muted));
+    background: #f3f4f6;
     text-align: left;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #444;
   }
 
   body.print-report .pdf-table .is-right {
@@ -346,11 +359,11 @@
   }
 
   body.print-report .pdf-table tbody tr:nth-child(even) {
-    background: hsl(var(--accent));
+    background: #f9fafb;
   }
 
   body.print-report .pdf-full-width {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   body.print-report .pdf-data-grid {
@@ -371,22 +384,16 @@
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: hsl(var(--muted-foreground));
+    color: #888;
   }
 
   body.print-report .pdf-data-value {
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #1a1a1a;
   }
 
   body.print-report .pdf-data-highlight {
-    color: hsl(var(--primary));
-  }
-
-  body.print-report .pdf-kpi-sub {
-    margin: 2px 0 0;
-    font-size: 9px;
-    color: hsl(var(--muted-foreground));
+    color: #1e3a5f;
   }
 
   body.print-report .pdf-desc-cell {
@@ -398,16 +405,16 @@
 
   body.print-report .pdf-table-total td {
     font-weight: 700;
-    border-top: 2px solid hsl(var(--foreground));
+    border-top: 2px solid #1a1a1a;
     border-bottom: none;
   }
 
   body.print-report .is-positive {
-    color: hsl(var(--income));
+    color: #15803d;
   }
 
   body.print-report .is-negative {
-    color: hsl(var(--expense));
+    color: #dc2626;
   }
 
   /* ── PDF Bar Charts ── */
@@ -423,13 +430,11 @@
   }
 
   body.print-report .pdf-bar-label {
-    flex: 0 0 100px;
-    font-size: 9px;
+    flex: 0 0 50px;
+    font-size: 10px;
+    font-weight: 600;
     text-align: right;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: hsl(var(--foreground));
+    color: #1a1a1a;
   }
 
   body.print-report .pdf-bar-tracks {
@@ -440,27 +445,26 @@
   }
 
   body.print-report .pdf-bar {
-    height: 14px;
+    height: 16px;
     border-radius: 3px;
     min-width: 2px;
     position: relative;
     display: flex;
     align-items: center;
-    transition: none;
   }
 
   body.print-report .pdf-bar.is-positive {
-    background: hsl(var(--income));
+    background: #15803d;
   }
 
   body.print-report .pdf-bar.is-negative {
-    background: hsl(var(--expense));
+    background: #dc2626;
   }
 
   body.print-report .pdf-bar-value {
     font-size: 8px;
     font-family: var(--font-mono), monospace;
-    color: hsl(0 0% 100%);
+    color: white;
     padding-left: 4px;
     white-space: nowrap;
   }
@@ -470,7 +474,7 @@
     gap: 14px;
     margin-top: 8px;
     font-size: 9px;
-    color: hsl(var(--muted-foreground));
+    color: #666;
   }
 
   body.print-report .pdf-legend-item {
@@ -487,11 +491,11 @@
   }
 
   body.print-report .pdf-legend-swatch.is-positive {
-    background: hsl(var(--income));
+    background: #15803d;
   }
 
   body.print-report .pdf-legend-swatch.is-negative {
-    background: hsl(var(--expense));
+    background: #dc2626;
   }
 
   /* ── PDF Progress Bar ── */
@@ -503,7 +507,7 @@
     display: flex;
     justify-content: space-between;
     font-size: 9px;
-    color: hsl(var(--muted-foreground));
+    color: #888;
     margin-bottom: 4px;
   }
 
@@ -515,14 +519,14 @@
   body.print-report .pdf-progress-track {
     height: 12px;
     border-radius: 6px;
-    background: hsl(var(--muted));
+    background: #e5e7eb;
     overflow: hidden;
   }
 
   body.print-report .pdf-progress-fill {
     height: 100%;
     border-radius: 6px;
-    background: hsl(var(--primary));
+    background: #1e3a5f;
   }
 
   /* ── Scheda page print: hide main UI, show report div ── */
@@ -541,10 +545,5 @@
   body.print-report main {
     padding: 0 !important;
     margin: 0 !important;
-  }
-
-  @page {
-    size: A4 landscape;
-    margin: 1.2cm;
   }
 }
