@@ -45,6 +45,13 @@ function applyNamingRule(
   return result;
 }
 
+/** Convert DD/MM/YYYY to YYYY-MM-DD for file naming */
+function toIsoDate(ddmmyyyy: string): string {
+  const parts = ddmmyyyy.split("/");
+  if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  return ddmmyyyy;
+}
+
 interface ExpenseFormData {
   fornitore: string;
   descrizione: string;
@@ -96,7 +103,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
     if (!rule) return originalName;
 
     let anno = String(new Date().getFullYear());
-    let dataFormatted = aiData.data_documento || "";
+    let dataFormatted = aiData.data_documento ? toIsoDate(aiData.data_documento) : "";
     if (aiData.data_documento) {
       const parts = aiData.data_documento.split("/");
       if (parts.length === 3) anno = parts[2];
@@ -241,7 +248,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
             NUMERO: String(nextNumero),
             FORNITORE: (formData.fornitore || "").replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
             CLIENTE: "",
-            DATA: formData.data_documento || "",
+            DATA: formData.data_documento ? toIsoDate(formData.data_documento) : "",
             CIG: cig || "",
             COMMESSA: String(commessaNumero),
             DESCRIZIONE: (formData.descrizione || "").substring(0, 50).replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
