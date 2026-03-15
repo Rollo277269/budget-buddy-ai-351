@@ -296,8 +296,9 @@ export function CommessaDetailSheet({
       else statusSales.nonPagata += s.totale;
     });
     linkedPurchases.forEach((p) => {
-      if (p.stato?.toLowerCase().includes("pagat")) statusPurchases.pagata += p.totale;
-      else statusPurchases.nonPagata += p.totale;
+      const cost = purchaseCost(p);
+      if (p.stato?.toLowerCase().includes("pagat")) statusPurchases.pagata += cost;
+      else statusPurchases.nonPagata += cost;
     });
 
     return {
