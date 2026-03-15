@@ -93,6 +93,7 @@ export function CommessaDetailSheet({
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
+  const [editingExpense, setEditingExpense] = useState<PurchaseInvoice | null>(null);
 
   // -- Dati Commessa slot-based grid reorder --
   const isAdmin = true; // TODO: replace with actual admin check
