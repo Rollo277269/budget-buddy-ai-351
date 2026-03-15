@@ -13,6 +13,7 @@ import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
 
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -328,9 +329,25 @@ const AcquistiPage = () => {
               <p className="text-xs font-semibold text-muted-foreground">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
               <div className="flex gap-1">
                 {xmlDuplicateCount > 0 && (
-                  <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" onClick={removeDuplicates}>
-                    <Trash2 className="h-3 w-3 mr-1" />Rimuovi duplicati ({xmlDuplicateCount})
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive">
+                        <Trash2 className="h-3 w-3 mr-1" />Rimuovi duplicati ({xmlDuplicateCount})
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Rimuovere {xmlDuplicateCount} XML duplicati?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Verranno eliminati {xmlDuplicateCount} file XML caricati più volte con lo stesso nome. Per ogni duplicato verrà mantenuta la versione più vecchia. Questa azione è irreversibile.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annulla</AlertDialogCancel>
+                        <AlertDialogAction onClick={removeDuplicates} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Elimina duplicati</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
                 <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
                   <RefreshCw className="h-3 w-3 mr-1" />Riassocia
