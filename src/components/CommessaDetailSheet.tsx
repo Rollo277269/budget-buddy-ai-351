@@ -281,7 +281,7 @@ export function CommessaDetailSheet({
     const supplierMap = new Map<string, number>();
     linkedPurchases.forEach((p) => {
       const name = p.fornitore || "Sconosciuto";
-      supplierMap.set(name, (supplierMap.get(name) || 0) + p.totale);
+      supplierMap.set(name, (supplierMap.get(name) || 0) + purchaseCost(p));
     });
     const supplierData = Array.from(supplierMap.entries())
       .sort((a, b) => b[1] - a[1])
