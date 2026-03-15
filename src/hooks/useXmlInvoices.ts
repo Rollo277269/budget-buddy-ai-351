@@ -225,6 +225,44 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     toast.success("XML eliminato");
   }, [fetchRecords]);
 
+  /**
+   * Find and remove duplicate XML records (same file_name + tipo).
+   * Keeps the oldest record (first uploaded) and deletes newer duplicates.
+   */
+  const removeDuplicates = useCallback(async () => {
+    const seen = new Map<string, typeof xmlRecords[0]>();
+    const duplicates: typeof xmlRecords[0][] = [];
+
+    // Sort by created_at ascending so we keep the oldest
+    const sorted = [...xmlRecords].sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+    for (const r of sorted) {
+      const key = r.file_name;
+      if (seen.has(key)) {
+        duplicates.push(r);
+      } else {
+        seen.set(key, r);
+      }
+    }
+
+    if (duplicates.length === 0) {
+      toast.info("Nessun XML duplicato trovato");
+      return 0;
+    }
+
+    // Delete duplicates from storage and DB
+    const storagePaths = duplicates.map(d => d.storage_path);
+    await supabase.storage.from("fatture-xml").remove(storagePaths);
+
+    for (const d of duplicates) {
+      await supabase.from("fatture_xml" as any).delete().eq("id", d.id);
+    }
+
+    await fetchRecords();
+    toast.success(`${duplicates.length} XML duplicati rimossi`);
+    return duplicates.length;
+  }, [xmlRecords, fetchRecords]);
+
   const manualMatch = useCallback(async (xmlId: string, anno: number, numero: number) => {
     const invoiceKey = `${anno}-${numero}`;
     await supabase
