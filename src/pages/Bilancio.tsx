@@ -141,7 +141,8 @@ export default function BilancioPage() {
     const margine = ricavi ? saldo / ricavi * 100 : 0;
     const numVendite = src.reduce((s, y) => s + y.numVendite, 0);
     const numAcquisti = src.reduce((s, y) => s + y.numAcquisti, 0);
-    return { ricavi, costi, saldo, margine, numVendite, numAcquisti };
+    const numDocumenti = src.reduce((s, y) => s + y.numDocumenti, 0);
+    return { ricavi, costi, saldo, margine, numVendite, numAcquisti, numDocumenti };
   }, [yearSummaries, annoFilter]);
 
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
