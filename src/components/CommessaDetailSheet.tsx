@@ -1632,7 +1632,13 @@ function InvoiceList({
     { key: "descrizione", label: "Descrizione", filterable: true, render: (r: any) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span> },
     { key: "stato", label: "Stato", filterable: true },
     { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
+    ...(type === "acquisto" ? [
+      { key: "cassa", label: "Cassa", filterable: false, align: "right" as const },
+    ] : []),
     { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
+    ...(type === "acquisto" ? [
+      { key: "ritenute", label: "Ritenute", filterable: false, align: "right" as const },
+    ] : []),
     { key: "totale", label: "Totale", filterable: false, align: "right" as const },
     ...(findXml ? [{ key: "xml", label: "XML", filterable: false }] : []),
     { key: "centro", label: centroLabel, filterable: true },
