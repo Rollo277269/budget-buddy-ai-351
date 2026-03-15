@@ -334,13 +334,15 @@ export function CommessaDetailSheet({
   const centroLabelMap = new Map(centri.map((c) => [c.codice, c.descrizione]));
   const buildCentroRows = (
     items: Array<SaleInvoice | PurchaseInvoice>,
-    map: Record<string, string>
+    map: Record<string, string>,
+    isPurchase = false
   ) => {
     const agg = new Map<string, number>();
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      agg.set(label, (agg.get(label) || 0) + item.totale);
+      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : item.totale;
+      agg.set(label, (agg.get(label) || 0) + amount);
     });
     return Array.from(agg.entries())
       .map(([name, value]) => ({ name, value }))
