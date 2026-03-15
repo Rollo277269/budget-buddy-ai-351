@@ -231,12 +231,22 @@ const AcquistiPage = () => {
     [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf]
   );
 
+  const xmlDuplicateCount = useMemo(() => {
+    const seen = new Set<string>();
+    let dupes = 0;
+    for (const r of xmlRecords) {
+      if (seen.has(r.file_name)) dupes++;
+      else seen.add(r.file_name);
+    }
+    return dupes;
+  }, [xmlRecords]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>);
-
+      </div>
+    );
   }
 
   const hasCentri = centriCosto.length > 0 || centriRicavo.length > 0;
@@ -248,15 +258,6 @@ const AcquistiPage = () => {
   const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
-  const xmlDuplicateCount = useMemo(() => {
-    const seen = new Set<string>();
-    let dupes = 0;
-    for (const r of xmlRecords) {
-      if (seen.has(r.file_name)) dupes++;
-      else seen.add(r.file_name);
-    }
-    return dupes;
-  }, [xmlRecords]);
 
   return (
     <div className="flex h-full">
