@@ -93,33 +93,63 @@ export function CommessaDetailSheet({
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
-  // -- Dati Commessa field reorder --
+  // -- Dati Commessa slot-based grid reorder --
   const isAdmin = true; // TODO: replace with actual admin check
-  const DEFAULT_DATI_FIELDS = [
+  const COLS = 4;
+  const DEFAULT_DATI_SLOTS: (string | null)[] = [
+    "cig", "committente", "assegnataria", "rup",
+    "direttore_lavori", "cup", "cig_derivato", "numero_repertorio",
+    "data_contratto", "data_scadenza_contratto", "data_consegna_lavori", "durata",
+  ];
+  const ALL_FIELD_KEYS = [
     "cig", "committente", "assegnataria", "rup", "direttore_lavori", "cup",
     "cig_derivato", "numero_repertorio", "data_contratto", "data_scadenza_contratto",
     "data_consegna_lavori", "durata",
   ];
-  const DATI_STORAGE_KEY = "commessa-dati-field-order";
-  const [datiFieldOrder, setDatiFieldOrder] = useState<string[]>(() => {
+  const DATI_STORAGE_KEY = "commessa-dati-slot-order";
+  const [datiSlots, setDatiSlots] = useState<(string | null)[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(DATI_STORAGE_KEY) || "null");
       if (Array.isArray(saved) && saved.length > 0) return saved;
     } catch {}
-    return DEFAULT_DATI_FIELDS;
+    return [...DEFAULT_DATI_SLOTS];
   });
   const [datiEditMode, setDatiEditMode] = useState(false);
   const [datiDragIdx, setDatiDragIdx] = useState<number | null>(null);
 
-  const handleDatiDrop = useCallback((fromIdx: number, toIdx: number) => {
-    setDatiFieldOrder((prev) => {
+  const saveDatiSlots = useCallback((slots: (string | null)[]) => {
+    localStorage.setItem(DATI_STORAGE_KEY, JSON.stringify(slots));
+  }, []);
+
+  const handleSlotDrop = useCallback((fromIdx: number, toIdx: number) => {
+    setDatiSlots((prev) => {
       const next = [...prev];
-      const [moved] = next.splice(fromIdx, 1);
-      next.splice(toIdx, 0, moved);
-      localStorage.setItem(DATI_STORAGE_KEY, JSON.stringify(next));
+      // Swap the two slots
+      [next[fromIdx], next[toIdx]] = [next[toIdx], next[fromIdx]];
+      saveDatiSlots(next);
       return next;
     });
-  }, []);
+  }, [saveDatiSlots]);
+
+  const addDatiRow = useCallback(() => {
+    setDatiSlots((prev) => {
+      const next = [...prev, null, null, null, null];
+      saveDatiSlots(next);
+      return next;
+    });
+  }, [saveDatiSlots]);
+
+  const removeDatiRow = useCallback((rowIdx: number) => {
+    setDatiSlots((prev) => {
+      const start = rowIdx * COLS;
+      // Don't remove if any slot in row has a field
+      const rowSlots = prev.slice(start, start + COLS);
+      if (rowSlots.some((s) => s !== null)) return prev;
+      const next = [...prev.slice(0, start), ...prev.slice(start + COLS)];
+      saveDatiSlots(next);
+      return next;
+    });
+  }, [saveDatiSlots]);
   const { centri } = useCentriData();
   const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
@@ -641,7 +671,7 @@ export function CommessaDetailSheet({
                       </Button>
                     )}
                   </div>
-                  {(() => {
+                   {(() => {
                     const FIELD_META: Record<string, { icon: typeof FileText; label: string; value: string | undefined }> = {
                       cig: { icon: FileText, label: "CIG", value: cssr.cig },
                       committente: { icon: Building2, label: "Committente", value: cssr.committente },
@@ -656,35 +686,77 @@ export function CommessaDetailSheet({
                       data_consegna_lavori: { icon: Calendar, label: "Consegna Lavori", value: cssr.data_consegna_lavori },
                       durata: { icon: Calendar, label: "Durata", value: cssr.durata_contrattuale },
                     };
-                    // Ensure all fields are present in order
-                    const orderedKeys = [
-                      ...datiFieldOrder.filter((k) => k in FIELD_META),
-                      ...DEFAULT_DATI_FIELDS.filter((k) => !datiFieldOrder.includes(k)),
-                    ];
+                    // Ensure slots include all fields (append missing ones)
+                    const usedKeys = new Set(datiSlots.filter((s): s is string => s !== null));
+                    const missingKeys = ALL_FIELD_KEYS.filter((k) => !usedKeys.has(k));
+                    const effectiveSlots = [...datiSlots, ...missingKeys];
+                    // Pad to multiple of COLS
+                    while (effectiveSlots.length % COLS !== 0) effectiveSlots.push(null);
+                    const totalRows = effectiveSlots.length / COLS;
+
                     return (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-                        {orderedKeys.map((key, idx) => {
-                          const meta = FIELD_META[key];
-                          if (!meta) return null;
-                          return (
-                            <div
-                              key={key}
-                              draggable={datiEditMode}
-                              onDragStart={(e) => { if (!datiEditMode) return; setDatiDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
-                              onDragOver={(e) => { if (!datiEditMode) return; e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-                              onDrop={(e) => {
-                                e.preventDefault();
-                                if (!datiEditMode || datiDragIdx === null || datiDragIdx === idx) return;
-                                handleDatiDrop(datiDragIdx, idx);
-                                setDatiDragIdx(null);
-                              }}
-                              onDragEnd={() => setDatiDragIdx(null)}
-                              className={`transition-all ${datiEditMode ? "cursor-grab active:cursor-grabbing rounded-lg ring-1 ring-border/50 p-1 hover:ring-primary/50" : ""} ${datiDragIdx === idx ? "opacity-40" : ""}`}
-                            >
-                              <CssrField icon={meta.icon} label={meta.label} value={meta.value} />
-                            </div>
-                          );
-                        })}
+                      <div className="space-y-1">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+                          {effectiveSlots.map((slotKey, idx) => {
+                            const meta = slotKey ? FIELD_META[slotKey] : null;
+                            const isEmpty = !slotKey || !meta;
+                            return (
+                              <div
+                                key={`slot-${idx}`}
+                                draggable={datiEditMode && !isEmpty}
+                                onDragStart={(e) => {
+                                  if (!datiEditMode || isEmpty) return;
+                                  setDatiDragIdx(idx);
+                                  e.dataTransfer.effectAllowed = "move";
+                                }}
+                                onDragOver={(e) => {
+                                  if (!datiEditMode) return;
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = "move";
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  if (!datiEditMode || datiDragIdx === null || datiDragIdx === idx) return;
+                                  handleSlotDrop(datiDragIdx, idx);
+                                  setDatiDragIdx(null);
+                                }}
+                                onDragEnd={() => setDatiDragIdx(null)}
+                                className={`min-h-[52px] transition-all ${
+                                  datiEditMode
+                                    ? `rounded-lg ring-1 p-1 ${
+                                        isEmpty
+                                          ? "ring-dashed ring-border/30 bg-muted/20"
+                                          : "ring-border/50 cursor-grab active:cursor-grabbing hover:ring-primary/50"
+                                      }`
+                                    : isEmpty ? "hidden" : ""
+                                } ${datiDragIdx === idx ? "opacity-40" : ""}`}
+                              >
+                                {meta ? (
+                                  <CssrField icon={meta.icon} label={meta.label} value={meta.value} />
+                                ) : datiEditMode ? (
+                                  <div className="flex items-center justify-center h-full text-xs text-muted-foreground/50">
+                                    vuoto
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {datiEditMode && (
+                          <div className="flex items-center gap-2 pt-2">
+                            <Button variant="outline" size="sm" className="text-xs h-7 gap-1.5" onClick={addDatiRow}>
+                              <Plus className="h-3 w-3" /> Aggiungi riga
+                            </Button>
+                            {totalRows > Math.ceil(ALL_FIELD_KEYS.length / COLS) && (
+                              <Button
+                                variant="ghost" size="sm" className="text-xs h-7 gap-1.5 text-muted-foreground"
+                                onClick={() => removeDatiRow(totalRows - 1)}
+                              >
+                                <X className="h-3 w-3" /> Rimuovi ultima riga vuota
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
