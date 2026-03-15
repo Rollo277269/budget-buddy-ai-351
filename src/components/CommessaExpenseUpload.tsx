@@ -75,34 +75,43 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
 
-  /** Find a matching naming rule and build the renamed file name */
+  /** Find a matching naming rule by tipo_documento and build the renamed file name */
   const buildRenamedFileName = useCallback((aiData: ExpenseFormData, originalName: string): string => {
-    // Look for a rule matching "Fattura Acquisto" or any rule with "acquisto" or "spesa" in tipo
-    const rule = namingRules.find((r) => {
-      const t = r.tipo.toLowerCase();
-      return t.includes("acquisto") || t.includes("spesa") || t.includes("polizza");
-    });
+    // Try exact match on tipo_documento first, then fuzzy match
+    const tipoLower = (aiData.tipo_documento || "").toLowerCase();
+    let rule = namingRules.find((r) => r.tipo.toLowerCase() === tipoLower);
+    if (!rule) {
+      rule = namingRules.find((r) => {
+        const t = r.tipo.toLowerCase();
+        return tipoLower.includes(t) || t.includes(tipoLower);
+      });
+    }
+    // Fallback: any acquisto/spesa rule
+    if (!rule) {
+      rule = namingRules.find((r) => {
+        const t = r.tipo.toLowerCase();
+        return t.includes("acquisto") || t.includes("spesa");
+      });
+    }
     if (!rule) return originalName;
 
-    // Parse data for anno
     let anno = String(new Date().getFullYear());
     let dataFormatted = aiData.data_documento || "";
     if (aiData.data_documento) {
       const parts = aiData.data_documento.split("/");
-      if (parts.length === 3) {
-        anno = parts[2];
-      }
+      if (parts.length === 3) anno = parts[2];
     }
 
     const vars: Record<string, string> = {
       ANNO: anno,
-      NUMERO: "0", // will be assigned on save
+      NUMERO: "0",
       FORNITORE: (aiData.fornitore || "").replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
       CLIENTE: "",
       DATA: dataFormatted,
       CIG: cig || "",
       COMMESSA: String(commessaNumero),
       DESCRIZIONE: (aiData.descrizione || "").substring(0, 50).replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
+      TIPO: aiData.tipo_documento || "",
     };
 
     const name = applyNamingRule(rule.pattern, vars);
