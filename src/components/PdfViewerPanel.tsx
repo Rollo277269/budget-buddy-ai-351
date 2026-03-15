@@ -15,7 +15,7 @@ interface PdfViewerPanelProps {
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
 
 export const PdfViewerPanel = forwardRef<HTMLDivElement, PdfViewerPanelProps>(
-  function PdfViewerPanel({ base64, fileName, onClose }, ref) {
+  function PdfViewerPanel({ base64, fileName, onClose, extraActions }, ref) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
