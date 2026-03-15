@@ -232,7 +232,7 @@ export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: s
   }));
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);
-    const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero,tipo" });
+    const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero,suffisso,tipo" });
     if (error) console.error("Seed sales error:", error);
   }
 }
