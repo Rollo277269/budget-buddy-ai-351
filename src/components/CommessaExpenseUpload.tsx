@@ -248,7 +248,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
             NUMERO: String(nextNumero),
             FORNITORE: (formData.fornitore || "").replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
             CLIENTE: "",
-            DATA: formData.data_documento || "",
+            DATA: formData.data_documento ? toIsoDate(formData.data_documento) : "",
             CIG: cig || "",
             COMMESSA: String(commessaNumero),
             DESCRIZIONE: (formData.descrizione || "").substring(0, 50).replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
