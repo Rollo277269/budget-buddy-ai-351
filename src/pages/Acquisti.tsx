@@ -277,10 +277,6 @@ const AcquistiPage = () => {
           </div>
           <div className="flex gap-2">
             <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
-            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-              {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Carica XML"}
-            </Button>
             {hasCentri &&
             <Button size="sm" variant="outline" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
                 {classifying ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
