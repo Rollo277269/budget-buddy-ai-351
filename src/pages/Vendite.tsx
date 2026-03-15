@@ -313,7 +313,28 @@ const VenditePage = () => {
           </div>
         )}
 
-        {/* Unmatched XML list */}
+        {/* Two drop zones side by side */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* XML Drop Zone */}
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
+            onDragEnter={handleXmlDragEnter}
+            onDragLeave={handleXmlDragLeave}
+            onDragOver={handleXmlDragOver}
+            onDrop={handleXmlDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+              <FileCode2 className="h-5 w-5" />
+              <span className="text-xs font-medium">Trascina file XML</span>
+              <span className="text-[10px]">Fatture elettroniche</span>
+            </div>
+          </div>
+
+          {/* PDF Drop Zone */}
+          <DocumentiAcquistoSection dropZoneOnly />
+        </div>
+
         {xmlUnmatchedCount > 0 && (
           <div className="bg-muted/50 border border-border rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
