@@ -969,7 +969,7 @@ function UploadFattureSection() {
 
     // Build collision list for the dialog — auto-select when new data is more complete
     const collisionList: CollisionItem[] = collidingItems.map((item: any) => {
-      const key = `${item.anno}-${item.numero}`;
+      const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
       const ex = existingMap.get(key)!;
 
       // Determine if new data is more complete/updated
