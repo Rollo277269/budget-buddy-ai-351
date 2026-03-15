@@ -92,6 +92,34 @@ export function CommessaDetailSheet({
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
+
+  // -- Dati Commessa field reorder --
+  const isAdmin = true; // TODO: replace with actual admin check
+  const DEFAULT_DATI_FIELDS = [
+    "cig", "committente", "assegnataria", "rup", "direttore_lavori", "cup",
+    "cig_derivato", "numero_repertorio", "data_contratto", "data_scadenza_contratto",
+    "data_consegna_lavori", "durata",
+  ];
+  const DATI_STORAGE_KEY = "commessa-dati-field-order";
+  const [datiFieldOrder, setDatiFieldOrder] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DATI_STORAGE_KEY) || "null");
+      if (Array.isArray(saved) && saved.length > 0) return saved;
+    } catch {}
+    return DEFAULT_DATI_FIELDS;
+  });
+  const [datiEditMode, setDatiEditMode] = useState(false);
+  const [datiDragIdx, setDatiDragIdx] = useState<number | null>(null);
+
+  const handleDatiDrop = useCallback((fromIdx: number, toIdx: number) => {
+    setDatiFieldOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      localStorage.setItem(DATI_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
   const { centri } = useCentriData();
   const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
@@ -599,21 +627,67 @@ export function CommessaDetailSheet({
             <TabsContent value="dati" className="space-y-4">
               {cssr ? (
                 <div className="rounded-xl border bg-muted/30 p-5 space-y-4">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
-                    <CssrField icon={FileText} label="CIG" value={cssr.cig} />
-                    <CssrField icon={Building2} label="Committente" value={cssr.committente} />
-                    <CssrField icon={Building2} label="Impresa Assegnataria" value={cssr.impresa_assegnataria} />
-                    <CssrField icon={User} label="RUP" value={cssr.rup} />
-                    <CssrField icon={User} label="Direttore Lavori" value={cssr.direttore_lavori} />
-                    <CssrField icon={FileText} label="CUP" value={cssr.cup} />
-                    <CssrField icon={FileText} label="CIG Derivato" value={cssr.cig_derivato} />
-                    <CssrField icon={FileText} label="N° Repertorio" value={cssr.numero_repertorio} />
-                    <CssrField icon={Calendar} label="Data Contratto" value={cssr.data_contratto} />
-                    <CssrField icon={Calendar} label="Scadenza Contratto" value={cssr.data_scadenza_contratto} />
-                    <CssrField icon={Calendar} label="Consegna Lavori" value={cssr.data_consegna_lavori} />
-                    <CssrField icon={Calendar} label="Durata" value={cssr.durata_contrattuale} />
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dati Commessa</h3>
+                    {isAdmin && (
+                      <Button
+                        variant={datiEditMode ? "default" : "ghost"}
+                        size="sm"
+                        className="text-xs h-7 gap-1.5 no-print"
+                        onClick={() => setDatiEditMode(!datiEditMode)}
+                      >
+                        <SlidersHorizontal className="h-3 w-3" />
+                        {datiEditMode ? "Fine riordino" : "Riordina campi"}
+                      </Button>
+                    )}
                   </div>
+                  {(() => {
+                    const FIELD_META: Record<string, { icon: typeof FileText; label: string; value: string | undefined }> = {
+                      cig: { icon: FileText, label: "CIG", value: cssr.cig },
+                      committente: { icon: Building2, label: "Committente", value: cssr.committente },
+                      assegnataria: { icon: Building2, label: "Impresa Assegnataria", value: cssr.impresa_assegnataria },
+                      rup: { icon: User, label: "RUP", value: cssr.rup },
+                      direttore_lavori: { icon: User, label: "Direttore Lavori", value: cssr.direttore_lavori },
+                      cup: { icon: FileText, label: "CUP", value: cssr.cup },
+                      cig_derivato: { icon: FileText, label: "CIG Derivato", value: cssr.cig_derivato },
+                      numero_repertorio: { icon: FileText, label: "N° Repertorio", value: cssr.numero_repertorio },
+                      data_contratto: { icon: Calendar, label: "Data Contratto", value: cssr.data_contratto },
+                      data_scadenza_contratto: { icon: Calendar, label: "Scadenza Contratto", value: cssr.data_scadenza_contratto },
+                      data_consegna_lavori: { icon: Calendar, label: "Consegna Lavori", value: cssr.data_consegna_lavori },
+                      durata: { icon: Calendar, label: "Durata", value: cssr.durata_contrattuale },
+                    };
+                    // Ensure all fields are present in order
+                    const orderedKeys = [
+                      ...datiFieldOrder.filter((k) => k in FIELD_META),
+                      ...DEFAULT_DATI_FIELDS.filter((k) => !datiFieldOrder.includes(k)),
+                    ];
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
+                        {orderedKeys.map((key, idx) => {
+                          const meta = FIELD_META[key];
+                          if (!meta) return null;
+                          return (
+                            <div
+                              key={key}
+                              draggable={datiEditMode}
+                              onDragStart={(e) => { if (!datiEditMode) return; setDatiDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
+                              onDragOver={(e) => { if (!datiEditMode) return; e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                if (!datiEditMode || datiDragIdx === null || datiDragIdx === idx) return;
+                                handleDatiDrop(datiDragIdx, idx);
+                                setDatiDragIdx(null);
+                              }}
+                              onDragEnd={() => setDatiDragIdx(null)}
+                              className={`transition-all ${datiEditMode ? "cursor-grab active:cursor-grabbing rounded-lg ring-1 ring-border/50 p-1 hover:ring-primary/50" : ""} ${datiDragIdx === idx ? "opacity-40" : ""}`}
+                            >
+                              <CssrField icon={meta.icon} label={meta.label} value={meta.value} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                   <Separator />
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <MiniCard label="Importo Contrattuale" value={data.importoContratto != null && !isNaN(data.importoContratto) ? formatCurrency(data.importoContratto) : (cssr.importo_contrattuale || "—")} />
