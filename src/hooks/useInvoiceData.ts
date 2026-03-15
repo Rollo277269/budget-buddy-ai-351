@@ -102,9 +102,10 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
+    const tipo = String(r[0]);
     const anno = parseInt(String(r[1]));
     const numero = parseInt(String(r[2]));
-    const key = `${anno}-${numero}`;
+    const key = `${anno}-${numero}-${tipo}`;
     const desc = String(r[13] || "");
     const riga: SaleInvoiceRiga = {
       descrizione: desc, imponibile: parseNumber(r[22]),
