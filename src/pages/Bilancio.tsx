@@ -385,7 +385,7 @@ export default function BilancioPage() {
 
 }
 
-/* ────────── Side-by-side centro tables with category grouping ────────── */
+/* ────────── Side-by-side centro tables with horizontal pairing ────────── */
 
 interface CategoryGroup {
   categoria: CategoriaCentro;
@@ -393,145 +393,259 @@ interface CategoryGroup {
   subtotal: number;
 }
 
+// Pair mapping: ricavo suffix → costo suffix
+const CATEGORY_PAIRS: [string, string][] = [["RG", "CG"], ["RO", "CO"], ["RC", "CC"]];
+
+function buildGroups(data: CentroAgg[], categorie: CategoriaCentro[], centri: CentroCR[]): { groups: CategoryGroup[]; orphans: CentroAgg[] } {
+  const dataByCode = new Map(data.map(d => [d.codice, d]));
+  const groups: CategoryGroup[] = [];
+  const usedCodes = new Set<string>();
+
+  for (const cat of categorie) {
+    const catCentri = centri.filter(c => c.categoriaId === cat.id);
+    const items: CentroAgg[] = [];
+    for (const cc of catCentri) {
+      const agg = dataByCode.get(cc.codice);
+      if (agg) { items.push(agg); usedCodes.add(cc.codice); }
+    }
+    groups.push({
+      categoria: cat,
+      items: items.sort((a, b) => b.importo - a.importo),
+      subtotal: items.reduce((s, i) => s + i.importo, 0),
+    });
+  }
+
+  const orphans = data.filter(d => !usedCodes.has(d.codice));
+  return { groups, orphans };
+}
+
 function CentriSideBySide({
   ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti, onRowClick, centri, categorie
 }: {ricavoBreakdown: CentroAgg[];costoBreakdown: CentroAgg[];totalRicavi: number;totalCosti: number;onRowClick?: (codice: string, tipo: "ricavo" | "costo") => void; centri: CentroCR[]; categorie: CategoriaCentro[];}) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggleCategory = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+
   const categorieRicavo = useMemo(() => categorie.filter(c => c.tipo === "ricavo"), [categorie]);
   const categorieCosto = useMemo(() => categorie.filter(c => c.tipo === "costo"), [categorie]);
   const centriRicavo = useMemo(() => centri.filter(c => c.tipo === "ricavo"), [centri]);
   const centriCosto = useMemo(() => centri.filter(c => c.tipo === "costo"), [centri]);
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <CentroTableCard title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" onRowClick={onRowClick ? (codice) => onRowClick(codice, "ricavo") : undefined} categorie={categorieRicavo} centri={centriRicavo} />
-      <CentroTableCard title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" onRowClick={onRowClick ? (codice) => onRowClick(codice, "costo") : undefined} categorie={categorieCosto} centri={centriCosto} />
-    </div>);
-}
 
-function CentroTableCard({ title, data, total, accentClass, onRowClick, categorie, centri
-}: {title: string;data: CentroAgg[];total: number;accentClass: string;onRowClick?: (codice: string) => void; categorie: CategoriaCentro[]; centri: CentroCR[];}) {
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const ricavoData = useMemo(() => buildGroups(ricavoBreakdown, categorieRicavo, centriRicavo), [ricavoBreakdown, categorieRicavo, centriRicavo]);
+  const costoData = useMemo(() => buildGroups(costoBreakdown, categorieCosto, centriCosto), [costoBreakdown, categorieCosto, centriCosto]);
 
-  const toggleCategory = (catId: string) => {
-    setCollapsed(prev => ({ ...prev, [catId]: !prev[catId] }));
-  };
+  // Build paired rows based on CATEGORY_PAIRS
+  const pairs = useMemo(() => {
+    const ricavoByCode = new Map(ricavoData.groups.map(g => [g.categoria.codice, g]));
+    const costoByCode = new Map(costoData.groups.map(g => [g.categoria.codice, g]));
+    const usedR = new Set<string>();
+    const usedC = new Set<string>();
 
-  const { groups, orphans } = useMemo(() => {
-    const dataByCode = new Map(data.map(d => [d.codice, d]));
-    const groups: CategoryGroup[] = [];
-    const usedCodes = new Set<string>();
+    const result: { ricavo: CategoryGroup | null; costo: CategoryGroup | null; pairKey: string }[] = [];
 
-    for (const cat of categorie) {
-      const catCentri = centri.filter(c => c.categoriaId === cat.id);
-      const items: CentroAgg[] = [];
-      for (const cc of catCentri) {
-        const agg = dataByCode.get(cc.codice);
-        if (agg) {
-          items.push(agg);
-          usedCodes.add(cc.codice);
-        }
-      }
-      if (items.length > 0) {
-        groups.push({
-          categoria: cat,
-          items: items.sort((a, b) => b.importo - a.importo),
-          subtotal: items.reduce((s, i) => s + i.importo, 0),
-        });
-      }
+    for (const [rCode, cCode] of CATEGORY_PAIRS) {
+      const r = ricavoByCode.get(rCode) || null;
+      const c = costoByCode.get(cCode) || null;
+      if (r) usedR.add(rCode);
+      if (c) usedC.add(cCode);
+      result.push({ ricavo: r, costo: c, pairKey: `${rCode}-${cCode}` });
     }
 
-    const orphans = data.filter(d => !usedCodes.has(d.codice));
-    return { groups, orphans };
-  }, [data, categorie, centri]);
+    // Add any unpaired categories
+    ricavoData.groups.filter(g => !usedR.has(g.categoria.codice)).forEach(g => {
+      result.push({ ricavo: g, costo: null, pairKey: `extra-r-${g.categoria.codice}` });
+    });
+    costoData.groups.filter(g => !usedC.has(g.categoria.codice)).forEach(g => {
+      result.push({ ricavo: null, costo: g, pairKey: `extra-c-${g.categoria.codice}` });
+    });
+
+    return result;
+  }, [ricavoData, costoData]);
+
+  const renderHalf = (
+    group: CategoryGroup | null,
+    orphans: CentroAgg[],
+    total: number,
+    tipo: "ricavo" | "costo",
+    accentClass: string,
+    showOrphans: boolean,
+    isCollapsed: boolean,
+    onToggle: () => void,
+  ) => {
+    if (!group && !showOrphans) {
+      return (
+        <>
+          <td className="py-1.5" colSpan={4}></td>
+        </>
+      );
+    }
+
+    if (showOrphans && orphans.length > 0) {
+      return (
+        <>
+          <td className="pl-2 pr-0 py-1.5"></td>
+          <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">—</td>
+          <td className="px-3 py-1.5 text-xs font-medium text-muted-foreground">Non classificate</td>
+          <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(orphans.reduce((s, d) => s + d.importo, 0))}</td>
+        </>
+      );
+    }
+
+    if (!group) return <td className="py-1.5" colSpan={4}></td>;
+
+    return null; // handled inline
+  };
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
-      <div className="p-3 border-b border-border bg-muted/30">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      </div>
-      {data.length === 0 ?
-      <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div> :
       <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/20">
-                <th className="w-8"></th>
-                <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
-                <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro</th>
-                <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
-                <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map((g) => {
-                const isCollapsed = collapsed[g.categoria.id] ?? false;
-                return (
-                  <Fragment key={g.categoria.id}>
-                    <tr
-                      className="border-b border-border bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors select-none"
-                      onClick={() => toggleCategory(g.categoria.id)}
-                    >
-                      <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
-                        {isCollapsed ?
-                          <ChevronRight className="h-3.5 w-3.5" /> :
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        }
-                      </td>
-                      <td className="px-3 py-1.5 text-xs font-mono font-semibold text-foreground">{g.categoria.codice}</td>
-                      <td className="px-3 py-1.5 text-xs font-semibold text-foreground">{g.categoria.descrizione}</td>
-                      <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold">{formatCurrency(g.subtotal)}</td>
-                      <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground font-semibold">
-                        {total > 0 ? (g.subtotal / total * 100).toFixed(1) : "0.0"}%
-                      </td>
-                    </tr>
-                    {!isCollapsed && g.items.map((d) => (
-                      <tr
-                        key={d.codice}
-                        onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
-                        className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
-                          onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""}`}
-                      >
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/20">
+              {/* Ricavo side */}
+              <th className="w-8"></th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro di Ricavo</th>
+              <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
+              {/* Separator */}
+              <th className="w-px bg-border"></th>
+              {/* Costo side */}
+              <th className="w-8"></th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro di Costo</th>
+              <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pairs.map(({ ricavo, costo, pairKey }) => {
+              const isCollapsed_ = collapsed[pairKey] ?? false;
+              const maxItems = Math.max(ricavo?.items.length || 0, costo?.items.length || 0);
+              const hasContent = ricavo || costo;
+              if (!hasContent) return null;
+
+              return (
+                <Fragment key={pairKey}>
+                  {/* Category header row */}
+                  <tr
+                    className="border-b border-border bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors select-none"
+                    onClick={() => toggleCategory(pairKey)}
+                  >
+                    {/* Ricavo category */}
+                    <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
+                      {isCollapsed_ ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </td>
+                    <td className="px-3 py-1.5 text-xs font-mono font-semibold text-foreground">{ricavo?.categoria.codice || ""}</td>
+                    <td className="px-3 py-1.5 text-xs font-semibold text-foreground">{ricavo?.categoria.descrizione || ""}</td>
+                    <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold text-income">{ricavo ? formatCurrency(ricavo.subtotal) : ""}</td>
+                    {/* Separator */}
+                    <td className="bg-border"></td>
+                    {/* Costo category */}
+                    <td className="pl-2 pr-0 py-1.5"></td>
+                    <td className="px-3 py-1.5 text-xs font-mono font-semibold text-foreground">{costo?.categoria.codice || ""}</td>
+                    <td className="px-3 py-1.5 text-xs font-semibold text-foreground">{costo?.categoria.descrizione || ""}</td>
+                    <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold text-expense">{costo ? formatCurrency(costo.subtotal) : ""}</td>
+                  </tr>
+                  {/* Expanded items */}
+                  {!isCollapsed_ && Array.from({ length: maxItems }).map((_, i) => {
+                    const rItem = ricavo?.items[i];
+                    const cItem = costo?.items[i];
+                    return (
+                      <tr key={`${pairKey}-${i}`} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                         <td className="pl-2 pr-0 py-1.5"></td>
-                        <td className="px-3 pl-8 py-1.5 text-xs font-mono text-muted-foreground">{d.codice}</td>
-                        <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[200px] ${onRowClick && d.codice !== "__unassigned__" ? "text-primary underline decoration-dotted" : ""}`}>{d.descrizione}</td>
-                        <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
-                        <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
-                          {total > 0 ? (d.importo / total * 100).toFixed(1) : "0.0"}%
-                        </td>
+                        {rItem ? (
+                          <>
+                            <td className="px-3 pl-8 py-1.5 text-xs font-mono text-muted-foreground">{rItem.codice}</td>
+                            <td
+                              className={`px-3 py-1.5 text-xs font-medium truncate max-w-[180px] ${onRowClick ? "text-primary underline decoration-dotted cursor-pointer" : ""}`}
+                              onClick={() => onRowClick && rItem.codice !== "__unassigned__" && onRowClick(rItem.codice, "ricavo")}
+                            >{rItem.descrizione}</td>
+                            <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(rItem.importo)}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-3 py-1.5"></td>
+                            <td className="px-3 py-1.5"></td>
+                            <td className="px-3 py-1.5"></td>
+                          </>
+                        )}
+                        <td className="bg-border"></td>
+                        <td className="pl-2 pr-0 py-1.5"></td>
+                        {cItem ? (
+                          <>
+                            <td className="px-3 pl-8 py-1.5 text-xs font-mono text-muted-foreground">{cItem.codice}</td>
+                            <td
+                              className={`px-3 py-1.5 text-xs font-medium truncate max-w-[180px] ${onRowClick ? "text-primary underline decoration-dotted cursor-pointer" : ""}`}
+                              onClick={() => onRowClick && cItem.codice !== "__unassigned__" && onRowClick(cItem.codice, "costo")}
+                            >{cItem.descrizione}</td>
+                            <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(cItem.importo)}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-3 py-1.5"></td>
+                            <td className="px-3 py-1.5"></td>
+                            <td className="px-3 py-1.5"></td>
+                          </>
+                        )}
                       </tr>
-                    ))}
-                  </Fragment>
+                    );
+                  })}
+                </Fragment>
+              );
+            })}
+            {/* Orphan rows */}
+            {(ricavoData.orphans.length > 0 || costoData.orphans.length > 0) && (() => {
+              const maxOrphans = Math.max(ricavoData.orphans.length, costoData.orphans.length);
+              return Array.from({ length: maxOrphans }).map((_, i) => {
+                const rO = ricavoData.orphans[i];
+                const cO = costoData.orphans[i];
+                return (
+                  <tr key={`orphan-${i}`} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="pl-2 pr-0 py-1.5"></td>
+                    {rO ? (
+                      <>
+                        <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{rO.codice === "__unassigned__" ? "—" : rO.codice}</td>
+                        <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[180px] ${onRowClick && rO.codice !== "__unassigned__" ? "text-primary underline decoration-dotted cursor-pointer" : ""}`}
+                          onClick={() => onRowClick && rO.codice !== "__unassigned__" && onRowClick(rO.codice, "ricavo")}
+                        >{rO.descrizione}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(rO.importo)}</td>
+                      </>
+                    ) : (
+                      <><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td></>
+                    )}
+                    <td className="bg-border"></td>
+                    <td className="pl-2 pr-0 py-1.5"></td>
+                    {cO ? (
+                      <>
+                        <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{cO.codice === "__unassigned__" ? "—" : cO.codice}</td>
+                        <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[180px] ${onRowClick && cO.codice !== "__unassigned__" ? "text-primary underline decoration-dotted cursor-pointer" : ""}`}
+                          onClick={() => onRowClick && cO.codice !== "__unassigned__" && onRowClick(cO.codice, "costo")}
+                        >{cO.descrizione}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(cO.importo)}</td>
+                      </>
+                    ) : (
+                      <><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td></>
+                    )}
+                  </tr>
                 );
-              })}
-              {orphans.map((d) => (
-                <tr
-                  key={d.codice}
-                  onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
-                  className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
-                    onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""}`}
-                >
-                  <td className="pl-2 pr-0 py-1.5"></td>
-                  <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{d.codice === "__unassigned__" ? "—" : d.codice}</td>
-                  <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[200px] ${onRowClick && d.codice !== "__unassigned__" ? "text-primary underline decoration-dotted" : ""}`}>{d.descrizione}</td>
-                  <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
-                  <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
-                    {total > 0 ? (d.importo / total * 100).toFixed(1) : "0.0"}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="bg-muted/40 font-semibold">
-                <td></td>
-                <td></td>
-                <td className="px-3 py-2 text-xs">TOTALE</td>
-                <td className={`px-3 py-2 text-right font-mono text-xs ${accentClass}`}>{formatCurrency(data.reduce((s, d) => s + d.importo, 0))}</td>
-                <td className="px-3 py-2 text-right font-mono text-xs">100%</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      }
-    </div>);
+              });
+            })()}
+          </tbody>
+          <tfoot>
+            <tr className="bg-muted/40 font-semibold border-t-2 border-border">
+              <td></td>
+              <td></td>
+              <td className="px-3 py-2 text-xs">TOTALE RICAVI</td>
+              <td className="px-3 py-2 text-right font-mono text-xs text-income">{formatCurrency(totalRicavi)}</td>
+              <td className="bg-border"></td>
+              <td></td>
+              <td></td>
+              <td className="px-3 py-2 text-xs">TOTALE COSTI</td>
+              <td className="px-3 py-2 text-right font-mono text-xs text-expense">{formatCurrency(totalCosti)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 /* ────────── PDF Centro table sub-component ────────── */
