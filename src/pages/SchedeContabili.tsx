@@ -265,8 +265,8 @@ function SchedaDetail({
         {/* Export button */}
         <div className="flex justify-end no-print">
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5">
-            <Printer className="h-3.5 w-3.5" />
-            Esporta PDF
+            <FileText className="h-3.5 w-3.5" />
+            Report
           </Button>
         </div>
 
