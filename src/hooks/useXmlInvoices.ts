@@ -26,6 +26,7 @@ interface InvoiceWithKey {
   totale?: number;
   cliente?: string;
   fornitore?: string;
+  tipo?: string; // e.g. "Nota di Credito", "Fattura", etc.
 }
 
 function normalizeStr(s: string): string {
@@ -37,6 +38,16 @@ function fuzzyNameMatch(a: string, b: string): boolean {
   const nb = normalizeStr(b);
   if (!na || !nb) return false;
   return na.includes(nb) || nb.includes(na);
+}
+
+/** TD04 = nota di credito, TD01/TD06/TD24/TD25 = fattura */
+function isXmlCreditNote(tipoDocumento: string | undefined): boolean {
+  return (tipoDocumento || "").toUpperCase() === "TD04";
+}
+
+function isInvoiceCreditNote(tipo: string | undefined): boolean {
+  const t = (tipo || "").toLowerCase();
+  return t.includes("nota") && t.includes("credito");
 }
 
 /**
@@ -137,9 +148,20 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         let matchedNumero: number | null = xmlNumero || null;
 
         if (tipo === "vendita") {
-          // For sales, the XML number IS the company's invoice number
-          invoiceKey = (xmlAnno && xmlNumero) ? `${xmlAnno}-${xmlNumero}` : null;
-          isMatched = invoices.some((s) => s.anno === xmlAnno && s.numero === xmlNumero);
+          // For sales, match by anno+numero AND document type (fattura vs nota credito)
+          const xmlIsNC = isXmlCreditNote(parsed.tipoDocumento);
+          const candidates = invoices.filter(
+            (s) => s.anno === xmlAnno && s.numero === xmlNumero
+          );
+          // Prefer type-matching candidate
+          const typeMatch = candidates.find(
+            (s) => isInvoiceCreditNote(s.tipo) === xmlIsNC
+          );
+          const match = typeMatch || (candidates.length === 1 ? candidates[0] : null);
+          if (match) {
+            invoiceKey = `${match.anno}-${match.numero}`;
+            isMatched = true;
+          }
         } else {
           // For purchases, match by amount + supplier name
           const purchaseMatch = findPurchaseMatch(
