@@ -354,7 +354,10 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
   );
 }
 
-function DocDetailContent({ doc, onDelete }: { doc: DocumentoAcquisto; onDelete: () => void }) {
+function DocDetailContent({ doc, centroLookup, onDelete }: { doc: DocumentoAcquisto; centroLookup: Map<string, string>; onDelete: () => void }) {
+  const centroLabel = doc.centro_costo
+    ? `${doc.centro_costo} - ${centroLookup.get(doc.centro_costo) || ""}`
+    : null;
   return (
     <>
       <SheetHeader>
@@ -371,7 +374,7 @@ function DocDetailContent({ doc, onDelete }: { doc: DocumentoAcquisto; onDelete:
           <DetailRow label="Fornitore" value={doc.fornitore} />
           <DetailRow label="Data" value={doc.data_documento} />
           <DetailRow label="Importo" value={doc.importo ? formatCurrency(doc.importo) : null} />
-          <DetailRow label="Centro Costo" value={doc.centro_costo} />
+          <DetailRow label="Centro Costo" value={centroLabel} />
         </div>
 
         {doc.ai_summary && (
