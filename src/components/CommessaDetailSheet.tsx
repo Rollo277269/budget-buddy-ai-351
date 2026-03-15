@@ -1619,6 +1619,7 @@ function InvoiceList({
     { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
     { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
     { key: "totale", label: "Totale", filterable: false, align: "right" as const },
+    ...(findXml ? [{ key: "xml", label: "XML", filterable: false }] : []),
     { key: "centro", label: centroLabel, filterable: true },
   ];
 
