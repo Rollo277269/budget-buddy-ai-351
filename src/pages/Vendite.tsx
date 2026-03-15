@@ -368,10 +368,29 @@ const VenditePage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(Array.isArray(r.righe) ? r.righe : []).map((riga, idx) => (
+                   {(Array.isArray(r.righe) ? r.righe : []).map((riga, idx) => {
+                    const nc = isNotaCredito(r);
+                    const amtClass = nc ? "text-destructive" : "";
+                    return (
                     <TableRow key={idx} className="border-b border-border/30">
                       <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
                       <TableCell className="text-[11px] max-w-[300px] whitespace-normal break-words leading-snug py-1.5">{riga.descrizione || "—"}</TableCell>
+                      <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
+                      <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imposta, nc)}</TableCell>
+                      <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.totale, nc)}</TableCell>
+                      <TableCell className="text-[11px] font-mono py-1.5">{riga.cig || "—"}</TableCell>
+                      <TableCell className="py-1.5">
+                        <CentroCell
+                          invoiceKey={`${r.anno}-${r.numero}-${idx}`}
+                          tipo="ricavo"
+                          centri={centri}
+                          centroMap={ricavoMap.map}
+                          onAssign={ricavoMap.assign}
+                        />
+                      </TableCell>
+                    </TableRow>
+                    );
+                   })}
                       <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imponibile)}</TableCell>
                       <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imposta)}</TableCell>
                       <TableCell className="text-[11px] font-mono font-semibold text-right py-1.5">{formatCurrency(riga.totale)}</TableCell>
