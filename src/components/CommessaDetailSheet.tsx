@@ -27,6 +27,7 @@ import { CentroCell } from "@/components/CentroCell";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CommessaExpenseUpload } from "@/components/CommessaExpenseUpload";
+import { EditExpenseDialog } from "@/components/EditExpenseDialog";
 import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
@@ -92,6 +93,7 @@ export function CommessaDetailSheet({
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
+  const [editingExpense, setEditingExpense] = useState<PurchaseInvoice | null>(null);
 
   // -- Dati Commessa slot-based grid reorder --
   const isAdmin = true; // TODO: replace with actual admin check
@@ -651,7 +653,14 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
-                onRowClick={(inv) => openPdf(inv, "acquisto")}
+                onRowClick={(inv) => setEditingExpense(inv as PurchaseInvoice)}
+              />
+
+              <EditExpenseDialog
+                invoice={editingExpense}
+                open={!!editingExpense}
+                onOpenChange={(o) => { if (!o) setEditingExpense(null); }}
+                onSaved={() => { setEditingExpense(null); onExpenseAdded?.(); }}
               />
             </TabsContent>
 
