@@ -1,4 +1,4 @@
-import { LayoutDashboard, CalendarClock, FileText, ShoppingCart, Landmark, FolderKanban, ClipboardList, Settings, Send, BookOpen, PieChart } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -14,13 +14,13 @@ import {
 const items = [
   { title: "Cruscotto", url: "/", icon: LayoutDashboard },
   { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
-  { title: "Vendite", url: "/vendite", icon: FileText },
-  { title: "Acquisti", url: "/acquisti", icon: ShoppingCart },
+  { title: "Vendite", url: "/vendite", icon: FileOutput },
+  { title: "Acquisti", url: "/acquisti", icon: FileInput },
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
-  { title: "Bilancio", url: "/bilancio", icon: PieChart },
+  { title: "Bilancio", url: "/bilancio", icon: Scale },
   { title: "Banche", url: "/banche", icon: Landmark },
-  { title: "Commesse", url: "/lista-commesse", icon: ClipboardList },
-  { title: "Gare", url: "/offerte", icon: Send },
+  { title: "Commesse", url: "/lista-commesse", icon: Briefcase },
+  { title: "Gare", url: "/offerte", icon: Gavel },
   { title: "Riepiloghi per CIG", url: "/commesse", icon: FolderKanban },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
