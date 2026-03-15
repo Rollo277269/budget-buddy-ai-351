@@ -143,8 +143,9 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
 
       // Call AI to parse
       const centri = await fetchCentriFromDb();
+      const ruleTypes = namingRules.map((r) => r.tipo);
       const { data, error } = await supabase.functions.invoke("parse-spesa-commessa", {
-        body: { text, centri, cig },
+        body: { text, centri, cig, namingRuleTypes: ruleTypes },
       });
 
       let aiResult: ExpenseFormData;
