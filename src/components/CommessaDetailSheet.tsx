@@ -1787,7 +1787,9 @@ function InvoiceList({
                 descrizione: <TableCell key="desc" className="text-xs max-w-[300px] whitespace-normal break-words leading-snug py-1">{inv.descrizione || "—"}</TableCell>,
                 stato: <TableCell key="s"><StatoBadge stato={inv.stato} /></TableCell>,
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
+                cassa: <TableCell key="cassa" className="text-xs font-mono text-right">{(inv as PurchaseInvoice).cassa ? formatCurrency((inv as PurchaseInvoice).cassa) : "—"}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
+                ritenute: <TableCell key="rit" className="text-xs font-mono text-right">{(inv as PurchaseInvoice).ritenute ? formatCurrency((inv as PurchaseInvoice).ritenute) : "—"}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
                 xml: (
                   <TableCell key="xml" onClick={(e) => e.stopPropagation()}>
