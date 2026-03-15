@@ -151,10 +151,33 @@ export default function BilancioPage() {
     () => aggregateByCentro(allSales, ricavoMapVendite, centriRicavo, annoFilter),
     [allSales, ricavoMapVendite, centriRicavo, annoFilter]
   );
-  const costoBreakdown = useMemo(
-    () => aggregateByCentro(allPurchases, costoMapAcquisti, centriCosto, annoFilter),
-    [allPurchases, costoMapAcquisti, centriCosto, annoFilter]
-  );
+  const costoBreakdown = useMemo(() => {
+    const invoiceAgg = aggregateByCentro(allPurchases, costoMapAcquisti, centriCosto, annoFilter);
+    // Add documenti_acquisto costs by centro_costo
+    const docAgg = new Map<string, number>();
+    const filteredDocs = annoFilter
+      ? documenti.filter(d => d.importo && parseYearFromDate(d.data_documento) === annoFilter)
+      : documenti.filter(d => !!d.importo);
+    filteredDocs.forEach(d => {
+      const codice = d.centro_costo || "__unassigned__";
+      docAgg.set(codice, (docAgg.get(codice) || 0) + (d.importo || 0));
+    });
+    // Merge into invoice aggregation
+    const merged = new Map(invoiceAgg.map(a => [a.codice, { ...a }]));
+    const centroLookup = new Map(centriCosto.map(c => [c.codice, c.descrizione]));
+    docAgg.forEach((importo, codice) => {
+      if (merged.has(codice)) {
+        merged.get(codice)!.importo += importo;
+      } else {
+        merged.set(codice, {
+          codice,
+          descrizione: codice === "__unassigned__" ? "Non classificate" : centroLookup.get(codice) || codice,
+          importo,
+        });
+      }
+    });
+    return Array.from(merged.values()).sort((a, b) => b.importo - a.importo);
+  }, [allPurchases, costoMapAcquisti, centriCosto, annoFilter, documenti]);
 
   const barData = useMemo(() => {
     const data = annoFilter ?
