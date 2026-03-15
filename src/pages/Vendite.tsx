@@ -502,7 +502,7 @@ const VenditePage = () => {
         <DataTable<SaleInvoice>
           columns={columns}
           data={displayedSales}
-          rowKey={(r) => `${r.anno}-${r.numero}-${r.tipo}`}
+          rowKey={(r) => `${r.anno}-${r.numero}-${r.suffisso}-${r.tipo}`}
           onRowClick={setSelectedInvoice}
           rowClassName={(r) => {
             const nc = isNotaCredito(r);
