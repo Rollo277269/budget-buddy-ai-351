@@ -394,7 +394,14 @@ const AcquistiPage = () => {
           data={displayedPurchases}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
-          rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+          rowClassName={(r) => {
+            const nc = isNotaCredito(r);
+            const xml = hasXml(`${r.anno}-${r.numero}`);
+            return [
+              nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
+              xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+            ].filter(Boolean).join(" ");
+          }}
         />
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
