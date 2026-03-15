@@ -573,6 +573,14 @@ export function CommessaDetailSheet({
                   onClose={() => { setAddMode(null); setSearchQuery(""); }}
                 />
               )}
+
+              {/* Upload PDF spesa */}
+              <CommessaExpenseUpload
+                cig={commessa.cig}
+                commessaNumero={commessa.numero}
+                onExpenseAdded={onExpenseAdded}
+              />
+
               <InvoiceList
                 invoices={data.linkedPurchases} type="acquisto"
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
