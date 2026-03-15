@@ -223,7 +223,7 @@ async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
 
 export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: string) {
   const rows = salesData.map(s => ({
-    tipo: s.tipo, anno: s.anno, numero: s.numero, data: s.data,
+    tipo: s.tipo, anno: s.anno, numero: s.numero, suffisso: s.suffisso, data: s.data,
     cliente: s.cliente, partita_iva: s.partitaIva,
     totale: s.totale, imponibile: s.imponibile, imposta: s.imposta,
     descrizione: s.descrizione, cig: s.cig, cup: s.cup,
