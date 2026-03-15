@@ -15,7 +15,7 @@ import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, Link2 } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, Link2, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,7 +69,7 @@ const VenditePage = () => {
     return sales.filter((s) => ricavoMap.map[`${s.anno}-${s.numero}`] === filters.centroRicavo);
   }, [sales, filters.centroRicavo, ricavoMap.map]);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, fetchParsedData, findXml, hasXml } = useXmlInvoices(sales, "vendita");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(sales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
   const [xmlPickerInvoice, setXmlPickerInvoice] = useState<SaleInvoice | null>(null);
 
@@ -316,7 +316,12 @@ const VenditePage = () => {
         {/* Unmatched XML list */}
         {xmlUnmatchedCount > 0 && (
           <div className="bg-muted/50 border border-border rounded-md p-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
+              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
+                <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {xmlRecords.filter((r) => !r.matched).map((r) => (
                 <Badge
