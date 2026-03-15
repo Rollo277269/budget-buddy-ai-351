@@ -57,11 +57,14 @@ const columns: ColumnDef<Commessa>[] = [
   { key: "totaleAcquisti", label: "Tot. Acquisti", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleAcquisti ? formatCurrency(r.totaleAcquisti) : "—"}</span> },
 ];
 
+type StatoFilter = "tutte" | "in_corso" | "completata" | "da_iniziare";
+
 const ListaCommessePage = () => {
   const { commesse: cssrCommesse, loading: cssrLoading } = useCssrCommesse();
   const { allSales, allPurchases, loading: invoiceLoading, refresh: refreshInvoices } = useInvoiceData();
   const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
   const [selected, setSelected] = useState<Commessa | null>(null);
+  const [statoFilter, setStatoFilter] = useState<StatoFilter>("tutte");
 
   const handleSheetClose = useCallback((o: boolean) => {
     if (!o) {
