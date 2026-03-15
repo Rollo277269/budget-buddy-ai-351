@@ -85,7 +85,7 @@ const ListaCommessePage = () => {
       if (p.cig) {
         const e = cigCounts.get(p.cig) || { fv: 0, fa: 0, tv: 0, ta: 0 };
         e.fa++;
-        e.ta += p.totale || 0;
+        e.ta += p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
         cigCounts.set(p.cig, e);
       }
     });
