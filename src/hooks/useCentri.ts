@@ -79,15 +79,23 @@ export async function deleteCategoriaDb(id: string) {
 // ── Centro assignment map (invoice_key → centro_codice) ──
 
 async function loadMapFromDb(tipo: "costo" | "ricavo", context: "vendite" | "acquisti"): Promise<Record<string, string>> {
-  const { data, error } = await supabase
-    .from("centro_assignments" as any)
-    .select("invoice_key, centro_codice")
-    .eq("tipo", tipo)
-    .eq("context", context);
-  if (error) { console.error("Error loading centro map:", error); return {}; }
   const map: Record<string, string> = {};
-  for (const d of (data as any[] || [])) {
-    map[d.invoice_key] = d.centro_codice;
+  let from = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("centro_assignments" as any)
+      .select("invoice_key, centro_codice")
+      .eq("tipo", tipo)
+      .eq("context", context)
+      .range(from, from + pageSize - 1);
+    if (error) { console.error("Error loading centro map:", error); break; }
+    if (!data || data.length === 0) break;
+    for (const d of (data as any[])) {
+      map[d.invoice_key] = d.centro_codice;
+    }
+    if (data.length < pageSize) break;
+    from += pageSize;
   }
   return map;
 }
