@@ -728,16 +728,14 @@ export function CommessaDetailSheet({
                                           ? "ring-dashed ring-border/30 bg-muted/20"
                                           : "ring-border/50 cursor-grab active:cursor-grabbing hover:ring-primary/50"
                                       }`
-                                    : isEmpty ? "hidden" : ""
+                                    : ""
                                 } ${datiDragIdx === idx ? "opacity-40" : ""}`}
                               >
                                 {meta ? (
                                   <CssrField icon={meta.icon} label={meta.label} value={meta.value} />
-                                ) : datiEditMode ? (
-                                  <div className="flex items-center justify-center h-full text-xs text-muted-foreground/50">
-                                    vuoto
-                                  </div>
-                                ) : null}
+                                ) : (
+                                  <div className="min-h-[52px]" />
+                                )}
                               </div>
                             );
                           })}
