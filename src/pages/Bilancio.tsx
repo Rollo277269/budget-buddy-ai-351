@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, CategoriaCentro, CentroCR } from "@/hooks/useCentri";
+import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { StatCard } from "@/components/StatCard";
 import { formatCurrency } from "@/lib/format";
 import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, ChevronRight, ChevronDown } from "lucide-react";
