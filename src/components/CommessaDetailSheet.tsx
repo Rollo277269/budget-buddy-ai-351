@@ -1144,6 +1144,31 @@ export function CommessaDetailSheet({
         )}
       </DialogContent>
     </Dialog>
+
+    {/* XML detail sheet */}
+    <XmlInvoiceSheet
+      record={selectedXml}
+      open={!!selectedXml}
+      onOpenChange={(open) => !open && setSelectedXml(null)}
+      onDelete={() => {}}
+      invoices={xmlPickerInvoice?.type === "acquisto" ? allPurchases : allSales}
+      xmlMap={xmlPickerInvoice?.type === "acquisto" ? xmlMapAcquisto : xmlMapVendita}
+      tipo={xmlPickerInvoice?.type || "vendita"}
+      onManualMatch={xmlPickerInvoice?.type === "acquisto" ? manualMatchAcquisto : manualMatchVendita}
+    />
+
+    {/* XML picker for manual association */}
+    <XmlPickerSheet
+      open={!!xmlPickerInvoice}
+      onOpenChange={(open) => { if (!open) setXmlPickerInvoice(null); }}
+      xmlRecords={xmlPickerInvoice?.type === "acquisto" ? xmlRecordsAcquisto : xmlRecordsVendita}
+      invoiceAnno={xmlPickerInvoice?.inv.anno || 0}
+      invoiceNumero={xmlPickerInvoice?.inv.numero || 0}
+      invoiceName={xmlPickerInvoice ? (xmlPickerInvoice.type === "vendita" ? (xmlPickerInvoice.inv as SaleInvoice).cliente : (xmlPickerInvoice.inv as PurchaseInvoice).fornitore) : ""}
+      invoiceTotale={xmlPickerInvoice?.inv.totale || 0}
+      onMatch={xmlPickerInvoice?.type === "acquisto" ? manualMatchAcquisto : manualMatchVendita}
+    />
+  </>
   );
 }
 
