@@ -111,8 +111,29 @@ const ListaCommessePage = () => {
         totaleAcquisti: counts.ta + countsDeriv.ta,
         cssrData: c,
       };
-    });
+    }).sort((a, b) => b.numero - a.numero);
   }, [cssrCommesse, allSales, allPurchases]);
+
+  const statoCounts = useMemo(() => {
+    const c = { in_corso: 0, completata: 0, da_iniziare: 0 };
+    rows.forEach((r) => {
+      const s = r.cssrStato;
+      if (s === "in_corso") c.in_corso++;
+      else if (s === "completata" || s === "completate") c.completata++;
+      else if (s) c.da_iniziare++;
+    });
+    return c;
+  }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    if (statoFilter === "tutte") return rows;
+    return rows.filter((r) => {
+      const s = r.cssrStato;
+      if (statoFilter === "in_corso") return s === "in_corso";
+      if (statoFilter === "completata") return s === "completata" || s === "completate";
+      return s !== "" && s !== "in_corso" && s !== "completata" && s !== "completate";
+    });
+  }, [rows, statoFilter]);
 
   if (cssrLoading || invoiceLoading) {
     return (
