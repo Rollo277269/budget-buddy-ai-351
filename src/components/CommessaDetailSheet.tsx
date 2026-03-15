@@ -1384,10 +1384,16 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
         const margine = totalRicavi > 0 ? (saldo / totalRicavi) * 100 : 0;
 
         const orderedRicavo = ricavoOrder
-          ? ricavoOrder.map((n) => ricavoData.find((d) => d.name === n)).filter(Boolean) as typeof ricavoData
+          ? [
+              ...ricavoOrder.map((n) => ricavoData.find((d) => d.name === n)).filter(Boolean) as typeof ricavoData,
+              ...ricavoData.filter((d) => !ricavoOrder.includes(d.name)),
+            ]
           : ricavoData;
         const orderedCosto = costoOrder
-          ? costoOrder.map((n) => costoData.find((d) => d.name === n)).filter(Boolean) as typeof costoData
+          ? [
+              ...costoOrder.map((n) => costoData.find((d) => d.name === n)).filter(Boolean) as typeof costoData,
+              ...costoData.filter((d) => !costoOrder.includes(d.name)),
+            ]
           : costoData;
 
         if (ricavoData.length > 0 && !ricavoOrder) {
