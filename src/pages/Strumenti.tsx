@@ -858,10 +858,34 @@ function ExportImportSection() {
 
 // ─── Upload Fatture Excel ────────────────────────────────────────
 
-import { parseExcelSales, parseExcelPurchases, seedSalesFromExcel, seedPurchasesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
+import { parseExcelSales, parseExcelPurchases, seedSalesFromExcel, seedPurchasesFromExcel, invalidateInvoiceCache, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertTriangle } from "lucide-react";
+
+interface CollisionItem {
+  key: string;
+  anno: number;
+  numero: number;
+  tipo: string;
+  existingDesc: string;
+  newDesc: string;
+  selected: boolean;
+}
 
 function UploadFattureSection() {
   const [uploading, setUploading] = useState(false);
+  const [collisions, setCollisions] = useState<CollisionItem[]>([]);
+  const [showCollisionDialog, setShowCollisionDialog] = useState(false);
+  const [pendingUpload, setPendingUpload] = useState<{
+    type: "vendita" | "acquisto";
+    fileName: string;
+    sales?: SaleInvoice[];
+    purchases?: PurchaseInvoice[];
+    newOnly: SaleInvoice[] | PurchaseInvoice[];
+    colliding: SaleInvoice[] | PurchaseInvoice[];
+  } | null>(null);
   const salesRef = useRef<HTMLInputElement>(null);
   const purchasesRef = useRef<HTMLInputElement>(null);
 
@@ -877,49 +901,238 @@ function UploadFattureSection() {
       if (type === "vendita") {
         const sales = parseExcelSales(rows);
         if (sales.length === 0) { toast.error("Nessuna fattura vendita trovata nel file"); setUploading(false); return; }
-        await seedSalesFromExcel(sales, file.name);
-        toast.success(`Importate ${sales.length} fatture vendita`);
+        await checkCollisionsAndProceed(sales, [], type, file.name);
       } else {
         const purchases = parseExcelPurchases(rows);
         if (purchases.length === 0) { toast.error("Nessuna fattura acquisto trovata nel file"); setUploading(false); return; }
-        await seedPurchasesFromExcel(purchases, file.name);
+        await checkCollisionsAndProceed([], purchases, type, file.name);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Errore durante l'importazione del file Excel");
+      setUploading(false);
+    }
+  };
+
+  const checkCollisionsAndProceed = async (
+    sales: SaleInvoice[], purchases: PurchaseInvoice[],
+    type: "vendita" | "acquisto", fileName: string
+  ) => {
+    const table = type === "vendita" ? "fatture_vendita" : "fatture_acquisto";
+    const items = type === "vendita" ? sales : purchases;
+    const keys = items.map(i => `${i.anno}-${i.numero}`);
+
+    // Fetch existing records that might collide
+    const { data: existing } = await supabase
+      .from(table as any)
+      .select("anno, numero, tipo, descrizione")
+      .or(keys.map(k => {
+        const [a, n] = k.split("-");
+        return `and(anno.eq.${a},numero.eq.${n})`;
+      }).join(","));
+
+    const existingMap = new Map<string, { tipo: string; descrizione: string }>();
+    (existing || []).forEach((r: any) => {
+      existingMap.set(`${r.anno}-${r.numero}`, { tipo: r.tipo, descrizione: r.descrizione });
+    });
+
+    const collidingItems: typeof items = [];
+    const newItems: typeof items = [];
+
+    items.forEach((item: any) => {
+      const key = `${item.anno}-${item.numero}`;
+      if (existingMap.has(key)) {
+        collidingItems.push(item);
+      } else {
+        newItems.push(item);
+      }
+    });
+
+    if (collidingItems.length === 0) {
+      // No collisions — import directly
+      if (type === "vendita") {
+        await seedSalesFromExcel(sales, fileName);
+        toast.success(`Importate ${sales.length} fatture vendita`);
+      } else {
+        await seedPurchasesFromExcel(purchases, fileName);
         toast.success(`Importate ${purchases.length} fatture acquisto`);
       }
+      invalidateInvoiceCache();
+      setUploading(false);
+      setTimeout(() => window.location.reload(), 800);
+      return;
+    }
+
+    // Build collision list for the dialog
+    const collisionList: CollisionItem[] = collidingItems.map((item: any) => {
+      const key = `${item.anno}-${item.numero}`;
+      const ex = existingMap.get(key)!;
+      return {
+        key,
+        anno: item.anno,
+        numero: item.numero,
+        tipo: item.tipo,
+        existingDesc: `${ex.tipo} — ${ex.descrizione?.slice(0, 60) || "—"}`,
+        newDesc: `${item.tipo} — ${(item.descrizione || "").slice(0, 60) || "—"}`,
+        selected: false,
+      };
+    });
+
+    setCollisions(collisionList);
+    setPendingUpload({
+      type, fileName,
+      sales: type === "vendita" ? sales : undefined,
+      purchases: type === "acquisto" ? purchases : undefined,
+      newOnly: newItems,
+      colliding: collidingItems,
+    });
+    setShowCollisionDialog(true);
+  };
+
+  const toggleCollision = (key: string) => {
+    setCollisions(prev => prev.map(c => c.key === key ? { ...c, selected: !c.selected } : c));
+  };
+
+  const toggleAll = (selected: boolean) => {
+    setCollisions(prev => prev.map(c => ({ ...c, selected })));
+  };
+
+  const handleConfirmCollisions = async () => {
+    if (!pendingUpload) return;
+    setShowCollisionDialog(false);
+
+    try {
+      const selectedKeys = new Set(collisions.filter(c => c.selected).map(c => c.key));
+      const overwriteItems = (pendingUpload.colliding as any[]).filter(
+        (item: any) => selectedKeys.has(`${item.anno}-${item.numero}`)
+      );
+      const allToSave = [...(pendingUpload.newOnly as any[]), ...overwriteItems];
+
+      if (allToSave.length === 0) {
+        toast.info("Nessun record importato");
+        setUploading(false);
+        return;
+      }
+
+      if (pendingUpload.type === "vendita") {
+        await seedSalesFromExcel(allToSave as SaleInvoice[], pendingUpload.fileName);
+      } else {
+        await seedPurchasesFromExcel(allToSave as PurchaseInvoice[], pendingUpload.fileName);
+      }
+
+      const skipped = collisions.length - selectedKeys.size;
+      toast.success(
+        `Importati ${allToSave.length} record` +
+        (skipped > 0 ? `, ${skipped} duplicati ignorati` : "")
+      );
       invalidateInvoiceCache();
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error("Errore durante l'importazione del file Excel");
+      toast.error("Errore durante l'importazione");
     }
     setUploading(false);
+    setPendingUpload(null);
   };
 
+  const handleCancelCollisions = () => {
+    setShowCollisionDialog(false);
+    setUploading(false);
+    setPendingUpload(null);
+    setCollisions([]);
+  };
+
+  const allSelected = collisions.length > 0 && collisions.every(c => c.selected);
+  const noneSelected = collisions.every(c => !c.selected);
+  const newCount = pendingUpload?.newOnly?.length || 0;
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Upload className="h-4 w-4" />
-          Caricamento Fatture (Excel)
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Importa o aggiorna le fatture vendita/acquisto da file Excel. I dati verranno salvati nel database e saranno disponibili su tutti i dispositivi.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex gap-3 flex-wrap">
-        <Button variant="outline" size="sm" disabled={uploading} onClick={() => salesRef.current?.click()}>
-          <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
-          {uploading ? "Importazione..." : "Importa Vendite (.xlsx)"}
-        </Button>
-        <Button variant="outline" size="sm" disabled={uploading} onClick={() => purchasesRef.current?.click()}>
-          <TrendingDown className="h-3.5 w-3.5 mr-1.5" />
-          {uploading ? "Importazione..." : "Importa Acquisti (.xlsx)"}
-        </Button>
-        <input ref={salesRef} type="file" accept=".xlsx,.xls" className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "vendita"); e.target.value = ""; }} />
-        <input ref={purchasesRef} type="file" accept=".xlsx,.xls" className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "acquisto"); e.target.value = ""; }} />
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Caricamento Fatture (Excel)
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Importa o aggiorna le fatture vendita/acquisto da file Excel. I dati verranno salvati nel database e saranno disponibili su tutti i dispositivi.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-3 flex-wrap">
+          <Button variant="outline" size="sm" disabled={uploading} onClick={() => salesRef.current?.click()}>
+            <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+            {uploading ? "Importazione..." : "Importa Vendite (.xlsx)"}
+          </Button>
+          <Button variant="outline" size="sm" disabled={uploading} onClick={() => purchasesRef.current?.click()}>
+            <TrendingDown className="h-3.5 w-3.5 mr-1.5" />
+            {uploading ? "Importazione..." : "Importa Acquisti (.xlsx)"}
+          </Button>
+          <input ref={salesRef} type="file" accept=".xlsx,.xls" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "vendita"); e.target.value = ""; }} />
+          <input ref={purchasesRef} type="file" accept=".xlsx,.xls" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "acquisto"); e.target.value = ""; }} />
+        </CardContent>
+      </Card>
+
+      <Dialog open={showCollisionDialog} onOpenChange={(open) => { if (!open) handleCancelCollisions(); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              {collisions.length} duplicati trovati
+            </DialogTitle>
+            <DialogDescription>
+              {newCount > 0 && <span className="block text-sm mb-1">{newCount} nuovi record verranno importati automaticamente.</span>}
+              Seleziona i record duplicati che vuoi <strong>sovrascrivere</strong>. Quelli non selezionati verranno ignorati.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex gap-2 mb-2">
+            <Button variant="outline" size="sm" onClick={() => toggleAll(true)} disabled={allSelected}>
+              Seleziona tutti
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => toggleAll(false)} disabled={noneSelected}>
+              Deseleziona tutti
+            </Button>
+          </div>
+
+          <ScrollArea className="max-h-[350px] border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10"></TableHead>
+                  <TableHead className="text-xs">Anno/Num</TableHead>
+                  <TableHead className="text-xs">Già presente (DB)</TableHead>
+                  <TableHead className="text-xs">Nuovo (Excel)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {collisions.map((c) => (
+                  <TableRow key={c.key} className={c.selected ? "bg-accent/40" : ""}>
+                    <TableCell>
+                      <Checkbox checked={c.selected} onCheckedChange={() => toggleCollision(c.key)} />
+                    </TableCell>
+                    <TableCell className="text-xs font-mono">{c.anno}/{c.numero}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{c.existingDesc}</TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{c.newDesc}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={handleCancelCollisions}>
+              Annulla importazione
+            </Button>
+            <Button size="sm" onClick={handleConfirmCollisions}>
+              Importa {newCount + collisions.filter(c => c.selected).length} record
+              {collisions.filter(c => !c.selected).length > 0 && ` (${collisions.filter(c => !c.selected).length} ignorati)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
