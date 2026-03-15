@@ -162,8 +162,17 @@ export function CommessaDetailSheet({
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
 
-  const { xmlMap: xmlMapVendita, fetchParsedData: fetchParsedVendita } = useXmlInvoices(allSales, "vendita");
-  const { xmlMap: xmlMapAcquisto, fetchParsedData: fetchParsedAcquisto } = useXmlInvoices(allPurchases, "acquisto");
+  const { xmlMap: xmlMapVendita, xmlRecords: xmlRecordsVendita, fetchParsedData: fetchParsedVendita, findXml: findXmlVendita, hasXml: hasXmlVendita, manualMatch: manualMatchVendita } = useXmlInvoices(allSales, "vendita");
+  const { xmlMap: xmlMapAcquisto, xmlRecords: xmlRecordsAcquisto, fetchParsedData: fetchParsedAcquisto, findXml: findXmlAcquisto, hasXml: hasXmlAcquisto, manualMatch: manualMatchAcquisto } = useXmlInvoices(allPurchases, "acquisto");
+
+  const [selectedXml, setSelectedXml] = useState<XmlInvoiceRecord | null>(null);
+  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<{ inv: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
+
+  const openXmlSheet = useCallback(async (record: XmlInvoiceRecord, type: "vendita" | "acquisto") => {
+    const fetchFn = type === "vendita" ? fetchParsedVendita : fetchParsedAcquisto;
+    const parsed = await fetchFn(record.id);
+    setSelectedXml({ ...record, parsed_data: parsed });
+  }, [fetchParsedVendita, fetchParsedAcquisto]);
 
   const openPdf = useCallback(async (inv: SaleInvoice | PurchaseInvoice, type: "vendita" | "acquisto") => {
     const key = `${inv.anno}-${inv.numero}`;
