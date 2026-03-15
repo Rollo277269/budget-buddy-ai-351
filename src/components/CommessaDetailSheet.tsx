@@ -32,8 +32,11 @@ import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2
 } from "lucide-react";
+import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
+import { XmlPickerSheet } from "@/components/XmlPickerSheet";
+import { XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import {
@@ -159,8 +162,17 @@ export function CommessaDetailSheet({
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
 
-  const { xmlMap: xmlMapVendita, fetchParsedData: fetchParsedVendita } = useXmlInvoices(allSales, "vendita");
-  const { xmlMap: xmlMapAcquisto, fetchParsedData: fetchParsedAcquisto } = useXmlInvoices(allPurchases, "acquisto");
+  const { xmlMap: xmlMapVendita, xmlRecords: xmlRecordsVendita, fetchParsedData: fetchParsedVendita, findXml: findXmlVendita, hasXml: hasXmlVendita, manualMatch: manualMatchVendita } = useXmlInvoices(allSales, "vendita");
+  const { xmlMap: xmlMapAcquisto, xmlRecords: xmlRecordsAcquisto, fetchParsedData: fetchParsedAcquisto, findXml: findXmlAcquisto, hasXml: hasXmlAcquisto, manualMatch: manualMatchAcquisto } = useXmlInvoices(allPurchases, "acquisto");
+
+  const [selectedXml, setSelectedXml] = useState<XmlInvoiceRecord | null>(null);
+  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<{ inv: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
+
+  const openXmlSheet = useCallback(async (record: XmlInvoiceRecord, type: "vendita" | "acquisto") => {
+    const fetchFn = type === "vendita" ? fetchParsedVendita : fetchParsedAcquisto;
+    const parsed = await fetchFn(record.id);
+    setSelectedXml({ ...record, parsed_data: parsed });
+  }, [fetchParsedVendita, fetchParsedAcquisto]);
 
   const openPdf = useCallback(async (inv: SaleInvoice | PurchaseInvoice, type: "vendita" | "acquisto") => {
     const key = `${inv.anno}-${inv.numero}`;
@@ -354,6 +366,7 @@ export function CommessaDetailSheet({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); setPdfData(null); } }}>
       <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-row overflow-hidden p-0 border-none">
         <div className={`flex flex-col ${pdfData ? "w-1/2" : "w-full"} transition-all overflow-hidden`}>
@@ -617,6 +630,10 @@ export function CommessaDetailSheet({
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
                 onRowClick={(inv) => openPdf(inv, "vendita")}
+                findXml={(k, name) => findXmlVendita(k, name)}
+                hasXml={hasXmlVendita}
+                onOpenXml={(record) => openXmlSheet(record, "vendita")}
+                onOpenXmlPicker={(inv) => setXmlPickerInvoice({ inv, type: "vendita" })}
               />
             </TabsContent>
 
@@ -654,6 +671,10 @@ export function CommessaDetailSheet({
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
                 onRowClick={(inv) => setEditingExpense(inv as PurchaseInvoice)}
+                findXml={(k, name) => findXmlAcquisto(k, name)}
+                hasXml={hasXmlAcquisto}
+                onOpenXml={(record) => openXmlSheet(record, "acquisto")}
+                onOpenXmlPicker={(inv) => setXmlPickerInvoice({ inv, type: "acquisto" })}
               />
 
               <EditExpenseDialog
@@ -1124,6 +1145,31 @@ export function CommessaDetailSheet({
         )}
       </DialogContent>
     </Dialog>
+
+    {/* XML detail sheet */}
+    <XmlInvoiceSheet
+      record={selectedXml}
+      open={!!selectedXml}
+      onOpenChange={(open) => !open && setSelectedXml(null)}
+      onDelete={() => {}}
+      invoices={xmlPickerInvoice?.type === "acquisto" ? allPurchases : allSales}
+      xmlMap={xmlPickerInvoice?.type === "acquisto" ? xmlMapAcquisto : xmlMapVendita}
+      tipo={xmlPickerInvoice?.type || "vendita"}
+      onManualMatch={xmlPickerInvoice?.type === "acquisto" ? manualMatchAcquisto : manualMatchVendita}
+    />
+
+    {/* XML picker for manual association */}
+    <XmlPickerSheet
+      open={!!xmlPickerInvoice}
+      onOpenChange={(open) => { if (!open) setXmlPickerInvoice(null); }}
+      xmlRecords={xmlPickerInvoice?.type === "acquisto" ? xmlRecordsAcquisto : xmlRecordsVendita}
+      invoiceAnno={xmlPickerInvoice?.inv.anno || 0}
+      invoiceNumero={xmlPickerInvoice?.inv.numero || 0}
+      invoiceName={xmlPickerInvoice ? (xmlPickerInvoice.type === "vendita" ? (xmlPickerInvoice.inv as SaleInvoice).cliente : (xmlPickerInvoice.inv as PurchaseInvoice).fornitore) : ""}
+      invoiceTotale={xmlPickerInvoice?.inv.totale || 0}
+      onMatch={xmlPickerInvoice?.type === "acquisto" ? manualMatchAcquisto : manualMatchVendita}
+    />
+  </>
   );
 }
 
@@ -1538,6 +1584,7 @@ function StatoBadge({ stato }: { stato?: string }) {
 /* ── Invoice list sub-component with sort & filter ── */
 function InvoiceList({
   invoices, type, autoKeys, cig, onRemoveLink, centri, centroMap, onAssignCentro, onRowClick,
+  findXml, hasXml, onOpenXml, onOpenXmlPicker,
 }: {
   invoices: (SaleInvoice | PurchaseInvoice)[];
   type: "vendita" | "acquisto";
@@ -1548,6 +1595,10 @@ function InvoiceList({
   centroMap: Record<string, string>;
   onAssignCentro: (key: string, codice: string) => void;
   onRowClick?: (inv: SaleInvoice | PurchaseInvoice) => void;
+  findXml?: (key: string, name?: string) => XmlInvoiceRecord | undefined;
+  hasXml?: (key: string) => boolean;
+  onOpenXml?: (record: XmlInvoiceRecord) => void;
+  onOpenXmlPicker?: (inv: SaleInvoice | PurchaseInvoice) => void;
 }) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
@@ -1568,6 +1619,7 @@ function InvoiceList({
     { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
     { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
     { key: "totale", label: "Totale", filterable: false, align: "right" as const },
+    ...(findXml ? [{ key: "xml", label: "XML", filterable: false }] : []),
     { key: "centro", label: centroLabel, filterable: true },
   ];
 
@@ -1703,6 +1755,8 @@ function InvoiceList({
                 ? (inv as SaleInvoice).cliente
                 : (inv as PurchaseInvoice).fornitore;
 
+              const xmlRecord = findXml ? findXml(key, counterpart || undefined) : undefined;
+
               const cellMap: Record<string, React.ReactNode> = {
                 numero_display: <TableCell key="n" className="font-mono text-xs">{inv.numero}/{inv.anno}</TableCell>,
                 data: <TableCell key="d" className="text-xs">{inv.data}</TableCell>,
@@ -1712,6 +1766,19 @@ function InvoiceList({
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
+                xml: (
+                  <TableCell key="xml" onClick={(e) => e.stopPropagation()}>
+                    {xmlRecord ? (
+                      <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={() => onOpenXml?.(xmlRecord)}>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" onClick={() => onOpenXmlPicker?.(inv)} title="Associa XML">
+                        <Link2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </TableCell>
+                ),
                 centro: <TableCell key="centro"><CentroCell invoiceKey={key} tipo={centroTipo} centri={centri} centroMap={centroMap} onAssign={onAssignCentro} /></TableCell>,
               };
 
