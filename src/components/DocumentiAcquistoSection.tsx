@@ -8,9 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { formatCurrency } from "@/lib/format";
-import { Upload, FileText, Trash2, Loader2, Receipt, Eye, FileDown, Search } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import * as pdfjsLib from "pdfjs-dist";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -45,6 +48,12 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
   const pdfDragCounter = useRef(0);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // PDF viewer state
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string>("");
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+
   const centroLookup = useMemo(() => new Map(centriCosto.map(c => [c.codice, c.descrizione])), [centriCosto]);
 
   const filteredDocumenti = useMemo(() => {
@@ -56,6 +65,50 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
       (d.fornitore || "").toLowerCase().includes(q)
     );
   }, [documenti, searchQuery]);
+
+  const openPdf = useCallback(async (doc: DocumentoAcquisto) => {
+    setPdfLoading(true);
+    setPdfFileName(doc.file_name);
+    try {
+      const { data, error } = await supabase.storage
+        .from("documenti-acquisto")
+        .download(doc.storage_path);
+      if (error || !data) {
+        toast.error("Errore download PDF");
+        setPdfLoading(false);
+        return;
+      }
+      const arrayBuffer = await data.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const b64 = btoa(binary);
+      setPdfBase64(b64);
+
+      // Create blob URL for "open externally"
+      const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(url);
+    } catch (err) {
+      console.error("PDF download error:", err);
+      toast.error("Errore apertura PDF");
+    }
+    setPdfLoading(false);
+  }, [pdfBlobUrl]);
+
+  const closePdf = useCallback(() => {
+    setPdfBase64(null);
+    setPdfFileName("");
+    if (pdfBlobUrl) {
+      URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(null);
+    }
+  }, [pdfBlobUrl]);
+
+  const openInNewTab = useCallback(() => {
+    if (pdfBlobUrl) window.open(pdfBlobUrl, "_blank");
+  }, [pdfBlobUrl]);
 
   const processPdfFiles = useCallback(async (files: File[]) => {
     const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
@@ -81,7 +134,6 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [processPdfFiles]);
 
-  // PDF drag handlers
   const handlePdfDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
     pdfDragCounter.current++;
@@ -102,7 +154,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
     await processPdfFiles(Array.from(e.dataTransfer.files));
   }, [processPdfFiles]);
 
-  // Drop zone only mode - renders just the drag target (no loading dependency)
+  // Drop zone only mode
   if (dropZoneOnly) {
     return (
       <>
@@ -134,19 +186,90 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
 
   if (loading) return null;
 
-  // Table only mode - renders the documents list
-  if (tableOnly) {
-    if (documenti.length === 0) return null;
+  const tableContent = (docs: DocumentoAcquisto[], showHeader: boolean) => (
+    <ScrollArea className="max-h-[300px]">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-[11px] h-8">Documento</TableHead>
+            <TableHead className="text-[11px] h-8">Fornitore</TableHead>
+            <TableHead className="text-[11px] h-8">Data</TableHead>
+            <TableHead className="text-[11px] h-8 text-right">Importo</TableHead>
+            <TableHead className="text-[11px] h-8">Centro Costo</TableHead>
+            <TableHead className="text-[11px] h-8 w-[100px]"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {docs.map((doc) => (
+            <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
+              <TableCell className="text-xs py-1.5">
+                <div className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
+                  <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
+                </div>
+              </TableCell>
+              <TableCell className="text-xs py-1.5 truncate max-w-[140px]">{doc.fornitore || "—"}</TableCell>
+              <TableCell className="text-xs py-1.5">{doc.data_documento || "—"}</TableCell>
+              <TableCell className="text-xs py-1.5 text-right font-mono">
+                {doc.importo ? formatCurrency(doc.importo) : "—"}
+              </TableCell>
+              <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
+                {centriCosto.length > 0 ? (
+                  <Select
+                    value={doc.centro_costo || ""}
+                    onValueChange={(val) => updateCentroCosto(doc.id, val)}
+                  >
+                    <SelectTrigger className="h-6 text-[10px] w-[160px]">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {centriCosto.map((c) => (
+                        <SelectItem key={c.id} value={c.codice} className="text-xs">
+                          <span className="font-mono">{c.codice}</span>
+                          <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell className="py-1.5">
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza PDF" onClick={(e) => { e.stopPropagation(); openPdf(doc); }}>
+                    <FileDown className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={(e) => {
+                    e.stopPropagation();
+                    deleteDocumento(doc.id, doc.storage_path);
+                  }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </ScrollArea>
+  );
 
-    return (
-      <>
-        <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Ricevute e Documenti</h3>
-              <Badge variant="secondary" className="text-[10px]">{documenti.length}</Badge>
-            </div>
+  const mainPanel = (isTableOnly: boolean) => (
+    <div className={`bg-muted/30 border border-border rounded-lg p-4 space-y-3 ${pdfBase64 ? "h-full flex flex-col" : ""}`}>
+      <div className="flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <Receipt className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold">Ricevute e Documenti</h3>
+          {documenti.length > 0 && (
+            <Badge variant="secondary" className="text-[10px]">{documenti.length}</Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {documenti.length > 0 && (
             <div className="relative w-[200px]">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
@@ -156,77 +279,64 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
                 className="h-7 text-xs pl-7"
               />
             </div>
-          </div>
-
-          <ScrollArea className="max-h-[300px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-[11px] h-8">Documento</TableHead>
-                  <TableHead className="text-[11px] h-8">Fornitore</TableHead>
-                  <TableHead className="text-[11px] h-8">Data</TableHead>
-                  <TableHead className="text-[11px] h-8 text-right">Importo</TableHead>
-                  <TableHead className="text-[11px] h-8">Centro Costo</TableHead>
-                  <TableHead className="text-[11px] h-8 w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDocumenti.map((doc) => (
-                  <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
-                    <TableCell className="text-xs py-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
-                        <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs py-1.5 truncate max-w-[140px]">{doc.fornitore || "—"}</TableCell>
-                    <TableCell className="text-xs py-1.5">{doc.data_documento || "—"}</TableCell>
-                    <TableCell className="text-xs py-1.5 text-right font-mono">
-                      {doc.importo ? formatCurrency(doc.importo) : "—"}
-                    </TableCell>
-                    <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
-                      {centriCosto.length > 0 ? (
-                        <Select
-                          value={doc.centro_costo || ""}
-                          onValueChange={(val) => updateCentroCosto(doc.id, val)}
-                        >
-                          <SelectTrigger className="h-6 text-[10px] w-[160px]">
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {centriCosto.map((c) => (
-                              <SelectItem key={c.id} value={c.codice} className="text-xs">
-                                <span className="font-mono">{c.codice}</span>
-                                <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-1.5">
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={(e) => {
-                          e.stopPropagation();
-                          deleteDocumento(doc.id, doc.storage_path);
-                        }}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+          )}
+          {!isTableOnly && (
+            <>
+              <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
+              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                {uploading ? "Analisi in corso..." : "Carica PDF"}
+              </Button>
+            </>
+          )}
         </div>
+      </div>
 
-        {/* Detail Sheet */}
+      <div className={pdfBase64 ? "flex-1 overflow-auto" : ""}>
+        {filteredDocumenti.length > 0 ? tableContent(filteredDocumenti, true) : (
+          !isTableOnly && documenti.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              Carica PDF di ricevute, marche da bollo, affitti e altri documenti non fiscali XML
+            </p>
+          )
+        )}
+      </div>
+    </div>
+  );
+
+  // Table only mode
+  if (tableOnly) {
+    if (documenti.length === 0) return null;
+
+    return (
+      <>
+        {pdfBase64 ? (
+          <div className="rounded-lg overflow-hidden border border-border" style={{ height: 420 }}>
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel defaultSize={50} minSize={30}>
+                <div className="h-full">
+                  <PdfViewerPanel
+                    base64={pdfBase64}
+                    fileName={pdfFileName}
+                    onClose={closePdf}
+                    extraActions={
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openInNewTab} title="Apri in nuova scheda">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={50} minSize={30}>
+                <div className="h-full overflow-auto p-4">
+                  {mainPanel(true)}
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+        ) : mainPanel(true)}
+
         <Sheet open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
           <SheetContent className="sm:max-w-[500px] overflow-y-auto">
             {selectedDoc && <DocDetailContent doc={selectedDoc} centroLookup={centroLookup} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
@@ -236,115 +346,36 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
     );
   }
 
-  // Default: full section (drop zone + table)
+  // Default: full section
   return (
     <>
-      <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold">Ricevute e Documenti</h3>
-            {documenti.length > 0 && (
-              <Badge variant="secondary" className="text-[10px]">{documenti.length}</Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {documenti.length > 0 && (
-              <div className="relative w-[200px]">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Filtra documenti..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-7 text-xs pl-7"
+      {pdfBase64 ? (
+        <div className="rounded-lg overflow-hidden border border-border" style={{ height: 420 }}>
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full">
+                <PdfViewerPanel
+                  base64={pdfBase64}
+                  fileName={pdfFileName}
+                  onClose={closePdf}
+                  extraActions={
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openInNewTab} title="Apri in nuova scheda">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  }
                 />
               </div>
-            )}
-            <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
-            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-              {uploading ? "Analisi in corso..." : "Carica PDF"}
-            </Button>
-          </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full overflow-auto p-4">
+                {mainPanel(false)}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
+      ) : mainPanel(false)}
 
-        {filteredDocumenti.length > 0 && (
-          <ScrollArea className="max-h-[300px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-[11px] h-8">Documento</TableHead>
-                  <TableHead className="text-[11px] h-8">Fornitore</TableHead>
-                  <TableHead className="text-[11px] h-8">Data</TableHead>
-                  <TableHead className="text-[11px] h-8 text-right">Importo</TableHead>
-                  <TableHead className="text-[11px] h-8">Centro Costo</TableHead>
-                  <TableHead className="text-[11px] h-8 w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDocumenti.map((doc) => (
-                  <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
-                    <TableCell className="text-xs py-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
-                        <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs py-1.5 truncate max-w-[140px]">{doc.fornitore || "—"}</TableCell>
-                    <TableCell className="text-xs py-1.5">{doc.data_documento || "—"}</TableCell>
-                    <TableCell className="text-xs py-1.5 text-right font-mono">
-                      {doc.importo ? formatCurrency(doc.importo) : "—"}
-                    </TableCell>
-                    <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
-                      {centriCosto.length > 0 ? (
-                        <Select
-                          value={doc.centro_costo || ""}
-                          onValueChange={(val) => updateCentroCosto(doc.id, val)}
-                        >
-                          <SelectTrigger className="h-6 text-[10px] w-[160px]">
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {centriCosto.map((c) => (
-                              <SelectItem key={c.id} value={c.codice} className="text-xs">
-                                <span className="font-mono">{c.codice}</span>
-                                <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-1.5">
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={(e) => {
-                          e.stopPropagation();
-                          deleteDocumento(doc.id, doc.storage_path);
-                        }}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        )}
-
-        {documenti.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            Carica PDF di ricevute, marche da bollo, affitti e altri documenti non fiscali XML
-          </p>
-        )}
-      </div>
-
-      {/* Detail Sheet */}
       <Sheet open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
         <SheetContent className="sm:max-w-[500px] overflow-y-auto">
           {selectedDoc && <DocDetailContent doc={selectedDoc} centroLookup={centroLookup} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
