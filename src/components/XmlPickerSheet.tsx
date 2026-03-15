@@ -56,8 +56,8 @@ export function XmlPickerSheet({
   }, [xmlRecords, search, invoiceAnno, invoiceNumero, invoiceName, invoiceTotale]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[500px]">
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+      <SheetContent className="sm:max-w-[500px] z-[60]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-sm">
             <Link2 className="h-4 w-4" />

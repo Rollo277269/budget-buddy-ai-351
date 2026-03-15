@@ -47,8 +47,8 @@ export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete, invoices
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[600px] overflow-y-auto">
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+      <SheetContent className="sm:max-w-[600px] overflow-y-auto z-[60]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4" />
