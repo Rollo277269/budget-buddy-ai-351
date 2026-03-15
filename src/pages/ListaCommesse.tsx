@@ -5,9 +5,21 @@ import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export interface Commessa {
   numero: number;
@@ -23,48 +35,79 @@ export interface Commessa {
   cssrData?: CssrCommessa;
 }
 
-const columns: ColumnDef<Commessa>[] = [
-  { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero ? formatNumber(r.numero).replace(/,00$/, "") : "—"}</span>, sortable: true },
-  { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[280px] whitespace-normal break-words block leading-snug py-1">{r.oggetto}</span> },
-  { key: "committente", label: "Committente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.committente}</span> },
-  { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
-  { key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig || "—"}</span> },
-  {
-    key: "cssrStato", label: "Stato", sortable: true,
-    render: (r) => {
-      if (!r.cssrData) return <span className="text-xs text-muted-foreground">—</span>;
-      const stato = r.cssrData.stato;
-      const colorClass =
-        stato === "completata" || stato === "completate"
-          ? "bg-success text-success-foreground border-success"
-          : stato === "in_corso"
-          ? "bg-warning/30 text-warning-foreground border-warning"
-          : "bg-destructive text-destructive-foreground border-destructive";
-      return <Badge className={`text-[10px] ${colorClass}`}>{stato}</Badge>;
-    },
-  },
-  {
-    key: "cssrImporto" as any, label: "Importo Contratto", sortable: true, align: "right" as const,
-    render: (r) => {
-      if (!r.cssrData?.importo_contrattuale) return <span className="text-xs text-muted-foreground">—</span>;
-      const val = parseFloat(r.cssrData.importo_contrattuale);
-      return <span className="text-xs font-mono font-medium">{isNaN(val) ? r.cssrData.importo_contrattuale : formatCurrency(val)}</span>;
-    },
-  },
-  { key: "fattureVendita", label: "Fatt. Vendita", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureVendita}</span> },
-  { key: "totaleVendite", label: "Tot. Vendite", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleVendite ? formatCurrency(r.totaleVendite) : "—"}</span> },
-  { key: "fattureAcquisto", label: "Fatt. Acquisto", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureAcquisto}</span> },
-  { key: "totaleAcquisti", label: "Tot. Acquisti", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleAcquisti ? formatCurrency(r.totaleAcquisti) : "—"}</span> },
-];
-
 type StatoFilter = "tutte" | "in_corso" | "completata" | "da_iniziare";
 
 const ListaCommessePage = () => {
-  const { commesse: cssrCommesse, loading: cssrLoading } = useCssrCommesse();
+  const { commesse: cssrCommesse, loading: cssrLoading, removeCommessa } = useCssrCommesse();
   const { allSales, allPurchases, loading: invoiceLoading, refresh: refreshInvoices } = useInvoiceData();
   const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
   const [selected, setSelected] = useState<Commessa | null>(null);
   const [statoFilter, setStatoFilter] = useState<StatoFilter>("tutte");
+  const [deleteTarget, setDeleteTarget] = useState<Commessa | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget?.cssrData?.id) return;
+    setDeleting(true);
+    const ok = await removeCommessa(deleteTarget.cssrData.id);
+    setDeleting(false);
+    setDeleteTarget(null);
+    if (ok) {
+      toast.success(`Commessa ${deleteTarget.numero || ""} eliminata`);
+    } else {
+      toast.error("Errore nell'eliminazione della commessa");
+    }
+  }, [deleteTarget, removeCommessa]);
+
+  const columns: ColumnDef<Commessa>[] = useMemo(() => [
+    { key: "numero", label: "N° Comm.", render: (r) => <span className="font-mono text-xs font-medium">{r.numero ? formatNumber(r.numero).replace(/,00$/, "") : "—"}</span>, sortable: true },
+    { key: "oggetto", label: "Oggetto", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[280px] whitespace-normal break-words block leading-snug py-1">{r.oggetto}</span> },
+    { key: "committente", label: "Committente", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.committente}</span> },
+    { key: "assegnataria", label: "Assegnataria", sortable: true, filterable: true, render: (r) => <span className="text-xs max-w-[180px] truncate block">{r.assegnataria}</span> },
+    { key: "cig", label: "CIG", sortable: true, filterable: true, render: (r) => <span className="font-mono text-[11px]">{r.cig || "—"}</span> },
+    {
+      key: "cssrStato", label: "Stato", sortable: true,
+      render: (r) => {
+        if (!r.cssrData) return <span className="text-xs text-muted-foreground">—</span>;
+        const stato = r.cssrData.stato;
+        const colorClass =
+          stato === "completata" || stato === "completate"
+            ? "bg-success text-success-foreground border-success"
+            : stato === "in_corso"
+            ? "bg-warning/30 text-warning-foreground border-warning"
+            : "bg-destructive text-destructive-foreground border-destructive";
+        return <Badge className={`text-[10px] ${colorClass}`}>{stato}</Badge>;
+      },
+    },
+    {
+      key: "cssrImporto" as any, label: "Importo Contratto", sortable: true, align: "right" as const,
+      render: (r) => {
+        if (!r.cssrData?.importo_contrattuale) return <span className="text-xs text-muted-foreground">—</span>;
+        const val = parseFloat(r.cssrData.importo_contrattuale);
+        return <span className="text-xs font-mono font-medium">{isNaN(val) ? r.cssrData.importo_contrattuale : formatCurrency(val)}</span>;
+      },
+    },
+    { key: "fattureVendita", label: "Fatt. Vendita", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureVendita}</span> },
+    { key: "totaleVendite", label: "Tot. Vendite", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleVendite ? formatCurrency(r.totaleVendite) : "—"}</span> },
+    { key: "fattureAcquisto", label: "Fatt. Acquisto", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.fattureAcquisto}</span> },
+    { key: "totaleAcquisti", label: "Tot. Acquisti", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleAcquisti ? formatCurrency(r.totaleAcquisti) : "—"}</span> },
+    {
+      key: "azioni" as any, label: "", sortable: false,
+      render: (r) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDeleteTarget(r);
+          }}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      ),
+    },
+  ], []);
 
   const handleSheetClose = useCallback((o: boolean) => {
     if (!o) {
@@ -173,6 +216,24 @@ const ListaCommessePage = () => {
         onRemoveLink={removeLink}
         onExpenseAdded={refreshInvoices}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Elimina commessa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare la commessa <strong>N° {deleteTarget?.numero}</strong>{" "}
+              {deleteTarget?.oggetto !== "—" && <>— {deleteTarget?.oggetto}</>}? L'azione è irreversibile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Elimina"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
