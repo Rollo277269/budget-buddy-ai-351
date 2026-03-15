@@ -391,6 +391,7 @@ const VenditePage = () => {
                     </TableRow>
                     );
                    })}
+                </TableBody>
               </Table>
             </div>
           )}
