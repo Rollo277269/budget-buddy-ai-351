@@ -9,6 +9,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 const items = [
@@ -28,7 +30,10 @@ const items = [
 export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="pt-4">
+      <SidebarHeader className="flex items-center px-2 pt-3 pb-1">
+        <SidebarTrigger className="h-8 w-8" />
+      </SidebarHeader>
+      <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
