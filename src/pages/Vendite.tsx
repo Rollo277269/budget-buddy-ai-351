@@ -22,6 +22,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { formatCurrency } from "@/lib/format";
 
+function isNotaCredito(r: SaleInvoice): boolean {
+  const t = (r.tipo || "").toLowerCase();
+  return t.includes("nota") && t.includes("credito");
+}
+
+function formatCreditAmount(value: number, isCreditNote: boolean): string {
+  const formatted = formatCurrency(Math.abs(value));
+  return isCreditNote ? `- ${formatted}` : formatted;
+}
+
 function StatusBadge({ stato }: { stato: string }) {
   const s = stato.toLowerCase();
   if (s.includes("scadut"))
@@ -173,9 +183,10 @@ const VenditePage = () => {
           onClick={(e) => { e.stopPropagation(); navigate(`/?cig=${encodeURIComponent(r.cig)}`); }}
         >{r.cig}</span>
       ) : <span className="font-mono text-[11px]">—</span>, sortable: true, filterable: true },
-      { key: "imponibile", label: "Imponibile", render: (r) => <span className="text-xs font-mono text-right block">{formatCurrency(r.imponibile)}</span>, sortable: true, align: "right" },
-      { key: "imposta", label: "IVA", render: (r) => <span className="text-xs font-mono text-right block">{formatCurrency(r.imposta)}</span>, sortable: true, align: "right" },
-      { key: "totale", label: "Totale", render: (r) => <span className="text-xs font-mono font-semibold text-right block">{formatCurrency(r.totale)}</span>, sortable: true, align: "right" },
+      { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
+      { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right" },
+      { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right" },
+      { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right" },
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       {
         key: "xml", label: "XML", filterable: true,
@@ -333,7 +344,14 @@ const VenditePage = () => {
           data={displayedSales}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
-          rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+          rowClassName={(r) => {
+            const nc = isNotaCredito(r);
+            const xml = hasXml(`${r.anno}-${r.numero}`);
+            return [
+              nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
+              xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+            ].filter(Boolean).join(" ");
+          }}
           expandable={(r) => r.righe.length > 1}
           renderExpandedContent={(r) => (
             <div className="px-4 py-2">
@@ -350,13 +368,16 @@ const VenditePage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(Array.isArray(r.righe) ? r.righe : []).map((riga, idx) => (
+                   {(Array.isArray(r.righe) ? r.righe : []).map((riga, idx) => {
+                    const nc = isNotaCredito(r);
+                    const amtClass = nc ? "text-destructive" : "";
+                    return (
                     <TableRow key={idx} className="border-b border-border/30">
                       <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
                       <TableCell className="text-[11px] max-w-[300px] whitespace-normal break-words leading-snug py-1.5">{riga.descrizione || "—"}</TableCell>
-                      <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imponibile)}</TableCell>
-                      <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imposta)}</TableCell>
-                      <TableCell className="text-[11px] font-mono font-semibold text-right py-1.5">{formatCurrency(riga.totale)}</TableCell>
+                      <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
+                      <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imposta, nc)}</TableCell>
+                      <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.totale, nc)}</TableCell>
                       <TableCell className="text-[11px] font-mono py-1.5">{riga.cig || "—"}</TableCell>
                       <TableCell className="py-1.5">
                         <CentroCell
@@ -368,7 +389,8 @@ const VenditePage = () => {
                         />
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                   })}
                 </TableBody>
               </Table>
             </div>
