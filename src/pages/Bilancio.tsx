@@ -513,6 +513,10 @@ function CentriSideBySide({
               <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
               <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro di Costo</th>
               <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
+              {/* Separator */}
+              <th className="w-px bg-border"></th>
+              {/* Differenza */}
+              <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Differenza</th>
             </tr>
           </thead>
           <tbody>
