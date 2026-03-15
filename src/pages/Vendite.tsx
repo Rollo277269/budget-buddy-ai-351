@@ -391,22 +391,6 @@ const VenditePage = () => {
                     </TableRow>
                     );
                    })}
-                      <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imponibile)}</TableCell>
-                      <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(riga.imposta)}</TableCell>
-                      <TableCell className="text-[11px] font-mono font-semibold text-right py-1.5">{formatCurrency(riga.totale)}</TableCell>
-                      <TableCell className="text-[11px] font-mono py-1.5">{riga.cig || "—"}</TableCell>
-                      <TableCell className="py-1.5">
-                        <CentroCell
-                          invoiceKey={`${r.anno}-${r.numero}-${idx}`}
-                          tipo="ricavo"
-                          centri={centri}
-                          centroMap={ricavoMap.map}
-                          onAssign={ricavoMap.assign}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
               </Table>
             </div>
           )}
