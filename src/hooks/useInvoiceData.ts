@@ -15,6 +15,7 @@ export interface SaleInvoice {
   tipo: string;
   anno: number;
   numero: number;
+  suffisso: string;
   data: string;
   cliente: string;
   partitaIva: string;
