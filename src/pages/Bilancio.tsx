@@ -513,6 +513,10 @@ function CentriSideBySide({
               <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
               <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro di Costo</th>
               <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
+              {/* Separator */}
+              <th className="w-px bg-border"></th>
+              {/* Differenza */}
+              <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Differenza</th>
             </tr>
           </thead>
           <tbody>
@@ -543,6 +547,12 @@ function CentriSideBySide({
                     <td className="px-3 py-1.5 text-xs font-mono font-semibold text-foreground">{costo?.categoria.codice || ""}</td>
                     <td className="px-3 py-1.5 text-xs font-semibold text-foreground">{costo?.categoria.descrizione || ""}</td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold text-expense">{costo ? formatCurrency(costo.subtotal) : ""}</td>
+                    {/* Separator + Differenza */}
+                    <td className="bg-border"></td>
+                    {(() => {
+                      const diff = (ricavo?.subtotal || 0) - (costo?.subtotal || 0);
+                      return <td className={`px-3 py-1.5 text-right font-mono text-xs font-semibold ${diff >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(diff)}</td>;
+                    })()}
                   </tr>
                   {/* Expanded items */}
                   {!isCollapsed_ && Array.from({ length: maxItems }).map((_, i) => {
@@ -585,6 +595,8 @@ function CentriSideBySide({
                             <td className="px-3 py-1.5"></td>
                           </>
                         )}
+                        <td className="bg-border"></td>
+                        <td className="px-3 py-1.5"></td>
                       </tr>
                     );
                   })}
@@ -624,6 +636,8 @@ function CentriSideBySide({
                     ) : (
                       <><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td></>
                     )}
+                    <td className="bg-border"></td>
+                    <td className="px-3 py-1.5"></td>
                   </tr>
                 );
               });
@@ -640,6 +654,11 @@ function CentriSideBySide({
               <td></td>
               <td className="px-3 py-2 text-xs">TOTALE COSTI</td>
               <td className="px-3 py-2 text-right font-mono text-xs text-expense">{formatCurrency(totalCosti)}</td>
+              <td className="bg-border"></td>
+              {(() => {
+                const diff = totalRicavi - totalCosti;
+                return <td className={`px-3 py-2 text-right font-mono text-xs font-semibold ${diff >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(diff)}</td>;
+              })()}
             </tr>
           </tfoot>
         </table>
