@@ -40,6 +40,8 @@ export interface PurchaseInvoice {
   totale: number;
   imponibile: number;
   imposta: number;
+  cassa: number;
+  ritenute: number;
   descrizione: string;
   cig: string;
   cup: string;
