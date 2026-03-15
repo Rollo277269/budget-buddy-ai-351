@@ -92,6 +92,34 @@ export function CommessaDetailSheet({
   const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
+
+  // -- Dati Commessa field reorder --
+  const isAdmin = true; // TODO: replace with actual admin check
+  const DEFAULT_DATI_FIELDS = [
+    "cig", "committente", "assegnataria", "rup", "direttore_lavori", "cup",
+    "cig_derivato", "numero_repertorio", "data_contratto", "data_scadenza_contratto",
+    "data_consegna_lavori", "durata",
+  ];
+  const DATI_STORAGE_KEY = "commessa-dati-field-order";
+  const [datiFieldOrder, setDatiFieldOrder] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DATI_STORAGE_KEY) || "null");
+      if (Array.isArray(saved) && saved.length > 0) return saved;
+    } catch {}
+    return DEFAULT_DATI_FIELDS;
+  });
+  const [datiEditMode, setDatiEditMode] = useState(false);
+  const [datiDragIdx, setDatiDragIdx] = useState<number | null>(null);
+
+  const handleDatiDrop = useCallback((fromIdx: number, toIdx: number) => {
+    setDatiFieldOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      localStorage.setItem(DATI_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
   const { centri } = useCentriData();
   const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
