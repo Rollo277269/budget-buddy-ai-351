@@ -44,17 +44,20 @@ async function migrateLocalStorageToDb(links: ManualLink[]) {
 export function useCommessaLinks() {
   const [links, setLinks] = useState<ManualLink[]>([]);
 
+  const refresh = useCallback(async () => {
+    const dbLinks = await loadLinksFromDb();
+    setLinks(dbLinks);
+  }, []);
+
   useEffect(() => {
     (async () => {
-      // Migrate any leftover localStorage data
       const lsLinks = loadLinksFromLocalStorage();
       if (lsLinks.length > 0) {
         await migrateLocalStorageToDb(lsLinks);
       }
-      const dbLinks = await loadLinksFromDb();
-      setLinks(dbLinks);
+      await refresh();
     })();
-  }, []);
+  }, [refresh]);
 
   const addLink = useCallback(async (link: ManualLink) => {
     const exists = links.some(
@@ -89,5 +92,5 @@ export function useCommessaLinks() {
     [links]
   );
 
-  return { links, addLink, removeLink, getLinksForCig };
+  return { links, addLink, removeLink, getLinksForCig, refresh };
 }

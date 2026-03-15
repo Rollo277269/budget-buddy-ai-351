@@ -60,8 +60,16 @@ const columns: ColumnDef<Commessa>[] = [
 const ListaCommessePage = () => {
   const { commesse: cssrCommesse, loading: cssrLoading } = useCssrCommesse();
   const { allSales, allPurchases, loading: invoiceLoading, refresh: refreshInvoices } = useInvoiceData();
-  const { links, addLink, removeLink } = useCommessaLinks();
+  const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
   const [selected, setSelected] = useState<Commessa | null>(null);
+
+  const handleSheetClose = useCallback((o: boolean) => {
+    if (!o) {
+      setSelected(null);
+      refreshInvoices();
+      refreshLinks();
+    }
+  }, [refreshInvoices, refreshLinks]);
 
   const rows = useMemo(() => {
     const cigCounts = new Map<string, { fv: number; fa: number; tv: number; ta: number }>();
@@ -120,7 +128,7 @@ const ListaCommessePage = () => {
       <CommessaDetailSheet
         commessa={selected}
         open={!!selected}
-        onOpenChange={(o) => !o && setSelected(null)}
+        onOpenChange={handleSheetClose}
         allSales={allSales}
         allPurchases={allPurchases}
         manualLinks={links}
