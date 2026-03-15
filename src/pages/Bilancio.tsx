@@ -385,81 +385,63 @@ export default function BilancioPage() {
 
 }
 
-/* ────────── Side-by-side centro tables with row drag ────────── */
+/* ────────── Side-by-side centro tables with category grouping ────────── */
 
-const ROW_ORDER_KEY_PREFIX = "bilancio-row-order-";
-
-function loadRowOrder(id: string): string[] | null {
-  try {
-    const v = JSON.parse(localStorage.getItem(ROW_ORDER_KEY_PREFIX + id) || "null");
-    return Array.isArray(v) ? v : null;
-  } catch {return null;}
-}
-
-function saveRowOrder(id: string, order: string[]) {
-  localStorage.setItem(ROW_ORDER_KEY_PREFIX + id, JSON.stringify(order));
+interface CategoryGroup {
+  categoria: CategoriaCentro;
+  items: CentroAgg[];
+  subtotal: number;
 }
 
 function CentriSideBySide({
-  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti, onRowClick
-
-
-
-
-}: {ricavoBreakdown: CentroAgg[];costoBreakdown: CentroAgg[];totalRicavi: number;totalCosti: number;onRowClick?: (codice: string, tipo: "ricavo" | "costo") => void;}) {
-  const maxRows = Math.max(ricavoBreakdown.length, costoBreakdown.length);
+  ricavoBreakdown, costoBreakdown, totalRicavi, totalCosti, onRowClick, centri, categorie
+}: {ricavoBreakdown: CentroAgg[];costoBreakdown: CentroAgg[];totalRicavi: number;totalCosti: number;onRowClick?: (codice: string, tipo: "ricavo" | "costo") => void; centri: CentroCR[]; categorie: CategoriaCentro[];}) {
+  const categorieRicavo = useMemo(() => categorie.filter(c => c.tipo === "ricavo"), [categorie]);
+  const categorieCosto = useMemo(() => categorie.filter(c => c.tipo === "costo"), [categorie]);
+  const centriRicavo = useMemo(() => centri.filter(c => c.tipo === "ricavo"), [centri]);
+  const centriCosto = useMemo(() => centri.filter(c => c.tipo === "costo"), [centri]);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <CentroTableCard id="ricavi" title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "ricavo") : undefined} />
-      <CentroTableCard id="costi" title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" minRows={maxRows} onRowClick={onRowClick ? (codice) => onRowClick(codice, "costo") : undefined} />
+      <CentroTableCard title="Centri di Ricavo" data={ricavoBreakdown} total={totalRicavi} accentClass="text-income" onRowClick={onRowClick ? (codice) => onRowClick(codice, "ricavo") : undefined} categorie={categorieRicavo} centri={centriRicavo} />
+      <CentroTableCard title="Centri di Costo" data={costoBreakdown} total={totalCosti} accentClass="text-expense" onRowClick={onRowClick ? (codice) => onRowClick(codice, "costo") : undefined} categorie={categorieCosto} centri={centriCosto} />
     </div>);
-
 }
 
-function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onRowClick
+function CentroTableCard({ title, data, total, accentClass, onRowClick, categorie, centri
+}: {title: string;data: CentroAgg[];total: number;accentClass: string;onRowClick?: (codice: string) => void; categorie: CategoriaCentro[]; centri: CentroCR[];}) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-}: {id: string;title: string;data: CentroAgg[];total: number;accentClass: string;minRows?: number;onRowClick?: (codice: string) => void;}) {
-  const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const [overIdx, setOverIdx] = useState<number | null>(null);
-  const [rowOrder, setRowOrder] = useState<string[] | null>(() => loadRowOrder(id));
-
-  const sortedData = useMemo(() => {
-    if (!rowOrder) return data;
-    const byCode = new Map(data.map((d) => [d.codice, d]));
-    const ordered: CentroAgg[] = [];
-    rowOrder.forEach((code) => {
-      const item = byCode.get(code);
-      if (item) {ordered.push(item);byCode.delete(code);}
-    });
-    byCode.forEach((item) => ordered.push(item));
-    return ordered;
-  }, [data, rowOrder]);
-
-  const handleDragStart = (idx: number) => (e: React.DragEvent) => {
-    setDragIdx(idx);
-    e.dataTransfer.effectAllowed = "move";
+  const toggleCategory = (catId: string) => {
+    setCollapsed(prev => ({ ...prev, [catId]: !prev[catId] }));
   };
 
-  const handleDragOver = (idx: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    setOverIdx(idx);
-  };
+  const { groups, orphans } = useMemo(() => {
+    const dataByCode = new Map(data.map(d => [d.codice, d]));
+    const groups: CategoryGroup[] = [];
+    const usedCodes = new Set<string>();
 
-  const handleDrop = (targetIdx: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    if (dragIdx !== null && dragIdx !== targetIdx) {
-      const next = [...sortedData];
-      const [moved] = next.splice(dragIdx, 1);
-      next.splice(targetIdx, 0, moved);
-      const newOrder = next.map((d) => d.codice);
-      setRowOrder(newOrder);
-      saveRowOrder(id, newOrder);
+    for (const cat of categorie) {
+      const catCentri = centri.filter(c => c.categoriaId === cat.id);
+      const items: CentroAgg[] = [];
+      for (const cc of catCentri) {
+        const agg = dataByCode.get(cc.codice);
+        if (agg) {
+          items.push(agg);
+          usedCodes.add(cc.codice);
+        }
+      }
+      if (items.length > 0) {
+        groups.push({
+          categoria: cat,
+          items: items.sort((a, b) => b.importo - a.importo),
+          subtotal: items.reduce((s, i) => s + i.importo, 0),
+        });
+      }
     }
-    setDragIdx(null);
-    setOverIdx(null);
-  };
 
-  const handleDragEnd = () => {setDragIdx(null);setOverIdx(null);};
+    const orphans = data.filter(d => !usedCodes.has(d.codice));
+    return { groups, orphans };
+  }, [data, categorie, centri]);
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
@@ -468,12 +450,11 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
       </div>
       {data.length === 0 ?
       <div className="p-6 text-center text-muted-foreground text-sm">Nessun centro configurato</div> :
-
       <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20">
-                <th className="w-6"></th>
+                <th className="w-8"></th>
                 <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Codice</th>
                 <th className="text-left px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Centro</th>
                 <th className="text-right px-3 py-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Importo</th>
@@ -481,24 +462,54 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
               </tr>
             </thead>
             <tbody>
-              {sortedData.map((d, i) =>
-            <tr
-              key={d.codice}
-              draggable
-              onDragStart={handleDragStart(i)}
-              onDragOver={handleDragOver(i)}
-              onDrop={handleDrop(i)}
-              onDragEnd={handleDragEnd}
-              onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
-              className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-grab active:cursor-grabbing ${
-              dragIdx === i ? "opacity-40" : ""} ${
-              overIdx === i && dragIdx !== i ? "border-t-2 border-t-primary" : ""} ${
-              onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""}`
-              }>
-              
-                  <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
-                    <GripVertical className="h-3.5 w-3.5" />
-                  </td>
+              {groups.map((g) => {
+                const isCollapsed = collapsed[g.categoria.id] ?? false;
+                return (
+                  <Fragment key={g.categoria.id}>
+                    <tr
+                      className="border-b border-border bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors select-none"
+                      onClick={() => toggleCategory(g.categoria.id)}
+                    >
+                      <td className="pl-2 pr-0 py-1.5 text-muted-foreground">
+                        {isCollapsed ?
+                          <ChevronRight className="h-3.5 w-3.5" /> :
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        }
+                      </td>
+                      <td className="px-3 py-1.5 text-xs font-mono font-semibold text-foreground">{g.categoria.codice}</td>
+                      <td className="px-3 py-1.5 text-xs font-semibold text-foreground">{g.categoria.descrizione}</td>
+                      <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold">{formatCurrency(g.subtotal)}</td>
+                      <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground font-semibold">
+                        {total > 0 ? (g.subtotal / total * 100).toFixed(1) : "0.0"}%
+                      </td>
+                    </tr>
+                    {!isCollapsed && g.items.map((d) => (
+                      <tr
+                        key={d.codice}
+                        onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
+                        className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
+                          onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""}`}
+                      >
+                        <td className="pl-2 pr-0 py-1.5"></td>
+                        <td className="px-3 pl-8 py-1.5 text-xs font-mono text-muted-foreground">{d.codice}</td>
+                        <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[200px] ${onRowClick && d.codice !== "__unassigned__" ? "text-primary underline decoration-dotted" : ""}`}>{d.descrizione}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-xs text-muted-foreground">
+                          {total > 0 ? (d.importo / total * 100).toFixed(1) : "0.0"}%
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                );
+              })}
+              {orphans.map((d) => (
+                <tr
+                  key={d.codice}
+                  onClick={() => onRowClick && d.codice !== "__unassigned__" && onRowClick(d.codice)}
+                  className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
+                    onRowClick && d.codice !== "__unassigned__" ? "cursor-pointer" : ""}`}
+                >
+                  <td className="pl-2 pr-0 py-1.5"></td>
                   <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground">{d.codice === "__unassigned__" ? "—" : d.codice}</td>
                   <td className={`px-3 py-1.5 text-xs font-medium truncate max-w-[200px] ${onRowClick && d.codice !== "__unassigned__" ? "text-primary underline decoration-dotted" : ""}`}>{d.descrizione}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-xs">{formatCurrency(d.importo)}</td>
@@ -506,39 +517,7 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
                     {total > 0 ? (d.importo / total * 100).toFixed(1) : "0.0"}%
                   </td>
                 </tr>
-            )}
-              {/* Empty padding rows to align totals — accept drops */}
-              {Array.from({ length: Math.max(0, minRows - sortedData.length) }).map((_, i) => {
-              const emptyIdx = sortedData.length + i;
-              // dropping on an empty row = moving to end (last real position)
-              const dropTarget = Math.min(sortedData.length - 1, sortedData.length);
-              return (
-                <tr
-                  key={`empty-${i}`}
-                  className={`border-b border-border/50 ${overIdx === emptyIdx && dragIdx !== null ? "border-t-2 border-t-primary" : ""}`}
-                  onDragOver={(e) => {e.preventDefault();setOverIdx(emptyIdx);}}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (dragIdx !== null && dragIdx !== sortedData.length - 1) {
-                      const next = [...sortedData];
-                      const [moved] = next.splice(dragIdx, 1);
-                      next.push(moved);
-                      const newOrder = next.map((d) => d.codice);
-                      setRowOrder(newOrder);
-                      saveRowOrder(id, newOrder);
-                    }
-                    setDragIdx(null);
-                    setOverIdx(null);
-                  }}>
-                  
-                    <td className="pl-2 pr-0 py-1.5">&nbsp;</td>
-                    <td className="px-3 py-1.5">&nbsp;</td>
-                    <td className="px-3 py-1.5">&nbsp;</td>
-                    <td className="px-3 py-1.5"></td>
-                    <td className="px-3 py-1.5"></td>
-                  </tr>);
-
-            })}
+              ))}
             </tbody>
             <tfoot>
               <tr className="bg-muted/40 font-semibold">
@@ -553,7 +532,6 @@ function CentroTableCard({ id, title, data, total, accentClass, minRows = 0, onR
         </div>
       }
     </div>);
-
 }
 
 /* ────────── PDF Centro table sub-component ────────── */
