@@ -32,7 +32,7 @@ import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileText, FileSearch
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
