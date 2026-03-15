@@ -43,6 +43,19 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
   const [selectedDoc, setSelectedDoc] = useState<DocumentoAcquisto | null>(null);
   const [pdfDragging, setPdfDragging] = useState(false);
   const pdfDragCounter = useRef(0);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const centroLookup = useMemo(() => new Map(centriCosto.map(c => [c.codice, c.descrizione])), [centriCosto]);
+
+  const filteredDocumenti = useMemo(() => {
+    if (!searchQuery.trim()) return documenti;
+    const q = searchQuery.toLowerCase();
+    return documenti.filter(d =>
+      (d.descrizione || "").toLowerCase().includes(q) ||
+      (d.file_name || "").toLowerCase().includes(q) ||
+      (d.fornitore || "").toLowerCase().includes(q)
+    );
+  }, [documenti, searchQuery]);
 
   const processPdfFiles = useCallback(async (files: File[]) => {
     const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
