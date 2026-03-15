@@ -32,16 +32,38 @@ interface YearSummary {
   marginePercent: number;
   numVendite: number;
   numAcquisti: number;
+  costiDocumenti: number;
+  numDocumenti: number;
 }
 
-function buildYearSummaries(sales: SaleInvoice[], purchases: PurchaseInvoice[]): YearSummary[] {
+function parseYearFromDate(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  // Try DD/MM/YYYY
+  const m = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return parseInt(m[3]);
+  // Try YYYY-MM-DD
+  const m2 = dateStr.match(/^(\d{4})/);
+  if (m2) return parseInt(m2[1]);
+  return null;
+}
+
+function buildYearSummaries(sales: SaleInvoice[], purchases: PurchaseInvoice[], documenti: DocumentoAcquisto[]): YearSummary[] {
   const map = new Map<number, YearSummary>();
   const ensure = (a: number) => {
-    if (!map.has(a)) map.set(a, { anno: a, ricavi: 0, costi: 0, ivaRicavi: 0, ivaCosti: 0, saldo: 0, marginePercent: 0, numVendite: 0, numAcquisti: 0 });
+    if (!map.has(a)) map.set(a, { anno: a, ricavi: 0, costi: 0, ivaRicavi: 0, ivaCosti: 0, saldo: 0, marginePercent: 0, numVendite: 0, numAcquisti: 0, costiDocumenti: 0, numDocumenti: 0 });
     return map.get(a)!;
   };
   sales.forEach((s) => {const y = ensure(s.anno);y.ricavi += s.imponibile;y.ivaRicavi += s.imposta;y.numVendite++;});
   purchases.forEach((p) => {const y = ensure(p.anno);y.costi += p.imponibile;y.ivaCosti += p.imposta;y.numAcquisti++;});
+  documenti.forEach((d) => {
+    if (!d.importo) return;
+    const anno = parseYearFromDate(d.data_documento);
+    if (!anno) return;
+    const y = ensure(anno);
+    y.costi += d.importo;
+    y.costiDocumenti += d.importo;
+    y.numDocumenti++;
+  });
   map.forEach((y) => {y.saldo = y.ricavi - y.costi;y.marginePercent = y.ricavi ? y.saldo / y.ricavi * 100 : 0;});
   return Array.from(map.values()).sort((a, b) => a.anno - b.anno);
 }
