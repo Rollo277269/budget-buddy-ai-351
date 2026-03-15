@@ -91,6 +91,21 @@ export function computeSuggestions(
       reasons.push(tipo === "vendita" ? "Stesso cliente" : "Stesso fornitore");
     }
 
+    // Document type match (fattura vs nota credito)
+    if (tipo === "vendita") {
+      const xmlTipoDoc = (record as any).parsed_data?.tipoDocumento || "";
+      const xmlIsNC = xmlTipoDoc.toUpperCase() === "TD04";
+      const invIsNC = ((inv as SaleInvoice).tipo || "").toLowerCase().includes("nota") &&
+                      ((inv as SaleInvoice).tipo || "").toLowerCase().includes("credito");
+      if (xmlIsNC === invIsNC) {
+        score += 15;
+        reasons.push(xmlIsNC ? "Entrambe NC" : "Entrambe fatture");
+      } else {
+        score -= 20; // penalize type mismatch
+        reasons.push(xmlIsNC ? "XML è NC, fattura no" : "Fattura è NC, XML no");
+      }
+    }
+
     if (score > 0) {
       results.push({
         invoice: {
@@ -99,6 +114,7 @@ export function computeSuggestions(
           label: `${inv.numero}/${inv.anno}`,
           totale: inv.totale,
           data: inv.data,
+          tipo: inv.tipo,
           ...(tipo === "vendita" ? { cliente: (inv as SaleInvoice).cliente } : { fornitore: (inv as PurchaseInvoice).fornitore }),
         },
         score,
