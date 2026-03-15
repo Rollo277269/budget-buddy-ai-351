@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { formatCurrency } from "@/lib/format";
+import { CentroCR, fetchCentriFromDb } from "@/hooks/useCentri";
 
 interface EditExpenseDialogProps {
   invoice: PurchaseInvoice | null;
@@ -21,6 +23,8 @@ interface EditExpenseDialogProps {
 
 export function EditExpenseDialog({ invoice, open, onOpenChange, onSaved }: EditExpenseDialogProps) {
   const [saving, setSaving] = useState(false);
+  const [centri, setCentri] = useState<CentroCR[]>([]);
+  const [centroCodice, setCentroCodice] = useState("");
   const [form, setForm] = useState({
     fornitore: "",
     descrizione: "",
@@ -32,6 +36,24 @@ export function EditExpenseDialog({ invoice, open, onOpenChange, onSaved }: Edit
     stato: "",
     cig: "",
   });
+
+  // Load centri costo once
+  useEffect(() => {
+    fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "costo")));
+  }, []);
+
+  // Load current assignment for this invoice
+  const loadAssignment = useCallback(async (inv: PurchaseInvoice) => {
+    const key = `${inv.numero}/${inv.anno}`;
+    const { data } = await supabase
+      .from("centro_assignments" as any)
+      .select("centro_codice")
+      .eq("invoice_key", key)
+      .eq("tipo", "costo")
+      .eq("context", "acquisti")
+      .maybeSingle();
+    setCentroCodice((data as any)?.centro_codice || "");
+  }, []);
 
   // Sync form when invoice changes
   const resetForm = useCallback((inv: PurchaseInvoice) => {
@@ -46,15 +68,14 @@ export function EditExpenseDialog({ invoice, open, onOpenChange, onSaved }: Edit
       stato: inv.stato || "",
       cig: inv.cig || "",
     });
-  }, []);
+    loadAssignment(inv);
+  }, [loadAssignment]);
 
-  // Reset form when dialog opens with new invoice
   const handleOpenChange = useCallback((o: boolean) => {
     if (o && invoice) resetForm(invoice);
     onOpenChange(o);
   }, [invoice, onOpenChange, resetForm]);
 
-  // Also reset when invoice prop changes while open
   if (open && invoice && form.fornitore === "" && form.totale === 0 && invoice.totale !== 0) {
     resetForm(invoice);
   }
@@ -85,6 +106,17 @@ export function EditExpenseDialog({ invoice, open, onOpenChange, onSaved }: Edit
 
       if (error) throw error;
 
+      // Save centro assignment
+      if (centroCodice) {
+        const key = `${invoice.numero}/${invoice.anno}`;
+        await supabase.from("centro_assignments" as any).upsert({
+          invoice_key: key,
+          tipo: "costo",
+          context: "acquisti",
+          centro_codice: centroCodice,
+        } as any, { onConflict: "invoice_key,tipo,context" });
+      }
+
       toast.success(`Fattura ${invoice.numero}/${invoice.anno} aggiornata`);
       onSaved();
       onOpenChange(false);
@@ -94,9 +126,11 @@ export function EditExpenseDialog({ invoice, open, onOpenChange, onSaved }: Edit
     } finally {
       setSaving(false);
     }
-  }, [invoice, form, onSaved, onOpenChange]);
+  }, [invoice, form, centroCodice, onSaved, onOpenChange]);
 
   if (!invoice) return null;
+
+  const sortedCentri = [...centri].sort((a, b) => a.descrizione.localeCompare(b.descrizione));
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -155,6 +189,22 @@ export function EditExpenseDialog({ invoice, open, onOpenChange, onSaved }: Edit
           <div className="space-y-1">
             <Label className="text-[11px]">CIG</Label>
             <Input value={form.cig} onChange={(e) => updateField("cig", e.target.value)} className="h-8 text-xs font-mono" />
+          </div>
+          <div className="col-span-2 space-y-1">
+            <Label className="text-[11px]">Centro di Costo</Label>
+            <Select value={centroCodice} onValueChange={setCentroCodice}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="— Nessuno —" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortedCentri.map((c) => (
+                  <SelectItem key={c.codice} value={c.codice} className="text-xs">
+                    <span className="font-mono">{c.codice}</span>
+                    <span className="text-muted-foreground ml-1">— {c.descrizione}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
