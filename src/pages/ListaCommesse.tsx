@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useCssrCommesse, CssrCommessa } from "@/hooks/useCssrCommesse";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
-import { useCallback } from "react";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/format";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export interface Commessa {
   numero: number;
@@ -57,11 +57,14 @@ const columns: ColumnDef<Commessa>[] = [
   { key: "totaleAcquisti", label: "Tot. Acquisti", sortable: true, align: "right" as const, render: (r) => <span className="text-xs font-mono">{r.totaleAcquisti ? formatCurrency(r.totaleAcquisti) : "—"}</span> },
 ];
 
+type StatoFilter = "tutte" | "in_corso" | "completata" | "da_iniziare";
+
 const ListaCommessePage = () => {
   const { commesse: cssrCommesse, loading: cssrLoading } = useCssrCommesse();
   const { allSales, allPurchases, loading: invoiceLoading, refresh: refreshInvoices } = useInvoiceData();
   const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
   const [selected, setSelected] = useState<Commessa | null>(null);
+  const [statoFilter, setStatoFilter] = useState<StatoFilter>("tutte");
 
   const handleSheetClose = useCallback((o: boolean) => {
     if (!o) {
@@ -108,8 +111,29 @@ const ListaCommessePage = () => {
         totaleAcquisti: counts.ta + countsDeriv.ta,
         cssrData: c,
       };
-    });
+    }).sort((a, b) => b.numero - a.numero);
   }, [cssrCommesse, allSales, allPurchases]);
+
+  const statoCounts = useMemo(() => {
+    const c = { in_corso: 0, completata: 0, da_iniziare: 0 };
+    rows.forEach((r) => {
+      const s = r.cssrStato;
+      if (s === "in_corso") c.in_corso++;
+      else if (s === "completata" || s === "completate") c.completata++;
+      else if (s) c.da_iniziare++;
+    });
+    return c;
+  }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    if (statoFilter === "tutte") return rows;
+    return rows.filter((r) => {
+      const s = r.cssrStato;
+      if (statoFilter === "in_corso") return s === "in_corso";
+      if (statoFilter === "completata") return s === "completata" || s === "completate";
+      return s !== "" && s !== "in_corso" && s !== "completata" && s !== "completate";
+    });
+  }, [rows, statoFilter]);
 
   if (cssrLoading || invoiceLoading) {
     return (
@@ -120,11 +144,24 @@ const ListaCommessePage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <p className="text-sm text-muted-foreground">
-        {rows.length} commesse
-      </p>
-      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} />
+    <div className="p-6 space-y-4">
+      <div className="flex items-center gap-4 flex-wrap">
+        <ToggleGroup type="single" value={statoFilter} onValueChange={(v) => v && setStatoFilter(v as StatoFilter)} className="bg-muted rounded-lg p-1">
+          <ToggleGroupItem value="tutte" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            Tutte <span className="ml-1 text-muted-foreground">({rows.length})</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="in_corso" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            In corso <span className="ml-1 text-muted-foreground">({statoCounts.in_corso})</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="completata" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            Completate <span className="ml-1 text-muted-foreground">({statoCounts.completata})</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="da_iniziare" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            Da iniziare <span className="ml-1 text-muted-foreground">({statoCounts.da_iniziare})</span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <DataTable<Commessa> columns={columns} data={filteredRows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} defaultSort={{ key: "numero", dir: "desc" }} />
       <CommessaDetailSheet
         commessa={selected}
         open={!!selected}
