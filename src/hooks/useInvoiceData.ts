@@ -239,6 +239,7 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], s
     tipo: p.tipo, anno: p.anno, numero: p.numero, data: p.data,
     fornitore: p.fornitore, partita_iva: p.partitaIva,
     totale: p.totale, imponibile: p.imponibile, imposta: p.imposta,
+    cassa: p.cassa, ritenute: p.ritenute,
     descrizione: p.descrizione, cig: p.cig, cup: p.cup,
     stato: p.stato, scadenza: p.scadenza, pagamento: p.pagamento,
     source_file: sourceFile,
