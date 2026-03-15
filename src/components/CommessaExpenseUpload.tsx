@@ -225,22 +225,27 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
       // Update renamed file name with actual numero
       let finalFileName = renamedFileName;
       if (finalFileName.includes("0.pdf") || !finalFileName) {
-        // Re-apply with correct numero
-        const rule = namingRules.find((r) => {
+        const tipoLower = (formData.tipo_documento || "").toLowerCase();
+        let rule = namingRules.find((r) => r.tipo.toLowerCase() === tipoLower);
+        if (!rule) rule = namingRules.find((r) => {
           const t = r.tipo.toLowerCase();
-          return t.includes("acquisto") || t.includes("spesa") || t.includes("polizza");
+          return tipoLower.includes(t) || t.includes(tipoLower);
+        });
+        if (!rule) rule = namingRules.find((r) => {
+          const t = r.tipo.toLowerCase();
+          return t.includes("acquisto") || t.includes("spesa");
         });
         if (rule) {
-          let dataFormatted = formData.data_documento || "";
           const vars: Record<string, string> = {
             ANNO: String(anno),
             NUMERO: String(nextNumero),
             FORNITORE: (formData.fornitore || "").replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
             CLIENTE: "",
-            DATA: dataFormatted,
+            DATA: formData.data_documento || "",
             CIG: cig || "",
             COMMESSA: String(commessaNumero),
             DESCRIZIONE: (formData.descrizione || "").substring(0, 50).replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
+            TIPO: formData.tipo_documento || "",
           };
           finalFileName = applyNamingRule(rule.pattern, vars) + ".pdf";
         }
