@@ -103,7 +103,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
     if (!rule) return originalName;
 
     let anno = String(new Date().getFullYear());
-    let dataFormatted = aiData.data_documento || "";
+    let dataFormatted = aiData.data_documento ? toIsoDate(aiData.data_documento) : "";
     if (aiData.data_documento) {
       const parts = aiData.data_documento.split("/");
       if (parts.length === 3) anno = parts[2];
