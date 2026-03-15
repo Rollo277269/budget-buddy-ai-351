@@ -113,7 +113,7 @@ export function XmlPickerSheet({
                         <span>{r.numero}/{r.anno}</span>
                       </div>
                       {score > 0 && (
-                        <div className="flex gap-1 mt-1">
+                        <div className="flex gap-1 mt-1 flex-wrap">
                           {r.importo_totale && Math.abs(r.importo_totale - invoiceTotale) < 0.02 && (
                             <Badge variant="secondary" className="text-[9px] h-4 px-1.5">Importo uguale</Badge>
                           )}
@@ -123,6 +123,12 @@ export function XmlPickerSheet({
                             return xmlName && invName && (xmlName.includes(invName) || invName.includes(xmlName));
                           })() && (
                             <Badge variant="secondary" className="text-[9px] h-4 px-1.5">Nome simile</Badge>
+                          )}
+                          {(() => {
+                            const td = ((r as any).parsed_data?.tipoDocumento || "").toUpperCase();
+                            return td === "TD04";
+                          })() && (
+                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5">Nota di Credito</Badge>
                           )}
                         </div>
                       )}
