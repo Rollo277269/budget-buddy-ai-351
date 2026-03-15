@@ -157,10 +157,19 @@ export function CommessaDetailSheet({
       return next;
     });
   }, [saveDatiSlots]);
-  const { centri } = useCentriData();
+  const { centri, refresh: refreshCentri } = useCentriData();
   const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
+
+  // Refresh centro data when sheet opens
+  useEffect(() => {
+    if (open) {
+      refreshCentri();
+      ricavoMap.refresh();
+      costoMap.refresh();
+    }
+  }, [open]);
 
   const { xmlMap: xmlMapVendita, xmlRecords: xmlRecordsVendita, fetchParsedData: fetchParsedVendita, findXml: findXmlVendita, hasXml: hasXmlVendita, manualMatch: manualMatchVendita } = useXmlInvoices(allSales, "vendita");
   const { xmlMap: xmlMapAcquisto, xmlRecords: xmlRecordsAcquisto, fetchParsedData: fetchParsedAcquisto, findXml: findXmlAcquisto, hasXml: hasXmlAcquisto, manualMatch: manualMatchAcquisto } = useXmlInvoices(allPurchases, "acquisto");
