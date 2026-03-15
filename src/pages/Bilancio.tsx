@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, CategoriaCentro, CentroCR } from "@/hooks/useCentri";
+import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { StatCard } from "@/components/StatCard";
 import { formatCurrency } from "@/lib/format";
 import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, ChevronRight, ChevronDown } from "lucide-react";
@@ -31,16 +32,38 @@ interface YearSummary {
   marginePercent: number;
   numVendite: number;
   numAcquisti: number;
+  costiDocumenti: number;
+  numDocumenti: number;
 }
 
-function buildYearSummaries(sales: SaleInvoice[], purchases: PurchaseInvoice[]): YearSummary[] {
+function parseYearFromDate(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  // Try DD/MM/YYYY
+  const m = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return parseInt(m[3]);
+  // Try YYYY-MM-DD
+  const m2 = dateStr.match(/^(\d{4})/);
+  if (m2) return parseInt(m2[1]);
+  return null;
+}
+
+function buildYearSummaries(sales: SaleInvoice[], purchases: PurchaseInvoice[], documenti: DocumentoAcquisto[]): YearSummary[] {
   const map = new Map<number, YearSummary>();
   const ensure = (a: number) => {
-    if (!map.has(a)) map.set(a, { anno: a, ricavi: 0, costi: 0, ivaRicavi: 0, ivaCosti: 0, saldo: 0, marginePercent: 0, numVendite: 0, numAcquisti: 0 });
+    if (!map.has(a)) map.set(a, { anno: a, ricavi: 0, costi: 0, ivaRicavi: 0, ivaCosti: 0, saldo: 0, marginePercent: 0, numVendite: 0, numAcquisti: 0, costiDocumenti: 0, numDocumenti: 0 });
     return map.get(a)!;
   };
   sales.forEach((s) => {const y = ensure(s.anno);y.ricavi += s.imponibile;y.ivaRicavi += s.imposta;y.numVendite++;});
   purchases.forEach((p) => {const y = ensure(p.anno);y.costi += p.imponibile;y.ivaCosti += p.imposta;y.numAcquisti++;});
+  documenti.forEach((d) => {
+    if (!d.importo) return;
+    const anno = parseYearFromDate(d.data_documento);
+    if (!anno) return;
+    const y = ensure(anno);
+    y.costi += d.importo;
+    y.costiDocumenti += d.importo;
+    y.numDocumenti++;
+  });
   map.forEach((y) => {y.saldo = y.ricavi - y.costi;y.marginePercent = y.ricavi ? y.saldo / y.ricavi * 100 : 0;});
   return Array.from(map.values()).sort((a, b) => a.anno - b.anno);
 }
@@ -81,8 +104,9 @@ const tooltipFormatter = (val: number) => formatCurrency(val);
 
 export default function BilancioPage() {
   const navigate = useNavigate();
-  const { allSales, allPurchases, loading, filterOptions } = useInvoiceData();
+  const { allSales, allPurchases, loading: invoiceLoading, filterOptions } = useInvoiceData();
   const { centri, categorie } = useCentriData();
+  const { documenti, loading: docLoading } = useDocumentiAcquisto();
   const [selectedAnno, setSelectedAnno] = useState<string>("all");
 
   const [ricavoMapVendite, setRicavoMapVendite] = useState<Record<string, string>>({});
@@ -105,7 +129,7 @@ export default function BilancioPage() {
 
   const years = filterOptions.years;
 
-  const yearSummaries = useMemo(() => buildYearSummaries(allSales, allPurchases), [allSales, allPurchases]);
+  const yearSummaries = useMemo(() => buildYearSummaries(allSales, allPurchases, documenti), [allSales, allPurchases, documenti]);
 
   const annoFilter = selectedAnno !== "all" ? parseInt(selectedAnno) : undefined;
 
@@ -117,7 +141,8 @@ export default function BilancioPage() {
     const margine = ricavi ? saldo / ricavi * 100 : 0;
     const numVendite = src.reduce((s, y) => s + y.numVendite, 0);
     const numAcquisti = src.reduce((s, y) => s + y.numAcquisti, 0);
-    return { ricavi, costi, saldo, margine, numVendite, numAcquisti };
+    const numDocumenti = src.reduce((s, y) => s + y.numDocumenti, 0);
+    return { ricavi, costi, saldo, margine, numVendite, numAcquisti, numDocumenti };
   }, [yearSummaries, annoFilter]);
 
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
@@ -127,10 +152,33 @@ export default function BilancioPage() {
     () => aggregateByCentro(allSales, ricavoMapVendite, centriRicavo, annoFilter),
     [allSales, ricavoMapVendite, centriRicavo, annoFilter]
   );
-  const costoBreakdown = useMemo(
-    () => aggregateByCentro(allPurchases, costoMapAcquisti, centriCosto, annoFilter),
-    [allPurchases, costoMapAcquisti, centriCosto, annoFilter]
-  );
+  const costoBreakdown = useMemo(() => {
+    const invoiceAgg = aggregateByCentro(allPurchases, costoMapAcquisti, centriCosto, annoFilter);
+    // Add documenti_acquisto costs by centro_costo
+    const docAgg = new Map<string, number>();
+    const filteredDocs = annoFilter
+      ? documenti.filter(d => d.importo && parseYearFromDate(d.data_documento) === annoFilter)
+      : documenti.filter(d => !!d.importo);
+    filteredDocs.forEach(d => {
+      const codice = d.centro_costo || "__unassigned__";
+      docAgg.set(codice, (docAgg.get(codice) || 0) + (d.importo || 0));
+    });
+    // Merge into invoice aggregation
+    const merged = new Map(invoiceAgg.map(a => [a.codice, { ...a }]));
+    const centroLookup = new Map(centriCosto.map(c => [c.codice, c.descrizione]));
+    docAgg.forEach((importo, codice) => {
+      if (merged.has(codice)) {
+        merged.get(codice)!.importo += importo;
+      } else {
+        merged.set(codice, {
+          codice,
+          descrizione: codice === "__unassigned__" ? "Non classificate" : centroLookup.get(codice) || codice,
+          importo,
+        });
+      }
+    });
+    return Array.from(merged.values()).sort((a, b) => b.importo - a.importo);
+  }, [allPurchases, costoMapAcquisti, centriCosto, annoFilter, documenti]);
 
   const barData = useMemo(() => {
     const data = annoFilter ?
@@ -151,6 +199,8 @@ export default function BilancioPage() {
       document.body.classList.remove("print-report");
     }, 100);
   }, []);
+
+  const loading = invoiceLoading || docLoading;
 
   if (loading) {
     return (
@@ -201,7 +251,7 @@ export default function BilancioPage() {
         <StatCard
           title="Totale Costi"
           value={formatCurrency(globalKpis.costi)}
-          subtitle={`${globalKpis.numAcquisti} fatture`}
+          subtitle={`${globalKpis.numAcquisti} fatture${globalKpis.numDocumenti ? ` + ${globalKpis.numDocumenti} doc` : ""}`}
           icon={TrendingDown}
           variant="expense" />
         
