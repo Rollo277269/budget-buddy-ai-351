@@ -1505,7 +1505,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                               <span className="font-mono">{inv.numero}/{inv.anno}</span>
                               <span className="text-muted-foreground ml-2">{counterpart}</span>
                             </TableCell>
-                            <TableCell className="text-[11px] font-mono text-right">{formatCurrency(inv.totale)}</TableCell>
+                            <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : inv.totale)}</TableCell>
                             <TableCell colSpan={2}>
                               <CentroCell
                                 invoiceKey={key}
