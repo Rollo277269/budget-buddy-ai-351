@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { formatCurrency } from "@/lib/format";
+import { CentroCR, fetchCentriFromDb } from "@/hooks/useCentri";
 
 interface EditExpenseDialogProps {
   invoice: PurchaseInvoice | null;
