@@ -239,20 +239,35 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
    * Re-match all unmatched (or all) records for purchases using amount+name logic.
    */
   const rematchAll = useCallback(async () => {
-
     const alreadyMatchedKeys = new Set<string>();
     let matchedCount = 0;
 
     for (const record of xmlRecords) {
-      const purchaseMatch = findPurchaseMatch(
-        record.cedente_denominazione,
-        record.importo_totale,
-        invoices,
-        alreadyMatchedKeys
-      );
+      let match: InvoiceWithKey | null = null;
 
-      if (purchaseMatch) {
-        const invoiceKey = `${purchaseMatch.anno}-${purchaseMatch.numero}`;
+      if (tipo === "acquisto") {
+        match = findPurchaseMatch(
+          record.cedente_denominazione,
+          record.importo_totale,
+          invoices,
+          alreadyMatchedKeys
+        );
+      } else {
+        // Vendita: match by anno+numero, preferring type-coherent matches
+        const xmlIsNC = isXmlCreditNote((record as any).parsed_data?.tipoDocumento);
+        const xmlAnno = record.anno;
+        const xmlNumero = record.numero;
+        if (xmlAnno && xmlNumero) {
+          const candidates = invoices.filter(
+            (s) => s.anno === xmlAnno && s.numero === xmlNumero && !alreadyMatchedKeys.has(`${s.anno}-${s.numero}`)
+          );
+          const typeMatch = candidates.find((s) => isInvoiceCreditNote(s.tipo) === xmlIsNC);
+          match = typeMatch || (candidates.length === 1 ? candidates[0] : null);
+        }
+      }
+
+      if (match) {
+        const invoiceKey = `${match.anno}-${match.numero}`;
         alreadyMatchedKeys.add(invoiceKey);
 
         if (record.invoice_key !== invoiceKey || !record.matched) {
@@ -260,15 +275,14 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             .from("fatture_xml" as any)
             .update({
               invoice_key: invoiceKey,
-              anno: purchaseMatch.anno,
-              numero: purchaseMatch.numero,
+              anno: match.anno,
+              numero: match.numero,
               matched: true,
             } as any)
             .eq("id", record.id);
           matchedCount++;
         }
       } else if (record.matched) {
-        // Was matched but shouldn't be
         await supabase
           .from("fatture_xml" as any)
           .update({ invoice_key: null, matched: false } as any)
