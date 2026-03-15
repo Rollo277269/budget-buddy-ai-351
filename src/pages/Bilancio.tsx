@@ -129,7 +129,7 @@ export default function BilancioPage() {
 
   const years = filterOptions.years;
 
-  const yearSummaries = useMemo(() => buildYearSummaries(allSales, allPurchases), [allSales, allPurchases]);
+  const yearSummaries = useMemo(() => buildYearSummaries(allSales, allPurchases, documenti), [allSales, allPurchases, documenti]);
 
   const annoFilter = selectedAnno !== "all" ? parseInt(selectedAnno) : undefined;
 
