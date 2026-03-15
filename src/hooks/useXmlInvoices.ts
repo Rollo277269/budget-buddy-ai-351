@@ -40,6 +40,16 @@ function fuzzyNameMatch(a: string, b: string): boolean {
   return na.includes(nb) || nb.includes(na);
 }
 
+/** TD04 = nota di credito, TD01/TD06/TD24/TD25 = fattura */
+function isXmlCreditNote(tipoDocumento: string | undefined): boolean {
+  return (tipoDocumento || "").toUpperCase() === "TD04";
+}
+
+function isInvoiceCreditNote(tipo: string | undefined): boolean {
+  const t = (tipo || "").toLowerCase();
+  return t.includes("nota") && t.includes("credito");
+}
+
 /**
  * For purchases, match by amount + supplier name since the XML's invoice number
  * is the supplier's numbering, not the company's internal registration number.
