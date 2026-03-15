@@ -362,6 +362,7 @@ export type Database = {
           scadenza: string
           source_file: string
           stato: string
+          suffisso: string
           tipo: string
           totale: number
         }
@@ -383,6 +384,7 @@ export type Database = {
           scadenza?: string
           source_file?: string
           stato?: string
+          suffisso?: string
           tipo?: string
           totale?: number
         }
@@ -404,6 +406,7 @@ export type Database = {
           scadenza?: string
           source_file?: string
           stato?: string
+          suffisso?: string
           tipo?: string
           totale?: number
         }
