@@ -105,26 +105,26 @@ const VenditePage = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [processXmlFiles]);
 
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
+  const handleXmlDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
-    dragCounter.current++;
-    setDragging(true);
+    xmlDragCounter.current++;
+    setXmlDragging(true);
   }, []);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleXmlDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
-    dragCounter.current--;
-    if (dragCounter.current === 0) setDragging(false);
+    xmlDragCounter.current--;
+    if (xmlDragCounter.current === 0) setXmlDragging(false);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleXmlDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
+  const handleXmlDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
-    dragCounter.current = 0;
-    setDragging(false);
+    xmlDragCounter.current = 0;
+    setXmlDragging(false);
     await processXmlFiles(Array.from(e.dataTransfer.files));
   }, [processXmlFiles]);
 
