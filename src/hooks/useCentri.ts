@@ -137,12 +137,16 @@ export function useCentriData() {
   const [centri, setCentri] = useState<CentroCR[]>([]);
   const [categorie, setCategorie] = useState<CategoriaCentro[]>([]);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     fetchCentriFromDb().then(setCentri);
     fetchCategorieFromDb().then(setCategorie);
   }, []);
 
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
-  return { centri, categorie, centriCosto, centriRicavo };
+  return { centri, categorie, centriCosto, centriRicavo, refresh };
 }
