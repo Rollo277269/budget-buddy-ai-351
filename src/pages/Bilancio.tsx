@@ -16,9 +16,21 @@ import {
 
 async function loadCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti"): Promise<Record<string, string>> {
   const { supabase } = await import("@/integrations/supabase/client");
-  const { data } = await (supabase as any).from("centro_assignments").select("invoice_key, centro_codice").eq("tipo", tipo).eq("context", context);
   const map: Record<string, string> = {};
-  for (const d of (data || [])) map[d.invoice_key] = d.centro_codice;
+  let from = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data } = await (supabase as any)
+      .from("centro_assignments")
+      .select("invoice_key, centro_codice")
+      .eq("tipo", tipo)
+      .eq("context", context)
+      .range(from, from + pageSize - 1);
+    if (!data || data.length === 0) break;
+    for (const d of data) map[d.invoice_key] = d.centro_codice;
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
   return map;
 }
 
