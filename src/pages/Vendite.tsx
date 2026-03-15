@@ -312,8 +312,8 @@ const VenditePage = () => {
           </div>
         )}
 
-        {/* Two drop zones side by side */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Three drop zones side by side */}
+        <div className="grid grid-cols-3 gap-3">
           {/* XML Drop Zone */}
           <div
             className={`relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
@@ -327,6 +327,23 @@ const VenditePage = () => {
               <FileCode2 className="h-5 w-5" />
               <span className="text-xs font-medium">Trascina file XML</span>
               <span className="text-[10px]">Fatture elettroniche</span>
+            </div>
+          </div>
+
+          {/* CSV Drop Zone */}
+          <input ref={csvInputRef} type="file" accept=".csv" multiple className="hidden" onChange={handleCsvFileInput} />
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
+            onDragEnter={handleCsvDragEnter}
+            onDragLeave={handleCsvDragLeave}
+            onDragOver={handleCsvDragOver}
+            onDrop={handleCsvDrop}
+            onClick={() => csvInputRef.current?.click()}
+          >
+            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+              <FileSpreadsheet className="h-5 w-5" />
+              <span className="text-xs font-medium">Trascina file CSV</span>
+              <span className="text-[10px]">Elenco ricavi</span>
             </div>
           </div>
 
