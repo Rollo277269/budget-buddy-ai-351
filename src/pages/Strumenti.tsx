@@ -922,18 +922,22 @@ function UploadFattureSection() {
     const items = type === "vendita" ? sales : purchases;
     const keys = items.map(i => `${i.anno}-${i.numero}`);
 
-    // Fetch existing records that might collide
+    // Fetch existing records that might collide (include more fields for completeness comparison)
     const { data: existing } = await supabase
       .from(table as any)
-      .select("anno, numero, tipo, descrizione")
+      .select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig, source_file")
       .or(keys.map(k => {
         const [a, n] = k.split("-");
         return `and(anno.eq.${a},numero.eq.${n})`;
       }).join(","));
 
-    const existingMap = new Map<string, { tipo: string; descrizione: string }>();
+    const existingMap = new Map<string, { tipo: string; descrizione: string; imponibile: number; imposta: number; totale: number; cig: string; source_file: string }>();
     (existing || []).forEach((r: any) => {
-      existingMap.set(`${r.anno}-${r.numero}`, { tipo: r.tipo, descrizione: r.descrizione });
+      existingMap.set(`${r.anno}-${r.numero}`, {
+        tipo: r.tipo, descrizione: r.descrizione,
+        imponibile: Number(r.imponibile) || 0, imposta: Number(r.imposta) || 0,
+        totale: Number(r.totale) || 0, cig: r.cig || "", source_file: r.source_file || "",
+      });
     });
 
     const collidingItems: typeof items = [];
@@ -963,10 +967,22 @@ function UploadFattureSection() {
       return;
     }
 
-    // Build collision list for the dialog
+    // Build collision list for the dialog — auto-select when new data is more complete
     const collisionList: CollisionItem[] = collidingItems.map((item: any) => {
       const key = `${item.anno}-${item.numero}`;
       const ex = existingMap.get(key)!;
+
+      // Determine if new data is more complete/updated
+      const newHasMoreFields = (
+        ((item.descrizione || "").length > (ex.descrizione || "").length) ||
+        (item.cig && !ex.cig) ||
+        (item.imponibile && !ex.imponibile) ||
+        (item.totale && !ex.totale)
+      );
+      const newFromDifferentFile = ex.source_file && ex.source_file !== fileName;
+      // Auto-select if new data has more info, or if same source file (re-import = update)
+      const autoSelect = newHasMoreFields || !newFromDifferentFile;
+
       return {
         key,
         anno: item.anno,
@@ -974,7 +990,7 @@ function UploadFattureSection() {
         tipo: item.tipo,
         existingDesc: `${ex.tipo} — ${ex.descrizione?.slice(0, 60) || "—"}`,
         newDesc: `${item.tipo} — ${(item.descrizione || "").slice(0, 60) || "—"}`,
-        selected: false,
+        selected: autoSelect,
       };
     });
 
