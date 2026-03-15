@@ -259,6 +259,15 @@ const VenditePage = () => {
     );
   }
 
+  const hasCentri = centriRicavo.length > 0 || centriCosto.length > 0;
+  const unclassifiedCount = sales.filter((s) => {
+    const k = `${s.anno}-${s.numero}`;
+    return (centriRicavo.length > 0 && !ricavoMap.map[k]) || (centriCosto.length > 0 && !costoMap.map[k]);
+  }).length;
+
+  const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
+  const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
+
 
   return (
     <div className="flex h-full">
