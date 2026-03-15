@@ -48,6 +48,11 @@ function invoiceKey(anno: number, numero: number) {
   return `${anno}-${numero}`;
 }
 
+/** Per fatture di professionisti (con cassa previdenza), il costo effettivo è imponibile + cassa */
+function purchaseCost(p: PurchaseInvoice): number {
+  return p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
+}
+
 interface Commessa {
   numero: string | number;
   oggetto: string;
@@ -217,7 +222,7 @@ export function CommessaDetailSheet({
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
     const totalVendite = linkedSales.reduce((s, i) => s + i.totale, 0);
-    const totalAcquisti = linkedPurchases.reduce((s, i) => s + i.totale, 0);
+    const totalAcquisti = linkedPurchases.reduce((s, i) => s + purchaseCost(i), 0);
     const saldo = totalVendite - totalAcquisti;
     const margine = totalVendite > 0 ? (saldo / totalVendite) * 100 : 0;
 
@@ -255,8 +260,8 @@ export function CommessaDetailSheet({
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
         const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
-        e.acquisti += p.totale;
-        if (p.stato?.toLowerCase().includes("pagat")) e.pagato += p.totale;
+        e.acquisti += purchaseCost(p);
+        if (p.stato?.toLowerCase().includes("pagat")) e.pagato += purchaseCost(p);
         monthlyMap.set(key, e);
       }
     });
@@ -276,7 +281,7 @@ export function CommessaDetailSheet({
     const supplierMap = new Map<string, number>();
     linkedPurchases.forEach((p) => {
       const name = p.fornitore || "Sconosciuto";
-      supplierMap.set(name, (supplierMap.get(name) || 0) + p.totale);
+      supplierMap.set(name, (supplierMap.get(name) || 0) + purchaseCost(p));
     });
     const supplierData = Array.from(supplierMap.entries())
       .sort((a, b) => b[1] - a[1])
@@ -291,8 +296,9 @@ export function CommessaDetailSheet({
       else statusSales.nonPagata += s.totale;
     });
     linkedPurchases.forEach((p) => {
-      if (p.stato?.toLowerCase().includes("pagat")) statusPurchases.pagata += p.totale;
-      else statusPurchases.nonPagata += p.totale;
+      const cost = purchaseCost(p);
+      if (p.stato?.toLowerCase().includes("pagat")) statusPurchases.pagata += cost;
+      else statusPurchases.nonPagata += cost;
     });
 
     return {
@@ -329,13 +335,15 @@ export function CommessaDetailSheet({
   const centroLabelMap = new Map(centri.map((c) => [c.codice, c.descrizione]));
   const buildCentroRows = (
     items: Array<SaleInvoice | PurchaseInvoice>,
-    map: Record<string, string>
+    map: Record<string, string>,
+    isPurchase = false
   ) => {
     const agg = new Map<string, number>();
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      agg.set(label, (agg.get(label) || 0) + item.totale);
+      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : item.totale;
+      agg.set(label, (agg.get(label) || 0) + amount);
     });
     return Array.from(agg.entries())
       .map(([name, value]) => ({ name, value }))
@@ -356,7 +364,7 @@ export function CommessaDetailSheet({
   };
 
   const ricavoRows = applySavedOrder(buildCentroRows(data.linkedSales, ricavoMap.map), "centro-ricavo-order");
-  const costoRows = applySavedOrder(buildCentroRows(data.linkedPurchases, costoMap.map), "centro-costo-order");
+  const costoRows = applySavedOrder(buildCentroRows(data.linkedPurchases, costoMap.map, true), "centro-costo-order");
   const totalRicaviPrint = ricavoRows.reduce((s, r) => s + r.value, 0);
   const totalCostiPrint = costoRows.reduce((s, r) => s + r.value, 0);
   const saldoPrint = totalRicaviPrint - totalCostiPrint;
@@ -1296,7 +1304,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + p.totale);
+      map.set(label, (map.get(label) || 0) + purchaseCost(p));
     });
     return Array.from(map.entries())
       .map(([name, value]) => ({ name, value }))
@@ -1497,7 +1505,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                               <span className="font-mono">{inv.numero}/{inv.anno}</span>
                               <span className="text-muted-foreground ml-2">{counterpart}</span>
                             </TableCell>
-                            <TableCell className="text-[11px] font-mono text-right">{formatCurrency(inv.totale)}</TableCell>
+                            <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : inv.totale)}</TableCell>
                             <TableCell colSpan={2}>
                               <CentroCell
                                 invoiceKey={key}
@@ -1632,7 +1640,13 @@ function InvoiceList({
     { key: "descrizione", label: "Descrizione", filterable: true, render: (r: any) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span> },
     { key: "stato", label: "Stato", filterable: true },
     { key: "imponibile", label: "Imponibile", filterable: false, align: "right" as const },
+    ...(type === "acquisto" ? [
+      { key: "cassa", label: "Cassa", filterable: false, align: "right" as const },
+    ] : []),
     { key: "imposta", label: "IVA", filterable: false, align: "right" as const },
+    ...(type === "acquisto" ? [
+      { key: "ritenute", label: "Ritenute", filterable: false, align: "right" as const },
+    ] : []),
     { key: "totale", label: "Totale", filterable: false, align: "right" as const },
     ...(findXml ? [{ key: "xml", label: "XML", filterable: false }] : []),
     { key: "centro", label: centroLabel, filterable: true },
@@ -1670,7 +1684,9 @@ function InvoiceList({
     if (key === "descrizione") return inv.descrizione || "";
     if (key === "stato") return inv.stato || "";
     if (key === "imponibile") return inv.imponibile || 0;
+    if (key === "cassa") return (inv as PurchaseInvoice).cassa || 0;
     if (key === "imposta") return inv.imposta || 0;
+    if (key === "ritenute") return (inv as PurchaseInvoice).ritenute || 0;
     if (key === "totale") return inv.totale || 0;
     if (key === "centro") return centroMap[`${inv.anno}-${inv.numero}`] || "";
     return "";
@@ -1779,7 +1795,9 @@ function InvoiceList({
                 descrizione: <TableCell key="desc" className="text-xs max-w-[300px] whitespace-normal break-words leading-snug py-1">{inv.descrizione || "—"}</TableCell>,
                 stato: <TableCell key="s"><StatoBadge stato={inv.stato} /></TableCell>,
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
+                cassa: <TableCell key="cassa" className="text-xs font-mono text-right">{(inv as PurchaseInvoice).cassa ? formatCurrency((inv as PurchaseInvoice).cassa) : "—"}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
+                ritenute: <TableCell key="rit" className="text-xs font-mono text-right">{(inv as PurchaseInvoice).ritenute ? formatCurrency((inv as PurchaseInvoice).ritenute) : "—"}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
                 xml: (
                   <TableCell key="xml" onClick={(e) => e.stopPropagation()}>

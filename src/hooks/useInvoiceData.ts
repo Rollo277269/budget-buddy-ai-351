@@ -40,6 +40,8 @@ export interface PurchaseInvoice {
   totale: number;
   imponibile: number;
   imposta: number;
+  cassa: number;
+  ritenute: number;
   descrizione: string;
   cig: string;
   cup: string;
@@ -148,7 +150,10 @@ export function parseExcelPurchases(rows: any[]): PurchaseInvoice[] {
       tipo: String(r[0]), anno, numero, data: formatDate(r[4]),
       fornitore: String(r[8] || ""), partitaIva: String(r[10] || ""),
       totale: parseNumber(r[23]), imponibile: parseNumber(r[24]),
-      imposta: parseNumber(r[25]), descrizione: desc,
+      imposta: parseNumber(r[25]),
+      cassa: parseNumber(r[28]),
+      ritenute: parseNumber(r[31]),
+      descrizione: desc,
       cig: extractCIG(desc), cup: extractCUP(desc),
       stato: String(r[46] || ""), scadenza: String(r[11] || ""),
       pagamento: String(r[12] || ""),
@@ -207,6 +212,7 @@ async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
     tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
     fornitore: d.fornitore, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
+    cassa: Number(d.cassa || 0), ritenute: Number(d.ritenute || 0),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
     stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
   }));
@@ -233,6 +239,7 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], s
     tipo: p.tipo, anno: p.anno, numero: p.numero, data: p.data,
     fornitore: p.fornitore, partita_iva: p.partitaIva,
     totale: p.totale, imponibile: p.imponibile, imposta: p.imposta,
+    cassa: p.cassa, ritenute: p.ritenute,
     descrizione: p.descrizione, cig: p.cig, cup: p.cup,
     stato: p.stato, scadenza: p.scadenza, pagamento: p.pagamento,
     source_file: sourceFile,

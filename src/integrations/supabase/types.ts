@@ -277,6 +277,7 @@ export type Database = {
       fatture_acquisto: {
         Row: {
           anno: number
+          cassa: number
           cig: string
           created_at: string
           cup: string
@@ -289,6 +290,7 @@ export type Database = {
           numero: number
           pagamento: string
           partita_iva: string
+          ritenute: number
           scadenza: string
           source_file: string
           stato: string
@@ -297,6 +299,7 @@ export type Database = {
         }
         Insert: {
           anno: number
+          cassa?: number
           cig?: string
           created_at?: string
           cup?: string
@@ -309,6 +312,7 @@ export type Database = {
           numero: number
           pagamento?: string
           partita_iva?: string
+          ritenute?: number
           scadenza?: string
           source_file?: string
           stato?: string
@@ -317,6 +321,7 @@ export type Database = {
         }
         Update: {
           anno?: number
+          cassa?: number
           cig?: string
           created_at?: string
           cup?: string
@@ -329,6 +334,7 @@ export type Database = {
           numero?: number
           pagamento?: string
           partita_iva?: string
+          ritenute?: number
           scadenza?: string
           source_file?: string
           stato?: string
