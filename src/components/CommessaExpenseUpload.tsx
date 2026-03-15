@@ -406,16 +406,25 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
               <Input value={formData.descrizione} onChange={(e) => updateField("descrizione", e.target.value)} className="h-8 text-xs" />
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px]">Totale</Label>
-              <Input type="number" step="0.01" value={formData.importo_totale} onChange={(e) => updateField("importo_totale", parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono" />
+              <Label className="text-[11px]">Totale (€)</Label>
+              <div className="relative">
+                <Input type="number" step="0.01" value={formData.importo_totale} onChange={(e) => updateField("importo_totale", parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono pr-7" />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">€</span>
+              </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px]">Imponibile</Label>
-              <Input type="number" step="0.01" value={formData.imponibile} onChange={(e) => updateField("imponibile", parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono" />
+              <Label className="text-[11px]">Imponibile (€)</Label>
+              <div className="relative">
+                <Input type="number" step="0.01" value={formData.imponibile} onChange={(e) => updateField("imponibile", parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono pr-7" />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">€</span>
+              </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px]">IVA</Label>
-              <Input type="number" step="0.01" value={formData.imposta} onChange={(e) => updateField("imposta", parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono" />
+              <Label className="text-[11px]">IVA (€)</Label>
+              <div className="relative">
+                <Input type="number" step="0.01" value={formData.imposta} onChange={(e) => updateField("imposta", parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono pr-7" />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">€</span>
+              </div>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px]">Data documento</Label>
