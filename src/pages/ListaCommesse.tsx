@@ -3,6 +3,7 @@ import { useCssrCommesse, CssrCommessa } from "@/hooks/useCssrCommesse";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { useCallback } from "react";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
@@ -58,7 +59,7 @@ const columns: ColumnDef<Commessa>[] = [
 
 const ListaCommessePage = () => {
   const { commesse: cssrCommesse, loading: cssrLoading } = useCssrCommesse();
-  const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
+  const { allSales, allPurchases, loading: invoiceLoading, refresh: refreshInvoices } = useInvoiceData();
   const { links, addLink, removeLink } = useCommessaLinks();
   const [selected, setSelected] = useState<Commessa | null>(null);
 
@@ -125,6 +126,7 @@ const ListaCommessePage = () => {
         manualLinks={links}
         onAddLink={addLink}
         onRemoveLink={removeLink}
+        onExpenseAdded={refreshInvoices}
       />
     </div>
   );

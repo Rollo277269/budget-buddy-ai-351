@@ -26,6 +26,7 @@ import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
 import { CentroCell } from "@/components/CentroCell";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
+import { CommessaExpenseUpload } from "@/components/CommessaExpenseUpload";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
@@ -60,6 +61,7 @@ interface CommessaDetailSheetProps {
   manualLinks: ManualLink[];
   onAddLink: (link: ManualLink) => void;
   onRemoveLink: (invoiceKey: string, invoiceType: "vendita" | "acquisto", cig: string) => void;
+  onExpenseAdded?: () => void;
 }
 
 const CHART_COLORS = [
@@ -82,6 +84,7 @@ export function CommessaDetailSheet({
   manualLinks,
   onAddLink,
   onRemoveLink,
+  onExpenseAdded,
 }: CommessaDetailSheetProps) {
   const [addMode, setAddMode] = useState<"vendita" | "acquisto" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -572,6 +575,14 @@ export function CommessaDetailSheet({
                   onClose={() => { setAddMode(null); setSearchQuery(""); }}
                 />
               )}
+
+              {/* Upload PDF spesa */}
+              <CommessaExpenseUpload
+                cig={commessa.cig}
+                commessaNumero={commessa.numero}
+                onExpenseAdded={onExpenseAdded}
+              />
+
               <InvoiceList
                 invoices={data.linkedPurchases} type="acquisto"
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
