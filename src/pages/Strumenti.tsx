@@ -933,7 +933,7 @@ function UploadFattureSection() {
 
     const existingMap = new Map<string, { tipo: string; descrizione: string; imponibile: number; imposta: number; totale: number; cig: string; source_file: string }>();
     (existing || []).forEach((r: any) => {
-      existingMap.set(`${r.anno}-${r.numero}`, {
+      existingMap.set(`${r.anno}-${r.numero}-${r.tipo || ""}`, {
         tipo: r.tipo, descrizione: r.descrizione,
         imponibile: Number(r.imponibile) || 0, imposta: Number(r.imposta) || 0,
         totale: Number(r.totale) || 0, cig: r.cig || "", source_file: r.source_file || "",
