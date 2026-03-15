@@ -40,6 +40,7 @@ interface DataTableProps<T> {
   rowClassName?: (row: T) => string;
   expandable?: (row: T) => boolean;
   renderExpandedContent?: (row: T) => ReactNode;
+  defaultSort?: { key: string; dir: SortDir };
 }
 
 type SortDir = "asc" | "desc" | null;
