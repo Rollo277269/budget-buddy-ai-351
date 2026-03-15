@@ -1020,7 +1020,7 @@ function UploadFattureSection() {
     try {
       const selectedKeys = new Set(collisions.filter(c => c.selected).map(c => c.key));
       const overwriteItems = (pendingUpload.colliding as any[]).filter(
-        (item: any) => selectedKeys.has(`${item.anno}-${item.numero}`)
+        (item: any) => selectedKeys.has(`${item.anno}-${item.numero}-${item.tipo || ""}`)
       );
       const allToSave = [...(pendingUpload.newOnly as any[]), ...overwriteItems];
 
