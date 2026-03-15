@@ -314,14 +314,14 @@ export default function BilancioPage() {
       <div className="pdf-report">
         <div className="pdf-header">
           <div className="pdf-header-text">
-            <h1>Bilancio — {annoLabel}</h1>
+            <h1>RELAZIONE ECONOMICA — {annoLabel}</h1>
             <p>Riepilogo costi e ricavi con ripartizione per centri di competenza</p>
           </div>
         </div>
         <div className="pdf-meta">
           <span>Generato il {now}</span>
           <span>•</span>
-          <span>{globalKpis.numVendite} fatture vendita — {globalKpis.numAcquisti} fatture acquisto</span>
+          <span>{globalKpis.numVendite} fatture vendita — {globalKpis.numAcquisti} fatture acquisto{globalKpis.numDocumenti ? ` — ${globalKpis.numDocumenti} documenti` : ""}</span>
         </div>
 
         {/* KPIs */}
