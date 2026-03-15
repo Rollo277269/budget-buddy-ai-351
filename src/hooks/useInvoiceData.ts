@@ -212,6 +212,7 @@ async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
     tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
     fornitore: d.fornitore, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
+    cassa: Number(d.cassa || 0), ritenute: Number(d.ritenute || 0),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
     stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
   }));
