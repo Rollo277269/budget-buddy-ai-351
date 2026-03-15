@@ -920,7 +920,7 @@ function UploadFattureSection() {
   ) => {
     const table = type === "vendita" ? "fatture_vendita" : "fatture_acquisto";
     const items = type === "vendita" ? sales : purchases;
-    const keys = items.map(i => `${i.anno}-${i.numero}`);
+    const keys = items.map((i: any) => `${i.anno}-${i.numero}-${i.tipo || ""}`);
 
     // Fetch existing records that might collide (include more fields for completeness comparison)
     const { data: existing } = await supabase
