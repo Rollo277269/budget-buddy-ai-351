@@ -547,6 +547,12 @@ function CentriSideBySide({
                     <td className="px-3 py-1.5 text-xs font-mono font-semibold text-foreground">{costo?.categoria.codice || ""}</td>
                     <td className="px-3 py-1.5 text-xs font-semibold text-foreground">{costo?.categoria.descrizione || ""}</td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs font-semibold text-expense">{costo ? formatCurrency(costo.subtotal) : ""}</td>
+                    {/* Separator + Differenza */}
+                    <td className="bg-border"></td>
+                    {(() => {
+                      const diff = (ricavo?.subtotal || 0) - (costo?.subtotal || 0);
+                      return <td className={`px-3 py-1.5 text-right font-mono text-xs font-semibold ${diff >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(diff)}</td>;
+                    })()}
                   </tr>
                   {/* Expanded items */}
                   {!isCollapsed_ && Array.from({ length: maxItems }).map((_, i) => {
