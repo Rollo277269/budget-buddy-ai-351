@@ -115,6 +115,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
   const uploadXmlFiles = useCallback(async (files: File[], onProgress?: (done: number, total: number) => void) => {
     let uploaded = 0;
     let matched = 0;
+    let skipped = 0;
     const total = files.length;
 
     // Track already-matched invoice keys to avoid double matching
@@ -123,10 +124,32 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       if (r.matched && r.invoice_key) alreadyMatchedKeys.add(r.invoice_key);
     });
 
+    // Build a set of existing file names for dedup
+    const existingFileNames = new Map<string, XmlInvoiceRecord>();
+    xmlRecords.forEach((r) => {
+      existingFileNames.set(r.file_name, r);
+    });
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       onProgress?.(i, total);
       try {
+        // Check if file already exists
+        const existingRecord = existingFileNames.get(file.name);
+        if (existingRecord) {
+          // Compare: new file is "more complete" if it's larger
+          if (file.size <= 0) { skipped++; continue; }
+          // If existing record already matched and has data, skip unless new file is bigger
+          const existingHasData = existingRecord.matched && existingRecord.cedente_denominazione;
+          if (existingHasData) {
+            skipped++;
+            continue;
+          }
+          // Otherwise, delete old and re-upload (new file is potentially more complete)
+          await supabase.storage.from("fatture-xml").remove([existingRecord.storage_path]);
+          await supabase.from("fatture_xml" as any).delete().eq("id", existingRecord.id);
+        }
+
         const text = await file.text();
         const parsed = parseFatturaPA(text);
         const xmlNumero = extractInvoiceNumber(parsed.numero);
@@ -148,12 +171,10 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         let matchedNumero: number | null = xmlNumero || null;
 
         if (tipo === "vendita") {
-          // For sales, match by anno+numero AND document type (fattura vs nota credito)
           const xmlIsNC = isXmlCreditNote(parsed.tipoDocumento);
           const candidates = invoices.filter(
             (s) => s.anno === xmlAnno && s.numero === xmlNumero
           );
-          // Prefer type-matching candidate
           const typeMatch = candidates.find(
             (s) => isInvoiceCreditNote(s.tipo) === xmlIsNC
           );
@@ -163,7 +184,6 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             isMatched = true;
           }
         } else {
-          // For purchases, match by amount + supplier name
           const purchaseMatch = findPurchaseMatch(
             parsed.cedente.denominazione,
             parsed.importoTotale,
@@ -213,7 +233,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     }
 
     onProgress?.(total, total);
-    toast.success(`${uploaded} XML caricati, ${matched} associati automaticamente`);
+    const parts = [`${uploaded} XML caricati`, `${matched} associati`];
+    if (skipped > 0) parts.push(`${skipped} già presenti`);
+    toast.success(parts.join(", "));
     await fetchRecords();
     return { uploaded, matched };
   }, [invoices, fetchRecords, tipo, xmlRecords]);
