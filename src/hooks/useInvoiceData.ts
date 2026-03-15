@@ -185,7 +185,7 @@ async function loadSalesFromDb(): Promise<SaleInvoice[]> {
     from += PAGE;
   }
   return allRows.map((d: any) => ({
-    tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
+    tipo: d.tipo, anno: d.anno, numero: d.numero, suffisso: d.suffisso || "", data: d.data,
     cliente: d.cliente, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
