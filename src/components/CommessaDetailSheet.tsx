@@ -104,8 +104,10 @@ export function CommessaDetailSheet({
   const ALL_FIELD_KEYS = [
     "cig", "committente", "assegnataria", "rup", "direttore_lavori", "cup",
     "cig_derivato", "numero_repertorio", "data_contratto", "data_scadenza_contratto",
-    "data_consegna_lavori", "durata",
+    "data_consegna_lavori", "durata", "importo_contrattuale", "importo_base_gara",
+    "ribasso", "oneri_sicurezza", "costo_manodopera",
   ];
+  const CURRENCY_FIELDS = new Set(["importo_contrattuale", "importo_base_gara", "oneri_sicurezza", "costo_manodopera"]);
   const DATI_STORAGE_KEY = "commessa-dati-slot-order";
   const [datiSlots, setDatiSlots] = useState<(string | null)[]>(() => {
     try {
