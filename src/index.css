@@ -122,38 +122,40 @@
   }
 
   /* Hide ALL screen content when printing a report */
-  body.print-report #root > *:not(.pdf-report),
-  body.print-report .no-print,
-  body.print-report .screen-report,
-  body.print-report header,
-  body.print-report nav,
-  body.print-report aside,
-  body.print-report [data-sidebar],
-  body.print-report [data-radix-popper-content-wrapper] {
-    display: none !important;
-  }
-
-  body.print-report-dialog #root {
-    display: none !important;
-  }
-
-  /* Hide everything in the app when printing a report */
+  /* Hide everything except the report when printing */
   body.print-report *:not(.pdf-report):not(.pdf-report *) {
     visibility: hidden !important;
-    position: static !important;
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    background: transparent !important;
   }
 
   body.print-report .pdf-report,
   body.print-report .pdf-report * {
     visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body.print-report .pdf-report {
+    display: block !important;
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    z-index: 99999;
+    background: white !important;
+    color: #1a1a1a !important;
+    padding: 10px 0 30px !important;
+    font-family: var(--font-sans), "Segoe UI", system-ui, sans-serif;
+    line-height: 1.5;
+  }
+
+  body.print-report-dialog #root {
+    display: none !important;
   }
 
   body.print-report-dialog .dialog-overlay,
@@ -176,20 +178,6 @@
     background: transparent !important;
     overflow: visible !important;
     padding: 0 !important;
-  }
-
-  body.print-report .pdf-report {
-    display: block !important;
-    position: fixed !important;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    z-index: 99999;
-    background: white !important;
-    color: #1a1a1a !important;
-    padding: 0 !important;
-    font-family: var(--font-sans), "Segoe UI", system-ui, sans-serif;
-    line-height: 1.5;
   }
 
   body.print-report .pdf-header {
