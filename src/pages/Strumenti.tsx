@@ -944,7 +944,7 @@ function UploadFattureSection() {
     const newItems: typeof items = [];
 
     items.forEach((item: any) => {
-      const key = `${item.anno}-${item.numero}`;
+      const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
       if (existingMap.has(key)) {
         collidingItems.push(item);
       } else {
