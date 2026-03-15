@@ -42,6 +42,28 @@ export function useDocumentiAcquisto() {
     extractedText: string,
     onAiResult?: (result: any) => void
   ) => {
+    // Check for existing document with same file name
+    const { data: existing } = await supabase
+      .from("documenti_acquisto" as any)
+      .select("id, storage_path, parsed_text, importo, fornitore, descrizione")
+      .eq("file_name", file.name);
+
+    if (existing && existing.length > 0) {
+      const ex = existing[0] as any;
+      // Compare completeness: existing has AI-parsed data vs new text
+      const existingHasData = ex.importo || ex.fornitore || (ex.descrizione && ex.descrizione !== ex.file_name);
+      const newTextLonger = extractedText.length > (ex.parsed_text || "").length;
+
+      if (existingHasData && !newTextLonger) {
+        toast.info(`"${file.name}" già presente, dati esistenti mantenuti`);
+        return null;
+      }
+
+      // New file is more complete — delete old and re-upload
+      await supabase.storage.from("documenti-acquisto").remove([ex.storage_path]);
+      await supabase.from("documenti_acquisto" as any).delete().eq("id", ex.id);
+    }
+
     const storagePath = `documenti/${Date.now()}_${file.name}`;
 
     // Upload file
