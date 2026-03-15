@@ -1,10 +1,10 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-import { useCentriData } from "@/hooks/useCentri";
+import { useCentriData, CategoriaCentro, CentroCR } from "@/hooks/useCentri";
 import { StatCard } from "@/components/StatCard";
 import { formatCurrency } from "@/lib/format";
-import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, GripVertical } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, GripVertical, ChevronRight, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
