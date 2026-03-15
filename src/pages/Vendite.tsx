@@ -70,9 +70,16 @@ const VenditePage = () => {
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
   const displayedSales = useMemo(() => {
-    if (!filters.centroRicavo) return sales;
-    return sales.filter((s) => ricavoMap.map[`${s.anno}-${s.numero}`] === filters.centroRicavo);
-  }, [sales, filters.centroRicavo, ricavoMap.map]);
+    const selectedYear = filters.anno.trim();
+    const yearFilteredSales = selectedYear
+      ? sales.filter((s) => String(s.anno) === selectedYear)
+      : sales;
+
+    if (!filters.centroRicavo) return yearFilteredSales;
+    return yearFilteredSales.filter(
+      (s) => ricavoMap.map[`${s.anno}-${s.numero}`] === filters.centroRicavo
+    );
+  }, [sales, filters.anno, filters.centroRicavo, ricavoMap.map]);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
