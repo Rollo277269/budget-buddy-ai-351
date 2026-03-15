@@ -131,6 +131,36 @@ const VenditePage = () => {
     await processXmlFiles(Array.from(e.dataTransfer.files));
   }, [processXmlFiles]);
 
+  // CSV drag handlers
+  const handleCsvDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current++;
+    setCsvDragging(true);
+  }, []);
+  const handleCsvDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current--;
+    if (csvDragCounter.current === 0) setCsvDragging(false);
+  }, []);
+  const handleCsvDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+  }, []);
+  const processCsvFiles = useCallback(async (fileList: File[]) => {
+    const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".csv"));
+    if (files.length === 0) { toast.error("Seleziona file CSV"); return; }
+    toast.info(`${files.length} file CSV ricevuti — funzionalità in arrivo`);
+  }, []);
+  const handleCsvDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current = 0;
+    setCsvDragging(false);
+    await processCsvFiles(Array.from(e.dataTransfer.files));
+  }, [processCsvFiles]);
+  const handleCsvFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processCsvFiles(Array.from(e.target.files || []));
+    if (csvInputRef.current) csvInputRef.current.value = "";
+  }, [processCsvFiles]);
+
   const handleAIClassify = useCallback(async () => {
     const hasRicavo = centriRicavo.length > 0;
     const hasCosto = centriCosto.length > 0;
