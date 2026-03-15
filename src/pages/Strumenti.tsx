@@ -1075,14 +1075,40 @@ function UploadFattureSection() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex gap-3 flex-wrap">
-          <Button variant="outline" size="sm" disabled={uploading} onClick={() => salesRef.current?.click()}>
-            <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
-            {uploading ? "Importazione..." : "Importa Vendite (.xlsx)"}
-          </Button>
-          <Button variant="outline" size="sm" disabled={uploading} onClick={() => purchasesRef.current?.click()}>
-            <TrendingDown className="h-3.5 w-3.5 mr-1.5" />
-            {uploading ? "Importazione..." : "Importa Acquisti (.xlsx)"}
-          </Button>
+          <div
+            className="relative"
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-primary"); }}
+            onDragLeave={(e) => { e.currentTarget.classList.remove("ring-2", "ring-primary"); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove("ring-2", "ring-primary");
+              const f = e.dataTransfer.files?.[0];
+              if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) handleUpload(f, "vendita");
+              else toast.error("Trascina un file .xlsx o .xls");
+            }}
+          >
+            <Button variant="outline" size="sm" disabled={uploading} onClick={() => salesRef.current?.click()}>
+              <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+              {uploading ? "Importazione..." : "Importa Vendite (.xlsx)"}
+            </Button>
+          </div>
+          <div
+            className="relative"
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-primary"); }}
+            onDragLeave={(e) => { e.currentTarget.classList.remove("ring-2", "ring-primary"); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove("ring-2", "ring-primary");
+              const f = e.dataTransfer.files?.[0];
+              if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) handleUpload(f, "acquisto");
+              else toast.error("Trascina un file .xlsx o .xls");
+            }}
+          >
+            <Button variant="outline" size="sm" disabled={uploading} onClick={() => purchasesRef.current?.click()}>
+              <TrendingDown className="h-3.5 w-3.5 mr-1.5" />
+              {uploading ? "Importazione..." : "Importa Acquisti (.xlsx)"}
+            </Button>
+          </div>
           <input ref={salesRef} type="file" accept=".xlsx,.xls" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "vendita"); e.target.value = ""; }} />
           <input ref={purchasesRef} type="file" accept=".xlsx,.xls" className="hidden"
