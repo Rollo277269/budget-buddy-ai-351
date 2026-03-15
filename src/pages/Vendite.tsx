@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +64,9 @@ const VenditePage = () => {
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [xmlDragging, setXmlDragging] = useState(false);
   const xmlDragCounter = useRef(0);
+  const [csvDragging, setCsvDragging] = useState(false);
+  const csvDragCounter = useRef(0);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
   const displayedSales = useMemo(() => {
@@ -127,6 +130,36 @@ const VenditePage = () => {
     setXmlDragging(false);
     await processXmlFiles(Array.from(e.dataTransfer.files));
   }, [processXmlFiles]);
+
+  // CSV drag handlers
+  const handleCsvDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current++;
+    setCsvDragging(true);
+  }, []);
+  const handleCsvDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current--;
+    if (csvDragCounter.current === 0) setCsvDragging(false);
+  }, []);
+  const handleCsvDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+  }, []);
+  const processCsvFiles = useCallback(async (fileList: File[]) => {
+    const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".csv"));
+    if (files.length === 0) { toast.error("Seleziona file CSV"); return; }
+    toast.info(`${files.length} file CSV ricevuti — funzionalità in arrivo`);
+  }, []);
+  const handleCsvDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current = 0;
+    setCsvDragging(false);
+    await processCsvFiles(Array.from(e.dataTransfer.files));
+  }, [processCsvFiles]);
+  const handleCsvFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processCsvFiles(Array.from(e.target.files || []));
+    if (csvInputRef.current) csvInputRef.current.value = "";
+  }, [processCsvFiles]);
 
   const handleAIClassify = useCallback(async () => {
     const hasRicavo = centriRicavo.length > 0;
@@ -309,8 +342,8 @@ const VenditePage = () => {
           </div>
         )}
 
-        {/* Two drop zones side by side */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Three drop zones side by side */}
+        <div className="grid grid-cols-3 gap-3">
           {/* XML Drop Zone */}
           <div
             className={`relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
@@ -324,6 +357,23 @@ const VenditePage = () => {
               <FileCode2 className="h-5 w-5" />
               <span className="text-xs font-medium">Trascina file XML</span>
               <span className="text-[10px]">Fatture elettroniche</span>
+            </div>
+          </div>
+
+          {/* CSV Drop Zone */}
+          <input ref={csvInputRef} type="file" accept=".csv" multiple className="hidden" onChange={handleCsvFileInput} />
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
+            onDragEnter={handleCsvDragEnter}
+            onDragLeave={handleCsvDragLeave}
+            onDragOver={handleCsvDragOver}
+            onDrop={handleCsvDrop}
+            onClick={() => csvInputRef.current?.click()}
+          >
+            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+              <FileSpreadsheet className="h-5 w-5" />
+              <span className="text-xs font-medium">Trascina file CSV</span>
+              <span className="text-[10px]">Elenco ricavi</span>
             </div>
           </div>
 
