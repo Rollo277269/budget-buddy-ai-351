@@ -582,6 +582,7 @@ export function CommessaDetailSheet({
               <CommessaExpenseUpload
                 cig={commessa.cig}
                 commessaNumero={commessa.numero}
+                namingRules={namingRules}
                 onExpenseAdded={onExpenseAdded}
               />
 
