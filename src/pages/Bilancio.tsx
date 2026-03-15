@@ -104,8 +104,9 @@ const tooltipFormatter = (val: number) => formatCurrency(val);
 
 export default function BilancioPage() {
   const navigate = useNavigate();
-  const { allSales, allPurchases, loading, filterOptions } = useInvoiceData();
+  const { allSales, allPurchases, loading: invoiceLoading, filterOptions } = useInvoiceData();
   const { centri, categorie } = useCentriData();
+  const { documenti, loading: docLoading } = useDocumentiAcquisto();
   const [selectedAnno, setSelectedAnno] = useState<string>("all");
 
   const [ricavoMapVendite, setRicavoMapVendite] = useState<Record<string, string>>({});
