@@ -636,6 +636,8 @@ function CentriSideBySide({
                     ) : (
                       <><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td><td className="px-3 py-1.5"></td></>
                     )}
+                    <td className="bg-border"></td>
+                    <td className="px-3 py-1.5"></td>
                   </tr>
                 );
               });
@@ -652,6 +654,11 @@ function CentriSideBySide({
               <td></td>
               <td className="px-3 py-2 text-xs">TOTALE COSTI</td>
               <td className="px-3 py-2 text-right font-mono text-xs text-expense">{formatCurrency(totalCosti)}</td>
+              <td className="bg-border"></td>
+              {(() => {
+                const diff = totalRicavi - totalCosti;
+                return <td className={`px-3 py-2 text-right font-mono text-xs font-semibold ${diff >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(diff)}</td>;
+              })()}
             </tr>
           </tfoot>
         </table>
