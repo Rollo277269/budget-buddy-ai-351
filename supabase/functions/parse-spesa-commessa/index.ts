@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, centri, cig, storagePath, fileName } = await req.json();
+    const { text, centri, cig, namingRuleTypes } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -23,9 +23,16 @@ serve(async (req) => {
       ? centriCosto.map((c: any) => `${c.codice}: ${c.descrizione}`).join("\n")
       : "Nessun centro di costo definito";
 
-    const systemPrompt = `Sei un assistente contabile italiano. Analizza il testo estratto da un documento PDF di spesa (ricevuta, scontrino, fattura, nota spese, ecc.) e estrai le informazioni principali per registrarlo come fattura di acquisto.
+    const ruleTypesList = Array.isArray(namingRuleTypes) && namingRuleTypes.length > 0
+      ? namingRuleTypes.join(", ")
+      : "Fattura Acquisto, Polizza, Bolli, ANAC, Ricevuta, Nota Spese, Altro";
+
+    const systemPrompt = `Sei un assistente contabile italiano. Analizza il testo estratto da un documento PDF di spesa (ricevuta, scontrino, fattura, polizza, bolli, contributo ANAC, nota spese, ecc.) e estrai le informazioni principali per registrarlo come fattura di acquisto.
 
 ${centriCosto.length > 0 ? `Centri di costo disponibili:\n${centriList}\n\nSuggerisci il centro di costo più appropriato.` : ""}
+
+Tipi di documento configurati nel sistema per la ridenominazione file: ${ruleTypesList}
+Classifica il documento usando uno di questi tipi esatti se possibile, altrimenti usa "Altro".
 
 Rispondi SOLO con la funzione tool.`;
 
@@ -59,7 +66,7 @@ Rispondi SOLO con la funzione tool.`;
                     imposta: { type: "number", description: "Importo IVA. 0 se non trovato o esente." },
                     data_documento: { type: "string", description: "Data del documento in formato DD/MM/YYYY. Vuoto se non trovata." },
                     centro_costo: { type: "string", description: "Codice del centro di costo suggerito. Vuoto se non determinabile." },
-                    tipo_documento: { type: "string", description: "Tipo: Fattura, Ricevuta, Nota Spese, Scontrino, Altro" },
+                    tipo_documento: { type: "string", description: `Tipo di documento. Usa uno dei tipi configurati: ${ruleTypesList}. Se nessuno corrisponde, usa "Altro".` },
                   },
                   required: ["fornitore", "descrizione", "importo_totale", "imponibile", "imposta", "data_documento", "centro_costo", "tipo_documento"],
                   additionalProperties: false,
