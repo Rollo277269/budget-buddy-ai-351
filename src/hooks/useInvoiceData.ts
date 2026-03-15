@@ -15,6 +15,7 @@ export interface SaleInvoice {
   tipo: string;
   anno: number;
   numero: number;
+  suffisso: string;
   data: string;
   cliente: string;
   partitaIva: string;
@@ -105,7 +106,8 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
     const tipo = String(r[0]);
     const anno = parseInt(String(r[1]));
     const numero = parseInt(String(r[2]));
-    const key = `${anno}-${numero}-${tipo}`;
+    const suffisso = String(r[3] || "").trim();
+    const key = `${anno}-${numero}-${suffisso}-${tipo}`;
     const desc = String(r[13] || "");
     const riga: SaleInvoiceRiga = {
       descrizione: desc, imponibile: parseNumber(r[22]),
@@ -116,7 +118,7 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
       invoiceMap.get(key)!.righe.push(riga);
     } else {
       invoiceMap.set(key, {
-        tipo, anno, numero, data: formatDate(r[4]),
+        tipo, anno, numero, suffisso, data: formatDate(r[4]),
         cliente: String(r[6] || ""), partitaIva: String(r[8] || ""),
         totale: parseNumber(r[21]), imponibile: parseNumber(r[22]),
         imposta: parseNumber(r[23]), descrizione: desc,
@@ -183,7 +185,7 @@ async function loadSalesFromDb(): Promise<SaleInvoice[]> {
     from += PAGE;
   }
   return allRows.map((d: any) => ({
-    tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
+    tipo: d.tipo, anno: d.anno, numero: d.numero, suffisso: d.suffisso || "", data: d.data,
     cliente: d.cliente, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
@@ -221,7 +223,7 @@ async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
 
 export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: string) {
   const rows = salesData.map(s => ({
-    tipo: s.tipo, anno: s.anno, numero: s.numero, data: s.data,
+    tipo: s.tipo, anno: s.anno, numero: s.numero, suffisso: s.suffisso, data: s.data,
     cliente: s.cliente, partita_iva: s.partitaIva,
     totale: s.totale, imponibile: s.imponibile, imposta: s.imposta,
     descrizione: s.descrizione, cig: s.cig, cup: s.cup,
@@ -230,7 +232,7 @@ export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: s
   }));
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);
-    const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero,tipo" });
+    const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero,suffisso,tipo" });
     if (error) console.error("Seed sales error:", error);
   }
 }
