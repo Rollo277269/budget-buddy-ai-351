@@ -233,6 +233,7 @@ export type Database = {
         Row: {
           ai_summary: string | null
           centro_costo: string | null
+          cig: string
           created_at: string | null
           data_documento: string | null
           descrizione: string | null
@@ -246,6 +247,7 @@ export type Database = {
         Insert: {
           ai_summary?: string | null
           centro_costo?: string | null
+          cig?: string
           created_at?: string | null
           data_documento?: string | null
           descrizione?: string | null
@@ -259,6 +261,7 @@ export type Database = {
         Update: {
           ai_summary?: string | null
           centro_costo?: string | null
+          cig?: string
           created_at?: string | null
           data_documento?: string | null
           descrizione?: string | null

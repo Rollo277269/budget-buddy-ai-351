@@ -12,6 +12,7 @@ export interface DocumentoAcquisto {
   data_documento: string | null;
   fornitore: string | null;
   centro_costo: string | null;
+  cig: string | null;
   parsed_text: string | null;
   ai_summary: string | null;
   created_at: string | null;
@@ -109,5 +110,13 @@ export function useDocumentiAcquisto() {
     await fetchDocumenti();
   }, [fetchDocumenti]);
 
-  return { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, refresh: fetchDocumenti };
+  const updateCig = useCallback(async (id: string, cig: string) => {
+    await supabase
+      .from("documenti_acquisto" as any)
+      .update({ cig } as any)
+      .eq("id", id);
+    await fetchDocumenti();
+  }, [fetchDocumenti]);
+
+  return { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig, refresh: fetchDocumenti };
 }
