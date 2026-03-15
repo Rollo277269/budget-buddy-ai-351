@@ -856,6 +856,73 @@ function ExportImportSection() {
   );
 }
 
+// ─── Upload Fatture Excel ────────────────────────────────────────
+
+import { parseExcelSales, parseExcelPurchases, seedSalesFromExcel, seedPurchasesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
+
+function UploadFattureSection() {
+  const [uploading, setUploading] = useState(false);
+  const salesRef = useRef<HTMLInputElement>(null);
+  const purchasesRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (file: File, type: "vendita" | "acquisto") => {
+    setUploading(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
+
+      if (type === "vendita") {
+        const sales = parseExcelSales(rows);
+        if (sales.length === 0) { toast.error("Nessuna fattura vendita trovata nel file"); setUploading(false); return; }
+        await seedSalesFromExcel(sales, file.name);
+        toast.success(`Importate ${sales.length} fatture vendita`);
+      } else {
+        const purchases = parseExcelPurchases(rows);
+        if (purchases.length === 0) { toast.error("Nessuna fattura acquisto trovata nel file"); setUploading(false); return; }
+        await seedPurchasesFromExcel(purchases, file.name);
+        toast.success(`Importate ${purchases.length} fatture acquisto`);
+      }
+      invalidateInvoiceCache();
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Errore durante l'importazione del file Excel");
+    }
+    setUploading(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Upload className="h-4 w-4" />
+          Caricamento Fatture (Excel)
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Importa o aggiorna le fatture vendita/acquisto da file Excel. I dati verranno salvati nel database e saranno disponibili su tutti i dispositivi.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex gap-3 flex-wrap">
+        <Button variant="outline" size="sm" disabled={uploading} onClick={() => salesRef.current?.click()}>
+          <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+          {uploading ? "Importazione..." : "Importa Vendite (.xlsx)"}
+        </Button>
+        <Button variant="outline" size="sm" disabled={uploading} onClick={() => purchasesRef.current?.click()}>
+          <TrendingDown className="h-3.5 w-3.5 mr-1.5" />
+          {uploading ? "Importazione..." : "Importa Acquisti (.xlsx)"}
+        </Button>
+        <input ref={salesRef} type="file" accept=".xlsx,.xls" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "vendita"); e.target.value = ""; }} />
+        <input ref={purchasesRef} type="file" accept=".xlsx,.xls" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "acquisto"); e.target.value = ""; }} />
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────
 
 const StrumentiPage = () => {
@@ -887,6 +954,7 @@ const StrumentiPage = () => {
       </Tabs>
 
       <Separator />
+      <UploadFattureSection />
       <ExportImportSection />
     </div>
   );
