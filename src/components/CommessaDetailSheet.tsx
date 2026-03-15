@@ -222,7 +222,7 @@ export function CommessaDetailSheet({
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
     const totalVendite = linkedSales.reduce((s, i) => s + i.totale, 0);
-    const totalAcquisti = linkedPurchases.reduce((s, i) => s + i.totale, 0);
+    const totalAcquisti = linkedPurchases.reduce((s, i) => s + purchaseCost(i), 0);
     const saldo = totalVendite - totalAcquisti;
     const margine = totalVendite > 0 ? (saldo / totalVendite) * 100 : 0;
 
