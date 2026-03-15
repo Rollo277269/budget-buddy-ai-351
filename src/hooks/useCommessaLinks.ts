@@ -92,5 +92,5 @@ export function useCommessaLinks() {
     [links]
   );
 
-  return { links, addLink, removeLink, getLinksForCig };
+  return { links, addLink, removeLink, getLinksForCig, refresh };
 }
