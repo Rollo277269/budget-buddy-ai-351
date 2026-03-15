@@ -98,6 +98,7 @@ const ListaCommessePage = () => {
           variant="ghost"
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          disabled
           onClick={(e) => {
             e.stopPropagation();
             setDeleteTarget(r);
