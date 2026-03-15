@@ -670,6 +670,10 @@ export function CommessaDetailSheet({
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
                 onRowClick={(inv) => setEditingExpense(inv as PurchaseInvoice)}
+                findXml={(k, name) => findXmlAcquisto(k, name)}
+                hasXml={hasXmlAcquisto}
+                onOpenXml={(record) => openXmlSheet(record, "acquisto")}
+                onOpenXmlPicker={(inv) => setXmlPickerInvoice({ inv, type: "acquisto" })}
               />
 
               <EditExpenseDialog
