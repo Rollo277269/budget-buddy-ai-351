@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 
 export interface SaleInvoiceRiga {
@@ -78,10 +79,7 @@ function extractCUP(desc: string): string {
   return match ? match[1] : "";
 }
 
-// Cache parsed Excel data across component mounts to avoid re-parsing on navigation
-let cachedSales: SaleInvoice[] | null = null;
-let cachedPurchases: PurchaseInvoice[] | null = null;
-let loadPromise: Promise<void> | null = null;
+// ── Excel parsing (used for seeding and uploads) ──
 
 async function loadExcel(url: string): Promise<any[]> {
   const res = await fetch(url);
@@ -91,19 +89,14 @@ async function loadExcel(url: string): Promise<any[]> {
   return XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
 }
 
-function parseSales(rows: any[]): SaleInvoice[] {
-  // Find header row
+export function parseExcelSales(rows: any[]): SaleInvoice[] {
   let headerIdx = -1;
   for (let i = 0; i < Math.min(rows.length, 20); i++) {
-    if (rows[i] && String(rows[i][0]).includes("Tipo Documento")) {
-      headerIdx = i;
-      break;
-    }
+    if (rows[i] && String(rows[i][0]).includes("Tipo Documento")) { headerIdx = i; break; }
   }
   if (headerIdx === -1) return [];
 
   const invoiceMap = new Map<string, SaleInvoice>();
-
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
@@ -112,53 +105,36 @@ function parseSales(rows: any[]): SaleInvoice[] {
     const key = `${anno}-${numero}`;
     const desc = String(r[13] || "");
     const riga: SaleInvoiceRiga = {
-      descrizione: desc,
-      imponibile: parseNumber(r[22]),
-      imposta: parseNumber(r[23]),
-      totale: parseNumber(r[21]),
-      cig: extractCIG(desc),
-      cup: extractCUP(desc),
+      descrizione: desc, imponibile: parseNumber(r[22]),
+      imposta: parseNumber(r[23]), totale: parseNumber(r[21]),
+      cig: extractCIG(desc), cup: extractCUP(desc),
     };
-
     if (invoiceMap.has(key)) {
       invoiceMap.get(key)!.righe.push(riga);
     } else {
       invoiceMap.set(key, {
-        tipo: String(r[0]),
-        anno,
-        numero,
-        data: formatDate(r[4]),
-        cliente: String(r[6] || ""),
-        partitaIva: String(r[8] || ""),
-        totale: parseNumber(r[21]),
-        imponibile: parseNumber(r[22]),
-        imposta: parseNumber(r[23]),
-        descrizione: desc,
-        cig: extractCIG(desc),
-        cup: extractCUP(desc),
-        stato: String(r[44] || ""),
-        scadenza: String(r[9] || ""),
-        pagamento: String(r[10] || ""),
-        righe: [riga],
+        tipo: String(r[0]), anno, numero, data: formatDate(r[4]),
+        cliente: String(r[6] || ""), partitaIva: String(r[8] || ""),
+        totale: parseNumber(r[21]), imponibile: parseNumber(r[22]),
+        imposta: parseNumber(r[23]), descrizione: desc,
+        cig: extractCIG(desc), cup: extractCUP(desc),
+        stato: String(r[44] || ""), scadenza: String(r[9] || ""),
+        pagamento: String(r[10] || ""), righe: [riga],
       });
     }
   }
   return Array.from(invoiceMap.values());
 }
 
-function parsePurchases(rows: any[]): PurchaseInvoice[] {
+export function parseExcelPurchases(rows: any[]): PurchaseInvoice[] {
   let headerIdx = -1;
   for (let i = 0; i < Math.min(rows.length, 20); i++) {
-    if (rows[i] && String(rows[i][0]).includes("Tipo Documento")) {
-      headerIdx = i;
-      break;
-    }
+    if (rows[i] && String(rows[i][0]).includes("Tipo Documento")) { headerIdx = i; break; }
   }
   if (headerIdx === -1) return [];
 
   const invoices: PurchaseInvoice[] = [];
   const seen = new Set<string>();
-
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
@@ -167,27 +143,146 @@ function parsePurchases(rows: any[]): PurchaseInvoice[] {
     const key = `${anno}-${numero}`;
     if (seen.has(key)) continue;
     seen.add(key);
-
     const desc = String(r[15] || "");
     invoices.push({
-      tipo: String(r[0]),
-      anno,
-      numero,
-      data: formatDate(r[4]),
-      fornitore: String(r[8] || ""),
-      partitaIva: String(r[10] || ""),
-      totale: parseNumber(r[23]),
-      imponibile: parseNumber(r[24]),
-      imposta: parseNumber(r[25]),
-      descrizione: desc,
-      cig: extractCIG(desc),
-      cup: extractCUP(desc),
-      stato: String(r[46] || ""),
-      scadenza: String(r[11] || ""),
+      tipo: String(r[0]), anno, numero, data: formatDate(r[4]),
+      fornitore: String(r[8] || ""), partitaIva: String(r[10] || ""),
+      totale: parseNumber(r[23]), imponibile: parseNumber(r[24]),
+      imposta: parseNumber(r[25]), descrizione: desc,
+      cig: extractCIG(desc), cup: extractCUP(desc),
+      stato: String(r[46] || ""), scadenza: String(r[11] || ""),
       pagamento: String(r[12] || ""),
     });
   }
   return invoices;
+}
+
+// ── DB helpers ──
+
+async function loadSalesFromDb(): Promise<SaleInvoice[]> {
+  const allRows: any[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("fatture_vendita" as any)
+      .select("*")
+      .order("anno", { ascending: true })
+      .order("numero", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("Error loading sales:", error); break; }
+    if (!data || data.length === 0) break;
+    allRows.push(...(data as any[]));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return allRows.map((d: any) => ({
+    tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
+    cliente: d.cliente, partitaIva: d.partita_iva,
+    totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
+    descrizione: d.descrizione, cig: d.cig, cup: d.cup,
+    stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
+    righe: (d.righe || []) as SaleInvoiceRiga[],
+  }));
+}
+
+async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
+  const allRows: any[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("fatture_acquisto" as any)
+      .select("*")
+      .order("anno", { ascending: true })
+      .order("numero", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("Error loading purchases:", error); break; }
+    if (!data || data.length === 0) break;
+    allRows.push(...(data as any[]));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return allRows.map((d: any) => ({
+    tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
+    fornitore: d.fornitore, partitaIva: d.partita_iva,
+    totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
+    descrizione: d.descrizione, cig: d.cig, cup: d.cup,
+    stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
+  }));
+}
+
+export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: string) {
+  const rows = salesData.map(s => ({
+    tipo: s.tipo, anno: s.anno, numero: s.numero, data: s.data,
+    cliente: s.cliente, partita_iva: s.partitaIva,
+    totale: s.totale, imponibile: s.imponibile, imposta: s.imposta,
+    descrizione: s.descrizione, cig: s.cig, cup: s.cup,
+    stato: s.stato, scadenza: s.scadenza, pagamento: s.pagamento,
+    righe: JSON.stringify(s.righe), source_file: sourceFile,
+  }));
+  for (let i = 0; i < rows.length; i += 100) {
+    const batch = rows.slice(i, i + 100);
+    const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero" });
+    if (error) console.error("Seed sales error:", error);
+  }
+}
+
+export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], sourceFile: string) {
+  const rows = purchasesData.map(p => ({
+    tipo: p.tipo, anno: p.anno, numero: p.numero, data: p.data,
+    fornitore: p.fornitore, partita_iva: p.partitaIva,
+    totale: p.totale, imponibile: p.imponibile, imposta: p.imposta,
+    descrizione: p.descrizione, cig: p.cig, cup: p.cup,
+    stato: p.stato, scadenza: p.scadenza, pagamento: p.pagamento,
+    source_file: sourceFile,
+  }));
+  for (let i = 0; i < rows.length; i += 100) {
+    const batch = rows.slice(i, i + 100);
+    const { error } = await supabase.from("fatture_acquisto" as any).upsert(batch as any, { onConflict: "anno,numero" });
+    if (error) console.error("Seed purchases error:", error);
+  }
+}
+
+// ── Cache ──
+let cachedSales: SaleInvoice[] | null = null;
+let cachedPurchases: PurchaseInvoice[] | null = null;
+let loadPromise: Promise<void> | null = null;
+
+export function invalidateInvoiceCache() {
+  cachedSales = null;
+  cachedPurchases = null;
+  loadPromise = null;
+}
+
+async function loadAll() {
+  // Try DB first
+  const [dbSales, dbPurchases] = await Promise.all([loadSalesFromDb(), loadPurchasesFromDb()]);
+
+  if (dbSales.length > 0 || dbPurchases.length > 0) {
+    cachedSales = dbSales;
+    cachedPurchases = dbPurchases;
+    return;
+  }
+
+  // DB empty → seed from static Excel files
+  console.log("[InvoiceData] DB empty, seeding from Excel files...");
+  const [salesRows, purchaseRows] = await Promise.all([
+    loadExcel("/data/Fatture_Full.xlsx"),
+    loadExcel("/data/FattureAcquisto_Full.xlsx"),
+  ]);
+  const sales = parseExcelSales(salesRows);
+  const purchases = parseExcelPurchases(purchaseRows);
+
+  // Save to DB
+  await Promise.all([
+    seedSalesFromExcel(sales, "Fatture_Full.xlsx"),
+    seedPurchasesFromExcel(purchases, "FattureAcquisto_Full.xlsx"),
+  ]);
+
+  cachedSales = sales;
+  cachedPurchases = purchases;
+  console.log(`[InvoiceData] Seeded ${sales.length} sales + ${purchases.length} purchases`);
 }
 
 export interface Filters {
@@ -204,13 +299,19 @@ export function useInvoiceData() {
   const [purchases, setPurchases] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
-    anno: "",
-    cliente: "",
-    fornitore: "",
-    cig: "",
-    centroCosto: "",
-    centroRicavo: "",
+    anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "", centroRicavo: "",
   });
+
+  const refresh = useCallback(() => {
+    invalidateInvoiceCache();
+    setLoading(true);
+    loadPromise = loadAll();
+    loadPromise.then(() => {
+      setSales(cachedSales!);
+      setPurchases(cachedPurchases!);
+      setLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (cachedSales && cachedPurchases) {
@@ -219,17 +320,9 @@ export function useInvoiceData() {
       setLoading(false);
       return;
     }
-
     if (!loadPromise) {
-      loadPromise = Promise.all([
-        loadExcel("/data/Fatture_Full.xlsx"),
-        loadExcel("/data/FattureAcquisto_Full.xlsx"),
-      ]).then(([salesRows, purchaseRows]) => {
-        cachedSales = parseSales(salesRows);
-        cachedPurchases = parsePurchases(purchaseRows);
-      });
+      loadPromise = loadAll();
     }
-
     loadPromise.then(() => {
       setSales(cachedSales!);
       setPurchases(cachedPurchases!);
@@ -242,18 +335,8 @@ export function useInvoiceData() {
     const clients = new Set<string>();
     const suppliers = new Set<string>();
     const cigs = new Set<string>();
-
-    sales.forEach((s) => {
-      if (s.anno) years.add(s.anno);
-      if (s.cliente) clients.add(s.cliente);
-      if (s.cig) cigs.add(s.cig);
-    });
-    purchases.forEach((p) => {
-      if (p.anno) years.add(p.anno);
-      if (p.fornitore) suppliers.add(p.fornitore);
-      if (p.cig) cigs.add(p.cig);
-    });
-
+    sales.forEach((s) => { if (s.anno) years.add(s.anno); if (s.cliente) clients.add(s.cliente); if (s.cig) cigs.add(s.cig); });
+    purchases.forEach((p) => { if (p.anno) years.add(p.anno); if (p.fornitore) suppliers.add(p.fornitore); if (p.cig) cigs.add(p.cig); });
     return {
       years: Array.from(years).filter(y => !isNaN(y)).sort((a, b) => b - a),
       clients: Array.from(clients).filter(Boolean).sort(),
@@ -289,5 +372,6 @@ export function useInvoiceData() {
     filters,
     setFilters,
     filterOptions,
+    refresh,
   };
 }
