@@ -59,7 +59,7 @@ const AcquistiPage = () => {
     return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
   }, [purchases, filters.centroCosto, costoMap.map]);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(purchases, "acquisto");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(allPurchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
   const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
 
