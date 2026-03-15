@@ -1303,7 +1303,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + p.totale);
+      map.set(label, (map.get(label) || 0) + purchaseCost(p));
     });
     return Array.from(map.entries())
       .map(([name, value]) => ({ name, value }))
