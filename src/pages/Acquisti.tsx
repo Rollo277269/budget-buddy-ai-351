@@ -247,6 +247,16 @@ const AcquistiPage = () => {
   const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
+  const xmlDuplicateCount = useMemo(() => {
+    const seen = new Set<string>();
+    let dupes = 0;
+    for (const r of xmlRecords) {
+      if (seen.has(r.file_name)) dupes++;
+      else seen.add(r.file_name);
+    }
+    return dupes;
+  }, [xmlRecords]);
+
   return (
     <div className="flex h-full">
       <div className={`p-6 space-y-6 overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
