@@ -111,9 +111,13 @@ export async function updateCentroCodeInAssignments(oldCodice: string, newCodice
 export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
   const [map, setMap] = useState<Record<string, string>>({});
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     loadMapFromDb(tipo, context).then(setMap);
   }, [tipo, context]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const assign = useCallback(
     (key: string, codice: string) => {
@@ -126,19 +130,23 @@ export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acq
     [tipo, context]
   );
 
-  return { map, assign };
+  return { map, assign, refresh };
 }
 
 export function useCentriData() {
   const [centri, setCentri] = useState<CentroCR[]>([]);
   const [categorie, setCategorie] = useState<CategoriaCentro[]>([]);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     fetchCentriFromDb().then(setCentri);
     fetchCategorieFromDb().then(setCategorie);
   }, []);
 
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
-  return { centri, categorie, centriCosto, centriRicavo };
+  return { centri, categorie, centriCosto, centriRicavo, refresh };
 }
