@@ -26,6 +26,7 @@ interface InvoiceWithKey {
   totale?: number;
   cliente?: string;
   fornitore?: string;
+  tipo?: string; // e.g. "Nota di Credito", "Fattura", etc.
 }
 
 function normalizeStr(s: string): string {
