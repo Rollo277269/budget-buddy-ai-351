@@ -23,6 +23,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { formatCurrency } from "@/lib/format";
 
+function isNotaCredito(r: PurchaseInvoice): boolean {
+  const t = (r.tipo || "").toLowerCase();
+  return t.includes("nota") && t.includes("credito");
+}
+
+function formatCreditAmount(value: number, isCreditNote: boolean): string {
+  const formatted = formatCurrency(Math.abs(value));
+  return isCreditNote ? `- ${formatted}` : formatted;
+}
+
 function StatusBadge({ stato }: {stato: string;}) {
   const s = stato.toLowerCase();
   if (s.includes("scadut"))
@@ -169,6 +179,7 @@ const AcquistiPage = () => {
     () => [
     { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
     { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
+    { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
     { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
     { key: "cig", label: "CIG", render: (r) => r.cig ?
       <span
@@ -176,11 +187,11 @@ const AcquistiPage = () => {
         onClick={(e) => {e.stopPropagation();navigate(`/?cig=${encodeURIComponent(r.cig)}`);}}>
         {r.cig}</span> :
       <span className="font-mono text-[11px]">—</span>, sortable: true, filterable: true },
-    { key: "imponibile", label: "Imponibile", render: (r) => <span className="text-xs font-mono text-right block">{formatCurrency(r.imponibile)}</span>, sortable: true, align: "right" },
-    { key: "cassa", label: "Cassa", render: (r) => <span className="text-xs font-mono text-right block">{r.cassa ? formatCurrency(r.cassa) : "—"}</span>, sortable: true, align: "right" },
-    { key: "imposta", label: "IVA", render: (r) => <span className="text-xs font-mono text-right block">{formatCurrency(r.imposta)}</span>, sortable: true, align: "right" },
-    { key: "ritenute", label: "Ritenute", render: (r) => <span className="text-xs font-mono text-right block">{r.ritenute ? formatCurrency(r.ritenute) : "—"}</span>, sortable: true, align: "right" },
-    { key: "totale", label: "Totale", render: (r) => <span className="text-xs font-mono font-semibold text-right block">{formatCurrency(r.totale)}</span>, sortable: true, align: "right" },
+    { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right" },
+    { key: "cassa", label: "Cassa", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{r.cassa ? formatCreditAmount(r.cassa, nc) : "—"}</span>; }, sortable: true, align: "right" },
+    { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right" },
+    { key: "ritenute", label: "Ritenute", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{r.ritenute ? formatCreditAmount(r.ritenute, nc) : "—"}</span>; }, sortable: true, align: "right" },
+    { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right" },
     { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
     {
       key: "xml", label: "XML", filterable: true,
@@ -383,7 +394,14 @@ const AcquistiPage = () => {
           data={displayedPurchases}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
-          rowClassName={(r) => hasXml(`${r.anno}-${r.numero}`) ? "bg-green-50/50 dark:bg-green-950/20" : ""}
+          rowClassName={(r) => {
+            const nc = isNotaCredito(r);
+            const xml = hasXml(`${r.anno}-${r.numero}`);
+            return [
+              nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
+              xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+            ].filter(Boolean).join(" ");
+          }}
         />
         
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
