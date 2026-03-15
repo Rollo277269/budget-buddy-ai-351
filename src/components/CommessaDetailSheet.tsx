@@ -27,6 +27,7 @@ import { CentroCell } from "@/components/CentroCell";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CommessaExpenseUpload } from "@/components/CommessaExpenseUpload";
+import { EditExpenseDialog } from "@/components/EditExpenseDialog";
 import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
