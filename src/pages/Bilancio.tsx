@@ -176,6 +176,8 @@ export default function BilancioPage() {
     }, 100);
   }, []);
 
+  const loading = invoiceLoading || docLoading;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
