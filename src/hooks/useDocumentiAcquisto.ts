@@ -12,6 +12,7 @@ export interface DocumentoAcquisto {
   data_documento: string | null;
   fornitore: string | null;
   centro_costo: string | null;
+  cig: string | null;
   parsed_text: string | null;
   ai_summary: string | null;
   created_at: string | null;
