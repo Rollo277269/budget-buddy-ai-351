@@ -159,6 +159,9 @@ export const PdfViewerPanel = forwardRef<HTMLDivElement, PdfViewerPanelProps>(
               </Button>
             </div>
 
+            {/* Extra actions */}
+            {extraActions}
+
             {/* Actions */}
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDownload} title="Scarica PDF">
               <Download className="h-4 w-4" />
