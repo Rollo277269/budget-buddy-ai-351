@@ -128,7 +128,7 @@ const ListaCommessePage = () => {
       <CommessaDetailSheet
         commessa={selected}
         open={!!selected}
-        onOpenChange={(o) => !o && setSelected(null)}
+        onOpenChange={handleSheetClose}
         allSales={allSales}
         allPurchases={allPurchases}
         manualLinks={links}
