@@ -1,14 +1,15 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/format";
-import { Upload, FileText, Trash2, Loader2, Receipt, Eye, FileDown } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Receipt, Eye, FileDown, Search } from "lucide-react";
 import { toast } from "sonner";
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -42,6 +43,19 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
   const [selectedDoc, setSelectedDoc] = useState<DocumentoAcquisto | null>(null);
   const [pdfDragging, setPdfDragging] = useState(false);
   const pdfDragCounter = useRef(0);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const centroLookup = useMemo(() => new Map(centriCosto.map(c => [c.codice, c.descrizione])), [centriCosto]);
+
+  const filteredDocumenti = useMemo(() => {
+    if (!searchQuery.trim()) return documenti;
+    const q = searchQuery.toLowerCase();
+    return documenti.filter(d =>
+      (d.descrizione || "").toLowerCase().includes(q) ||
+      (d.file_name || "").toLowerCase().includes(q) ||
+      (d.fornitore || "").toLowerCase().includes(q)
+    );
+  }, [documenti, searchQuery]);
 
   const processPdfFiles = useCallback(async (files: File[]) => {
     const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
@@ -133,6 +147,15 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
               <h3 className="text-sm font-semibold">Ricevute e Documenti</h3>
               <Badge variant="secondary" className="text-[10px]">{documenti.length}</Badge>
             </div>
+            <div className="relative w-[200px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Filtra documenti..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-7 text-xs pl-7"
+              />
+            </div>
           </div>
 
           <ScrollArea className="max-h-[300px]">
@@ -148,7 +171,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {documenti.map((doc) => (
+                {filteredDocumenti.map((doc) => (
                   <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
                     <TableCell className="text-xs py-1.5">
                       <div className="flex items-center gap-1.5">
@@ -167,12 +190,15 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
                           value={doc.centro_costo || ""}
                           onValueChange={(val) => updateCentroCosto(doc.id, val)}
                         >
-                          <SelectTrigger className="h-6 text-[10px] w-[120px]">
+                          <SelectTrigger className="h-6 text-[10px] w-[160px]">
                             <SelectValue placeholder="—" />
                           </SelectTrigger>
                           <SelectContent>
                             {centriCosto.map((c) => (
-                              <SelectItem key={c.id} value={c.codice} className="text-xs">{c.codice}</SelectItem>
+                              <SelectItem key={c.id} value={c.codice} className="text-xs">
+                                <span className="font-mono">{c.codice}</span>
+                                <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -203,7 +229,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
         {/* Detail Sheet */}
         <Sheet open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
           <SheetContent className="sm:max-w-[500px] overflow-y-auto">
-            {selectedDoc && <DocDetailContent doc={selectedDoc} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
+            {selectedDoc && <DocDetailContent doc={selectedDoc} centroLookup={centroLookup} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
           </SheetContent>
         </Sheet>
       </>
@@ -222,7 +248,18 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
               <Badge variant="secondary" className="text-[10px]">{documenti.length}</Badge>
             )}
           </div>
-          <div>
+          <div className="flex items-center gap-2">
+            {documenti.length > 0 && (
+              <div className="relative w-[200px]">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Filtra documenti..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-7 text-xs pl-7"
+                />
+              </div>
+            )}
             <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
             <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
@@ -231,7 +268,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
           </div>
         </div>
 
-        {documenti.length > 0 && (
+        {filteredDocumenti.length > 0 && (
           <ScrollArea className="max-h-[300px]">
             <Table>
               <TableHeader>
@@ -245,7 +282,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {documenti.map((doc) => (
+                {filteredDocumenti.map((doc) => (
                   <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
                     <TableCell className="text-xs py-1.5">
                       <div className="flex items-center gap-1.5">
@@ -264,12 +301,15 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
                           value={doc.centro_costo || ""}
                           onValueChange={(val) => updateCentroCosto(doc.id, val)}
                         >
-                          <SelectTrigger className="h-6 text-[10px] w-[120px]">
+                          <SelectTrigger className="h-6 text-[10px] w-[160px]">
                             <SelectValue placeholder="—" />
                           </SelectTrigger>
                           <SelectContent>
                             {centriCosto.map((c) => (
-                              <SelectItem key={c.id} value={c.codice} className="text-xs">{c.codice}</SelectItem>
+                              <SelectItem key={c.id} value={c.codice} className="text-xs">
+                                <span className="font-mono">{c.codice}</span>
+                                <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -307,14 +347,17 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
       {/* Detail Sheet */}
       <Sheet open={!!selectedDoc} onOpenChange={(open) => !open && setSelectedDoc(null)}>
         <SheetContent className="sm:max-w-[500px] overflow-y-auto">
-          {selectedDoc && <DocDetailContent doc={selectedDoc} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
+          {selectedDoc && <DocDetailContent doc={selectedDoc} centroLookup={centroLookup} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
         </SheetContent>
       </Sheet>
     </>
   );
 }
 
-function DocDetailContent({ doc, onDelete }: { doc: DocumentoAcquisto; onDelete: () => void }) {
+function DocDetailContent({ doc, centroLookup, onDelete }: { doc: DocumentoAcquisto; centroLookup: Map<string, string>; onDelete: () => void }) {
+  const centroLabel = doc.centro_costo
+    ? `${doc.centro_costo} - ${centroLookup.get(doc.centro_costo) || ""}`
+    : null;
   return (
     <>
       <SheetHeader>
@@ -331,7 +374,7 @@ function DocDetailContent({ doc, onDelete }: { doc: DocumentoAcquisto; onDelete:
           <DetailRow label="Fornitore" value={doc.fornitore} />
           <DetailRow label="Data" value={doc.data_documento} />
           <DetailRow label="Importo" value={doc.importo ? formatCurrency(doc.importo) : null} />
-          <DetailRow label="Centro Costo" value={doc.centro_costo} />
+          <DetailRow label="Centro Costo" value={centroLabel} />
         </div>
 
         {doc.ai_summary && (
