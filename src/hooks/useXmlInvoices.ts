@@ -372,5 +372,5 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
   const xmlMap = new Map<string, XmlInvoiceRecord>();
   xmlMultiMap.forEach((list, key) => xmlMap.set(key, list[0]));
 
-  return { xmlRecords, xmlMap, xmlMultiMap, loading, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, refresh: fetchRecords, fetchParsedData, findXml, hasXml };
+  return { xmlRecords, xmlMap, xmlMultiMap, loading, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, refresh: fetchRecords, fetchParsedData, findXml, hasXml };
 }
