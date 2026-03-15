@@ -2,7 +2,7 @@ import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
 
 export interface MatchSuggestion {
-  invoice: { anno: number; numero: number; label: string; totale: number; data: string; cliente?: string; fornitore?: string };
+  invoice: { anno: number; numero: number; label: string; totale: number; data: string; cliente?: string; fornitore?: string; tipo?: string };
   score: number;
   reasons: string[];
 }
