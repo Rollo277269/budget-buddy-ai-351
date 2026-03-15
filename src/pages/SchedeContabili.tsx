@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, Printer } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /* ── Helpers ── */
