@@ -239,7 +239,6 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
    * Re-match all unmatched (or all) records for purchases using amount+name logic.
    */
   const rematchAll = useCallback(async () => {
-    if (tipo !== "acquisto") return;
 
     const alreadyMatchedKeys = new Set<string>();
     let matchedCount = 0;
