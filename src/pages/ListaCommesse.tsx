@@ -3,6 +3,7 @@ import { useCssrCommesse, CssrCommessa } from "@/hooks/useCssrCommesse";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { useCallback } from "react";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
