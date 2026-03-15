@@ -260,7 +260,7 @@ export function CommessaDetailSheet({
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
         const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
-        e.acquisti += p.totale;
+        e.acquisti += purchaseCost(p);
         if (p.stato?.toLowerCase().includes("pagat")) e.pagato += p.totale;
         monthlyMap.set(key, e);
       }
