@@ -251,7 +251,7 @@ export default function BilancioPage() {
         <StatCard
           title="Totale Costi"
           value={formatCurrency(globalKpis.costi)}
-          subtitle={`${globalKpis.numAcquisti} fatture`}
+          subtitle={`${globalKpis.numAcquisti} fatture${globalKpis.numDocumenti ? ` + ${globalKpis.numDocumenti} doc` : ""}`}
           icon={TrendingDown}
           variant="expense" />
         
