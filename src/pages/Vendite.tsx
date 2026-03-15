@@ -62,8 +62,8 @@ const VenditePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const dragCounter = useRef(0);
+  const [xmlDragging, setXmlDragging] = useState(false);
+  const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
   const displayedSales = useMemo(() => {
