@@ -111,9 +111,13 @@ export async function updateCentroCodeInAssignments(oldCodice: string, newCodice
 export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
   const [map, setMap] = useState<Record<string, string>>({});
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     loadMapFromDb(tipo, context).then(setMap);
   }, [tipo, context]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const assign = useCallback(
     (key: string, codice: string) => {
@@ -126,7 +130,7 @@ export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acq
     [tipo, context]
   );
 
-  return { map, assign };
+  return { map, assign, refresh };
 }
 
 export function useCentriData() {
