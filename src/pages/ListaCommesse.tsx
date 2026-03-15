@@ -126,6 +126,7 @@ const ListaCommessePage = () => {
         manualLinks={links}
         onAddLink={addLink}
         onRemoveLink={removeLink}
+        onExpenseAdded={refreshInvoices}
       />
     </div>
   );
