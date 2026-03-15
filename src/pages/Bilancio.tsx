@@ -595,6 +595,8 @@ function CentriSideBySide({
                             <td className="px-3 py-1.5"></td>
                           </>
                         )}
+                        <td className="bg-border"></td>
+                        <td className="px-3 py-1.5"></td>
                       </tr>
                     );
                   })}
