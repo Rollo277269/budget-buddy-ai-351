@@ -251,6 +251,8 @@ export default function BilancioPage() {
         costoBreakdown={costoBreakdown}
         totalRicavi={globalKpis.ricavi}
         totalCosti={globalKpis.costi}
+        centri={centri}
+        categorie={categorie}
         onRowClick={(codice, tipo) => {
           if (codice === "__unassigned__") return;
           if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}`);else
