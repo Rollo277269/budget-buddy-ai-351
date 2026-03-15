@@ -23,6 +23,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { formatCurrency } from "@/lib/format";
 
+function isNotaCredito(r: PurchaseInvoice): boolean {
+  const t = (r.tipo || "").toLowerCase();
+  return t.includes("nota") && t.includes("credito");
+}
+
+function formatCreditAmount(value: number, isCreditNote: boolean): string {
+  const formatted = formatCurrency(Math.abs(value));
+  return isCreditNote ? `- ${formatted}` : formatted;
+}
+
 function StatusBadge({ stato }: {stato: string;}) {
   const s = stato.toLowerCase();
   if (s.includes("scadut"))
