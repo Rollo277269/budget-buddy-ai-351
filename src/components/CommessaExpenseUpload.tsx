@@ -367,5 +367,3 @@ export function CommessaExpenseUpload({ cig, commessaNumero, onExpenseAdded }: P
   );
 }
 
-// Need to import Receipt icon
-import { Receipt } from "lucide-react";
