@@ -5,7 +5,7 @@ import { useCentriData, CategoriaCentro, CentroCR } from "@/hooks/useCentri";
 import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { StatCard } from "@/components/StatCard";
 import { formatCurrency } from "@/lib/format";
-import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, Printer, ChevronRight, ChevronDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, FileText, ChevronRight, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
