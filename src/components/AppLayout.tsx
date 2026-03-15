@@ -61,7 +61,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="border-b bg-card h-14 flex items-center px-4 gap-3 shrink-0">
+          <header className="sticky top-0 z-30 border-b bg-card h-14 flex items-center px-4 gap-3 shrink-0">
             <SidebarTrigger />
             <div className="flex items-center gap-2">
               <div className="rounded-lg bg-primary p-1.5">
