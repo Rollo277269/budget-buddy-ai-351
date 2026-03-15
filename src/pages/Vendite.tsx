@@ -15,7 +15,7 @@ import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, Link2, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, Link2, RefreshCw, Trash2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,7 +69,7 @@ const VenditePage = () => {
     return sales.filter((s) => ricavoMap.map[`${s.anno}-${s.numero}`] === filters.centroRicavo);
   }, [sales, filters.centroRicavo, ricavoMap.map]);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
   const [xmlPickerInvoice, setXmlPickerInvoice] = useState<SaleInvoice | null>(null);
 
@@ -256,6 +256,17 @@ const VenditePage = () => {
   const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
+  // Count duplicates by file_name
+  const xmlDuplicateCount = useMemo(() => {
+    const seen = new Set<string>();
+    let dupes = 0;
+    for (const r of xmlRecords) {
+      if (seen.has(r.file_name)) dupes++;
+      else seen.add(r.file_name);
+    }
+    return dupes;
+  }, [xmlRecords]);
+
   return (
     <div className="flex h-full">
       <div
@@ -318,9 +329,16 @@ const VenditePage = () => {
           <div className="bg-muted/50 border border-border rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-muted-foreground">XML NON ASSOCIATI ({xmlUnmatchedCount})</p>
-              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
-                <RefreshCw className="h-3 w-3 mr-1" />Riassocia
-              </Button>
+              <div className="flex gap-1">
+                {xmlDuplicateCount > 0 && (
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" onClick={removeDuplicates}>
+                    <Trash2 className="h-3 w-3 mr-1" />Rimuovi duplicati ({xmlDuplicateCount})
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
+                  <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+                </Button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {xmlRecords.filter((r) => !r.matched).map((r) => (
