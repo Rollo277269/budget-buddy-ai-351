@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cssrSupabase } from "@/lib/cssrClient";
+import { useCallback } from "react";
 
 export interface CssrCommessa {
   id: string;
@@ -43,15 +44,38 @@ async function fetchCssrCommesse(): Promise<CssrCommessa[]> {
   return (data as unknown as CssrCommessa[]) || [];
 }
 
+async function deleteCssrCommessa(id: string): Promise<boolean> {
+  const { error } = await cssrSupabase
+    .from("commessa_data")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting CSSR commessa:", error);
+    return false;
+  }
+  return true;
+}
+
 export function useCssrCommesse() {
+  const queryClient = useQueryClient();
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["cssr-commesse"],
     queryFn: fetchCssrCommesse,
-    staleTime: 30 * 1000, // 30s cache
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
   });
 
-  // Build a map by CIG for fast lookup
+  const removeCommessa = useCallback(async (id: string) => {
+    const ok = await deleteCssrCommessa(id);
+    if (ok) {
+      queryClient.setQueryData<CssrCommessa[]>(["cssr-commesse"], (old) =>
+        old ? old.filter((c) => c.id !== id) : []
+      );
+    }
+    return ok;
+  }, [queryClient]);
+
   const byCig = new Map<string, CssrCommessa>();
   if (data) {
     data.forEach((c) => {
@@ -66,5 +90,6 @@ export function useCssrCommesse() {
     loading: isLoading,
     error,
     refetch,
+    removeCommessa,
   };
 }
