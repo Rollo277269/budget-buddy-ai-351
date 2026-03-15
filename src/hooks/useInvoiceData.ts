@@ -109,9 +109,16 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
     const suffisso = String(r[3] || "").trim();
     const key = `${anno}-${numero}-${suffisso}-${tipo}`;
     const desc = String(r[13] || "");
+    const prezzoTotRiga = parseNumber(r[18]);
+    const aliquotaStr = String(r[19] || "");
+    // Calcola imponibile e imposta per riga dal prezzo totale e aliquota
+    const aliquotaMatch = aliquotaStr.match(/(\d+)/);
+    const aliquotaPct = aliquotaMatch ? parseInt(aliquotaMatch[1]) : 0;
+    const rigaImponibile = aliquotaPct > 0 ? prezzoTotRiga / (1 + aliquotaPct / 100) : prezzoTotRiga;
+    const rigaImposta = prezzoTotRiga - rigaImponibile;
     const riga: SaleInvoiceRiga = {
-      descrizione: desc, imponibile: parseNumber(r[22]),
-      imposta: parseNumber(r[23]), totale: parseNumber(r[21]),
+      descrizione: desc, imponibile: Math.round(rigaImponibile * 100) / 100,
+      imposta: Math.round(rigaImposta * 100) / 100, totale: prezzoTotRiga,
       cig: extractCIG(desc), cup: extractCUP(desc),
     };
     if (invoiceMap.has(key)) {
