@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, Link2, RefreshCw, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
