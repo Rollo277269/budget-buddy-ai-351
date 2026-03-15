@@ -118,7 +118,7 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
       invoiceMap.get(key)!.righe.push(riga);
     } else {
       invoiceMap.set(key, {
-        tipo, anno, numero, data: formatDate(r[4]),
+        tipo, anno, numero, suffisso, data: formatDate(r[4]),
         cliente: String(r[6] || ""), partitaIva: String(r[8] || ""),
         totale: parseNumber(r[21]), imponibile: parseNumber(r[22]),
         imposta: parseNumber(r[23]), descrizione: desc,
