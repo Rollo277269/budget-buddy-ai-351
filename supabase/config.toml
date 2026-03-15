@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.parse-documento-acquisto]
 verify_jwt = false
+
+[functions.parse-spesa-commessa]
+verify_jwt = false
