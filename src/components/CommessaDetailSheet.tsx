@@ -1755,6 +1755,8 @@ function InvoiceList({
                 ? (inv as SaleInvoice).cliente
                 : (inv as PurchaseInvoice).fornitore;
 
+              const xmlRecord = findXml ? findXml(key, counterpart || undefined) : undefined;
+
               const cellMap: Record<string, React.ReactNode> = {
                 numero_display: <TableCell key="n" className="font-mono text-xs">{inv.numero}/{inv.anno}</TableCell>,
                 data: <TableCell key="d" className="text-xs">{inv.data}</TableCell>,
@@ -1764,6 +1766,19 @@ function InvoiceList({
                 imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
                 totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
+                xml: (
+                  <TableCell key="xml" onClick={(e) => e.stopPropagation()}>
+                    {xmlRecord ? (
+                      <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={() => onOpenXml?.(xmlRecord)}>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" onClick={() => onOpenXmlPicker?.(inv)} title="Associa XML">
+                        <Link2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </TableCell>
+                ),
                 centro: <TableCell key="centro"><CentroCell invoiceKey={key} tipo={centroTipo} centri={centri} centroMap={centroMap} onAssign={onAssignCentro} /></TableCell>,
               };
 
