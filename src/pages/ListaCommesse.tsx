@@ -59,7 +59,7 @@ const columns: ColumnDef<Commessa>[] = [
 
 const ListaCommessePage = () => {
   const { commesse: cssrCommesse, loading: cssrLoading } = useCssrCommesse();
-  const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
+  const { allSales, allPurchases, loading: invoiceLoading, refresh: refreshInvoices } = useInvoiceData();
   const { links, addLink, removeLink } = useCommessaLinks();
   const [selected, setSelected] = useState<Commessa | null>(null);
 
