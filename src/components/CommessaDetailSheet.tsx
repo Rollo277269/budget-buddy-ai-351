@@ -1584,6 +1584,7 @@ function StatoBadge({ stato }: { stato?: string }) {
 /* ── Invoice list sub-component with sort & filter ── */
 function InvoiceList({
   invoices, type, autoKeys, cig, onRemoveLink, centri, centroMap, onAssignCentro, onRowClick,
+  findXml, hasXml, onOpenXml, onOpenXmlPicker,
 }: {
   invoices: (SaleInvoice | PurchaseInvoice)[];
   type: "vendita" | "acquisto";
@@ -1594,6 +1595,10 @@ function InvoiceList({
   centroMap: Record<string, string>;
   onAssignCentro: (key: string, codice: string) => void;
   onRowClick?: (inv: SaleInvoice | PurchaseInvoice) => void;
+  findXml?: (key: string, name?: string) => XmlInvoiceRecord | undefined;
+  hasXml?: (key: string) => boolean;
+  onOpenXml?: (record: XmlInvoiceRecord) => void;
+  onOpenXmlPicker?: (inv: SaleInvoice | PurchaseInvoice) => void;
 }) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
