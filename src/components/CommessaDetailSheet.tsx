@@ -104,8 +104,10 @@ export function CommessaDetailSheet({
   const ALL_FIELD_KEYS = [
     "cig", "committente", "assegnataria", "rup", "direttore_lavori", "cup",
     "cig_derivato", "numero_repertorio", "data_contratto", "data_scadenza_contratto",
-    "data_consegna_lavori", "durata",
+    "data_consegna_lavori", "durata", "importo_contrattuale", "importo_base_gara",
+    "ribasso", "oneri_sicurezza", "costo_manodopera",
   ];
+  const CURRENCY_FIELDS = new Set(["importo_contrattuale", "importo_base_gara", "oneri_sicurezza", "costo_manodopera"]);
   const DATI_STORAGE_KEY = "commessa-dati-slot-order";
   const [datiSlots, setDatiSlots] = useState<(string | null)[]>(() => {
     try {
@@ -672,6 +674,11 @@ export function CommessaDetailSheet({
                     )}
                   </div>
                    {(() => {
+                    const fmtEur = (v: string | null | undefined): string | undefined => {
+                      if (!v) return undefined;
+                      const n = parseFloat(v);
+                      return isNaN(n) ? v : formatCurrency(n);
+                    };
                     const FIELD_META: Record<string, { icon: typeof FileText; label: string; value: string | undefined }> = {
                       cig: { icon: FileText, label: "CIG", value: cssr.cig },
                       committente: { icon: Building2, label: "Committente", value: cssr.committente },
@@ -685,6 +692,11 @@ export function CommessaDetailSheet({
                       data_scadenza_contratto: { icon: Calendar, label: "Scadenza Contratto", value: cssr.data_scadenza_contratto },
                       data_consegna_lavori: { icon: Calendar, label: "Consegna Lavori", value: cssr.data_consegna_lavori },
                       durata: { icon: Calendar, label: "Durata", value: cssr.durata_contrattuale },
+                      importo_contrattuale: { icon: Receipt, label: "Importo Contrattuale", value: fmtEur(cssr.importo_contrattuale) },
+                      importo_base_gara: { icon: Receipt, label: "Base Gara", value: fmtEur(cssr.importo_base_gara) },
+                      ribasso: { icon: Percent, label: "Ribasso", value: cssr.ribasso ? `${cssr.ribasso}%` : undefined },
+                      oneri_sicurezza: { icon: Receipt, label: "Oneri Sicurezza", value: fmtEur(cssr.oneri_sicurezza) },
+                      costo_manodopera: { icon: Receipt, label: "Costo Manodopera", value: fmtEur(cssr.costo_manodopera) },
                     };
                     // Ensure slots include all fields (append missing ones)
                     const usedKeys = new Set(datiSlots.filter((s): s is string => s !== null));
