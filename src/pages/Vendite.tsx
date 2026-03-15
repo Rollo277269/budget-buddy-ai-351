@@ -240,24 +240,7 @@ const VenditePage = () => {
     [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf]
   );
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  const hasCentri = centriRicavo.length > 0 || centriCosto.length > 0;
-  const unclassifiedCount = sales.filter((s) => {
-    const k = `${s.anno}-${s.numero}`;
-    return (centriRicavo.length > 0 && !ricavoMap.map[k]) || (centriCosto.length > 0 && !costoMap.map[k]);
-  }).length;
-
-  const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
-  const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
-
-  // Count duplicates by file_name
+  // Count duplicates by file_name (must be before early return to preserve hooks order)
   const xmlDuplicateCount = useMemo(() => {
     const seen = new Set<string>();
     let dupes = 0;
@@ -267,6 +250,15 @@ const VenditePage = () => {
     }
     return dupes;
   }, [xmlRecords]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex h-full">
