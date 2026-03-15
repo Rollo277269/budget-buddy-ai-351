@@ -84,6 +84,7 @@ export function CommessaDetailSheet({
   manualLinks,
   onAddLink,
   onRemoveLink,
+  onExpenseAdded,
 }: CommessaDetailSheetProps) {
   const [addMode, setAddMode] = useState<"vendita" | "acquisto" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
