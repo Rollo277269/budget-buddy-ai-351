@@ -93,33 +93,63 @@ export function CommessaDetailSheet({
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
 
-  // -- Dati Commessa field reorder --
+  // -- Dati Commessa slot-based grid reorder --
   const isAdmin = true; // TODO: replace with actual admin check
-  const DEFAULT_DATI_FIELDS = [
+  const COLS = 4;
+  const DEFAULT_DATI_SLOTS: (string | null)[] = [
+    "cig", "committente", "assegnataria", "rup",
+    "direttore_lavori", "cup", "cig_derivato", "numero_repertorio",
+    "data_contratto", "data_scadenza_contratto", "data_consegna_lavori", "durata",
+  ];
+  const ALL_FIELD_KEYS = [
     "cig", "committente", "assegnataria", "rup", "direttore_lavori", "cup",
     "cig_derivato", "numero_repertorio", "data_contratto", "data_scadenza_contratto",
     "data_consegna_lavori", "durata",
   ];
-  const DATI_STORAGE_KEY = "commessa-dati-field-order";
-  const [datiFieldOrder, setDatiFieldOrder] = useState<string[]>(() => {
+  const DATI_STORAGE_KEY = "commessa-dati-slot-order";
+  const [datiSlots, setDatiSlots] = useState<(string | null)[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(DATI_STORAGE_KEY) || "null");
       if (Array.isArray(saved) && saved.length > 0) return saved;
     } catch {}
-    return DEFAULT_DATI_FIELDS;
+    return [...DEFAULT_DATI_SLOTS];
   });
   const [datiEditMode, setDatiEditMode] = useState(false);
   const [datiDragIdx, setDatiDragIdx] = useState<number | null>(null);
 
-  const handleDatiDrop = useCallback((fromIdx: number, toIdx: number) => {
-    setDatiFieldOrder((prev) => {
+  const saveDatiSlots = useCallback((slots: (string | null)[]) => {
+    localStorage.setItem(DATI_STORAGE_KEY, JSON.stringify(slots));
+  }, []);
+
+  const handleSlotDrop = useCallback((fromIdx: number, toIdx: number) => {
+    setDatiSlots((prev) => {
       const next = [...prev];
-      const [moved] = next.splice(fromIdx, 1);
-      next.splice(toIdx, 0, moved);
-      localStorage.setItem(DATI_STORAGE_KEY, JSON.stringify(next));
+      // Swap the two slots
+      [next[fromIdx], next[toIdx]] = [next[toIdx], next[fromIdx]];
+      saveDatiSlots(next);
       return next;
     });
-  }, []);
+  }, [saveDatiSlots]);
+
+  const addDatiRow = useCallback(() => {
+    setDatiSlots((prev) => {
+      const next = [...prev, null, null, null, null];
+      saveDatiSlots(next);
+      return next;
+    });
+  }, [saveDatiSlots]);
+
+  const removeDatiRow = useCallback((rowIdx: number) => {
+    setDatiSlots((prev) => {
+      const start = rowIdx * COLS;
+      // Don't remove if any slot in row has a field
+      const rowSlots = prev.slice(start, start + COLS);
+      if (rowSlots.some((s) => s !== null)) return prev;
+      const next = [...prev.slice(0, start), ...prev.slice(start + COLS)];
+      saveDatiSlots(next);
+      return next;
+    });
+  }, [saveDatiSlots]);
   const { centri } = useCentriData();
   const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
