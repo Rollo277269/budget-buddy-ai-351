@@ -27,6 +27,7 @@ import { CentroCell } from "@/components/CentroCell";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CommessaExpenseUpload } from "@/components/CommessaExpenseUpload";
+import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
@@ -92,6 +93,7 @@ export function CommessaDetailSheet({
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const { centri } = useCentriData();
+  const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
 
@@ -580,6 +582,7 @@ export function CommessaDetailSheet({
               <CommessaExpenseUpload
                 cig={commessa.cig}
                 commessaNumero={commessa.numero}
+                namingRules={namingRules}
                 onExpenseAdded={onExpenseAdded}
               />
 
