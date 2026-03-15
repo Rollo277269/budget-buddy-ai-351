@@ -653,7 +653,14 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
-                onRowClick={(inv) => openPdf(inv, "acquisto")}
+                onRowClick={(inv) => setEditingExpense(inv as PurchaseInvoice)}
+              />
+
+              <EditExpenseDialog
+                invoice={editingExpense}
+                open={!!editingExpense}
+                onOpenChange={(o) => { if (!o) setEditingExpense(null); }}
+                onSaved={() => { setEditingExpense(null); onExpenseAdded?.(); }}
               />
             </TabsContent>
 
