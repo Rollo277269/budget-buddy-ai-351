@@ -363,7 +363,7 @@ export function CommessaDetailSheet({
   };
 
   const ricavoRows = applySavedOrder(buildCentroRows(data.linkedSales, ricavoMap.map), "centro-ricavo-order");
-  const costoRows = applySavedOrder(buildCentroRows(data.linkedPurchases, costoMap.map), "centro-costo-order");
+  const costoRows = applySavedOrder(buildCentroRows(data.linkedPurchases, costoMap.map, true), "centro-costo-order");
   const totalRicaviPrint = ricavoRows.reduce((s, r) => s + r.value, 0);
   const totalCostiPrint = costoRows.reduce((s, r) => s + r.value, 0);
   const saldoPrint = totalRicaviPrint - totalCostiPrint;
