@@ -84,8 +84,37 @@ anno?: number)
   const filtered = anno ? invoices.filter((i) => i.anno === anno) : invoices;
   filtered.forEach((inv) => {
     const k = `${inv.anno}-${inv.numero}`;
-    const codice = centroMap[k] || "__unassigned__";
-    agg.set(codice, (agg.get(codice) || 0) + inv.imponibile);
+    // Check for row-level assignments (sales invoices with righe)
+    const righe = "righe" in inv ? (inv as SaleInvoice).righe : null;
+    if (righe && righe.length > 0) {
+      let hasRowAssignments = false;
+      let rowAssignedTotal = 0;
+      righe.forEach((riga, idx) => {
+        const rowKey = `${k}-${idx}`;
+        const rowCodice = centroMap[rowKey];
+        if (rowCodice) {
+          hasRowAssignments = true;
+          rowAssignedTotal += riga.imponibile;
+          agg.set(rowCodice, (agg.get(rowCodice) || 0) + riga.imponibile);
+        }
+      });
+      if (hasRowAssignments) {
+        // Check invoice-level assignment for remaining unassigned rows
+        const invoiceCodice = centroMap[k];
+        const remaining = inv.imponibile - rowAssignedTotal;
+        if (remaining > 0.01) {
+          const fallbackCodice = invoiceCodice || "__unassigned__";
+          agg.set(fallbackCodice, (agg.get(fallbackCodice) || 0) + remaining);
+        }
+      } else {
+        // No row-level assignments, use invoice-level
+        const codice = centroMap[k] || "__unassigned__";
+        agg.set(codice, (agg.get(codice) || 0) + inv.imponibile);
+      }
+    } else {
+      const codice = centroMap[k] || "__unassigned__";
+      agg.set(codice, (agg.get(codice) || 0) + inv.imponibile);
+    }
   });
 
   const centroLookup = new Map(centri.map((c) => [c.codice, c.descrizione]));
