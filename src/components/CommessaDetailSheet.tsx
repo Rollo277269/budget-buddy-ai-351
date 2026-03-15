@@ -61,6 +61,7 @@ interface CommessaDetailSheetProps {
   manualLinks: ManualLink[];
   onAddLink: (link: ManualLink) => void;
   onRemoveLink: (invoiceKey: string, invoiceType: "vendita" | "acquisto", cig: string) => void;
+  onExpenseAdded?: () => void;
 }
 
 const CHART_COLORS = [
