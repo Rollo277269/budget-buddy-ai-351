@@ -182,7 +182,7 @@ async function loadSalesFromDb(): Promise<SaleInvoice[]> {
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
     stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
-    righe: (d.righe || []) as SaleInvoiceRiga[],
+    righe: (typeof d.righe === "string" ? JSON.parse(d.righe) : d.righe || []) as SaleInvoiceRiga[],
   }));
 }
 

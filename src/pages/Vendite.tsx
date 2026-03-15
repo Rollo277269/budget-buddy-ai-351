@@ -350,7 +350,7 @@ const VenditePage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {r.righe.map((riga, idx) => (
+                  {(Array.isArray(r.righe) ? r.righe : []).map((riga, idx) => (
                     <TableRow key={idx} className="border-b border-border/30">
                       <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
                       <TableCell className="text-[11px] max-w-[300px] whitespace-normal break-words leading-snug py-1.5">{riga.descrizione || "—"}</TableCell>
