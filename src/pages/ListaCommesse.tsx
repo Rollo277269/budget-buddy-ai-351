@@ -144,11 +144,24 @@ const ListaCommessePage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <p className="text-sm text-muted-foreground">
-        {rows.length} commesse
-      </p>
-      <DataTable<Commessa> columns={columns} data={rows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} />
+    <div className="p-6 space-y-4">
+      <div className="flex items-center gap-4 flex-wrap">
+        <ToggleGroup type="single" value={statoFilter} onValueChange={(v) => v && setStatoFilter(v as StatoFilter)} className="bg-muted rounded-lg p-1">
+          <ToggleGroupItem value="tutte" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            Tutte <span className="ml-1 text-muted-foreground">({rows.length})</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="in_corso" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            In corso <span className="ml-1 text-muted-foreground">({statoCounts.in_corso})</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="completata" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            Completate <span className="ml-1 text-muted-foreground">({statoCounts.completata})</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="da_iniziare" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+            Da iniziare <span className="ml-1 text-muted-foreground">({statoCounts.da_iniziare})</span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <DataTable<Commessa> columns={columns} data={filteredRows} rowKey={(r) => r.cssrData?.id || r.cig || String(r.numero)} onRowClick={setSelected} defaultSort={{ key: "numero", dir: "desc" }} />
       <CommessaDetailSheet
         commessa={selected}
         open={!!selected}

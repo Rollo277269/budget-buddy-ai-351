@@ -66,10 +66,11 @@ export function DataTable<T extends Record<string, any>>({
   rowClassName,
   expandable,
   renderExpandedContent,
+  defaultSort,
 }: DataTableProps<T>) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>(null);
+  const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
+  const [sortDir, setSortDir] = useState<SortDir>(defaultSort?.dir ?? null);
   const [globalSearchInput, setGlobalSearchInput] = useState("");
   const globalSearch = useDebouncedValue(globalSearchInput, 200);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
