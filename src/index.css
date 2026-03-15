@@ -177,9 +177,9 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    border-bottom: 2px solid hsl(var(--border));
-    padding-bottom: 12px;
-    margin-bottom: 14px;
+    border-bottom: 3px solid #1e3a5f;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
   }
 
   body.print-report .pdf-header-logo svg {
@@ -193,24 +193,30 @@
 
   body.print-report .pdf-header h1 {
     margin: 0;
-    font-size: 20px;
+    font-size: 22px;
+    font-weight: 700;
     line-height: 1.2;
-    color: hsl(var(--foreground));
+    color: #1e3a5f;
+    letter-spacing: -0.3px;
   }
 
   body.print-report .pdf-header p {
     margin: 4px 0 0;
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #666;
   }
 
   body.print-report .pdf-meta {
-    margin-top: 8px;
+    margin-top: 0;
+    margin-bottom: 18px;
     display: flex;
     gap: 14px;
     flex-wrap: wrap;
-    font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    font-size: 10px;
+    color: #888;
+    padding: 6px 10px;
+    background: #f5f7fa;
+    border-radius: 4px;
   }
 
   /* Footer fixed on every page */
@@ -223,10 +229,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 6px 0;
-    border-top: 1px solid hsl(var(--border));
+    border-top: 2px solid #1e3a5f;
     font-size: 9px;
-    color: hsl(var(--muted-foreground));
-    background: hsl(0 0% 100%);
+    color: #888;
+    background: white;
   }
 
   body.print-report .pdf-footer-left,
@@ -247,7 +253,6 @@
     content: counter(page);
   }
 
-  /* Add bottom padding to content so it doesn't overlap the fixed footer */
   body.print-report .pdf-report {
     padding-bottom: 30px;
   }
