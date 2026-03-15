@@ -69,6 +69,9 @@ export function XmlMatchSection({ record, invoices, xmlMap, tipo, onManualMatch 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono text-xs font-semibold">{s.invoice.label}</span>
+                  {s.invoice.tipo && (s.invoice.tipo.toLowerCase().includes("nota") && s.invoice.tipo.toLowerCase().includes("credito")) && (
+                    <Badge variant="destructive" className="text-[9px] h-4 px-1.5">NC</Badge>
+                  )}
                   <span className="text-xs text-muted-foreground truncate">
                     {s.invoice.cliente || s.invoice.fornitore || ""}
                   </span>
