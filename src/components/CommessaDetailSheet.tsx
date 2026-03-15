@@ -48,6 +48,11 @@ function invoiceKey(anno: number, numero: number) {
   return `${anno}-${numero}`;
 }
 
+/** Per fatture di professionisti (con cassa previdenza), il costo effettivo è imponibile + cassa */
+function purchaseCost(p: PurchaseInvoice): number {
+  return p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
+}
+
 interface Commessa {
   numero: string | number;
   oggetto: string;
