@@ -1,4 +1,5 @@
-import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -11,9 +12,16 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: React.ElementType;
+}
+
+const defaultItems: MenuItem[] = [
   { title: "Cruscotto", url: "/", icon: LayoutDashboard },
   { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
   { title: "Vendite", url: "/vendite", icon: FileOutput },
@@ -27,7 +35,70 @@ const items = [
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
 
+const STORAGE_KEY = "sidebar-menu-order";
+
+function loadOrder(): MenuItem[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return defaultItems;
+    const urls: string[] = JSON.parse(saved);
+    const map = new Map(defaultItems.map((i) => [i.url, i]));
+    const ordered = urls.map((u) => map.get(u)).filter(Boolean) as MenuItem[];
+    // append any new items not in saved order
+    defaultItems.forEach((i) => {
+      if (!ordered.find((o) => o.url === i.url)) ordered.push(i);
+    });
+    return ordered;
+  } catch {
+    return defaultItems;
+  }
+}
+
+function saveOrder(items: MenuItem[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map((i) => i.url)));
+}
+
 export function AppSidebar() {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+  const [items, setItems] = useState<MenuItem[]>(loadOrder);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    saveOrder(items);
+  }, [items]);
+
+  const handleDragStart = useCallback((idx: number) => {
+    setDragIdx(idx);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setOverIdx(idx);
+  }, []);
+
+  const handleDrop = useCallback((idx: number) => {
+    if (dragIdx === null || dragIdx === idx) {
+      setDragIdx(null);
+      setOverIdx(null);
+      return;
+    }
+    setItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIdx, 1);
+      next.splice(idx, 0, moved);
+      return next;
+    });
+    setDragIdx(null);
+    setOverIdx(null);
+  }, [dragIdx]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragIdx(null);
+    setOverIdx(null);
+  }, []);
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="flex items-center px-2 pt-3 pb-1">
@@ -38,15 +109,28 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {items.map((item, idx) => (
+                <SidebarMenuItem
+                  key={item.url}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDrop={() => handleDrop(idx)}
+                  onDragEnd={handleDragEnd}
+                  className={`transition-all ${
+                    dragIdx === idx ? "opacity-40" : ""
+                  } ${overIdx === idx && dragIdx !== idx ? "border-t-2 border-primary" : ""}`}
+                >
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="hover:bg-sidebar-accent"
+                      className="hover:bg-sidebar-accent group"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
+                      {!collapsed && (
+                        <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab" />
+                      )}
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
