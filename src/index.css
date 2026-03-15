@@ -137,6 +137,25 @@
     display: none !important;
   }
 
+  /* Hide everything in the app when printing a report */
+  body.print-report *:not(.pdf-report):not(.pdf-report *) {
+    visibility: hidden !important;
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  body.print-report .pdf-report,
+  body.print-report .pdf-report * {
+    visibility: visible !important;
+  }
+
   body.print-report-dialog .dialog-overlay,
   body.print-report-dialog .no-print,
   body.print-report-dialog .screen-report,
