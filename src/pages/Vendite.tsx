@@ -603,6 +603,44 @@ const VenditePage = () => {
         </div>
       )}
     </div>
+
+      {/* Excel collision dialog */}
+      <Dialog open={showExcelCollisionDialog} onOpenChange={setShowExcelCollisionDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-yellow-500" /> Record duplicati trovati</DialogTitle>
+            <DialogDescription>
+              {pendingExcelUpload && pendingExcelUpload.newOnly.length > 0 && <span className="block text-sm mb-1">{pendingExcelUpload.newOnly.length} nuovi record verranno importati automaticamente.</span>}
+              Seleziona i record duplicati che vuoi <strong>sovrascrivere</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[300px]">
+            <div className="space-y-1 p-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Checkbox checked={excelCollisions.every(c => c.selected)} onCheckedChange={(v) => setExcelCollisions(prev => prev.map(c => ({ ...c, selected: !!v })))} />
+                <span className="text-xs font-medium">Seleziona tutti</span>
+              </div>
+              {excelCollisions.map((c) => (
+                <div key={c.key} className="flex items-start gap-2 py-1 border-b last:border-0">
+                  <Checkbox checked={c.selected} onCheckedChange={() => setExcelCollisions(prev => prev.map(x => x.key === c.key ? { ...x, selected: !x.selected } : x))} />
+                  <div className="text-xs space-y-0.5">
+                    <p className="font-medium">N. {c.numero}/{c.anno}</p>
+                    <p className="text-muted-foreground">Esistente: {c.existingDesc || "—"}</p>
+                    <p className="text-muted-foreground">Nuovo: {c.newDesc || "—"}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={handleExcelCancelCollisions}>Annulla</Button>
+            <Button size="sm" onClick={handleExcelConfirmCollisions}>
+              Importa {(pendingExcelUpload?.newOnly.length || 0) + excelCollisions.filter(c => c.selected).length} record
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
