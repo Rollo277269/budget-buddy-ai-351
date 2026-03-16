@@ -569,13 +569,16 @@ const VenditePage = () => {
             </Collapsible>
           )}
 
-          {/* Row 2: Compact filters */}
-          <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
-            ...filterOptions,
-            centriRicavo: centriRicavo
-              .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
-              .sort((a, b) => a.label.localeCompare(b.label)),
-          }} hideFornitore />
+          {/* Row 2: Compact filters + DataTable toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
+              ...filterOptions,
+              centriRicavo: centriRicavo
+                .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
+                .sort((a, b) => a.label.localeCompare(b.label)),
+            }} hideFornitore />
+            <div ref={toolbarPortalRef} className="flex items-center gap-2 ml-auto" />
+          </div>
         </div>
 
         {/* Table content */}
