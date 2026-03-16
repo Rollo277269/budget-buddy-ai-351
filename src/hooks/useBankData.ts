@@ -59,9 +59,10 @@ async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
   }
   return all.map((d: any) => ({
     movementId: d.movement_id,
-    invoiceType: d.invoice_type,
-    invoiceAnno: d.invoice_anno,
-    invoiceNumero: d.invoice_numero,
+    invoiceType: d.invoice_type ?? (d.documento_id ? "documento" : ""),
+    invoiceAnno: d.invoice_anno ?? 0,
+    invoiceNumero: d.invoice_numero ?? 0,
+    documentoId: d.documento_id ?? undefined,
   }));
 }
 
