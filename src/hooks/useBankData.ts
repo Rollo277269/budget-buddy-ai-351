@@ -872,5 +872,6 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
+    deduplicateExisting,
   };
 }
