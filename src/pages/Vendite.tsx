@@ -592,7 +592,7 @@ const VenditePage = () => {
             onRowClick={setSelectedInvoice}
             rowClassName={(r) => {
               const nc = isNotaCredito(r);
-              const xml = hasXml(`${r.anno}-${r.numero}`);
+              const xml = hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso));
               return [
                 nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
                 xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
