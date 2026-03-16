@@ -91,6 +91,7 @@ function extractCUP(desc: string): string {
 async function loadExcel(url: string): Promise<any[]> {
   const res = await fetch(url);
   const buf = await res.arrayBuffer();
+  const XLSX = await getXLSX();
   const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   return XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
