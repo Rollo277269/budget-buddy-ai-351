@@ -16,14 +16,15 @@ import { formatCurrency } from "@/lib/format";
 import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Columns3 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import * as pdfjsLib from "pdfjs-dist";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.mjs",
-  import.meta.url
-).toString();
+async function getPdfjs() {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
 
 async function extractTextFromPdf(file: File): Promise<string> {
+  const pdfjsLib = await getPdfjs();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let text = "";

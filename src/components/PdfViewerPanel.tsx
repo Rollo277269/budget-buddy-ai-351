@@ -1,9 +1,12 @@
 import { forwardRef, useEffect, useRef, useState, useCallback } from "react";
 import { X, Download, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import * as pdfjsLib from "pdfjs-dist";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+async function getPdfjs() {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
 
 interface PdfViewerPanelProps {
   base64: string;
@@ -17,7 +20,7 @@ const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
 export const PdfViewerPanel = forwardRef<HTMLDivElement, PdfViewerPanelProps>(
   function PdfViewerPanel({ base64, fileName, onClose, extraActions }, ref) {
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+    const [pdfDoc, setPdfDoc] = useState<any>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [zoom, setZoom] = useState(1); // 1 = fit-width
@@ -28,18 +31,24 @@ export const PdfViewerPanel = forwardRef<HTMLDivElement, PdfViewerPanelProps>(
 
     // Load PDF
     useEffect(() => {
-      const byteChars = atob(base64);
-      const byteArray = new Uint8Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+      let cancelled = false;
+      let loadingTask: any;
+      (async () => {
+        const pdfjsLib = await getPdfjs();
+        const byteChars = atob(base64);
+        const byteArray = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
 
-      const loadingTask = pdfjsLib.getDocument({ data: byteArray });
-      loadingTask.promise.then((doc) => {
-        setPdfDoc(doc);
-        setTotalPages(doc.numPages);
-        setCurrentPage(1);
-        setFitWidth(true);
-      });
-      return () => { loadingTask.destroy(); };
+        loadingTask = pdfjsLib.getDocument({ data: byteArray });
+        const doc = await loadingTask.promise;
+        if (!cancelled) {
+          setPdfDoc(doc);
+          setTotalPages(doc.numPages);
+          setCurrentPage(1);
+          setFitWidth(true);
+        }
+      })();
+      return () => { cancelled = true; if (loadingTask) loadingTask.destroy(); };
     }, [base64]);
 
     const renderPage = useCallback(async (pageNum: number) => {
