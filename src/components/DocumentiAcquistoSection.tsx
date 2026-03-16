@@ -408,7 +408,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: P
           {documenti.length > 0 && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs">
+                <Button variant="outline" size="sm" className="h-7 text-xs" title="Mostra/nascondi colonne">
                   <Columns3 className="h-3.5 w-3.5 mr-1" /> Colonne
                 </Button>
               </PopoverTrigger>
