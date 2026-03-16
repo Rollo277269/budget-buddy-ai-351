@@ -437,69 +437,6 @@ const VenditePage = () => {
 
 
 
-          const yearStats = new Map<number, { matched: number; unmatched: number; duplicates: number }>();
-          const seenByYear = new Map<number, Set<string>>();
-          for (const r of xmlRecords) {
-            const y = r.anno || 0;
-            if (!yearStats.has(y)) {
-              yearStats.set(y, { matched: 0, unmatched: 0, duplicates: 0 });
-              seenByYear.set(y, new Set());
-            }
-            const stat = yearStats.get(y)!;
-            const seen = seenByYear.get(y)!;
-            if (seen.has(r.file_name)) {
-              stat.duplicates++;
-            } else {
-              seen.add(r.file_name);
-              if (r.matched) stat.matched++;
-              else stat.unmatched++;
-            }
-          }
-          const years = Array.from(yearStats.entries()).sort((a, b) => b[0] - a[0]);
-          return (
-            <div className="rounded-md border border-border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Anno</TableHead>
-                    <TableHead className="text-xs text-right">Associati</TableHead>
-                    <TableHead className="text-xs text-right">Non associati</TableHead>
-                    <TableHead className="text-xs text-right">Duplicati</TableHead>
-                    <TableHead className="text-xs text-right">Totale</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {years.map(([year, s]) => (
-                    <TableRow key={year}>
-                      <TableCell className="text-xs font-medium">{year || "N/D"}</TableCell>
-                      <TableCell className="text-xs text-right">
-                        <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 border-green-200 dark:border-green-800">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />{s.matched}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-right">
-                        {s.unmatched > 0 ? (
-                          <Badge variant="secondary" className="text-[10px] text-destructive">{s.unmatched}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-right">
-                        {s.duplicates > 0 ? (
-                          <Badge variant="secondary" className="text-[10px] text-orange-600 dark:text-orange-400">{s.duplicates}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-right font-mono">{s.matched + s.unmatched + s.duplicates}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          );
-        })()}
-
         <FilterBar filters={filters} onFiltersChange={setFilters} options={{
           ...filterOptions,
           centriRicavo: centriRicavo
