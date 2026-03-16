@@ -493,10 +493,10 @@ function CentriCostoRicavoTab() {
       </TableCell>
       <TableCell>
         <div className="flex gap-0.5">
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => handleAddSub(categoriaId, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Conferma nuova voce" onClick={() => handleAddSub(categoriaId, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
             <Check className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddingToCat(null); setAddingUnclassified(null); }}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="Annulla" onClick={() => { setAddingToCat(null); setAddingUnclassified(null); }}>
             <X className="w-3.5 h-3.5" />
           </Button>
         </div>
