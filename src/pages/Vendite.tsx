@@ -657,7 +657,7 @@ const VenditePage = () => {
           invoiceImposta={xmlPickerInvoice?.imposta || 0}
           invoiceCig={xmlPickerInvoice?.cig || ""}
           tipo="vendita"
-          onMatch={manualMatch}
+          onMatch={(xmlId, anno, numero) => manualMatch(xmlId, anno, numero, xmlPickerInvoice?.suffisso)}
           onCigChange={async (anno, numero, cig) => {
             await supabase.from("fatture_vendita").update({ cig }).eq("anno", anno).eq("numero", numero);
             toast.success(`CIG aggiornato: ${cig || "(rimosso)"}`);
