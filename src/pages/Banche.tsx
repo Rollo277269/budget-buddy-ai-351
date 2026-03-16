@@ -366,6 +366,7 @@ const BanchePage = () => {
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
+  const { documenti } = useDocumentiAcquisto();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
