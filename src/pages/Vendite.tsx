@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useInvoiceData, SaleInvoice, SaleInvoiceRiga } from "@/hooks/useInvoiceData";
+import { useInvoiceData, SaleInvoice, SaleInvoiceRiga, parseExcelSales, seedSalesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
@@ -15,10 +15,13 @@ import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, ChevronDown, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +73,10 @@ const VenditePage = () => {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const [xmlExpanded, setXmlExpanded] = useState(false);
+  // Excel import collision state
+  const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
+  const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
+  const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: SaleInvoice[]; colliding: SaleInvoice[] } | null>(null);
 
   const displayedSales = useMemo(() => {
     const selectedYear = filters.anno.trim();
@@ -155,10 +162,82 @@ const VenditePage = () => {
     e.preventDefault(); e.stopPropagation();
   }, []);
   const processCsvFiles = useCallback(async (fileList: File[]) => {
-    const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".csv"));
-    if (files.length === 0) { toast.error("Seleziona file CSV"); return; }
-    toast.info(`${files.length} file CSV ricevuti — funzionalità in arrivo`);
+    const csvFiles = fileList.filter((f) => f.name.toLowerCase().endsWith(".csv"));
+    const xlsFiles = fileList.filter((f) => /\.(xlsx?|xls)$/i.test(f.name));
+
+    if (csvFiles.length > 0) {
+      toast.info(`${csvFiles.length} file CSV ricevuti — funzionalità in arrivo`);
+    }
+
+    for (const file of xlsFiles) {
+      try {
+        const buf = await file.arrayBuffer();
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
+        const parsed = parseExcelSales(rows);
+        if (parsed.length === 0) { toast.error(`Nessuna fattura vendita trovata in ${file.name}`); continue; }
+
+        // Check collisions
+        const keys = parsed.map((i) => `${i.anno}-${i.numero}-${i.tipo || ""}`);
+        const { data: existing } = await supabase
+          .from("fatture_vendita")
+          .select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig, source_file")
+          .or(keys.map(k => { const [a, n] = k.split("-"); return `and(anno.eq.${a},numero.eq.${n})`; }).join(","));
+
+        const existingMap = new Map<string, any>();
+        (existing || []).forEach((r: any) => existingMap.set(`${r.anno}-${r.numero}-${r.tipo || ""}`, r));
+
+        const newOnly = parsed.filter((i) => !existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+        const colliding = parsed.filter((i) => existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+
+        if (colliding.length === 0) {
+          await seedSalesFromExcel(parsed, file.name);
+          toast.success(`Importate ${parsed.length} fatture vendita da ${file.name}`);
+          invalidateInvoiceCache();
+          setTimeout(() => window.location.reload(), 800);
+        } else {
+          setExcelCollisions(colliding.map((item) => {
+            const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
+            const ex = existingMap.get(key)!;
+            const newHasMore = ((item.descrizione || "").length > (ex.descrizione || "").length) || (item.cig && !ex.cig);
+            return { key, anno: item.anno, numero: item.numero, tipo: item.tipo || "", existingDesc: `${ex.tipo} — ${(ex.descrizione || "").slice(0, 60)}`, newDesc: `${item.tipo || ""} — ${(item.descrizione || "").slice(0, 60)}`, selected: newHasMore || ex.source_file === file.name };
+          }));
+          setPendingExcelUpload({ fileName: file.name, newOnly, colliding });
+          setShowExcelCollisionDialog(true);
+        }
+      } catch (err) {
+        console.error("Excel upload error:", err);
+        toast.error(`Errore importazione ${file.name}`);
+      }
+    }
+
+    if (csvFiles.length === 0 && xlsFiles.length === 0) {
+      toast.error("Seleziona file CSV o Excel (.xlsx)");
+    }
   }, []);
+
+  const handleExcelConfirmCollisions = useCallback(async () => {
+    if (!pendingExcelUpload) return;
+    setShowExcelCollisionDialog(false);
+    const selectedKeys = new Set(excelCollisions.filter(c => c.selected).map(c => c.key));
+    const overwrite = pendingExcelUpload.colliding.filter((i) => selectedKeys.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+    const all = [...pendingExcelUpload.newOnly, ...overwrite];
+    if (all.length === 0) { toast.info("Nessun record importato"); return; }
+    await seedSalesFromExcel(all, pendingExcelUpload.fileName);
+    const skipped = excelCollisions.length - selectedKeys.size;
+    toast.success(`Importati ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""));
+    invalidateInvoiceCache();
+    setTimeout(() => window.location.reload(), 800);
+  }, [pendingExcelUpload, excelCollisions]);
+
+  const handleExcelCancelCollisions = useCallback(() => {
+    setShowExcelCollisionDialog(false);
+    setPendingExcelUpload(null);
+    setExcelCollisions([]);
+  }, []);
+
   const handleCsvDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
     csvDragCounter.current = 0;
@@ -313,6 +392,7 @@ const VenditePage = () => {
 
 
   return (
+    <>
     <div className="flex h-full">
       <div className={`flex flex-col overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Sticky header area */}
@@ -344,10 +424,10 @@ const VenditePage = () => {
                 <span className="text-[11px] font-medium">XML</span>
               </div>
 
-              <input ref={csvInputRef} type="file" accept=".csv" multiple className="hidden" onChange={handleCsvFileInput} />
+              <input ref={csvInputRef} type="file" accept=".csv,.xlsx,.xls" multiple className="hidden" onChange={handleCsvFileInput} />
               <div
                 className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
-                title="Carica elenco ricavi CSV"
+                title="Carica elenco ricavi CSV o importa fatture vendita Excel (.xlsx)"
                 onDragEnter={handleCsvDragEnter}
                 onDragLeave={handleCsvDragLeave}
                 onDragOver={handleCsvDragOver}
@@ -355,7 +435,7 @@ const VenditePage = () => {
                 onClick={() => csvInputRef.current?.click()}
               >
                 <FileSpreadsheet className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium">CSV</span>
+                <span className="text-[11px] font-medium">CSV / Excel</span>
               </div>
 
               <DocumentiAcquistoSection dropZoneOnly compact />
@@ -524,6 +604,44 @@ const VenditePage = () => {
         </div>
       )}
     </div>
+
+      {/* Excel collision dialog */}
+      <Dialog open={showExcelCollisionDialog} onOpenChange={setShowExcelCollisionDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-yellow-500" /> Record duplicati trovati</DialogTitle>
+            <DialogDescription>
+              {pendingExcelUpload && pendingExcelUpload.newOnly.length > 0 && <span className="block text-sm mb-1">{pendingExcelUpload.newOnly.length} nuovi record verranno importati automaticamente.</span>}
+              Seleziona i record duplicati che vuoi <strong>sovrascrivere</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[300px]">
+            <div className="space-y-1 p-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Checkbox checked={excelCollisions.every(c => c.selected)} onCheckedChange={(v) => setExcelCollisions(prev => prev.map(c => ({ ...c, selected: !!v })))} />
+                <span className="text-xs font-medium">Seleziona tutti</span>
+              </div>
+              {excelCollisions.map((c) => (
+                <div key={c.key} className="flex items-start gap-2 py-1 border-b last:border-0">
+                  <Checkbox checked={c.selected} onCheckedChange={() => setExcelCollisions(prev => prev.map(x => x.key === c.key ? { ...x, selected: !x.selected } : x))} />
+                  <div className="text-xs space-y-0.5">
+                    <p className="font-medium">N. {c.numero}/{c.anno}</p>
+                    <p className="text-muted-foreground">Esistente: {c.existingDesc || "—"}</p>
+                    <p className="text-muted-foreground">Nuovo: {c.newDesc || "—"}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={handleExcelCancelCollisions}>Annulla</Button>
+            <Button size="sm" onClick={handleExcelConfirmCollisions}>
+              Importa {(pendingExcelUpload?.newOnly.length || 0) + excelCollisions.filter(c => c.selected).length} record
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
