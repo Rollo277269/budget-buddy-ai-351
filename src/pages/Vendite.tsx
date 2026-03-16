@@ -73,6 +73,10 @@ const VenditePage = () => {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const [xmlExpanded, setXmlExpanded] = useState(false);
+  // Excel import collision state
+  const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
+  const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
+  const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: SaleInvoice[]; colliding: SaleInvoice[] } | null>(null);
 
   const displayedSales = useMemo(() => {
     const selectedYear = filters.anno.trim();
