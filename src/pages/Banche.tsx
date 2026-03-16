@@ -84,7 +84,7 @@ interface ReconcileSheetProps {
   findXml?: (key: string, counterpartName?: string) => XmlInvoiceRecord | undefined;
 }
 
-function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove }: ReconcileSheetProps) {
+function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove, findXml }: ReconcileSheetProps) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"vendita" | "acquisto" | "documento">("vendita");
   const [selected, setSelected] = useState<Set<string>>(new Set());
