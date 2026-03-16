@@ -321,7 +321,7 @@ export function DataTable<T extends Record<string, any>>({
                         </Button>
                       )}
                       {col.filterable && (
-                        <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`} onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}>
+                        <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`} title="Filtra colonna" onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}>
                           <Search className="h-3 w-3" />
                         </Button>
                       )}
