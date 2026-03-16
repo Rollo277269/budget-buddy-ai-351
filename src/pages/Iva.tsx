@@ -496,6 +496,9 @@ const IvaPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* IVA debito per cliente/socio per trimestre */}
+        <ClientQuarterIvaSection sales={allSales} year={yearNum} />
       </div>
     </div>
   );
