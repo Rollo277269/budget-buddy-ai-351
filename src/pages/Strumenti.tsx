@@ -42,7 +42,7 @@ function ContiCorrentiTab() {
           <h3 className="text-sm font-semibold">Conti Correnti</h3>
           <p className="text-xs text-muted-foreground">Gestisci i dati dei conti correnti bancari</p>
         </div>
-        <Button size="sm" onClick={() => setEditing({ ...empty })}>
+        <Button size="sm" title="Aggiungi un nuovo conto corrente" onClick={() => setEditing({ ...empty })}>
           <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
         </Button>
       </div>
