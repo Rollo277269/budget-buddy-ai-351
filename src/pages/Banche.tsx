@@ -374,6 +374,7 @@ const BanchePage = () => {
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
+  const { findXml } = useXmlInvoices(allPurchases, "acquisto");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
