@@ -11,7 +11,9 @@ import {
   ResponsiveContainer, ReferenceLine, ComposedChart, Line,
   PieChart, Pie, Cell,
 } from "recharts";
-import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent } from "lucide-react";
+import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent, Users } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 
 function parseMonthYear(dateStr: string): { month: number; year: number } | null {
   if (!dateStr) return null;
