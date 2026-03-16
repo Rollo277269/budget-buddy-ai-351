@@ -363,7 +363,8 @@ const BanchePage = () => {
     movements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
-    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch
+    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
+    deduplicateExisting,
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
