@@ -28,7 +28,7 @@ interface InvoiceWithKey {
   totale?: number;
   cliente?: string;
   fornitore?: string;
-  tipo?: string; // e.g. "Nota di Credito", "Fattura", etc.
+  tipo?: string;
 }
 
 /** Extract suffisso from numero_documento, e.g. "9/A" → "A", "123" → "" */
@@ -61,6 +61,52 @@ function isXmlCreditNote(tipoDocumento: string | undefined): boolean {
 function isInvoiceCreditNote(tipo: string | undefined): boolean {
   const t = (tipo || "").toLowerCase();
   return t.includes("nota") && t.includes("credito");
+}
+
+/**
+ * Match a vendita XML to the correct invoice, using suffisso and cessionario name
+ * to disambiguate when multiple invoices share the same anno+numero.
+ */
+function findSaleMatch(
+  xmlAnno: number,
+  xmlNumero: number,
+  xmlNumeroDocumento: string,
+  xmlCessionario: string | null,
+  xmlTipoDocumento: string | undefined,
+  invoices: InvoiceWithKey[],
+  alreadyMatchedKeys: Set<string>
+): InvoiceWithKey | null {
+  const xmlIsNC = isXmlCreditNote(xmlTipoDocumento);
+  const xmlSuffisso = extractSuffisso(xmlNumeroDocumento);
+  const candidates = invoices.filter(
+    (s) => s.anno === xmlAnno && s.numero === xmlNumero && !alreadyMatchedKeys.has(buildSalesXmlKey(s.anno, s.numero, s.suffisso))
+  );
+
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) {
+    const c = candidates[0];
+    // Still prefer type-coherent match
+    return isInvoiceCreditNote(c.tipo) === xmlIsNC ? c : c;
+  }
+
+  // Multiple candidates: disambiguate by suffisso
+  const suffissoMatch = candidates.filter(s => (s.suffisso || "") === xmlSuffisso);
+  if (suffissoMatch.length === 1) return suffissoMatch[0];
+  if (suffissoMatch.length > 1) {
+    const typeMatch = suffissoMatch.find(s => isInvoiceCreditNote(s.tipo) === xmlIsNC);
+    if (typeMatch) return typeMatch;
+    return suffissoMatch[0];
+  }
+
+  // Fallback: disambiguate by cessionario/cliente name
+  if (xmlCessionario) {
+    const nameMatch = candidates.find(s => s.cliente && fuzzyNameMatch(xmlCessionario, s.cliente));
+    if (nameMatch) return nameMatch;
+  }
+
+  // Last resort: type match
+  const typeMatch = candidates.find(s => isInvoiceCreditNote(s.tipo) === xmlIsNC);
+  return typeMatch || null;
 }
 
 /**
@@ -150,15 +196,12 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         // Check if file already exists
         const existingRecord = existingFileNames.get(file.name);
         if (existingRecord) {
-          // Compare: new file is "more complete" if it's larger
           if (file.size <= 0) { skipped++; continue; }
-          // If existing record already matched and has data, skip unless new file is bigger
           const existingHasData = existingRecord.matched && existingRecord.cedente_denominazione;
           if (existingHasData) {
             skipped++;
             continue;
           }
-          // Otherwise, delete old and re-upload (new file is potentially more complete)
           await supabase.storage.from("fatture-xml").remove([existingRecord.storage_path]);
           await supabase.from("fatture_xml" as any).delete().eq("id", existingRecord.id);
         }
@@ -184,17 +227,16 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         let matchedNumero: number | null = xmlNumero || null;
 
         if (tipo === "vendita") {
-          const xmlIsNC = isXmlCreditNote(parsed.tipoDocumento);
-          const candidates = invoices.filter(
-            (s) => s.anno === xmlAnno && s.numero === xmlNumero
+          const match = findSaleMatch(
+            xmlAnno, xmlNumero, parsed.numero,
+            parsed.cessionario.denominazione,
+            parsed.tipoDocumento,
+            invoices, alreadyMatchedKeys
           );
-          const typeMatch = candidates.find(
-            (s) => isInvoiceCreditNote(s.tipo) === xmlIsNC
-          );
-          const match = typeMatch || (candidates.length === 1 ? candidates[0] : null);
           if (match) {
-            invoiceKey = `${match.anno}-${match.numero}`;
+            invoiceKey = buildSalesXmlKey(match.anno, match.numero, match.suffisso);
             isMatched = true;
+            alreadyMatchedKeys.add(invoiceKey);
           }
         } else {
           const purchaseMatch = findPurchaseMatch(
@@ -269,7 +311,6 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     const seen = new Map<string, typeof xmlRecords[0]>();
     const duplicates: typeof xmlRecords[0][] = [];
 
-    // Sort by created_at ascending so we keep the oldest
     const sorted = [...xmlRecords].sort((a, b) => a.created_at.localeCompare(b.created_at));
 
     for (const r of sorted) {
@@ -286,7 +327,6 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       return 0;
     }
 
-    // Delete duplicates from storage and DB
     const storagePaths = duplicates.map(d => d.storage_path);
     await supabase.storage.from("fatture-xml").remove(storagePaths);
 
@@ -299,18 +339,18 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     return duplicates.length;
   }, [xmlRecords, fetchRecords]);
 
-  const manualMatch = useCallback(async (xmlId: string, anno: number, numero: number) => {
-    const invoiceKey = `${anno}-${numero}`;
+  const manualMatch = useCallback(async (xmlId: string, anno: number, numero: number, suffisso?: string) => {
+    const invoiceKey = tipo === "vendita" ? buildSalesXmlKey(anno, numero, suffisso) : `${anno}-${numero}`;
     await supabase
       .from("fatture_xml" as any)
       .update({ invoice_key: invoiceKey, anno, numero, matched: true } as any)
       .eq("id", xmlId);
     await fetchRecords();
-    toast.success(`Associato a fattura ${numero}/${anno}`);
-  }, [fetchRecords]);
+    toast.success(`Associato a fattura ${numero}${suffisso ? '/' + suffisso : ''}/${anno}`);
+  }, [fetchRecords, tipo]);
 
   /**
-   * Re-match all unmatched (or all) records for purchases using amount+name logic.
+   * Re-match all unmatched (or all) records using suffisso+name disambiguation for vendita.
    */
   const rematchAll = useCallback(async () => {
     const alreadyMatchedKeys = new Set<string>();
@@ -327,21 +367,23 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
           alreadyMatchedKeys
         );
       } else {
-        // Vendita: match by anno+numero, preferring type-coherent matches
-        const xmlIsNC = isXmlCreditNote((record as any).parsed_data?.tipoDocumento);
+        // Vendita: use suffisso + name disambiguation
         const xmlAnno = record.anno;
         const xmlNumero = record.numero;
         if (xmlAnno && xmlNumero) {
-          const candidates = invoices.filter(
-            (s) => s.anno === xmlAnno && s.numero === xmlNumero && !alreadyMatchedKeys.has(`${s.anno}-${s.numero}`)
+          match = findSaleMatch(
+            xmlAnno, xmlNumero, record.numero_documento,
+            record.cessionario_denominazione,
+            (record as any).parsed_data?.tipoDocumento,
+            invoices, alreadyMatchedKeys
           );
-          const typeMatch = candidates.find((s) => isInvoiceCreditNote(s.tipo) === xmlIsNC);
-          match = typeMatch || (candidates.length === 1 ? candidates[0] : null);
         }
       }
 
       if (match) {
-        const invoiceKey = `${match.anno}-${match.numero}`;
+        const invoiceKey = tipo === "vendita"
+          ? buildSalesXmlKey(match.anno, match.numero, match.suffisso)
+          : `${match.anno}-${match.numero}`;
         alreadyMatchedKeys.add(invoiceKey);
 
         if (record.invoice_key !== invoiceKey || !record.matched) {
@@ -392,7 +434,6 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     const list = xmlMultiMap.get(key);
     if (!list || list.length === 0) return undefined;
     if (list.length === 1 || !counterpartName) return list[0];
-    // Try matching by counterpart name
     const cn = normalizeStr(counterpartName);
     const field = tipo === "vendita" ? "cessionario_denominazione" : "cedente_denominazione";
     const match = list.find((r) => {
@@ -408,5 +449,5 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
   const xmlMap = new Map<string, XmlInvoiceRecord>();
   xmlMultiMap.forEach((list, key) => xmlMap.set(key, list[0]));
 
-  return { xmlRecords, xmlMap, xmlMultiMap, loading, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, refresh: fetchRecords, fetchParsedData, findXml, hasXml };
+  return { xmlRecords, xmlMap, xmlMultiMap, loading, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, refresh: fetchRecords, fetchParsedData, findXml, hasXml, buildSalesXmlKey };
 }
