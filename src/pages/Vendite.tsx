@@ -552,18 +552,35 @@ const VenditePage = () => {
                 </div>
               </div>
               <CollapsibleContent>
-                <div className="flex flex-wrap gap-1.5 pt-1.5">
-                  {xmlRecords.filter((r) => !r.matched).map((r) => (
-                    <Badge
-                      key={r.id}
-                      variant="secondary"
-                      className="text-[10px] cursor-pointer hover:bg-accent"
-                      onClick={() => openXmlSheet(r)}
-                    >
-                      <FileText className="h-3 w-3 mr-1" />
-                      {r.file_name} — {r.cedente_denominazione || "?"} — {r.numero}/{r.anno}
-                    </Badge>
-                  ))}
+                <div className="border rounded-md mt-1.5 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="text-[10px] py-1 h-7">File</TableHead>
+                        <TableHead className="text-[10px] py-1 h-7">N° Doc</TableHead>
+                        <TableHead className="text-[10px] py-1 h-7">Cessionario</TableHead>
+                        <TableHead className="text-[10px] py-1 h-7 text-right">Importo</TableHead>
+                        <TableHead className="text-[10px] py-1 h-7">Data</TableHead>
+                        <TableHead className="text-[10px] py-1 h-7 w-[80px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {xmlRecords.filter((r) => !r.matched).map((r) => (
+                        <TableRow key={r.id} className="cursor-pointer hover:bg-muted/30" onClick={() => openXmlSheet(r)}>
+                          <TableCell className="text-[11px] py-1.5 font-mono max-w-[200px] truncate">{r.file_name}</TableCell>
+                          <TableCell className="text-[11px] py-1.5 font-mono">{r.numero_documento || `${r.numero}/${r.anno}`}</TableCell>
+                          <TableCell className="text-[11px] py-1.5 max-w-[200px] truncate">{r.cessionario_denominazione || "—"}</TableCell>
+                          <TableCell className="text-[11px] py-1.5 font-mono text-right">{r.importo_totale ? formatCurrency(r.importo_totale) : "—"}</TableCell>
+                          <TableCell className="text-[11px] py-1.5">{r.data_fattura || "—"}</TableCell>
+                          <TableCell className="py-1.5">
+                            <Button size="sm" variant="outline" className="h-5 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); openXmlSheet(r); }}>
+                              <Link2 className="h-3 w-3 mr-1" />Associa
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </CollapsibleContent>
             </Collapsible>
