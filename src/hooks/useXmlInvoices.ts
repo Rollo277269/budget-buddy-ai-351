@@ -90,7 +90,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
   const fetchRecords = useCallback(async () => {
     const { data, error } = await supabase
       .from("fatture_xml" as any)
-      .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at")
+      .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at, numero_documento")
       .eq("tipo", tipo)
       .order("created_at", { ascending: false });
     if (error) {
