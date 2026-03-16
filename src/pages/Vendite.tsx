@@ -69,6 +69,7 @@ const VenditePage = () => {
   const csvDragCounter = useRef(0);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
+  const [xmlExpanded, setXmlExpanded] = useState(false);
 
   const displayedSales = useMemo(() => {
     const selectedYear = filters.anno.trim();
