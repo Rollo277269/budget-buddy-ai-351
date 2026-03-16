@@ -236,62 +236,76 @@ export function DataTable<T extends Record<string, any>>({
     };
   }, [sorted, scrollTop, containerHeight, totalRows, useVirtual]);
 
+  const toolbarContent = (
+    <div className="flex items-center gap-2">
+      <div className="relative max-w-xs flex-1">
+        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Cerca in tutte le colonne..."
+          value={globalSearchInput}
+          onChange={(e) => setGlobalSearchInput(e.target.value)}
+          className="pl-8 h-9 text-xs"
+        />
+        {globalSearchInput && (
+          <button onClick={() => setGlobalSearchInput("")} className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+      {(isReordered || Object.keys(columnWidths).length > 0) && (
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={resetOrder} title="Ripristina ordine e larghezza colonne">
+          <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
+        </Button>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="text-xs" title="Mostra/nascondi colonne">
+            <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colonne
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {columns.map((col) => (
+            <DropdownMenuCheckboxItem
+              key={col.key}
+              checked={visibleColumns.has(col.key)}
+              onCheckedChange={(checked) => {
+                setVisibleColumns((prev) => {
+                  const next = new Set(prev);
+                  if (checked) next.add(col.key); else next.delete(col.key);
+                  return next;
+                });
+              }}
+            >
+              {col.label}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+
+  const [portalReady, setPortalReady] = useState(false);
+  useEffect(() => {
+    if (toolbarPortalRef?.current) setPortalReady(true);
+  }, [toolbarPortalRef]);
+
   return (
     <div className="space-y-3">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="relative max-w-xs flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Cerca in tutte le colonne..."
-              value={globalSearchInput}
-              onChange={(e) => setGlobalSearchInput(e.target.value)}
-              className="pl-8 h-9 text-xs"
-            />
-            {globalSearchInput && (
-              <button onClick={() => setGlobalSearchInput("")} className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
+      {/* Toolbar: render inline or via portal */}
+      {toolbarPortalRef?.current && portalReady
+        ? createPortal(toolbarContent, toolbarPortalRef.current)
+        : (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {toolbarContent}
+              <p className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                {sorted.length} di {data.length} righe
+                {hasActiveFilters && " (filtrate)"}
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-            {sorted.length} di {data.length} righe
-            {hasActiveFilters && " (filtrate)"}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {(isReordered || Object.keys(columnWidths).length > 0) && (
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={resetOrder} title="Ripristina ordine e larghezza colonne">
-              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
-            </Button>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs" title="Mostra/nascondi colonne">
-                <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colonne
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {columns.map((col) => (
-                <DropdownMenuCheckboxItem
-                  key={col.key}
-                  checked={visibleColumns.has(col.key)}
-                  onCheckedChange={(checked) => {
-                    setVisibleColumns((prev) => {
-                      const next = new Set(prev);
-                      if (checked) next.add(col.key); else next.delete(col.key);
-                      return next;
-                    });
-                  }}
-                >
-                  {col.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+        )
+      }
 
       {/* Table */}
       <div
@@ -302,6 +316,20 @@ export function DataTable<T extends Record<string, any>>({
       >
         <Table>
            <TableHeader className="sticky top-0 z-10 bg-card">
+            {hasActiveFilters && activeColumns.some((c) => c.summaryRender) && (
+              <TableRow className="border-b border-border bg-muted/50">
+                {expandable && <TableHead className="w-8 text-xs py-1" />}
+                {activeColumns.map((col) => (
+                  <TableHead
+                    key={`sum-${col.key}`}
+                    className={`text-xs py-1.5 font-semibold ${col.align === "right" ? "text-right" : ""}`}
+                    style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
+                  >
+                    {col.summaryRender ? col.summaryRender(sorted) : null}
+                  </TableHead>
+                ))}
+              </TableRow>
+            )}
             <TableRow className="shadow-[0_2px_0_0_hsl(var(--border))] border-b-2 border-border">
               {expandable && <TableHead className="w-8 text-xs" />}
               {activeColumns.map((col) => (
@@ -346,22 +374,6 @@ export function DataTable<T extends Record<string, any>>({
               ))}
             </TableRow>
           </TableHeader>
-          {hasActiveFilters && activeColumns.some((c) => c.summaryRender) && (
-            <TableHeader className="bg-muted/50">
-              <TableRow className="border-b border-border">
-                {expandable && <TableHead className="w-8 text-xs py-1" />}
-                {activeColumns.map((col) => (
-                  <TableHead
-                    key={`sum-${col.key}`}
-                    className={`text-xs py-1.5 font-semibold ${col.align === "right" ? "text-right" : ""}`}
-                    style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
-                  >
-                    {col.summaryRender ? col.summaryRender(sorted) : null}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-          )}
           <TableBody>
             {sorted.length === 0 ? (
               <TableRow>
