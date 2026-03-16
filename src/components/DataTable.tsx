@@ -70,6 +70,7 @@ export function DataTable<T extends Record<string, any>>({
   expandable,
   renderExpandedContent,
   defaultSort,
+  toolbarPortalRef,
 }: DataTableProps<T>) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
