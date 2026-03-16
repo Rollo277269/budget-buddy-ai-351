@@ -316,7 +316,7 @@ export function DataTable<T extends Record<string, any>>({
                     {col.headerRender ? col.headerRender() : <span className="whitespace-normal break-words leading-tight">{col.label}</span>}
                     <div className="flex items-center shrink-0">
                       {col.sortable && (
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toggleSort(col.key)}>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title="Ordina colonna" onClick={() => toggleSort(col.key)}>
                           {sortKey === col.key && sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : sortKey === col.key && sortDir === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                         </Button>
                       )}
