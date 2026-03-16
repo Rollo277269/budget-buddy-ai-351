@@ -392,6 +392,7 @@ const AcquistiPage = () => {
         <DataTable<PurchaseInvoice>
           columns={columns}
           data={displayedPurchases}
+          defaultSort={{ key: "data", dir: "desc" }}
           rowKey={(r) => `${r.anno}-${r.numero}`}
           onRowClick={setSelectedInvoice}
           rowClassName={(r) => {
