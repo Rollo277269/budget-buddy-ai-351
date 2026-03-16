@@ -81,6 +81,7 @@ interface ReconcileSheetProps {
   documenti: DocumentoAcquisto[];
   onReconcile: (movementId: string, invoices: MatchedInvoice[]) => void;
   onRemove: (movementId: string, invoiceKey?: string) => void;
+  findXml?: (key: string, counterpartName?: string) => XmlInvoiceRecord | undefined;
 }
 
 function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove }: ReconcileSheetProps) {
