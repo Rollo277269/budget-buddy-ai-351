@@ -25,7 +25,7 @@ import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
 import { CentroCell } from "@/components/CentroCell";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
-import { useXmlInvoices } from "@/hooks/useXmlInvoices";
+import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
 import { CommessaExpenseUpload } from "@/components/CommessaExpenseUpload";
 import { EditExpenseDialog } from "@/components/EditExpenseDialog";
 import { useNamingRules } from "@/hooks/useNamingRules";
