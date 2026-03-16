@@ -357,7 +357,7 @@ const AcquistiPage = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   )}
-                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" title="Riprova associazione automatica XML" onClick={rematchAll}>
                     <RefreshCw className="h-3 w-3 mr-1" />Riassocia
                   </Button>
                 </div>
