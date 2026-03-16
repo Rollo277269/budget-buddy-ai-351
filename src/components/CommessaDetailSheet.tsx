@@ -1798,7 +1798,7 @@ function InvoiceList({
           </TableHeader>
           <TableBody>
             {sorted.map((inv) => {
-              const key = invoiceKey(inv.anno, inv.numero);
+              const key = type === "vendita" ? buildSalesXmlKey(inv.anno, inv.numero, (inv as SaleInvoice).suffisso) : invoiceKey(inv.anno, inv.numero);
               const isAuto = autoKeys.has(key);
               const counterpart = type === "vendita"
                 ? (inv as SaleInvoice).cliente
