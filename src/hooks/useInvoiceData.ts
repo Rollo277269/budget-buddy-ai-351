@@ -186,7 +186,7 @@ async function loadSalesFromDb(): Promise<SaleInvoice[]> {
   while (true) {
     const { data, error } = await supabase
       .from("fatture_vendita" as any)
-      .select("*")
+      .select("tipo,anno,numero,suffisso,data,cliente,partita_iva,totale,imponibile,imposta,descrizione,cig,cup,stato,scadenza,pagamento,righe")
       .order("anno", { ascending: true })
       .order("numero", { ascending: true })
       .range(from, from + PAGE - 1);
