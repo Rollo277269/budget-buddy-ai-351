@@ -82,8 +82,9 @@ interface ReconcileSheetProps {
   onRemove: (movementId: string, invoiceKey?: string) => void;
 }
 
-function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReconcile, onRemove }: ReconcileSheetProps) {
+function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove }: ReconcileSheetProps) {
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"vendita" | "acquisto" | "documento">("vendita");
   const [tab, setTab] = useState<"vendita" | "acquisto">("vendita");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
