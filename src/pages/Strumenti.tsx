@@ -442,10 +442,10 @@ function CentriCostoRicavoTab() {
           </TableCell>
           <TableCell>
             <div className="flex gap-0.5">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEditSub}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Salva modifiche" onClick={saveEditSub}>
                 <Check className="w-3.5 h-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Annulla modifiche" onClick={() => setEditingId(null)}>
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
