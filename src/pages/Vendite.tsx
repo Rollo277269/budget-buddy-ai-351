@@ -330,9 +330,9 @@ const VenditePage = () => {
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       {
         key: "xml", label: "XML", filterable: true,
-        filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        filterValue: (r) => hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso)) ? "sì" : "no",
         render: (r) => {
-          const k = `${r.anno}-${r.numero}`;
+          const k = buildSalesXmlKey(r.anno, r.numero, r.suffisso);
           const xml = findXml(k, r.cliente);
           if (xml) return (
             <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza XML associato" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
