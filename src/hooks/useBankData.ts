@@ -283,6 +283,7 @@ function detectColumns(header: any[]): {
 }
 
 async function parsePdfToRows(buffer: ArrayBuffer): Promise<any[][]> {
+  const pdfjsLib = await getPdfjs();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const allLines: string[] = [];
 
