@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, ComposedChart, Line,
+  PieChart, Pie, Cell,
 } from "recharts";
-import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle } from "lucide-react";
+import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent } from "lucide-react";
 
 function parseMonthYear(dateStr: string): { month: number; year: number } | null {
   if (!dateStr) return null;
