@@ -463,10 +463,10 @@ function CentriCostoRicavoTab() {
           <TableCell className="text-xs text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
           <TableCell>
             <div className="flex gap-0.5">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditSub(sub)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Modifica voce" onClick={() => startEditSub(sub)}>
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Elimina voce" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
