@@ -223,7 +223,7 @@ const AcquistiPage = () => {
         const xml = findXml(`${r.anno}-${r.numero}`, r.fornitore);
         if (xml) {
           return (
-            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
+            <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza PDF allegato" onClick={(e) => {
               e.stopPropagation();
               openPdf(xml, `Fattura_${r.numero}-${r.anno}.pdf`);
             }}>
