@@ -422,6 +422,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         match = findPurchaseMatch(
           record.cedente_denominazione,
           record.importo_totale,
+          record.anno || null,
+          record.numero_documento || null,
+          null, // CIG not stored on fatture_xml yet
           invoices,
           alreadyMatchedKeys
         );
