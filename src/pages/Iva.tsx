@@ -59,7 +59,13 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
       const q = Math.floor((parsed.month - 1) / 3);
       const imposta = Math.abs(s.imposta || 0);
       const cliente = s.cliente || "Sconosciuto";
-      const split = isSplitPayment(s);
+
+      // Art.17: invoice-level imposta=0 ma le righe contengono l'IVA teorica
+      const isArt17 = (s.imposta === 0 && s.imponibile > 0);
+      let art17Iva = 0;
+      if (isArt17 && s.righe && s.righe.length > 0) {
+        art17Iva = s.righe.reduce((sum, r) => sum + Math.abs(r.imposta || 0), 0);
+      }
 
       if (!map.has(cliente)) {
         map.set(cliente, { cliente, t1: 0, t2: 0, t3: 0, t4: 0, split: 0, total: 0 });
@@ -70,7 +76,7 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
       else if (q === 2) entry.t3 += imposta;
       else entry.t4 += imposta;
       entry.total += imposta;
-      if (split) entry.split += imposta;
+      if (isArt17) entry.split += art17Iva;
     }
 
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
