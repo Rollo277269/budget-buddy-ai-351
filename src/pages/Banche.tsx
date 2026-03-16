@@ -774,6 +774,7 @@ const BanchePage = () => {
         onOpenChange={(open) => {if (!open) setSelectedMovement(null);}}
         sales={allSales}
         purchases={allPurchases}
+        documenti={documenti}
         onReconcile={handleReconcile}
         onRemove={(id, invoiceKey) => {removeReconciliation(id, invoiceKey);if (!invoiceKey) setSelectedMovement(null);}} />
       
