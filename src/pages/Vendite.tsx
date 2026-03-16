@@ -333,6 +333,7 @@ const VenditePage = () => {
               <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
               <div
                 className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                title="Carica fatture elettroniche XML"
                 onDragEnter={handleXmlDragEnter}
                 onDragLeave={handleXmlDragLeave}
                 onDragOver={handleXmlDragOver}
