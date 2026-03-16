@@ -1,5 +1,5 @@
 import React from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { fetchCentriFromDb, CentroCR } from "@/hooks/useCentri";
 import { useState, useEffect } from "react";
@@ -212,6 +212,7 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
           stroke="hsl(var(--muted-foreground))"
         />
         <Tooltip content={<CustomTooltip />} />
+        <ReferenceLine x={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
         <Bar dataKey="value" radius={[0, 4, 4, 0]}>
           {data.map((entry, i) => (
             <Cell

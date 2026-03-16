@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { BankMovement } from "@/hooks/useBankData";
@@ -104,6 +105,7 @@ export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases,
           }}
         />
         <Legend wrapperStyle={{ fontSize: "0.8rem" }} />
+        <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
         <Bar dataKey="Vendite" fill="hsl(152 60% 36%)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Acquisti" fill="hsl(0 72% 51%)" radius={[4, 4, 0, 0]} />
         <Line

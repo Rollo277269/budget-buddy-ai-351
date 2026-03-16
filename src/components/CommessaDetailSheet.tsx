@@ -41,7 +41,7 @@ import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
-  Legend, CartesianGrid, ComposedChart, Line,
+  Legend, CartesianGrid, ComposedChart, Line, ReferenceLine,
 } from "recharts";
 
 function invoiceKey(anno: number, numero: number) {
@@ -525,6 +525,7 @@ export function CommessaDetailSheet({
                         <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                         <Tooltip formatter={(v: number) => formatCurrency(v)} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
                         <Bar dataKey="vendite" name="Vendite" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="acquisti" name="Acquisti" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
                         <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
@@ -548,6 +549,7 @@ export function CommessaDetailSheet({
                         <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                         <Tooltip formatter={(v: number) => formatCurrency(v)} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
                         <Bar dataKey="incassato" name="Incassato" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="pagato" name="Pagato" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
                         <Line type="monotone" dataKey="saldoCassa" name="Saldo Cassa" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
