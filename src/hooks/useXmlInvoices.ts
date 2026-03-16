@@ -18,6 +18,7 @@ export interface XmlInvoiceRecord {
   matched: boolean;
   tipo: string;
   created_at: string;
+  numero_documento: string;
 }
 
 interface InvoiceWithKey {
