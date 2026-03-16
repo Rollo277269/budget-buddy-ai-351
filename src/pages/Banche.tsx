@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, MatchedInvoice, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
 import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
+import { useXmlInvoices, XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -80,9 +81,10 @@ interface ReconcileSheetProps {
   documenti: DocumentoAcquisto[];
   onReconcile: (movementId: string, invoices: MatchedInvoice[]) => void;
   onRemove: (movementId: string, invoiceKey?: string) => void;
+  findXml?: (key: string, counterpartName?: string) => XmlInvoiceRecord | undefined;
 }
 
-function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove }: ReconcileSheetProps) {
+function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove, findXml }: ReconcileSheetProps) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"vendita" | "acquisto" | "documento">("vendita");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -296,6 +298,10 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                           <div className="flex items-center gap-2">
                             <Checkbox checked={isSelected} className="pointer-events-none" />
                             <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
+                            {!isVendita && findXml && (() => {
+                              const xml = findXml(`${inv.anno}-${inv.numero}`, (inv as PurchaseInvoice).fornitore);
+                              return xml?.numero_documento ? <span className="text-[10px] font-mono text-muted-foreground">(Forn: {xml.numero_documento})</span> : null;
+                            })()}
                             {score >= 35 &&
                             <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
                             }
@@ -368,6 +374,7 @@ const BanchePage = () => {
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
+  const { findXml } = useXmlInvoices(allPurchases, "acquisto");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -787,7 +794,8 @@ const BanchePage = () => {
         purchases={allPurchases}
         documenti={documenti}
         onReconcile={handleReconcile}
-        onRemove={(id, invoiceKey) => {removeReconciliation(id, invoiceKey);if (!invoiceKey) setSelectedMovement(null);}} />
+        onRemove={(id, invoiceKey) => {removeReconciliation(id, invoiceKey);if (!invoiceKey) setSelectedMovement(null);}}
+        findXml={findXml} />
       
 
       {/* Duplicate detection dialog */}

@@ -435,6 +435,7 @@ export type Database = {
           invoice_key: string | null
           matched: boolean | null
           numero: number | null
+          numero_documento: string | null
           parsed_data: Json | null
           storage_path: string
           tipo: string
@@ -451,6 +452,7 @@ export type Database = {
           invoice_key?: string | null
           matched?: boolean | null
           numero?: number | null
+          numero_documento?: string | null
           parsed_data?: Json | null
           storage_path: string
           tipo?: string
@@ -467,6 +469,7 @@ export type Database = {
           invoice_key?: string | null
           matched?: boolean | null
           numero?: number | null
+          numero_documento?: string | null
           parsed_data?: Json | null
           storage_path?: string
           tipo?: string

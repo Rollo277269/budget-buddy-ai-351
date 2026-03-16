@@ -18,6 +18,7 @@ export interface XmlInvoiceRecord {
   matched: boolean;
   tipo: string;
   created_at: string;
+  numero_documento: string;
 }
 
 interface InvoiceWithKey {
@@ -89,14 +90,14 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
   const fetchRecords = useCallback(async () => {
     const { data, error } = await supabase
       .from("fatture_xml" as any)
-      .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at")
+      .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at, numero_documento")
       .eq("tipo", tipo)
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching XML records:", error);
       return;
     }
-    setXmlRecords((data || []).map((r: any) => ({ ...r, parsed_data: null })) as unknown as XmlInvoiceRecord[]);
+    setXmlRecords((data || []).map((r: any) => ({ ...r, parsed_data: null, numero_documento: r.numero_documento || "" })) as unknown as XmlInvoiceRecord[]);
     setLoading(false);
   }, [tipo]);
 
@@ -216,6 +217,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             parsed_data: parsedWithoutRaw as any,
             matched: isMatched,
             tipo,
+            numero_documento: parsed.numero || "",
           } as any);
 
         if (insertError) {
