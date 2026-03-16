@@ -125,6 +125,73 @@ const IvaPage = () => {
     return t;
   }, [periodData]);
 
+  // VAT rate breakdown
+  const RATE_COLORS: Record<string, string> = {
+    "22%": "hsl(217, 91%, 60%)",
+    "10%": "hsl(160, 84%, 39%)",
+    "4%": "hsl(38, 92%, 50%)",
+    "5%": "hsl(280, 65%, 60%)",
+    "0%": "hsl(var(--muted-foreground))",
+  };
+
+  function inferRate(imponibile: number, imposta: number): string {
+    if (!imponibile || imponibile === 0) return "0%";
+    const pct = Math.round((imposta / imponibile) * 100);
+    if (pct >= 21 && pct <= 23) return "22%";
+    if (pct >= 9 && pct <= 11) return "10%";
+    if (pct >= 3 && pct <= 5) return "4%";
+    if (pct >= 4 && pct <= 6) return "5%";
+    if (pct === 0) return "0%";
+    return `${pct}%`;
+  }
+
+  const rateBreakdown = useMemo(() => {
+    const map = new Map<string, { aliquota: string; imponibileVendite: number; ivaVendite: number; imponibileAcquisti: number; ivaAcquisti: number }>();
+
+    const getOrCreate = (rate: string) => {
+      if (!map.has(rate)) map.set(rate, { aliquota: rate, imponibileVendite: 0, ivaVendite: 0, imponibileAcquisti: 0, ivaAcquisti: 0 });
+      return map.get(rate)!;
+    };
+
+    // Sales: use righe for per-row rate detection
+    allSales.filter((s) => s.anno === yearNum).forEach((s) => {
+      if (s.righe && s.righe.length > 0) {
+        s.righe.forEach((r) => {
+          const rate = inferRate(r.imponibile, r.imposta);
+          const entry = getOrCreate(rate);
+          entry.imponibileVendite += Math.abs(r.imponibile || 0);
+          entry.ivaVendite += Math.abs(r.imposta || 0);
+        });
+      } else {
+        const rate = inferRate(s.imponibile, s.imposta);
+        const entry = getOrCreate(rate);
+        entry.imponibileVendite += Math.abs(s.imponibile || 0);
+        entry.ivaVendite += Math.abs(s.imposta || 0);
+      }
+    });
+
+    // Purchases: aggregate rate
+    allPurchases.filter((p) => p.anno === yearNum).forEach((p) => {
+      const rate = inferRate(p.imponibile, p.imposta);
+      const entry = getOrCreate(rate);
+      entry.imponibileAcquisti += Math.abs(p.imponibile || 0);
+      entry.ivaAcquisti += Math.abs(p.imposta || 0);
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      const pa = parseInt(a.aliquota);
+      const pb = parseInt(b.aliquota);
+      return pb - pa;
+    });
+  }, [allSales, allPurchases, yearNum]);
+
+  const ratePieData = useMemo(() => {
+    return rateBreakdown.map((r) => ({
+      name: r.aliquota,
+      value: Math.round((r.ivaVendite + r.ivaAcquisti) * 100) / 100,
+    })).filter(d => d.value > 0);
+  }, [rateBreakdown]);
+
   // Chart data for the composed chart
   const chartData = useMemo(() => {
     return periodData.map((d) => ({
