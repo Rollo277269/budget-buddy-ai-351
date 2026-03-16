@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useInvoiceData, SaleInvoice, SaleInvoiceRiga } from "@/hooks/useInvoiceData";
+import { useInvoiceData, SaleInvoice, SaleInvoiceRiga, parseExcelSales, seedSalesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
@@ -15,10 +15,13 @@ import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, ChevronDown, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
