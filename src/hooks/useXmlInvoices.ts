@@ -24,10 +24,22 @@ export interface XmlInvoiceRecord {
 interface InvoiceWithKey {
   anno: number;
   numero: number;
+  suffisso?: string;
   totale?: number;
   cliente?: string;
   fornitore?: string;
   tipo?: string; // e.g. "Nota di Credito", "Fattura", etc.
+}
+
+/** Extract suffisso from numero_documento, e.g. "9/A" → "A", "123" → "" */
+function extractSuffisso(numeroDocumento: string): string {
+  const match = (numeroDocumento || "").match(/\/([A-Za-z]+)$/);
+  return match ? match[1] : "";
+}
+
+/** Build XML invoice key including suffisso when present */
+export function buildSalesXmlKey(anno: number, numero: number, suffisso?: string): string {
+  return suffisso ? `${anno}-${numero}-${suffisso}` : `${anno}-${numero}`;
 }
 
 function normalizeStr(s: string): string {
