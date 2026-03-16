@@ -298,6 +298,10 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                           <div className="flex items-center gap-2">
                             <Checkbox checked={isSelected} className="pointer-events-none" />
                             <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
+                            {!isVendita && findXml && (() => {
+                              const xml = findXml(`${inv.anno}-${inv.numero}`, (inv as PurchaseInvoice).fornitore);
+                              return xml?.numero_documento ? <span className="text-[10px] font-mono text-muted-foreground">(Forn: {xml.numero_documento})</span> : null;
+                            })()}
                             {score >= 35 &&
                             <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
                             }
