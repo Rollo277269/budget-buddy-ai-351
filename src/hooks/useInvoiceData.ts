@@ -213,7 +213,7 @@ async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
   while (true) {
     const { data, error } = await supabase
       .from("fatture_acquisto" as any)
-      .select("*")
+      .select("tipo,anno,numero,data,fornitore,partita_iva,totale,imponibile,imposta,cassa,ritenute,descrizione,cig,cup,stato,scadenza,pagamento")
       .order("anno", { ascending: true })
       .order("numero", { ascending: true })
       .range(from, from + PAGE - 1);

@@ -1,11 +1,16 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import * as XLSX from "xlsx";
-import * as pdfjsLib from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
 import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 
-// Configure pdf.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+async function getXLSX() {
+  return await import("xlsx");
+}
+
+async function getPdfjs() {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
 
 export interface MatchedInvoice {
   type: "vendita" | "acquisto" | "documento";
