@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, SaleInvoiceRiga, parseExcelSales, seedSalesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
-import { useXmlInvoices } from "@/hooks/useXmlInvoices";
+import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
 import { CentroCell } from "@/components/CentroCell";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -330,9 +330,9 @@ const VenditePage = () => {
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       {
         key: "xml", label: "XML", filterable: true,
-        filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        filterValue: (r) => hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso)) ? "sì" : "no",
         render: (r) => {
-          const k = `${r.anno}-${r.numero}`;
+          const k = buildSalesXmlKey(r.anno, r.numero, r.suffisso);
           const xml = findXml(k, r.cliente);
           if (xml) return (
             <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza XML associato" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
@@ -351,9 +351,9 @@ const VenditePage = () => {
       },
       {
         key: "pdf", label: "PDF", filterable: true,
-        filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        filterValue: (r) => hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso)) ? "sì" : "no",
         render: (r) => {
-          const xml = findXml(`${r.anno}-${r.numero}`, r.cliente);
+          const xml = findXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso), r.cliente);
           if (xml) {
             return (
               <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza PDF allegato" onClick={(e) => {
@@ -592,7 +592,7 @@ const VenditePage = () => {
             onRowClick={setSelectedInvoice}
             rowClassName={(r) => {
               const nc = isNotaCredito(r);
-              const xml = hasXml(`${r.anno}-${r.numero}`);
+              const xml = hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso));
               return [
                 nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
                 xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
@@ -657,7 +657,7 @@ const VenditePage = () => {
           invoiceImposta={xmlPickerInvoice?.imposta || 0}
           invoiceCig={xmlPickerInvoice?.cig || ""}
           tipo="vendita"
-          onMatch={manualMatch}
+          onMatch={(xmlId, anno, numero) => manualMatch(xmlId, anno, numero, xmlPickerInvoice?.suffisso)}
           onCigChange={async (anno, numero, cig) => {
             await supabase.from("fatture_vendita").update({ cig }).eq("anno", anno).eq("numero", numero);
             toast.success(`CIG aggiornato: ${cig || "(rimosso)"}`);

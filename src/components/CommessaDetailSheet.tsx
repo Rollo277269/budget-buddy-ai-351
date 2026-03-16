@@ -25,7 +25,7 @@ import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
 import { CentroCell } from "@/components/CentroCell";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
-import { useXmlInvoices } from "@/hooks/useXmlInvoices";
+import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
 import { CommessaExpenseUpload } from "@/components/CommessaExpenseUpload";
 import { EditExpenseDialog } from "@/components/EditExpenseDialog";
 import { useNamingRules } from "@/hooks/useNamingRules";
@@ -189,7 +189,7 @@ export function CommessaDetailSheet({
   }, [fetchParsedVendita, fetchParsedAcquisto]);
 
   const openPdf = useCallback(async (inv: SaleInvoice | PurchaseInvoice, type: "vendita" | "acquisto") => {
-    const key = `${inv.anno}-${inv.numero}`;
+    const key = type === "vendita" ? buildSalesXmlKey(inv.anno, inv.numero, (inv as SaleInvoice).suffisso) : `${inv.anno}-${inv.numero}`;
     const xmlRecord = type === "vendita" ? xmlMapVendita.get(key) : xmlMapAcquisto.get(key);
     if (!xmlRecord) {
       toast.error("Nessun XML associato a questa fattura");
@@ -1798,7 +1798,7 @@ function InvoiceList({
           </TableHeader>
           <TableBody>
             {sorted.map((inv) => {
-              const key = invoiceKey(inv.anno, inv.numero);
+              const key = type === "vendita" ? buildSalesXmlKey(inv.anno, inv.numero, (inv as SaleInvoice).suffisso) : invoiceKey(inv.anno, inv.numero);
               const isAuto = autoKeys.has(key);
               const counterpart = type === "vendita"
                 ? (inv as SaleInvoice).cliente
