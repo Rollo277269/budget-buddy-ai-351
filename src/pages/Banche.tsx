@@ -3,6 +3,7 @@ import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search
 import { Link } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, MatchedInvoice, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
+import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -55,15 +56,19 @@ function MatchedInvoiceLabel({ m }: {m: BankMovement;}) {
   return (
     <div className="flex flex-col gap-0.5">
       {m.matchedInvoices.map((inv, i) => {
+        if (inv.type === "documento") {
+          return (
+            <span key={i} className="text-xs font-mono">
+              📄 {inv.documentoLabel || "Doc"}
+            </span>);
+        }
         const type = inv.type === "vendita" ? "V" : "A";
         return (
           <span key={i} className="text-xs font-mono">
             {type} {inv.anno}/{inv.numero}
           </span>);
-
       })}
     </div>);
-
 }
 
 interface ReconcileSheetProps {
@@ -72,32 +77,37 @@ interface ReconcileSheetProps {
   onOpenChange: (open: boolean) => void;
   sales: SaleInvoice[];
   purchases: PurchaseInvoice[];
+  documenti: DocumentoAcquisto[];
   onReconcile: (movementId: string, invoices: MatchedInvoice[]) => void;
   onRemove: (movementId: string, invoiceKey?: string) => void;
 }
 
-function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReconcile, onRemove }: ReconcileSheetProps) {
+function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove }: ReconcileSheetProps) {
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"vendita" | "acquisto">("vendita");
+  const [tab, setTab] = useState<"vendita" | "acquisto" | "documento">("vendita");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const effectiveTab = movement ?
   movement.importo < 0 ? "acquisto" : "vendita" :
   tab;
 
-  const currentTab = tab === effectiveTab ? tab : effectiveTab;
+  const currentTab = tab !== effectiveTab && tab !== "documento" ? effectiveTab : tab;
 
   // Initialize selected from existing matches when movement changes
   useMemo(() => {
     if (movement && movement.matchedInvoices.length > 0) {
-      setSelected(new Set(movement.matchedInvoices.map((inv) => `${inv.type}-${inv.anno}-${inv.numero}`)));
+      setSelected(new Set(movement.matchedInvoices.map((inv) => {
+        if (inv.type === "documento") return `documento-${inv.documentoId}`;
+        return `${inv.type}-${inv.anno}-${inv.numero}`;
+      })));
     } else {
       setSelected(new Set());
     }
   }, [movement?.id]);
 
+  // Scored items for invoice tabs
   const scoredItems = useMemo(() => {
-    if (!movement) return [];
+    if (!movement || currentTab === "documento") return [];
     const isVendita = currentTab === "vendita";
     const list = isVendita ? sales : purchases;
     const scored = list.map((inv) => {
@@ -117,17 +127,60 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
     return filtered.sort((a, b) => b.score - a.score);
   }, [movement, currentTab, sales, purchases, search]);
 
+  // Scored documenti for documento tab
+  const scoredDocumenti = useMemo(() => {
+    if (!movement || currentTab !== "documento") return [];
+    const scored = documenti.filter(d => d.importo != null).map((doc) => {
+      let score = 0;
+      const absImporto = Math.abs(movement.importo);
+      const docImporto = Math.abs(doc.importo || 0);
+      const diff = Math.abs(docImporto - absImporto);
+      if (diff < 0.02) score += 30;
+      else if (diff < 1) score += 25;
+      else if (absImporto > 0 && diff < absImporto * 0.01) score += 20;
+      else if (absImporto > 0 && diff < absImporto * 0.05) score += 10;
+      // CIG match
+      if (movement.cig && doc.cig && movement.cig.toLowerCase() === doc.cig.toLowerCase()) score += 40;
+      // Name similarity
+      const docName = doc.fornitore || doc.descrizione || doc.file_name;
+      const descLower = (movement.descrizione || "").toLowerCase();
+      const nameLower = (docName || "").toLowerCase();
+      if (nameLower && descLower.includes(nameLower)) score += 15;
+      else if (nameLower) {
+        const words = nameLower.split(/\s+/);
+        const common = words.filter(w => w.length > 2 && descLower.includes(w)).length;
+        score += Math.round((common / Math.max(words.length, 1)) * 15);
+      }
+      return { doc, score, name: docName || doc.file_name };
+    });
+    const filtered = search ?
+      scored.filter(({ doc, name }) => {
+        const q = search.toLowerCase();
+        return (name || "").toLowerCase().includes(q) ||
+          (doc.file_name || "").toLowerCase().includes(q) ||
+          (doc.cig || "").toLowerCase().includes(q) ||
+          (doc.descrizione || "").toLowerCase().includes(q);
+      }) : scored;
+    return filtered.sort((a, b) => b.score - a.score);
+  }, [movement, currentTab, documenti, search]);
+
   const selectedTotal = useMemo(() => {
     if (!movement) return 0;
     let total = 0;
     for (const key of selected) {
-      const [type, anno, numero] = key.split("-");
-      const list = type === "vendita" ? sales : purchases;
-      const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
-      if (inv) total += inv.totale;
+      if (key.startsWith("documento-")) {
+        const docId = key.replace("documento-", "");
+        const doc = documenti.find(d => d.id === docId);
+        if (doc && doc.importo) total += Math.abs(doc.importo);
+      } else {
+        const [type, anno, numero] = key.split("-");
+        const list = type === "vendita" ? sales : purchases;
+        const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
+        if (inv) total += inv.totale;
+      }
     }
     return total;
-  }, [selected, sales, purchases, movement]);
+  }, [selected, sales, purchases, documenti, movement]);
 
   if (!movement) return null;
   const isMatched = movement.matchConfidence !== "none";
@@ -136,8 +189,16 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
     const key = `${type}-${anno}-${numero}`;
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);else
-      next.add(key);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleDocumento = (docId: string) => {
+    const key = `documento-${docId}`;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
@@ -145,6 +206,11 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
   const handleConfirm = () => {
     if (selected.size === 0) return;
     const invoices: MatchedInvoice[] = Array.from(selected).map((key) => {
+      if (key.startsWith("documento-")) {
+        const docId = key.replace("documento-", "");
+        const doc = documenti.find(d => d.id === docId);
+        return { type: "documento" as const, anno: 0, numero: 0, documentoId: docId, documentoLabel: doc?.fornitore || doc?.file_name || "Doc" };
+      }
       const [type, anno, numero] = key.split("-");
       return { type: type as "vendita" | "acquisto", anno: Number(anno), numero: Number(numero) };
     });
@@ -173,9 +239,11 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
           <div className="space-y-1">
               {movement.matchedInvoices.map((inv, i) =>
             <div key={i} className="flex items-center justify-between text-xs rounded border px-2 py-1">
-                  <span className="font-mono">{inv.type === "vendita" ? "V" : "A"} {inv.anno}/{inv.numero}</span>
+                  <span className="font-mono">
+                    {inv.type === "documento" ? `📄 ${inv.documentoLabel || "Doc"}` : `${inv.type === "vendita" ? "V" : "A"} ${inv.anno}/${inv.numero}`}
+                  </span>
                   <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
-              onClick={() => onRemove(movement.id, `${inv.type}-${inv.anno}-${inv.numero}`)}>
+              onClick={() => onRemove(movement.id, inv.type === "documento" ? `documento-${inv.documentoId}` : `${inv.type}-${inv.anno}-${inv.numero}`)}>
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
@@ -186,17 +254,20 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
             </div>
           }
           <div className="flex gap-1">
-            <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Fatture Vendita</Button>
-            <Button variant={currentTab === "acquisto" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("acquisto")}>Fatture Acquisto</Button>
+            <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Vendita</Button>
+            <Button variant={currentTab === "acquisto" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("acquisto")}>Acquisto</Button>
+            <Button variant={currentTab === "documento" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("documento")}>
+              <FileText className="h-3 w-3 mr-1" />Documenti
+            </Button>
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Cerca fattura..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
+            <Input placeholder={currentTab === "documento" ? "Cerca documento..." : "Cerca fattura..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
           </div>
           {selected.size > 0 &&
           <div className="flex items-center justify-between rounded-lg border bg-primary/5 border-primary/30 p-2">
               <div className="text-xs">
-                <span className="font-medium">{selected.size} fattur{selected.size === 1 ? "a" : "e"}</span>
+                <span className="font-medium">{selected.size} element{selected.size === 1 ? "o" : "i"}</span>
                 <span className="text-muted-foreground ml-2">Totale: {formatCurrency(selectedTotal)}</span>
                 <span className={`ml-2 font-medium ${Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--warning))]"}`}>
                   {Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "✓ Quadra" : `Δ ${formatCurrency(selectedTotal - Math.abs(movement.importo))}`}
@@ -209,38 +280,68 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, onReco
           }
           <ScrollArea className="h-[350px]">
             <div className="space-y-1 pr-3">
-              {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
-              {scoredItems.map(({ inv, score, name }) => {
-                const invKey = `${currentTab}-${inv.anno}-${inv.numero}`;
-                const isSelected = selected.has(invKey);
-                const isVendita = currentTab === "vendita";
-                return (
-                  <button
-                    key={invKey}
-                    className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
-                    onClick={() => toggleInvoice(currentTab, inv.anno, inv.numero)}>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Checkbox checked={isSelected} className="pointer-events-none" />
-                        <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
-                        {score >= 35 &&
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
-                        }
-                      </div>
-                      <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground truncate ml-6">{name}</p>
-                    {inv.cig && <span className="text-[10px] font-mono text-muted-foreground ml-6">CIG: {inv.cig}</span>}
-                  </button>);
-
-              })}
+              {currentTab !== "documento" && (
+                <>
+                  {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
+                  {scoredItems.map(({ inv, score, name }) => {
+                    const invKey = `${currentTab}-${inv.anno}-${inv.numero}`;
+                    const isSelected = selected.has(invKey);
+                    const isVendita = currentTab === "vendita";
+                    return (
+                      <button
+                        key={invKey}
+                        className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                        onClick={() => toggleInvoice(currentTab as "vendita" | "acquisto", inv.anno, inv.numero)}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={isSelected} className="pointer-events-none" />
+                            <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
+                            {score >= 35 &&
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
+                            }
+                          </div>
+                          <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate ml-6">{name}</p>
+                        {inv.cig && <span className="text-[10px] font-mono text-muted-foreground ml-6">CIG: {inv.cig}</span>}
+                      </button>);
+                  })}
+                </>
+              )}
+              {currentTab === "documento" && (
+                <>
+                  {scoredDocumenti.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessun documento trovato</p>}
+                  {scoredDocumenti.map(({ doc, score, name }) => {
+                    const docKey = `documento-${doc.id}`;
+                    const isSelected = selected.has(docKey);
+                    return (
+                      <button
+                        key={docKey}
+                        className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                        onClick={() => toggleDocumento(doc.id)}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={isSelected} className="pointer-events-none" />
+                            <FileText className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs font-medium truncate max-w-[200px]">{name}</span>
+                            {score >= 35 &&
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
+                            }
+                          </div>
+                          <span className="text-xs font-mono font-medium text-expense">{formatCurrency(Math.abs(doc.importo || 0))}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate ml-8">{doc.file_name}</p>
+                        {doc.data_documento && <span className="text-[10px] text-muted-foreground ml-8">{doc.data_documento}</span>}
+                        {doc.cig && <span className="text-[10px] font-mono text-muted-foreground ml-8"> CIG: {doc.cig}</span>}
+                      </button>);
+                  })}
+                </>
+              )}
             </div>
           </ScrollArea>
         </div>
       </SheetContent>
     </Sheet>);
-
 }
 
 const ACCEPTED_TYPES = [
@@ -265,6 +366,7 @@ const BanchePage = () => {
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
+  const { documenti } = useDocumentiAcquisto();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -400,7 +502,8 @@ const BanchePage = () => {
       movementId,
       invoiceType: inv.type,
       invoiceAnno: inv.anno,
-      invoiceNumero: inv.numero
+      invoiceNumero: inv.numero,
+      documentoId: inv.documentoId,
     }));
     addReconciliation(recs);
   };
@@ -672,6 +775,7 @@ const BanchePage = () => {
         onOpenChange={(open) => {if (!open) setSelectedMovement(null);}}
         sales={allSales}
         purchases={allPurchases}
+        documenti={documenti}
         onReconcile={handleReconcile}
         onRemove={(id, invoiceKey) => {removeReconciliation(id, invoiceKey);if (!invoiceKey) setSelectedMovement(null);}} />
       

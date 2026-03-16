@@ -8,9 +8,11 @@ import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 export interface MatchedInvoice {
-  type: "vendita" | "acquisto";
+  type: "vendita" | "acquisto" | "documento";
   anno: number;
   numero: number;
+  documentoId?: string;
+  documentoLabel?: string;
 }
 
 export interface BankMovement {
@@ -27,16 +29,17 @@ export interface BankMovement {
   matchedInvoices: MatchedInvoice[];
   matchConfidence: "auto" | "manual" | "none";
   // Legacy compat - derived from matchedInvoices[0]
-  matchedType: "vendita" | "acquisto" | "";
+  matchedType: "vendita" | "acquisto" | "documento" | "";
   matchedAnno: number;
   matchedNumero: number;
 }
 
 export interface Reconciliation {
   movementId: string;
-  invoiceType: "vendita" | "acquisto";
+  invoiceType: "vendita" | "acquisto" | "documento";
   invoiceAnno: number;
   invoiceNumero: number;
+  documentoId?: string;
 }
 
 async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
@@ -63,12 +66,19 @@ async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
 }
 
 async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string) {
-  await supabase.from("bank_reconciliations" as any).insert({
-    movement_id: movementDbId,
-    invoice_type: rec.invoiceType,
-    invoice_anno: rec.invoiceAnno,
-    invoice_numero: rec.invoiceNumero,
-  } as any);
+  if (rec.documentoId) {
+    await supabase.from("bank_reconciliations" as any).insert({
+      movement_id: movementDbId,
+      documento_id: rec.documentoId,
+    } as any);
+  } else {
+    await supabase.from("bank_reconciliations" as any).insert({
+      movement_id: movementDbId,
+      invoice_type: rec.invoiceType,
+      invoice_anno: rec.invoiceAnno,
+      invoice_numero: rec.invoiceNumero,
+    } as any);
+  }
 }
 
 async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: string) {
@@ -486,9 +496,12 @@ function autoMatch(
     const manuals = manualGrouped.get(m.id);
     if (manuals && manuals.length > 0) {
       const invoices: MatchedInvoice[] = manuals.map((r) => {
+        if (r.documentoId) {
+          return { type: "documento" as const, anno: 0, numero: 0, documentoId: r.documentoId };
+        }
         const key = `${r.invoiceAnno}-${r.invoiceNumero}`;
         if (r.invoiceType === "vendita") usedSales.add(key);
-        else usedPurchases.add(key);
+        else if (r.invoiceType === "acquisto") usedPurchases.add(key);
         return { type: r.invoiceType, anno: r.invoiceAnno, numero: r.invoiceNumero };
       });
       return {
@@ -503,7 +516,7 @@ function autoMatch(
     }
 
     let bestScore = 0;
-    let bestType: "vendita" | "acquisto" = "vendita";
+    let bestType: "vendita" | "acquisto" | "documento" = "vendita";
     let bestAnno = 0;
     let bestNumero = 0;
 
@@ -523,7 +536,8 @@ function autoMatch(
     return {
       movement: m,
       invoices: [] as MatchedInvoice[],
-      bestType, bestAnno, bestNumero, bestScore,
+      bestType: bestType as "vendita" | "acquisto" | "documento",
+      bestAnno, bestNumero, bestScore,
       confidence: "none" as "none" | "auto" | "manual",
     };
   });
@@ -782,7 +796,11 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     await deleteReconciliationFromDb(movementId, invoiceKey);
     setReconciliations((prev) => {
       if (invoiceKey) {
-        return prev.filter((r) => !(r.movementId === movementId && `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` === invoiceKey));
+        return prev.filter((r) => {
+          if (r.movementId !== movementId) return true;
+          if (r.documentoId) return `documento-${r.documentoId}` !== invoiceKey;
+          return `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` !== invoiceKey;
+        });
       }
       return prev.filter((r) => r.movementId !== movementId);
     });
