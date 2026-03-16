@@ -17,9 +17,10 @@ interface FilterBarProps {
   };
   hideCliente?: boolean;
   hideFornitore?: boolean;
+  compact?: boolean;
 }
 
-export function FilterBar({ filters, onFiltersChange, options, hideCliente, hideFornitore }: FilterBarProps) {
+export function FilterBar({ filters, onFiltersChange, options, hideCliente, hideFornitore, compact }: FilterBarProps) {
   const update = (key: keyof Filters, value: string) => {
     onFiltersChange({ ...filters, [key]: value });
   };
@@ -45,6 +46,85 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
     { value: "", label: "Tutti i CIG" },
     ...options.cigs.map((c) => ({ value: c, label: c })),
   ], [options.cigs]);
+
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Combobox
+          value={filters.anno}
+          onValueChange={(v) => update("anno", v)}
+          options={yearOptions}
+          placeholder="Anno"
+          searchPlaceholder="Cerca anno..."
+          className="w-[100px]"
+        />
+
+        {!hideCliente && (
+          <Combobox
+            value={filters.cliente}
+            onValueChange={(v) => update("cliente", v)}
+            options={clientOptions}
+            placeholder="Cliente"
+            searchPlaceholder="Cerca cliente..."
+            className="w-[160px]"
+          />
+        )}
+
+        {!hideFornitore && (
+          <Combobox
+            value={filters.fornitore}
+            onValueChange={(v) => update("fornitore", v)}
+            options={supplierOptions}
+            placeholder="Fornitore"
+            searchPlaceholder="Cerca fornitore..."
+            className="w-[160px]"
+          />
+        )}
+
+        <Combobox
+          value={filters.cig}
+          onValueChange={(v) => update("cig", v)}
+          options={cigOptions}
+          placeholder="CIG"
+          searchPlaceholder="Cerca CIG..."
+          className="w-[130px] font-mono text-xs"
+        />
+
+        {options.centriCosto && options.centriCosto.length > 0 && (
+          <Combobox
+            value={filters.centroCosto}
+            onValueChange={(v) => update("centroCosto", v)}
+            options={[{ value: "", label: "Tutti i centri" }, ...options.centriCosto]}
+            placeholder="C. Costo"
+            searchPlaceholder="Cerca centro..."
+            className="w-[150px]"
+          />
+        )}
+
+        {options.centriRicavo && options.centriRicavo.length > 0 && (
+          <Combobox
+            value={filters.centroRicavo}
+            onValueChange={(v) => update("centroRicavo", v)}
+            options={[{ value: "", label: "Tutti i centri" }, ...options.centriRicavo]}
+            placeholder="C. Ricavo"
+            searchPlaceholder="Cerca centro..."
+            className="w-[150px]"
+          />
+        )}
+
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={() => onFiltersChange({ anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "", centroRicavo: "" })}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-wrap items-end gap-3">

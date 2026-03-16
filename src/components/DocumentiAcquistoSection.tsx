@@ -59,9 +59,10 @@ type SortDir = "asc" | "desc" | null;
 interface Props {
   dropZoneOnly?: boolean;
   tableOnly?: boolean;
+  compact?: boolean;
 }
 
-export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
+export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: Props) {
   const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto();
   const { centriCosto } = useCentriData();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -214,6 +215,21 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
 
   // Drop zone only mode
   if (dropZoneOnly) {
+    if (compact) {
+      return (
+        <>
+          <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
+          <div
+            className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${pdfDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+            onDragEnter={handlePdfDragEnter} onDragLeave={handlePdfDragLeave} onDragOver={handlePdfDragOver} onDrop={handlePdfDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Receipt className="h-3.5 w-3.5" />}
+            <span className="text-[11px] font-medium">PDF</span>
+          </div>
+        </>
+      );
+    }
     return (
       <>
         <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
