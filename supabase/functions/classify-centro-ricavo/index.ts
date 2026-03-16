@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    // tipo: "costo" | "ricavo", tipoFattura: "vendita" | "acquisto"
-    const { invoices, centri, tipo = "ricavo", tipoFattura = "vendita" } = await req.json();
+    // useClassifyId: when true, use inv._classifyId as the ID instead of anno-numero
+    const { invoices, centri, tipo = "ricavo", tipoFattura = "vendita", useClassifyId = false } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -27,7 +27,7 @@ serve(async (req) => {
     }
 
     const centriList = centriFiltrati
-      .map((c: any) => `${c.codice}: ${c.descrizione}`)
+      .map((c: any) => `${c.codice}: ${c.descrizione}${c.paroleChiaveMatching ? ` (parole chiave: ${c.paroleChiaveMatching})` : ""}`)
       .join("\n");
 
     const soggettoField = tipoFattura === "vendita" ? "cliente" : "fornitore";
@@ -35,18 +35,21 @@ serve(async (req) => {
 
     const invoiceList = invoices
       .map(
-        (inv: any) =>
-          `ID:${inv.anno}-${inv.numero} | ${soggettoLabel}:${inv[soggettoField] || "N/A"} | Importo:${inv.totale} | Desc:${inv.descrizione || "N/A"} | CIG:${inv.cig || "N/A"}`
+        (inv: any) => {
+          const id = useClassifyId && inv._classifyId ? inv._classifyId : `${inv.anno}-${inv.numero}`;
+          return `ID:${id} | ${soggettoLabel}:${inv[soggettoField] || "N/A"} | Importo:${inv.totale} | Desc:${inv.descrizione || "N/A"} | CIG:${inv.cig || "N/A"}`;
+        }
       )
       .join("\n");
 
-    const systemPrompt = `Sei un assistente contabile. Devi classificare fatture di ${tipoFattura} assegnando a ciascuna un centro di ${tipo}.
+    const systemPrompt = `Sei un assistente contabile esperto. Devi classificare fatture di ${tipoFattura} assegnando a ciascuna un centro di ${tipo}.
 
 Centri di ${tipo} disponibili:
 ${centriList}
 
-Per ogni fattura, rispondi SOLO con il codice del centro di ${tipo} più appropriato basandoti su ${soggettoLabel.toLowerCase()}, descrizione, importo e CIG.
-Se non riesci a determinare il centro, rispondi con "N/A".`;
+Per ogni fattura/riga, analizza attentamente la DESCRIZIONE, il ${soggettoLabel.toLowerCase()}, l'importo e il CIG per determinare il centro di ${tipo} più appropriato.
+Usa le parole chiave associate ai centri per guidare la classificazione.
+Se non riesci a determinare il centro con sicurezza, rispondi con "N/A".`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -62,7 +65,7 @@ Se non riesci a determinare il centro, rispondi con "N/A".`;
             { role: "system", content: systemPrompt },
             {
               role: "user",
-              content: `Classifica queste fatture.\n\n${invoiceList}`,
+              content: `Classifica queste fatture/righe.\n\n${invoiceList}`,
             },
           ],
           tools: [
@@ -79,7 +82,7 @@ Se non riesci a determinare il centro, rispondi con "N/A".`;
                       items: {
                         type: "object",
                         properties: {
-                          id: { type: "string", description: "ID fattura nel formato anno-numero" },
+                          id: { type: "string", description: "ID fattura/riga (es. 2024-15 o 2024-15-0)" },
                           codice: { type: "string", description: `Codice del centro di ${tipo} assegnato, o N/A` },
                         },
                         required: ["id", "codice"],

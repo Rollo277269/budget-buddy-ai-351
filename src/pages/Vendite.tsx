@@ -261,11 +261,28 @@ const VenditePage = () => {
       let totalClassified = 0;
       const batchSize = 20;
       if (hasRicavo) {
-        const unclassified = sales.filter((s) => !ricavoMap.map[`${s.anno}-${s.numero}`]);
-        for (let i = 0; i < unclassified.length; i += batchSize) {
-          const batch = unclassified.slice(i, i + batchSize);
+        // Build per-row items for multi-row invoices, single item for single-row
+        const items: { id: string; invoice: any }[] = [];
+        for (const s of sales) {
+          if (s.righe && s.righe.length > 1) {
+            s.righe.forEach((riga, idx) => {
+              const key = `${s.anno}-${s.numero}-${idx}`;
+              if (!ricavoMap.map[key]) {
+                items.push({ id: key, invoice: { ...s, descrizione: riga.descrizione || s.descrizione, totale: riga.totale, cig: riga.cig || s.cig } });
+              }
+            });
+          } else {
+            const key = `${s.anno}-${s.numero}`;
+            if (!ricavoMap.map[key]) {
+              items.push({ id: key, invoice: s });
+            }
+          }
+        }
+        for (let i = 0; i < items.length; i += batchSize) {
+          const batch = items.slice(i, i + batchSize);
+          const invoicesForAI = batch.map(b => ({ ...b.invoice, _classifyId: b.id }));
           const { data, error } = await supabase.functions.invoke("classify-centro-ricavo", {
-            body: { invoices: batch, centri, tipo: "ricavo", tipoFattura: "vendita" },
+            body: { invoices: invoicesForAI, centri, tipo: "ricavo", tipoFattura: "vendita", useClassifyId: true },
           });
           if (error) { toast.error("Errore classificazione ricavi"); break; }
           (data?.classifications || []).forEach((c: { id: string; codice: string }) => {
@@ -391,7 +408,7 @@ const VenditePage = () => {
             );
           }
           // Single or none: use standard CentroCell
-          return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} />;
+          return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} onRemove={ricavoMap.remove} />;
         },
       },
       { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
@@ -611,6 +628,7 @@ const VenditePage = () => {
                             centri={centri}
                             centroMap={ricavoMap.map}
                             onAssign={ricavoMap.assign}
+                            onRemove={ricavoMap.remove}
                           />
                         </TableCell>
                       </TableRow>
