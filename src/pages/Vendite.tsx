@@ -351,9 +351,9 @@ const VenditePage = () => {
       },
       {
         key: "pdf", label: "PDF", filterable: true,
-        filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
+        filterValue: (r) => hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso)) ? "sì" : "no",
         render: (r) => {
-          const xml = findXml(`${r.anno}-${r.numero}`, r.cliente);
+          const xml = findXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso), r.cliente);
           if (xml) {
             return (
               <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza PDF allegato" onClick={(e) => {
