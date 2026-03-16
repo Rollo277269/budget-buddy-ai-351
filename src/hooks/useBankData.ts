@@ -29,7 +29,7 @@ export interface BankMovement {
   matchedInvoices: MatchedInvoice[];
   matchConfidence: "auto" | "manual" | "none";
   // Legacy compat - derived from matchedInvoices[0]
-  matchedType: "vendita" | "acquisto" | "";
+  matchedType: "vendita" | "acquisto" | "documento" | "";
   matchedAnno: number;
   matchedNumero: number;
 }
