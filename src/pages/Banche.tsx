@@ -85,26 +85,29 @@ interface ReconcileSheetProps {
 function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, documenti, onReconcile, onRemove }: ReconcileSheetProps) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"vendita" | "acquisto" | "documento">("vendita");
-  const [tab, setTab] = useState<"vendita" | "acquisto">("vendita");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const effectiveTab = movement ?
   movement.importo < 0 ? "acquisto" : "vendita" :
   tab;
 
-  const currentTab = tab === effectiveTab ? tab : effectiveTab;
+  const currentTab = tab !== effectiveTab && tab !== "documento" ? effectiveTab : tab;
 
   // Initialize selected from existing matches when movement changes
   useMemo(() => {
     if (movement && movement.matchedInvoices.length > 0) {
-      setSelected(new Set(movement.matchedInvoices.map((inv) => `${inv.type}-${inv.anno}-${inv.numero}`)));
+      setSelected(new Set(movement.matchedInvoices.map((inv) => {
+        if (inv.type === "documento") return `documento-${inv.documentoId}`;
+        return `${inv.type}-${inv.anno}-${inv.numero}`;
+      })));
     } else {
       setSelected(new Set());
     }
   }, [movement?.id]);
 
+  // Scored items for invoice tabs
   const scoredItems = useMemo(() => {
-    if (!movement) return [];
+    if (!movement || currentTab === "documento") return [];
     const isVendita = currentTab === "vendita";
     const list = isVendita ? sales : purchases;
     const scored = list.map((inv) => {
@@ -124,17 +127,60 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
     return filtered.sort((a, b) => b.score - a.score);
   }, [movement, currentTab, sales, purchases, search]);
 
+  // Scored documenti for documento tab
+  const scoredDocumenti = useMemo(() => {
+    if (!movement || currentTab !== "documento") return [];
+    const scored = documenti.filter(d => d.importo != null).map((doc) => {
+      let score = 0;
+      const absImporto = Math.abs(movement.importo);
+      const docImporto = Math.abs(doc.importo || 0);
+      const diff = Math.abs(docImporto - absImporto);
+      if (diff < 0.02) score += 30;
+      else if (diff < 1) score += 25;
+      else if (absImporto > 0 && diff < absImporto * 0.01) score += 20;
+      else if (absImporto > 0 && diff < absImporto * 0.05) score += 10;
+      // CIG match
+      if (movement.cig && doc.cig && movement.cig.toLowerCase() === doc.cig.toLowerCase()) score += 40;
+      // Name similarity
+      const docName = doc.fornitore || doc.descrizione || doc.file_name;
+      const descLower = (movement.descrizione || "").toLowerCase();
+      const nameLower = (docName || "").toLowerCase();
+      if (nameLower && descLower.includes(nameLower)) score += 15;
+      else if (nameLower) {
+        const words = nameLower.split(/\s+/);
+        const common = words.filter(w => w.length > 2 && descLower.includes(w)).length;
+        score += Math.round((common / Math.max(words.length, 1)) * 15);
+      }
+      return { doc, score, name: docName || doc.file_name };
+    });
+    const filtered = search ?
+      scored.filter(({ doc, name }) => {
+        const q = search.toLowerCase();
+        return (name || "").toLowerCase().includes(q) ||
+          (doc.file_name || "").toLowerCase().includes(q) ||
+          (doc.cig || "").toLowerCase().includes(q) ||
+          (doc.descrizione || "").toLowerCase().includes(q);
+      }) : scored;
+    return filtered.sort((a, b) => b.score - a.score);
+  }, [movement, currentTab, documenti, search]);
+
   const selectedTotal = useMemo(() => {
     if (!movement) return 0;
     let total = 0;
     for (const key of selected) {
-      const [type, anno, numero] = key.split("-");
-      const list = type === "vendita" ? sales : purchases;
-      const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
-      if (inv) total += inv.totale;
+      if (key.startsWith("documento-")) {
+        const docId = key.replace("documento-", "");
+        const doc = documenti.find(d => d.id === docId);
+        if (doc && doc.importo) total += Math.abs(doc.importo);
+      } else {
+        const [type, anno, numero] = key.split("-");
+        const list = type === "vendita" ? sales : purchases;
+        const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
+        if (inv) total += inv.totale;
+      }
     }
     return total;
-  }, [selected, sales, purchases, movement]);
+  }, [selected, sales, purchases, documenti, movement]);
 
   if (!movement) return null;
   const isMatched = movement.matchConfidence !== "none";
