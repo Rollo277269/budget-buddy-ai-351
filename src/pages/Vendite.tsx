@@ -352,7 +352,47 @@ const VenditePage = () => {
       },
       {
         key: "centroRicavo", label: "Centro Ricavo", filterable: true,
-        render: (r) => <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} />,
+        filterValue: (r) => {
+          const codes = new Set<string>();
+          const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
+          if (headerCode) codes.add(headerCode);
+          if (r.righe && r.righe.length > 1) {
+            r.righe.forEach((_: any, idx: number) => {
+              const rowCode = ricavoMap.map[`${r.anno}-${r.numero}-${idx}`];
+              if (rowCode) codes.add(rowCode);
+            });
+          }
+          return Array.from(codes).join(", ") || "";
+        },
+        render: (r) => {
+          // Collect all distinct centri from header + per-row assignments
+          const codes = new Set<string>();
+          const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
+          if (headerCode) codes.add(headerCode);
+          if (r.righe && r.righe.length > 1) {
+            r.righe.forEach((_: any, idx: number) => {
+              const rowCode = ricavoMap.map[`${r.anno}-${r.numero}-${idx}`];
+              if (rowCode) codes.add(rowCode);
+            });
+          }
+          if (codes.size > 1) {
+            // Multiple centri: show as badges
+            return (
+              <div className="flex flex-wrap gap-0.5">
+                {Array.from(codes).map((code) => {
+                  const centro = centri.find((c) => c.codice === code && c.tipo === "ricavo");
+                  return (
+                    <Badge key={code} variant="outline" className="text-[10px] font-mono px-1 py-0">
+                      {code}{centro ? ` - ${centro.descrizione.slice(0, 15)}` : ""}
+                    </Badge>
+                  );
+                })}
+              </div>
+            );
+          }
+          // Single or none: use standard CentroCell
+          return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} />;
+        },
       },
       { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
       { key: "pagamento", label: "Pagamento", render: (r) => <span className="text-xs">{r.pagamento || "—"}</span>, sortable: true, defaultHidden: true },
