@@ -8,9 +8,11 @@ import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 export interface MatchedInvoice {
-  type: "vendita" | "acquisto";
+  type: "vendita" | "acquisto" | "documento";
   anno: number;
   numero: number;
+  documentoId?: string;
+  documentoLabel?: string;
 }
 
 export interface BankMovement {
