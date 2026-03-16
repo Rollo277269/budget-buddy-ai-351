@@ -100,7 +100,7 @@ export function XmlMatchSection({ record, invoices, xmlMap, tipo, onManualMatch 
 
       <div className="pt-2 border-t border-border">
         {!showSearch ? (
-          <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setShowSearch(true)}>
+          <Button size="sm" variant="ghost" className="text-xs h-7" title="Cerca manualmente tra le fatture disponibili" onClick={() => setShowSearch(true)}>
             <Search className="h-3 w-3 mr-1.5" />
             Cerca manualmente
           </Button>

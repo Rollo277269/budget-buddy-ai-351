@@ -222,7 +222,7 @@ export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete, invoices
 
         <div className="mt-4 flex gap-2">
           {onDelete && (
-            <Button size="sm" variant="destructive" onClick={() => { onDelete(record.id, record.storage_path); onOpenChange(false); }}>
+            <Button size="sm" variant="destructive" title="Elimina questo file XML" onClick={() => { onDelete(record.id, record.storage_path); onOpenChange(false); }}>
               <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
             </Button>
           )}

@@ -325,6 +325,7 @@ export function RitaAssistant() {
               <Button
                 size="icon"
                 className="h-10 w-10 rounded-xl shrink-0"
+                title="Invia messaggio"
                 onClick={send}
                 disabled={!input.trim() || loading}
               >
