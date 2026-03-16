@@ -524,12 +524,12 @@ function CentriCostoRicavoTab() {
             </Badge>
           </div>
           <div className="flex gap-1.5">
-            <Button variant="outline" size="sm" className="h-7 text-xs"
+            <Button variant="outline" size="sm" className="h-7 text-xs" title="Aggiungi nuova voce senza categoria"
               onClick={() => { setAddingUnclassified(tipo); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}
               disabled={isAddingUncl}>
               <Plus className="w-3.5 h-3.5 mr-1" /> Voce
             </Button>
-            <Button variant="outline" size="sm" className="h-7 text-xs"
+            <Button variant="outline" size="sm" className="h-7 text-xs" title="Aggiungi nuova categoria"
               onClick={() => { setAddingCatTo(tipo); setNewCatCodice(""); setNewCatDescrizione(""); }}
               disabled={isAddingCat}>
               <FolderOpen className="w-3.5 h-3.5 mr-1" /> Categoria
