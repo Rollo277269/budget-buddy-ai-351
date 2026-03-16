@@ -392,6 +392,7 @@ const VenditePage = () => {
 
 
   return (
+    <>
     <div className="flex h-full">
       <div className={`flex flex-col overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Sticky header area */}
