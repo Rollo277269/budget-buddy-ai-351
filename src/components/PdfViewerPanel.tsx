@@ -1,9 +1,12 @@
 import { forwardRef, useEffect, useRef, useState, useCallback } from "react";
 import { X, Download, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import * as pdfjsLib from "pdfjs-dist";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+async function getPdfjs() {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
 
 interface PdfViewerPanelProps {
   base64: string;
