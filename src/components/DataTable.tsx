@@ -372,6 +372,7 @@ export function DataTable<T extends Record<string, any>>({
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0"
+                                title={isExpanded ? "Comprimi dettaglio" : "Espandi dettaglio"}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setExpandedRows((prev) => {
