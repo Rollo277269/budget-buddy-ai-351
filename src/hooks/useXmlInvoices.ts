@@ -357,6 +357,12 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     let matchedCount = 0;
 
     for (const record of xmlRecords) {
+      // Skip already-matched records (preserve manual associations)
+      if (record.matched && record.invoice_key) {
+        alreadyMatchedKeys.add(record.invoice_key);
+        continue;
+      }
+
       let match: InvoiceWithKey | null = null;
 
       if (tipo === "acquisto") {
@@ -398,12 +404,6 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             .eq("id", record.id);
           matchedCount++;
         }
-      } else if (record.matched) {
-        await supabase
-          .from("fatture_xml" as any)
-          .update({ invoice_key: null, matched: false } as any)
-          .eq("id", record.id);
-        matchedCount++;
       }
     }
 
