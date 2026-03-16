@@ -108,10 +108,10 @@ function ContiCorrentiTab() {
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(c)}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica conto" onClick={() => setEditing(c)}>
                       <FileText className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(c.id)}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" title="Elimina conto" onClick={() => handleDelete(c.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
