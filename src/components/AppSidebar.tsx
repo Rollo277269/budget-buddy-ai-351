@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -28,6 +28,7 @@ const defaultItems: MenuItem[] = [
   { title: "Acquisti", url: "/acquisti", icon: FileInput },
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
   { title: "Bilancio", url: "/bilancio", icon: Scale },
+  { title: "IVA", url: "/iva", icon: Receipt },
   { title: "Banche", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: Briefcase },
   { title: "Gare", url: "/offerte", icon: Gavel },

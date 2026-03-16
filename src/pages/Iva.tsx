@@ -1,0 +1,347 @@
+import { useMemo, useState } from "react";
+import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { formatCurrency } from "@/lib/format";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, ReferenceLine, ComposedChart, Line,
+} from "recharts";
+import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle } from "lucide-react";
+
+function parseMonthYear(dateStr: string): { month: number; year: number } | null {
+  if (!dateStr) return null;
+  const parts = dateStr.split("/");
+  if (parts.length >= 3) {
+    const m = parseInt(parts[1], 10);
+    const y = parseInt(parts[2], 10);
+    if (!isNaN(m) && !isNaN(y) && m >= 1 && m <= 12) return { month: m, year: y };
+  }
+  return null;
+}
+
+function isSplitPayment(inv: SaleInvoice | PurchaseInvoice): boolean {
+  const pag = (inv.pagamento || "").toLowerCase();
+  const desc = (inv.descrizione || "").toLowerCase();
+  const tipo = (inv.tipo || "").toLowerCase();
+  return pag.includes("split") || desc.includes("split payment") || desc.includes("scissione") || tipo.includes("split");
+}
+
+const MONTH_LABELS = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+const QUARTER_LABELS = ["T1 (Gen-Mar)", "T2 (Apr-Giu)", "T3 (Lug-Set)", "T4 (Ott-Dic)"];
+
+interface PeriodData {
+  label: string;
+  ivaDebito: number;       // IVA sulle vendite (debito verso erario)
+  ivaCredito: number;      // IVA sugli acquisti (credito verso erario)
+  ivaSplitDebito: number;  // IVA split payment vendite
+  ivaSplitCredito: number; // IVA split payment acquisti
+  saldo: number;
+  saldoSenzaSplit: number;
+}
+
+const IvaPage = () => {
+  const { allSales, allPurchases, loading } = useInvoiceData();
+  const [viewMode, setViewMode] = useState<"monthly" | "quarterly">("monthly");
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    [...allSales, ...allPurchases].forEach((inv) => {
+      if (inv.anno) years.add(inv.anno);
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [allSales, allPurchases]);
+
+  const [selectedYear, setSelectedYear] = useState<string>(() =>
+    availableYears.length > 0 ? String(availableYears[0]) : String(new Date().getFullYear())
+  );
+
+  const yearNum = parseInt(selectedYear, 10);
+
+  const periodData = useMemo(() => {
+    const periods = viewMode === "monthly" ? 12 : 4;
+    const data: PeriodData[] = Array.from({ length: periods }, (_, i) => ({
+      label: viewMode === "monthly" ? MONTH_LABELS[i] : QUARTER_LABELS[i],
+      ivaDebito: 0,
+      ivaCredito: 0,
+      ivaSplitDebito: 0,
+      ivaSplitCredito: 0,
+      saldo: 0,
+      saldoSenzaSplit: 0,
+    }));
+
+    // IVA a debito (vendite)
+    allSales.filter((s) => s.anno === yearNum).forEach((s) => {
+      const parsed = parseMonthYear(s.data);
+      if (!parsed) return;
+      const idx = viewMode === "monthly" ? parsed.month - 1 : Math.floor((parsed.month - 1) / 3);
+      const imposta = Math.abs(s.imposta || 0);
+      if (isSplitPayment(s)) {
+        data[idx].ivaSplitDebito += imposta;
+      } else {
+        data[idx].ivaDebito += imposta;
+      }
+    });
+
+    // IVA a credito (acquisti)
+    allPurchases.filter((p) => p.anno === yearNum).forEach((p) => {
+      const parsed = parseMonthYear(p.data);
+      if (!parsed) return;
+      const idx = viewMode === "monthly" ? parsed.month - 1 : Math.floor((parsed.month - 1) / 3);
+      const imposta = Math.abs(p.imposta || 0);
+      if (isSplitPayment(p)) {
+        data[idx].ivaSplitCredito += imposta;
+      } else {
+        data[idx].ivaCredito += imposta;
+      }
+    });
+
+    data.forEach((d) => {
+      d.saldo = (d.ivaDebito + d.ivaSplitDebito) - (d.ivaCredito + d.ivaSplitCredito);
+      d.saldoSenzaSplit = d.ivaDebito - d.ivaCredito;
+    });
+
+    return data;
+  }, [allSales, allPurchases, yearNum, viewMode]);
+
+  const totals = useMemo(() => {
+    const t = {
+      ivaDebito: 0, ivaCredito: 0,
+      ivaSplitDebito: 0, ivaSplitCredito: 0,
+      saldo: 0, splitRimborso: 0,
+    };
+    periodData.forEach((d) => {
+      t.ivaDebito += d.ivaDebito;
+      t.ivaCredito += d.ivaCredito;
+      t.ivaSplitDebito += d.ivaSplitDebito;
+      t.ivaSplitCredito += d.ivaSplitCredito;
+    });
+    t.saldo = (t.ivaDebito + t.ivaSplitDebito) - (t.ivaCredito + t.ivaSplitCredito);
+    t.splitRimborso = t.ivaSplitDebito; // Split payment vendite: IVA non incassata, da chiedere a rimborso
+    return t;
+  }, [periodData]);
+
+  // Chart data for the composed chart
+  const chartData = useMemo(() => {
+    return periodData.map((d) => ({
+      name: d.label,
+      "IVA a debito": Math.round(d.ivaDebito * 100) / 100,
+      "IVA a credito": -Math.round(d.ivaCredito * 100) / 100,
+      "Split debito": Math.round(d.ivaSplitDebito * 100) / 100,
+      "Split credito": -Math.round(d.ivaSplitCredito * 100) / 100,
+      "Saldo": Math.round(d.saldo * 100) / 100,
+    }));
+  }, [periodData]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col overflow-auto h-full">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-bold">Analisi IVA</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "monthly" | "quarterly")}>
+              <TabsList className="h-8">
+                <TabsTrigger value="monthly" className="text-xs h-7">Mensile</TabsTrigger>
+                <TabsTrigger value="quarterly" className="text-xs h-7">Trimestrale</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-24 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-5">
+        {/* KPI cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="border-l-4 border-l-blue-500">
+            <CardContent className="p-4">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> IVA a debito
+              </p>
+              <p className="text-lg font-bold font-mono mt-1">{formatCurrency(totals.ivaDebito)}</p>
+              <p className="text-[10px] text-muted-foreground">Vendite ordinarie</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-emerald-500">
+            <CardContent className="p-4">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <TrendingDown className="h-3 w-3" /> IVA a credito
+              </p>
+              <p className="text-lg font-bold font-mono mt-1">{formatCurrency(totals.ivaCredito)}</p>
+              <p className="text-[10px] text-muted-foreground">Acquisti ordinari</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-amber-500">
+            <CardContent className="p-4">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" /> Split Payment
+              </p>
+              <p className="text-lg font-bold font-mono mt-1">{formatCurrency(totals.ivaSplitDebito)}</p>
+              <p className="text-[10px] text-muted-foreground">IVA non incassata (rimborso)</p>
+            </CardContent>
+          </Card>
+          <Card className={`border-l-4 ${totals.saldo >= 0 ? "border-l-red-500" : "border-l-green-500"}`}>
+            <CardContent className="p-4">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <ArrowLeftRight className="h-3 w-3" /> Saldo IVA
+              </p>
+              <p className={`text-lg font-bold font-mono mt-1 ${totals.saldo >= 0 ? "text-destructive" : "text-income"}`}>
+                {formatCurrency(Math.abs(totals.saldo))}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {totals.saldo >= 0 ? "Da versare" : "A credito"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">
+              Andamento IVA {viewMode === "monthly" ? "mensile" : "trimestrale"} — {selectedYear}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+                <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(Math.abs(value))}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={1.5} strokeOpacity={0.3} />
+                <Bar dataKey="IVA a debito" fill="hsl(217, 91%, 60%)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="IVA a credito" fill="hsl(160, 84%, 39%)" radius={[0, 0, 3, 3]} />
+                <Bar dataKey="Split debito" fill="hsl(38, 92%, 50%)" radius={[3, 3, 0, 0]} stackId="split" />
+                <Bar dataKey="Split credito" fill="hsl(38, 60%, 70%)" radius={[0, 0, 3, 3]} stackId="split" />
+                <Line type="monotone" dataKey="Saldo" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Detail table */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              Dettaglio {viewMode === "monthly" ? "mensile" : "trimestrale"}
+              {totals.ivaSplitDebito > 0 && (
+                <Badge variant="outline" className="text-[10px] font-normal">
+                  Split Payment: {formatCurrency(totals.ivaSplitDebito)} da richiedere a rimborso
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Periodo</TableHead>
+                  <TableHead className="text-xs text-right">IVA debito</TableHead>
+                  <TableHead className="text-xs text-right">IVA credito</TableHead>
+                  <TableHead className="text-xs text-right">Split debito</TableHead>
+                  <TableHead className="text-xs text-right">Split credito</TableHead>
+                  <TableHead className="text-xs text-right">Saldo</TableHead>
+                  <TableHead className="text-xs text-right">Saldo (no split)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {periodData.map((d, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-xs font-medium">{d.label}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{formatCurrency(d.ivaDebito)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{formatCurrency(d.ivaCredito)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.ivaSplitDebito > 0 ? formatCurrency(d.ivaSplitDebito) : "—"}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.ivaSplitCredito > 0 ? formatCurrency(d.ivaSplitCredito) : "—"}</TableCell>
+                    <TableCell className={`text-xs text-right font-mono font-semibold ${d.saldo >= 0 ? "text-destructive" : "text-income"}`}>
+                      {formatCurrency(Math.abs(d.saldo))} {d.saldo >= 0 ? "D" : "C"}
+                    </TableCell>
+                    <TableCell className={`text-xs text-right font-mono ${d.saldoSenzaSplit >= 0 ? "text-destructive" : "text-income"}`}>
+                      {formatCurrency(Math.abs(d.saldoSenzaSplit))} {d.saldoSenzaSplit >= 0 ? "D" : "C"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {/* Totals row */}
+                <TableRow className="bg-muted/50 font-semibold">
+                  <TableCell className="text-xs">TOTALE {selectedYear}</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.ivaDebito)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.ivaCredito)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.ivaSplitDebito)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.ivaSplitCredito)}</TableCell>
+                  <TableCell className={`text-xs text-right font-mono ${totals.saldo >= 0 ? "text-destructive" : "text-income"}`}>
+                    {formatCurrency(Math.abs(totals.saldo))} {totals.saldo >= 0 ? "D" : "C"}
+                  </TableCell>
+                  <TableCell className={`text-xs text-right font-mono ${(totals.ivaDebito - totals.ivaCredito) >= 0 ? "text-destructive" : "text-income"}`}>
+                    {formatCurrency(Math.abs(totals.ivaDebito - totals.ivaCredito))} {(totals.ivaDebito - totals.ivaCredito) >= 0 ? "D" : "C"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Liquidazione trimestrale summary */}
+        {viewMode === "quarterly" && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Riepilogo liquidazione trimestrale</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {periodData.map((d, i) => {
+                  const versamento = d.saldoSenzaSplit;
+                  return (
+                    <div key={i} className="rounded-lg border p-3 space-y-1">
+                      <p className="text-xs font-semibold">{QUARTER_LABELS[i]}</p>
+                      <p className={`text-sm font-mono font-bold ${versamento >= 0 ? "text-destructive" : "text-income"}`}>
+                        {formatCurrency(Math.abs(versamento))}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {versamento >= 0 ? "Da versare" : "A credito"}
+                      </p>
+                      {d.ivaSplitDebito > 0 && (
+                        <p className="text-[10px] text-amber-600">
+                          + {formatCurrency(d.ivaSplitDebito)} split (rimborso)
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default IvaPage;
