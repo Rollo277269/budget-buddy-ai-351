@@ -628,6 +628,7 @@ const VenditePage = () => {
                             centri={centri}
                             centroMap={ricavoMap.map}
                             onAssign={ricavoMap.assign}
+                            onRemove={ricavoMap.remove}
                           />
                         </TableCell>
                       </TableRow>
