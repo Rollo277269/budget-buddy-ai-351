@@ -428,9 +428,9 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: P
           {!isTableOnly && (
             <>
               <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
-              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-                {uploading ? "Analisi in corso..." : "Carica PDF"}
+               <Button size="sm" variant="outline" title="Carica documenti PDF (ricevute, marche da bollo, affitti)" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                 {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                 {uploading ? "Analisi in corso..." : "Carica PDF"}
               </Button>
             </>
           )}
