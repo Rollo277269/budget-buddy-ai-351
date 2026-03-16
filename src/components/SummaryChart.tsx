@@ -19,9 +19,10 @@ interface Props {
   sales: SaleInvoice[];
   purchases: PurchaseInvoice[];
   movements?: BankMovement[];
+  selectedYear?: string;
 }
 
-export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases, movements = [] }: Props) {
+export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases, movements = [], selectedYear }: Props) {
   const data = useMemo(() => {
     const months: Record<string, { vendite: number; acquisti: number; incassato: number; pagato: number }> = {};
 
