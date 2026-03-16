@@ -77,7 +77,7 @@ const VenditePage = () => {
   const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
   const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: SaleInvoice[]; colliding: SaleInvoice[] } | null>(null);
-
+  const toolbarPortalRef = useRef<HTMLDivElement>(null);
   const displayedSales = useMemo(() => {
     const selectedYear = filters.anno.trim();
     const yearFilteredSales = selectedYear
