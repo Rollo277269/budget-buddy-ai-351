@@ -65,6 +65,7 @@ const AcquistiPage = () => {
   const [xmlDragging, setXmlDragging] = useState(false);
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
+  const [xmlExpanded, setXmlExpanded] = useState(false);
 
   const displayedPurchases = useMemo(() => {
     if (!filters.centroCosto) return purchases;
