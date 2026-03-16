@@ -59,29 +59,39 @@ export type Database = {
       bank_reconciliations: {
         Row: {
           created_at: string
+          documento_id: string | null
           id: string
-          invoice_anno: number
-          invoice_numero: number
-          invoice_type: string
+          invoice_anno: number | null
+          invoice_numero: number | null
+          invoice_type: string | null
           movement_id: string
         }
         Insert: {
           created_at?: string
+          documento_id?: string | null
           id?: string
-          invoice_anno: number
-          invoice_numero: number
-          invoice_type: string
+          invoice_anno?: number | null
+          invoice_numero?: number | null
+          invoice_type?: string | null
           movement_id: string
         }
         Update: {
           created_at?: string
+          documento_id?: string | null
           id?: string
-          invoice_anno?: number
-          invoice_numero?: number
-          invoice_type?: string
+          invoice_anno?: number | null
+          invoice_numero?: number | null
+          invoice_type?: string | null
           movement_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bank_reconciliations_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documenti_acquisto"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bank_reconciliations_movement_id_fkey"
             columns: ["movement_id"]
