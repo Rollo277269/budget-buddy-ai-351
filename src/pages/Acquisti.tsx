@@ -13,6 +13,7 @@ import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -369,18 +370,45 @@ const AcquistiPage = () => {
                 </div>
               </div>
               <CollapsibleContent>
-                <div className="flex flex-wrap gap-1.5 pt-1.5">
-                  {xmlRecords.filter((r) => !r.matched).map((r) => (
-                    <Badge
-                      key={r.id}
-                      variant="secondary"
-                      className="text-[10px] cursor-pointer hover:bg-accent"
-                      onClick={() => openXmlSheet(r)}
-                    >
-                      <FileText className="h-3 w-3 mr-1" />
-                      {r.file_name} — {r.cedente_denominazione || "?"} — {r.numero}/{r.anno}
-                    </Badge>
-                  ))}
+                <div className="pt-1.5 max-h-[200px] overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="text-[10px]">
+                        <TableHead className="h-7 text-[10px]">File</TableHead>
+                        <TableHead className="h-7 text-[10px]">N° Doc</TableHead>
+                        <TableHead className="h-7 text-[10px]">Cedente</TableHead>
+                        <TableHead className="h-7 text-[10px] text-right">Importo</TableHead>
+                        <TableHead className="h-7 text-[10px]">Data</TableHead>
+                        <TableHead className="h-7 text-[10px] w-[70px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {xmlRecords.filter((r) => !r.matched).map((r) => (
+                        <TableRow key={r.id} className="cursor-pointer hover:bg-accent/50" onClick={() => openXmlSheet(r)}>
+                          <TableCell className="text-[11px] py-1 max-w-[180px] truncate">
+                            <FileText className="h-3 w-3 mr-1 inline text-muted-foreground" />
+                            {r.file_name}
+                          </TableCell>
+                          <TableCell className="text-[11px] py-1 font-mono">
+                            {r.numero_documento || `${r.numero || "?"}/${r.anno || "?"}`}
+                          </TableCell>
+                          <TableCell className="text-[11px] py-1 max-w-[160px] truncate">{r.cedente_denominazione || "—"}</TableCell>
+                          <TableCell className="text-[11px] py-1 font-mono text-right">{r.importo_totale != null ? formatCurrency(r.importo_totale) : "—"}</TableCell>
+                          <TableCell className="text-[11px] py-1">{r.data_fattura || "—"}</TableCell>
+                          <TableCell className="py-1">
+                            <Button size="sm" variant="outline" className="h-5 text-[10px] px-2" onClick={(e) => {
+                              e.stopPropagation();
+                              // Find a matching purchase to open picker, or open with defaults
+                              const fakePurchase = { anno: r.anno || 0, numero: r.numero || 0, fornitore: r.cedente_denominazione || "", totale: r.importo_totale || 0, imposta: 0, cig: "" } as PurchaseInvoice;
+                              setXmlPickerInvoice(fakePurchase);
+                            }}>
+                              <Link2 className="h-3 w-3 mr-1" />Associa
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </CollapsibleContent>
             </Collapsible>
