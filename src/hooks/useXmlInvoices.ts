@@ -29,6 +29,8 @@ interface InvoiceWithKey {
   cliente?: string;
   fornitore?: string;
   tipo?: string;
+  cig?: string;
+  partita_iva?: string;
 }
 
 /** Extract suffisso from numero_documento, e.g. "9/A" → "A", "123" → "" */
