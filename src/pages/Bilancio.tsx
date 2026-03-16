@@ -327,6 +327,7 @@ export default function BilancioPage() {
               <Tooltip formatter={tooltipFormatter} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="Ricavi" fill="hsl(152, 60%, 36%)" radius={[4, 4, 0, 0]} />
+              <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
               <Bar dataKey="Costi" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Saldo" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>

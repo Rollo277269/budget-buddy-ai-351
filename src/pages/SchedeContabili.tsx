@@ -343,7 +343,7 @@ function SchedaDetail({
                     contentStyle={{ borderRadius: "0.5rem", border: "1px solid hsl(220 14% 89%)", fontSize: "0.75rem" }}
                   />
                   <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
-                  <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                  <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
                   <Bar dataKey="Dare" fill="hsl(152 60% 36%)" radius={[3, 3, 0, 0]} barSize={14} />
                   <Bar dataKey="Avere" fill="hsl(0 72% 51%)" radius={[3, 3, 0, 0]} barSize={14} />
                   <Area
