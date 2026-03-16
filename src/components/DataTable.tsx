@@ -292,7 +292,8 @@ export function DataTable<T extends Record<string, any>>({
       {/* Table */}
       <div
         ref={scrollContainerRef}
-        className="rounded-xl border bg-card overflow-auto max-h-[calc(100vh-280px)]"
+        className="rounded-xl border bg-card overflow-auto max-h-[calc(100vh-280px)] min-h-[300px]"
+        style={{ position: 'relative' }}
         onScroll={useVirtual ? handleScroll : undefined}
       >
         <Table>
