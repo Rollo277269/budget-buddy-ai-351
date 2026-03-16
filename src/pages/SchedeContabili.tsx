@@ -264,7 +264,7 @@ function SchedaDetail({
       <div className="space-y-5 scheda-screen-content">
         {/* Export button */}
         <div className="flex justify-end no-print">
-          <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5" title="Esporta scheda contabile in PDF">
             <FileText className="h-3.5 w-3.5" />
             Report
           </Button>
