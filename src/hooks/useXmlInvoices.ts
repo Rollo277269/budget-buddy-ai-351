@@ -46,11 +46,24 @@ function normalizeStr(s: string): string {
   return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+/** Split a name into normalized words for order-independent matching */
+function nameWords(s: string): string[] {
+  return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(Boolean);
+}
+
 function fuzzyNameMatch(a: string, b: string): boolean {
   const na = normalizeStr(a);
   const nb = normalizeStr(b);
   if (!na || !nb) return false;
-  return na.includes(nb) || nb.includes(na);
+  // Direct substring match
+  if (na.includes(nb) || nb.includes(na)) return true;
+  // Word-order-independent: check if all words of the shorter name appear in the longer
+  const wa = nameWords(a);
+  const wb = nameWords(b);
+  if (wa.length === 0 || wb.length === 0) return false;
+  const [shorter, longer] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
+  const longerJoined = longer.join(" ");
+  return shorter.every(w => longerJoined.includes(w));
 }
 
 /** TD04 = nota di credito, TD01/TD06/TD24/TD25 = fattura */
