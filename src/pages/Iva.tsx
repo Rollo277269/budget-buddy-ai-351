@@ -11,7 +11,9 @@ import {
   ResponsiveContainer, ReferenceLine, ComposedChart, Line,
   PieChart, Pie, Cell,
 } from "recharts";
-import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent } from "lucide-react";
+import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent, Users } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 
 function parseMonthYear(dateStr: string): { month: number; year: number } | null {
   if (!dateStr) return null;
@@ -42,6 +44,100 @@ interface PeriodData {
   ivaSplitCredito: number; // IVA split payment acquisti
   saldo: number;
   saldoSenzaSplit: number;
+}
+
+function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: number }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const data = useMemo(() => {
+    const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; split: number; total: number }>();
+    const yearSales = sales.filter((s) => s.anno === year);
+
+    for (const s of yearSales) {
+      const parsed = parseMonthYear(s.data);
+      if (!parsed) continue;
+      const q = Math.floor((parsed.month - 1) / 3);
+      const imposta = Math.abs(s.imposta || 0);
+      const cliente = s.cliente || "Sconosciuto";
+      const split = isSplitPayment(s);
+
+      if (!map.has(cliente)) {
+        map.set(cliente, { cliente, t1: 0, t2: 0, t3: 0, t4: 0, split: 0, total: 0 });
+      }
+      const entry = map.get(cliente)!;
+      if (q === 0) entry.t1 += imposta;
+      else if (q === 1) entry.t2 += imposta;
+      else if (q === 2) entry.t3 += imposta;
+      else entry.t4 += imposta;
+      entry.total += imposta;
+      if (split) entry.split += imposta;
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [sales, year]);
+
+  if (data.length === 0) return null;
+
+  const totals = data.reduce(
+    (acc, d) => ({ t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4, split: acc.split + d.split, total: acc.total + d.total }),
+    { t1: 0, t2: 0, t3: 0, t4: 0, split: 0, total: 0 }
+  );
+
+  return (
+    <Card>
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CardHeader className="pb-2">
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center gap-2 w-full text-left">
+              <Users className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm flex-1">IVA a debito per cliente — Dettaglio trimestrale {year}</CardTitle>
+              <Badge variant="secondary" className="text-[10px]">{data.length} clienti</Badge>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </button>
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Cliente</TableHead>
+                  <TableHead className="text-xs text-right">T1</TableHead>
+                  <TableHead className="text-xs text-right">T2</TableHead>
+                  <TableHead className="text-xs text-right">T3</TableHead>
+                  <TableHead className="text-xs text-right">T4</TableHead>
+                  <TableHead className="text-xs text-right">Split Payment</TableHead>
+                  <TableHead className="text-xs text-right">Totale</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map((d) => (
+                  <TableRow key={d.cliente}>
+                    <TableCell className="text-xs font-medium max-w-[200px] truncate" title={d.cliente}>{d.cliente}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{d.t1 > 0 ? formatCurrency(d.t1) : "—"}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{d.t2 > 0 ? formatCurrency(d.t2) : "—"}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{d.t3 > 0 ? formatCurrency(d.t3) : "—"}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{d.t4 > 0 ? formatCurrency(d.t4) : "—"}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.split > 0 ? formatCurrency(d.split) : "—"}</TableCell>
+                    <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(d.total)}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-muted/50 font-semibold">
+                  <TableCell className="text-xs">TOTALE</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t1)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t2)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t3)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t4)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.split)}</TableCell>
+                  <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(totals.total)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
 }
 
 const IvaPage = () => {
@@ -494,6 +590,9 @@ const IvaPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* IVA debito per cliente/socio per trimestre */}
+        <ClientQuarterIvaSection sales={allSales} year={yearNum} />
       </div>
     </div>
   );
