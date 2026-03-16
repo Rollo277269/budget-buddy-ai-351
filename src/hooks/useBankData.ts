@@ -40,11 +40,21 @@ export interface Reconciliation {
 }
 
 async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
-  const { data, error } = await supabase
-    .from("bank_reconciliations" as any)
-    .select("*");
-  if (error) { console.error("Error loading reconciliations:", error); return []; }
-  return (data as any[] || []).map((d: any) => ({
+  const all: any[] = [];
+  const PAGE = 1000;
+  let offset = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("bank_reconciliations" as any)
+      .select("*")
+      .range(offset, offset + PAGE - 1);
+    if (error) { console.error("Error loading reconciliations:", error); break; }
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all.map((d: any) => ({
     movementId: d.movement_id,
     invoiceType: d.invoice_type,
     invoiceAnno: d.invoice_anno,
@@ -551,9 +561,26 @@ function autoMatch(
 }
 
 async function loadMovementsFromDb(): Promise<RawMovement[]> {
-  const { data, error } = await supabase.from("bank_movements" as any).select("*").order("created_at", { ascending: true });
-  if (error) { console.error("Error loading movements:", error); return []; }
-  return (data as any[] || []).map((d: any) => ({
+  const all: any[] = [];
+  const PAGE = 1000;
+  let offset = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("bank_movements" as any)
+      .select("*")
+      .order("created_at", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (error) { console.error("Error loading movements:", error); return all.map(mapMovement); }
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all.map(mapMovement);
+}
+
+function mapMovement(d: any): RawMovement {
+  return {
     id: d.id,
     accountId: d.account_id || "default",
     sourceFile: d.source_file || "",
@@ -564,7 +591,7 @@ async function loadMovementsFromDb(): Promise<RawMovement[]> {
     importo: Number(d.importo) || 0,
     saldo: Number(d.saldo) || 0,
     cig: d.cig || "",
-  }));
+  };
 }
 
 async function insertMovementsToDb(movements: RawMovement[]) {
