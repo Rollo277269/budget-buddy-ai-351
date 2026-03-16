@@ -59,9 +59,10 @@ type SortDir = "asc" | "desc" | null;
 interface Props {
   dropZoneOnly?: boolean;
   tableOnly?: boolean;
+  compact?: boolean;
 }
 
-export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly }: Props) {
+export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: Props) {
   const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto();
   const { centriCosto } = useCentriData();
   const fileInputRef = useRef<HTMLInputElement>(null);
