@@ -509,6 +509,7 @@ const VenditePage = () => {
         <DataTable<SaleInvoice>
           columns={columns}
           data={displayedSales}
+          defaultSort={{ key: "data", direction: "desc" }}
           rowKey={(r) => `${r.anno}-${r.numero}-${r.suffisso}-${r.tipo}`}
           onRowClick={setSelectedInvoice}
           rowClassName={(r) => {
