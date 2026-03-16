@@ -9,7 +9,7 @@ import { TrendingUp, TrendingDown, Scale, Percent, BarChart3, Loader2, FileText,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from
 "recharts";
 
 /* ────────── helpers ────────── */
