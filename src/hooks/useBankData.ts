@@ -704,13 +704,38 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     setRefreshKey((k) => k + 1);
   }, [rawMovements, sales, purchases, reconciliations, activeAccountId]);
 
-  const fingerprint = (m: RawMovement) => `${m.accountId}|${m.data}|${m.descrizione}|${m.importo}`;
+  const fingerprint = (m: Pick<RawMovement, "accountId" | "data" | "dataValuta" | "descrizione" | "importo">) =>
+    `${m.accountId}|${m.data}|${m.dataValuta}|${m.descrizione}|${m.importo}`;
 
   const appendMovements = useCallback(async (movs: RawMovement[]) => {
     const ids = await insertMovementsToDb(movs);
     const withIds = movs.map((m, i) => ({ ...m, id: ids[i] || m.id }));
     setRawMovements((prev) => [...prev, ...withIds]);
   }, []);
+
+  // Find and remove duplicate movements already in the DB
+  const deduplicateExisting = useCallback(async () => {
+    const seen = new Map<string, string>(); // fingerprint → first id
+    const dupeIds: string[] = [];
+    for (const m of rawMovements) {
+      const fp = fingerprint(m);
+      if (seen.has(fp)) {
+        dupeIds.push(m.id);
+      } else {
+        seen.set(fp, m.id);
+      }
+    }
+    if (dupeIds.length === 0) return 0;
+    // Delete from DB in batches
+    const BATCH = 200;
+    for (let i = 0; i < dupeIds.length; i += BATCH) {
+      await supabase.from("bank_movements" as any).delete().in("id", dupeIds.slice(i, i + BATCH));
+    }
+    const idSet = new Set(dupeIds);
+    setRawMovements((prev) => prev.filter((m) => !idSet.has(m.id)));
+    setReconciliations((prev) => prev.filter((r) => !idSet.has(r.movementId)));
+    return dupeIds.length;
+  }, [rawMovements]);
 
   const confirmDuplicates = useCallback(() => {
     if (!pendingDuplicates) return;
