@@ -428,7 +428,15 @@ const AcquistiPage = () => {
           invoiceNumero={xmlPickerInvoice?.numero || 0}
           invoiceName={xmlPickerInvoice?.fornitore || ""}
           invoiceTotale={xmlPickerInvoice?.totale || 0}
+          invoiceImposta={xmlPickerInvoice?.imposta || 0}
+          invoiceCig={xmlPickerInvoice?.cig || ""}
+          invoiceNumeroFornitore={xmlPickerInvoice ? (findXml(`${xmlPickerInvoice.anno}-${xmlPickerInvoice.numero}`, xmlPickerInvoice.fornitore)?.numero_documento || "") : ""}
+          tipo="acquisto"
           onMatch={manualMatch}
+          onCigChange={async (anno, numero, cig) => {
+            await supabase.from("fatture_acquisto").update({ cig }).eq("anno", anno).eq("numero", numero);
+            toast.success(`CIG aggiornato: ${cig || "(rimosso)"}`);
+          }}
         />
         <SchedaSoggettoSheet tipo="fornitore" nome={selectedFornitore} allSales={allSales} allPurchases={allPurchases} open={!!selectedFornitore} onOpenChange={(open) => !open && setSelectedFornitore(null)} />
       </div>

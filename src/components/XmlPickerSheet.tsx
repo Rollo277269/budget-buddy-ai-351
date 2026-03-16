@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
 import { formatCurrency } from "@/lib/format";
-import { Search, FileText, Link2, X } from "lucide-react";
+import { Search, FileText, Link2, X, Pencil, Check, Hash } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -14,17 +14,40 @@ interface Props {
   xmlRecords: XmlInvoiceRecord[];
   invoiceAnno: number;
   invoiceNumero: number;
-  invoiceName: string; // cliente or fornitore
+  invoiceName: string;
   invoiceTotale: number;
+  invoiceImposta?: number;
+  invoiceCig?: string;
+  invoiceNumeroFornitore?: string;
+  tipo?: "vendita" | "acquisto";
   onMatch: (xmlId: string, anno: number, numero: number) => void;
+  onCigChange?: (anno: number, numero: number, cig: string) => void;
 }
 
 export function XmlPickerSheet({
-  open, onOpenChange, xmlRecords, invoiceAnno, invoiceNumero, invoiceName, invoiceTotale, onMatch
+  open, onOpenChange, xmlRecords, invoiceAnno, invoiceNumero, invoiceName, invoiceTotale,
+  invoiceImposta, invoiceCig, invoiceNumeroFornitore, tipo = "vendita", onMatch, onCigChange
 }: Props) {
   const [search, setSearch] = useState("");
+  const [editingCig, setEditingCig] = useState(false);
+  const [cigValue, setCigValue] = useState(invoiceCig || "");
 
-  // Show unmatched XMLs, sorted by relevance to this invoice
+  // Sync cigValue when the sheet opens with a new invoice
+  const [prevKey, setPrevKey] = useState("");
+  const key = `${invoiceAnno}-${invoiceNumero}`;
+  if (key !== prevKey) {
+    setPrevKey(key);
+    setCigValue(invoiceCig || "");
+    setEditingCig(false);
+  }
+
+  const handleSaveCig = () => {
+    if (onCigChange) {
+      onCigChange(invoiceAnno, invoiceNumero, cigValue.trim());
+    }
+    setEditingCig(false);
+  };
+
   const scored = useMemo(() => {
     const unmatched = xmlRecords.filter(r => !r.matched);
     const q = search.toLowerCase();
@@ -33,23 +56,19 @@ export function XmlPickerSheet({
           (r.file_name || "").toLowerCase().includes(q) ||
           (r.cedente_denominazione || "").toLowerCase().includes(q) ||
           (r.cessionario_denominazione || "").toLowerCase().includes(q) ||
-          String(r.numero || "").includes(q)
+          String(r.numero || "").includes(q) ||
+          (r.numero_documento || "").toLowerCase().includes(q)
         )
       : unmatched;
 
-    // Score by similarity
     return filtered.map(r => {
       let score = 0;
-      // Amount match
       if (r.importo_totale && Math.abs(r.importo_totale - invoiceTotale) < 0.02) score += 50;
       else if (r.importo_totale && Math.abs(r.importo_totale - invoiceTotale) < invoiceTotale * 0.05) score += 20;
-      // Name match
       const xmlName = (r.cedente_denominazione || r.cessionario_denominazione || "").toLowerCase();
       const invName = invoiceName.toLowerCase();
       if (xmlName && invName && (xmlName.includes(invName) || invName.includes(xmlName))) score += 30;
-      // Year match
       if (r.anno === invoiceAnno) score += 10;
-      // Number match
       if (r.numero === invoiceNumero) score += 10;
       return { record: r, score };
     }).sort((a, b) => b.score - a.score);
@@ -57,7 +76,7 @@ export function XmlPickerSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
-      <SheetContent className="sm:max-w-[500px] z-[60]">
+      <SheetContent className="sm:max-w-[520px] z-[60]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-sm">
             <Link2 className="h-4 w-4" />
@@ -66,8 +85,67 @@ export function XmlPickerSheet({
         </SheetHeader>
 
         <div className="mt-4 space-y-3">
-          <div className="text-xs text-muted-foreground">
-            <span className="font-medium">{invoiceName}</span> — {formatCurrency(invoiceTotale)}
+          {/* Invoice detail card */}
+          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-foreground">{invoiceName || "—"}</span>
+              <Badge variant="outline" className="text-[10px]">
+                {tipo === "acquisto" ? "Acquisto" : "Vendita"}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Totale:</span>
+                <span className="font-mono font-medium">{formatCurrency(invoiceTotale)}</span>
+              </div>
+              {invoiceImposta !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">IVA:</span>
+                  <span className="font-mono font-medium">{formatCurrency(invoiceImposta)}</span>
+                </div>
+              )}
+              {invoiceNumeroFornitore && (
+                <div className="flex justify-between col-span-2">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Hash className="h-3 w-3" />
+                    N° Fornitore:
+                  </span>
+                  <span className="font-mono font-medium">{invoiceNumeroFornitore}</span>
+                </div>
+              )}
+            </div>
+
+            {/* CIG row with edit capability */}
+            <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+              <span className="text-xs text-muted-foreground shrink-0">CIG:</span>
+              {editingCig ? (
+                <div className="flex items-center gap-1 flex-1">
+                  <Input
+                    value={cigValue}
+                    onChange={(e) => setCigValue(e.target.value)}
+                    placeholder="Inserisci CIG..."
+                    className="h-7 text-xs flex-1"
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveCig(); if (e.key === "Escape") setEditingCig(false); }}
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveCig} title="Salva CIG">
+                    <Check className="h-3.5 w-3.5 text-green-600" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingCig(false); setCigValue(invoiceCig || ""); }} title="Annulla">
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 flex-1">
+                  <span className="text-xs font-mono font-medium">{invoiceCig || "—"}</span>
+                  {onCigChange && (
+                    <Button size="icon" variant="ghost" className="h-6 w-6 ml-auto" onClick={() => setEditingCig(true)} title="Modifica CIG">
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="relative">
@@ -85,7 +163,7 @@ export function XmlPickerSheet({
             )}
           </div>
 
-          <ScrollArea className="h-[calc(100vh-220px)]">
+          <ScrollArea className="h-[calc(100vh-340px)]">
             {scored.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
                 <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
@@ -109,6 +187,12 @@ export function XmlPickerSheet({
                       </div>
                       <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
                         <span>{r.cedente_denominazione || r.cessionario_denominazione || "—"}</span>
+                        {r.numero_documento && (
+                          <>
+                            <span>·</span>
+                            <span className="font-mono">Doc: {r.numero_documento}</span>
+                          </>
+                        )}
                         <span>·</span>
                         <span>{r.numero}/{r.anno}</span>
                       </div>
