@@ -29,6 +29,8 @@ interface InvoiceWithKey {
   cliente?: string;
   fornitore?: string;
   tipo?: string;
+  cig?: string;
+  partita_iva?: string;
 }
 
 /** Extract suffisso from numero_documento, e.g. "9/A" → "A", "123" → "" */
@@ -123,35 +125,70 @@ function findSaleMatch(
 }
 
 /**
- * For purchases, match by amount + supplier name since the XML's invoice number
- * is the supplier's numbering, not the company's internal registration number.
+ * For purchases, use a multi-signal scoring approach:
+ * - Exact amount match: +40 points
+ * - Supplier name match: +30 points
+ * - Same year (XML data_fattura vs invoice anno): +10 points
+ * - CIG match: +20 points
+ * - Numero documento match (XML supplier number = invoice numero): +15 points
+ * Returns the highest-scoring unmatched invoice, or null if score < 40.
  */
 function findPurchaseMatch(
   xmlCedente: string | null,
   xmlImporto: number | null,
+  xmlAnno: number | null,
+  xmlNumeroDocumento: string | null,
+  xmlCig: string | null,
   invoices: InvoiceWithKey[],
   alreadyMatchedKeys: Set<string>
 ): InvoiceWithKey | null {
   if (!xmlImporto) return null;
 
-  // First: exact amount + name match
+  let bestMatch: InvoiceWithKey | null = null;
+  let bestScore = 0;
+
   for (const inv of invoices) {
     const key = `${inv.anno}-${inv.numero}`;
     if (alreadyMatchedKeys.has(key)) continue;
-    const amountMatch = inv.totale && Math.abs(inv.totale - xmlImporto) < 0.02;
-    const nameMatch = xmlCedente && inv.fornitore && fuzzyNameMatch(xmlCedente, inv.fornitore);
-    if (amountMatch && nameMatch) return inv;
+
+    let score = 0;
+
+    // Amount match (exact within 2 cents)
+    if (inv.totale && Math.abs(inv.totale - xmlImporto) < 0.02) {
+      score += 40;
+    }
+
+    // Supplier name match
+    if (xmlCedente && inv.fornitore && fuzzyNameMatch(xmlCedente, inv.fornitore)) {
+      score += 30;
+    }
+
+    // Year match
+    if (xmlAnno && inv.anno === xmlAnno) {
+      score += 10;
+    }
+
+    // CIG match (both non-empty and equal)
+    if (xmlCig && inv.cig && xmlCig.trim().toLowerCase() === inv.cig.trim().toLowerCase()) {
+      score += 20;
+    }
+
+    // Numero documento match: XML's supplier numbering matches the invoice numero
+    if (xmlNumeroDocumento) {
+      const xmlNum = parseInt(xmlNumeroDocumento, 10);
+      if (!isNaN(xmlNum) && xmlNum === inv.numero) {
+        score += 15;
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = inv;
+    }
   }
 
-  // Fallback: exact amount match only (if unique)
-  const amountMatches = invoices.filter((inv) => {
-    const key = `${inv.anno}-${inv.numero}`;
-    if (alreadyMatchedKeys.has(key)) return false;
-    return inv.totale && Math.abs(inv.totale - xmlImporto) < 0.02;
-  });
-  if (amountMatches.length === 1) return amountMatches[0];
-
-  return null;
+  // Require at least amount match (40) or name+year+CIG (60) to consider it valid
+  return bestScore >= 40 ? bestMatch : null;
 }
 
 export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "acquisto" = "vendita") {
@@ -255,6 +292,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
           const purchaseMatch = findPurchaseMatch(
             parsed.cedente.denominazione,
             parsed.importoTotale,
+            xmlAnno || null,
+            parsed.numero || null,
+            null, // no CIG from raw XML parse
             invoices,
             alreadyMatchedKeys
           );
@@ -382,6 +422,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         match = findPurchaseMatch(
           record.cedente_denominazione,
           record.importo_totale,
+          record.anno || null,
+          record.numero_documento || null,
+          null, // CIG not stored on fatture_xml yet
           invoices,
           alreadyMatchedKeys
         );
