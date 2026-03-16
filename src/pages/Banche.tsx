@@ -77,6 +77,7 @@ interface ReconcileSheetProps {
   onOpenChange: (open: boolean) => void;
   sales: SaleInvoice[];
   purchases: PurchaseInvoice[];
+  documenti: DocumentoAcquisto[];
   onReconcile: (movementId: string, invoices: MatchedInvoice[]) => void;
   onRemove: (movementId: string, invoiceKey?: string) => void;
 }
