@@ -511,55 +511,68 @@ export function CommessaDetailSheet({
             {/* ── TAB: Analisi ── */}
             <TabsContent value="analisi" className="space-y-6">
               {/* Monthly chart */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="rounded-xl border bg-card p-5">
-                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    Andamento mensile Vendite/Acquisti
-                  </h3>
-                  {data.monthlyData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <ComposedChart data={data.monthlyData}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                        <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
-                        <Bar dataKey="vendite" name="Vendite" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="acquisti" name="Acquisti" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
-                        <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-12">Nessun dato mensile disponibile</p>
-                  )}
-                </div>
+              {(() => {
+                // Compute shared Y-axis domain so both charts align at zero
+                const allValues = data.monthlyData.flatMap(m => [
+                  m.vendite, m.acquisti, m.saldo,
+                  m.incassato, m.pagato, m.saldoCassa,
+                ]);
+                const sharedMin = Math.min(0, ...allValues);
+                const sharedMax = Math.max(0, ...allValues);
+                const sharedDomain: [number, number] = [sharedMin, sharedMax];
 
-                <div className="rounded-xl border bg-card p-5">
-                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    Andamento mensile Incassi/Pagamenti
-                  </h3>
-                  {data.monthlyData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <ComposedChart data={data.monthlyData}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                        <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
-                        <Bar dataKey="incassato" name="Incassato" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="pagato" name="Pagato" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
-                        <Line type="monotone" dataKey="saldoCassa" name="Saldo Cassa" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-12">Nessun dato mensile disponibile</p>
-                  )}
-                </div>
-              </div>
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="rounded-xl border bg-card p-5">
+                      <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                        Andamento mensile Vendite/Acquisti
+                      </h3>
+                      {data.monthlyData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={280}>
+                          <ComposedChart data={data.monthlyData}>
+                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                            <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={sharedDomain} />
+                            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
+                            <Bar dataKey="vendite" name="Vendite" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="acquisti" name="Acquisti" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                            <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-12">Nessun dato mensile disponibile</p>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl border bg-card p-5">
+                      <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                        Andamento mensile Incassi/Pagamenti
+                      </h3>
+                      {data.monthlyData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={280}>
+                          <ComposedChart data={data.monthlyData}>
+                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                            <XAxis dataKey="mese" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={sharedDomain} />
+                            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
+                            <Bar dataKey="incassato" name="Incassato" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="pagato" name="Pagato" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                            <Line type="monotone" dataKey="saldoCassa" name="Saldo Cassa" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-12">Nessun dato mensile disponibile</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Payment status */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
