@@ -264,7 +264,7 @@ export function DataTable<T extends Record<string, any>>({
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs">
+              <Button variant="outline" size="sm" className="text-xs" title="Mostra/nascondi colonne">
                 <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colonne
               </Button>
             </DropdownMenuTrigger>
