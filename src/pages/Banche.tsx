@@ -502,7 +502,8 @@ const BanchePage = () => {
       movementId,
       invoiceType: inv.type,
       invoiceAnno: inv.anno,
-      invoiceNumero: inv.numero
+      invoiceNumero: inv.numero,
+      documentoId: inv.documentoId,
     }));
     addReconciliation(recs);
   };
