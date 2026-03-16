@@ -36,9 +36,10 @@ export interface BankMovement {
 
 export interface Reconciliation {
   movementId: string;
-  invoiceType: "vendita" | "acquisto";
+  invoiceType: "vendita" | "acquisto" | "documento";
   invoiceAnno: number;
   invoiceNumero: number;
+  documentoId?: string;
 }
 
 async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
