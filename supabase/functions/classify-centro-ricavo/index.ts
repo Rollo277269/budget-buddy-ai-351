@@ -128,7 +128,7 @@ Se non riesci a determinare il centro con sicurezza, rispondi con "N/A".`;
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const result = await response.json();
+    const result = await response!.json();
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
 
     if (toolCall?.function?.arguments) {
