@@ -592,7 +592,14 @@ const VenditePage = () => {
           invoiceNumero={xmlPickerInvoice?.numero || 0}
           invoiceName={xmlPickerInvoice?.cliente || ""}
           invoiceTotale={xmlPickerInvoice?.totale || 0}
+          invoiceImposta={xmlPickerInvoice?.imposta || 0}
+          invoiceCig={xmlPickerInvoice?.cig || ""}
+          tipo="vendita"
           onMatch={manualMatch}
+          onCigChange={async (anno, numero, cig) => {
+            await supabase.from("fatture_vendita").update({ cig }).eq("anno", anno).eq("numero", numero);
+            toast.success(`CIG aggiornato: ${cig || "(rimosso)"}`);
+          }}
         />
         <SchedaSoggettoSheet tipo="cliente" nome={selectedCliente} allSales={allSales} allPurchases={allPurchases} open={!!selectedCliente} onOpenChange={(open) => !open && setSelectedCliente(null)} />
       </div>
