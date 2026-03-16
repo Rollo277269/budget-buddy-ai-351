@@ -217,6 +217,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             parsed_data: parsedWithoutRaw as any,
             matched: isMatched,
             tipo,
+            numero_documento: parsed.numero || "",
           } as any);
 
         if (insertError) {
