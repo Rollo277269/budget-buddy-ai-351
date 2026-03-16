@@ -66,12 +66,19 @@ async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
 }
 
 async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string) {
-  await supabase.from("bank_reconciliations" as any).insert({
-    movement_id: movementDbId,
-    invoice_type: rec.invoiceType,
-    invoice_anno: rec.invoiceAnno,
-    invoice_numero: rec.invoiceNumero,
-  } as any);
+  if (rec.documentoId) {
+    await supabase.from("bank_reconciliations" as any).insert({
+      movement_id: movementDbId,
+      documento_id: rec.documentoId,
+    } as any);
+  } else {
+    await supabase.from("bank_reconciliations" as any).insert({
+      movement_id: movementDbId,
+      invoice_type: rec.invoiceType,
+      invoice_anno: rec.invoiceAnno,
+      invoice_numero: rec.invoiceNumero,
+    } as any);
+  }
 }
 
 async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: string) {
