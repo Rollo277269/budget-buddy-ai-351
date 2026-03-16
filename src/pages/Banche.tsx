@@ -363,7 +363,8 @@ const BanchePage = () => {
     movements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
-    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch
+    pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
+    deduplicateExisting,
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
@@ -617,9 +618,18 @@ const BanchePage = () => {
 
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
           {movements.length > 0 &&
-          <Button variant="outline" size="sm" onClick={() => {refreshAutoMatch();toast.success("Riconciliazione automatica aggiornata");}}>
+          <>
+          <Button variant="outline" size="sm" title="Riesegui il matching automatico sui movimenti non riconciliati" onClick={() => {refreshAutoMatch();toast.success("Riconciliazione automatica aggiornata");}}>
               <RefreshCw className="h-4 w-4 mr-1" />Aggiorna riconciliazione
             </Button>
+          <Button variant="outline" size="sm" title="Trova e rimuovi movimenti duplicati nel database" onClick={async () => {
+              const count = await deduplicateExisting();
+              if (count > 0) toast.success(`Rimossi ${count} movimenti duplicati`);
+              else toast.info("Nessun duplicato trovato");
+            }}>
+              <Trash2 className="h-4 w-4 mr-1" />Rimuovi doppioni
+            </Button>
+          </>
           }
           <Button onClick={() => {
             if (!hasValidAccount) {toast.error("Seleziona prima un conto corrente o una carta");return;}
