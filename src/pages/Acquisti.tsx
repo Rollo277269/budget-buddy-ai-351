@@ -179,7 +179,7 @@ const AcquistiPage = () => {
 
   const columns: ColumnDef<PurchaseInvoice>[] = useMemo(
     () => [
-    { key: "numero", label: "N° Reg.", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
+    { key: "numero", label: "N° Reg.", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true, summaryRender: (rows) => <span className="text-[11px] font-semibold text-muted-foreground">{rows.length} righe</span> },
     { key: "numeroFornitore", label: "N° Forn.", render: (r) => {
       const xml = findXml(`${r.anno}-${r.numero}`, r.fornitore);
       const numDoc = xml?.numero_documento;
