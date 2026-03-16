@@ -123,7 +123,7 @@ const Index = () => {
         {/* Chart */}
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">Andamento Mensile</h2>
-          <MonthlyChart sales={sales} purchases={purchases} movements={movements} />
+          <MonthlyChart sales={sales} purchases={purchases} movements={movements} selectedYear={filters.anno} />
         </div>
 
         {/* Pie Charts */}

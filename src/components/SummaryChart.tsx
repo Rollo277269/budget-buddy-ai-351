@@ -19,9 +19,10 @@ interface Props {
   sales: SaleInvoice[];
   purchases: PurchaseInvoice[];
   movements?: BankMovement[];
+  selectedYear?: string;
 }
 
-export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases, movements = [] }: Props) {
+export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases, movements = [], selectedYear }: Props) {
   const data = useMemo(() => {
     const months: Record<string, { vendite: number; acquisti: number; incassato: number; pagato: number }> = {};
 
@@ -62,7 +63,20 @@ export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases,
       }
     });
 
+    // If a year is selected, ensure all 12 months are present
+    if (selectedYear) {
+      const y = selectedYear;
+      for (let m = 1; m <= 12; m++) {
+        const key = `${String(m).padStart(2, "0")}/${y}`;
+        ensure(key);
+      }
+    }
+
     return Object.entries(months)
+      .filter(([key]) => {
+        if (!selectedYear) return true;
+        return key.endsWith(`/${selectedYear}`);
+      })
       .sort(([a], [b]) => {
         const [ma, ya] = a.split("/").map(Number);
         const [mb, yb] = b.split("/").map(Number);
@@ -75,7 +89,7 @@ export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases,
         "Ricavi-Costi": Math.round(vals.vendite - vals.acquisti),
         "Incassato-Pagato": Math.round(vals.incassato - vals.pagato),
       }));
-  }, [sales, purchases, movements]);
+  }, [sales, purchases, movements, selectedYear]);
 
   if (data.length === 0) {
     return (
