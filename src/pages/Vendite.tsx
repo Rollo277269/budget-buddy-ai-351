@@ -391,7 +391,7 @@ const VenditePage = () => {
                   {xmlDuplicateCount > 0 && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive">
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" title="Elimina file XML caricati più volte">
                           <Trash2 className="h-3 w-3 mr-1" />Duplicati ({xmlDuplicateCount})
                         </Button>
                       </AlertDialogTrigger>
