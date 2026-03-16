@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, ComposedChart, Line,
+  PieChart, Pie, Cell,
 } from "recharts";
-import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle } from "lucide-react";
+import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent } from "lucide-react";
 
 function parseMonthYear(dateStr: string): { month: number; year: number } | null {
   if (!dateStr) return null;
@@ -123,6 +124,73 @@ const IvaPage = () => {
     t.splitRimborso = t.ivaSplitDebito; // Split payment vendite: IVA non incassata, da chiedere a rimborso
     return t;
   }, [periodData]);
+
+  // VAT rate breakdown
+  const RATE_COLORS: Record<string, string> = {
+    "22%": "hsl(217, 91%, 60%)",
+    "10%": "hsl(160, 84%, 39%)",
+    "4%": "hsl(38, 92%, 50%)",
+    "5%": "hsl(280, 65%, 60%)",
+    "0%": "hsl(var(--muted-foreground))",
+  };
+
+  function inferRate(imponibile: number, imposta: number): string {
+    if (!imponibile || imponibile === 0) return "0%";
+    const pct = Math.round((imposta / imponibile) * 100);
+    if (pct >= 21 && pct <= 23) return "22%";
+    if (pct >= 9 && pct <= 11) return "10%";
+    if (pct >= 3 && pct <= 5) return "4%";
+    if (pct >= 4 && pct <= 6) return "5%";
+    if (pct === 0) return "0%";
+    return `${pct}%`;
+  }
+
+  const rateBreakdown = useMemo(() => {
+    const map = new Map<string, { aliquota: string; imponibileVendite: number; ivaVendite: number; imponibileAcquisti: number; ivaAcquisti: number }>();
+
+    const getOrCreate = (rate: string) => {
+      if (!map.has(rate)) map.set(rate, { aliquota: rate, imponibileVendite: 0, ivaVendite: 0, imponibileAcquisti: 0, ivaAcquisti: 0 });
+      return map.get(rate)!;
+    };
+
+    // Sales: use righe for per-row rate detection
+    allSales.filter((s) => s.anno === yearNum).forEach((s) => {
+      if (s.righe && s.righe.length > 0) {
+        s.righe.forEach((r) => {
+          const rate = inferRate(r.imponibile, r.imposta);
+          const entry = getOrCreate(rate);
+          entry.imponibileVendite += Math.abs(r.imponibile || 0);
+          entry.ivaVendite += Math.abs(r.imposta || 0);
+        });
+      } else {
+        const rate = inferRate(s.imponibile, s.imposta);
+        const entry = getOrCreate(rate);
+        entry.imponibileVendite += Math.abs(s.imponibile || 0);
+        entry.ivaVendite += Math.abs(s.imposta || 0);
+      }
+    });
+
+    // Purchases: aggregate rate
+    allPurchases.filter((p) => p.anno === yearNum).forEach((p) => {
+      const rate = inferRate(p.imponibile, p.imposta);
+      const entry = getOrCreate(rate);
+      entry.imponibileAcquisti += Math.abs(p.imponibile || 0);
+      entry.ivaAcquisti += Math.abs(p.imposta || 0);
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      const pa = parseInt(a.aliquota);
+      const pb = parseInt(b.aliquota);
+      return pb - pa;
+    });
+  }, [allSales, allPurchases, yearNum]);
+
+  const ratePieData = useMemo(() => {
+    return rateBreakdown.map((r) => ({
+      name: r.aliquota,
+      value: Math.round((r.ivaVendite + r.ivaAcquisti) * 100) / 100,
+    })).filter(d => d.value > 0);
+  }, [rateBreakdown]);
 
   // Chart data for the composed chart
   const chartData = useMemo(() => {
@@ -335,6 +403,93 @@ const IvaPage = () => {
                     </div>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* VAT rate breakdown */}
+        {rateBreakdown.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Percent className="h-4 w-4" /> Ripartizione per aliquota IVA — {selectedYear}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Pie chart */}
+                <div className="w-full lg:w-1/3 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={ratePieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={85}
+                        innerRadius={45}
+                        paddingAngle={2}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        labelLine={{ strokeWidth: 1 }}
+                      >
+                        {ratePieData.map((entry) => (
+                          <Cell key={entry.name} fill={RATE_COLORS[entry.name] || "hsl(var(--muted-foreground))"} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Detail table */}
+                <div className="w-full lg:w-2/3">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Aliquota</TableHead>
+                        <TableHead className="text-xs text-right">Imponibile vendite</TableHead>
+                        <TableHead className="text-xs text-right">IVA vendite</TableHead>
+                        <TableHead className="text-xs text-right">Imponibile acquisti</TableHead>
+                        <TableHead className="text-xs text-right">IVA acquisti</TableHead>
+                        <TableHead className="text-xs text-right">Saldo IVA</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rateBreakdown.map((r) => {
+                        const saldo = r.ivaVendite - r.ivaAcquisti;
+                        return (
+                          <TableRow key={r.aliquota}>
+                            <TableCell className="text-xs font-semibold">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: RATE_COLORS[r.aliquota] || "hsl(var(--muted-foreground))" }} />
+                                {r.aliquota}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">{formatCurrency(r.imponibileVendite)}</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{formatCurrency(r.ivaVendite)}</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{formatCurrency(r.imponibileAcquisti)}</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{formatCurrency(r.ivaAcquisti)}</TableCell>
+                            <TableCell className={`text-xs text-right font-mono font-semibold ${saldo >= 0 ? "text-destructive" : "text-income"}`}>
+                              {formatCurrency(Math.abs(saldo))} {saldo >= 0 ? "D" : "C"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      <TableRow className="bg-muted/50 font-semibold">
+                        <TableCell className="text-xs">TOTALE</TableCell>
+                        <TableCell className="text-xs text-right font-mono">{formatCurrency(rateBreakdown.reduce((s, r) => s + r.imponibileVendite, 0))}</TableCell>
+                        <TableCell className="text-xs text-right font-mono">{formatCurrency(rateBreakdown.reduce((s, r) => s + r.ivaVendite, 0))}</TableCell>
+                        <TableCell className="text-xs text-right font-mono">{formatCurrency(rateBreakdown.reduce((s, r) => s + r.imponibileAcquisti, 0))}</TableCell>
+                        <TableCell className="text-xs text-right font-mono">{formatCurrency(rateBreakdown.reduce((s, r) => s + r.ivaAcquisti, 0))}</TableCell>
+                        <TableCell className={`text-xs text-right font-mono font-semibold ${totals.saldo >= 0 ? "text-destructive" : "text-income"}`}>
+                          {formatCurrency(Math.abs(rateBreakdown.reduce((s, r) => s + r.ivaVendite - r.ivaAcquisti, 0)))}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </CardContent>
           </Card>
