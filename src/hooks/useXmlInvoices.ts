@@ -97,7 +97,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       console.error("Error fetching XML records:", error);
       return;
     }
-    setXmlRecords((data || []).map((r: any) => ({ ...r, parsed_data: null })) as unknown as XmlInvoiceRecord[]);
+    setXmlRecords((data || []).map((r: any) => ({ ...r, parsed_data: null, numero_documento: r.numero_documento || "" })) as unknown as XmlInvoiceRecord[]);
     setLoading(false);
   }, [tipo]);
 
