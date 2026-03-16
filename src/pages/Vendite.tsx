@@ -245,7 +245,7 @@ const VenditePage = () => {
           );
           if (xmlRecords.some(x => !x.matched)) {
             return (
-              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setXmlPickerInvoice(r); }}>
+              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" title="Associa XML manualmente" onClick={(e) => { e.stopPropagation(); setXmlPickerInvoice(r); }}>
                 <Link2 className="h-3.5 w-3.5" />
               </Button>
             );
