@@ -55,15 +55,19 @@ function MatchedInvoiceLabel({ m }: {m: BankMovement;}) {
   return (
     <div className="flex flex-col gap-0.5">
       {m.matchedInvoices.map((inv, i) => {
+        if (inv.type === "documento") {
+          return (
+            <span key={i} className="text-xs font-mono">
+              📄 {inv.documentoLabel || "Doc"}
+            </span>);
+        }
         const type = inv.type === "vendita" ? "V" : "A";
         return (
           <span key={i} className="text-xs font-mono">
             {type} {inv.anno}/{inv.numero}
           </span>);
-
       })}
     </div>);
-
 }
 
 interface ReconcileSheetProps {
