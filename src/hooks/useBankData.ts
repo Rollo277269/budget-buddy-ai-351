@@ -526,7 +526,8 @@ function autoMatch(
     return {
       movement: m,
       invoices: [] as MatchedInvoice[],
-      bestType, bestAnno, bestNumero, bestScore,
+      bestType: bestType as "vendita" | "acquisto" | "documento",
+      bestAnno, bestNumero, bestScore,
       confidence: "none" as "none" | "auto" | "manual",
     };
   });
