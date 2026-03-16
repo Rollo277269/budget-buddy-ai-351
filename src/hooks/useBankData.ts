@@ -496,9 +496,12 @@ function autoMatch(
     const manuals = manualGrouped.get(m.id);
     if (manuals && manuals.length > 0) {
       const invoices: MatchedInvoice[] = manuals.map((r) => {
+        if (r.documentoId) {
+          return { type: "documento" as const, anno: 0, numero: 0, documentoId: r.documentoId };
+        }
         const key = `${r.invoiceAnno}-${r.invoiceNumero}`;
         if (r.invoiceType === "vendita") usedSales.add(key);
-        else usedPurchases.add(key);
+        else if (r.invoiceType === "acquisto") usedPurchases.add(key);
         return { type: r.invoiceType, anno: r.invoiceAnno, numero: r.invoiceNumero };
       });
       return {
