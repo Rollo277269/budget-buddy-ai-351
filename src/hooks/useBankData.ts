@@ -59,9 +59,10 @@ async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
   }
   return all.map((d: any) => ({
     movementId: d.movement_id,
-    invoiceType: d.invoice_type,
-    invoiceAnno: d.invoice_anno,
-    invoiceNumero: d.invoice_numero,
+    invoiceType: d.invoice_type ?? (d.documento_id ? "documento" : ""),
+    invoiceAnno: d.invoice_anno ?? 0,
+    invoiceNumero: d.invoice_numero ?? 0,
+    documentoId: d.documento_id ?? undefined,
   }));
 }
 
@@ -82,9 +83,29 @@ async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string)
 }
 
 async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: string) {
-  let query = supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId);
-  // If invoiceKey provided, we'd need to parse it, but for now delete all for this movement
-  await query;
+  if (!invoiceKey) {
+    await supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId);
+    return;
+  }
+  // Parse invoiceKey to delete specific reconciliation
+  if (invoiceKey.startsWith("documento-")) {
+    const docId = invoiceKey.replace("documento-", "");
+    await supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId).eq("documento_id", docId);
+  } else {
+    const parts = invoiceKey.split("-");
+    if (parts.length >= 3) {
+      const tipo = parts[0];
+      const anno = parseInt(parts[1], 10);
+      const numero = parseInt(parts[2], 10);
+      await supabase.from("bank_reconciliations" as any).delete()
+        .eq("movement_id", movementDbId)
+        .eq("invoice_type", tipo)
+        .eq("invoice_anno", anno)
+        .eq("invoice_numero", numero);
+    } else {
+      await supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId);
+    }
+  }
 }
 
 function extractCIG(text: string): string {
