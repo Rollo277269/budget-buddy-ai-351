@@ -179,7 +179,12 @@ const AcquistiPage = () => {
 
   const columns: ColumnDef<PurchaseInvoice>[] = useMemo(
     () => [
-    { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
+    { key: "numero", label: "N° Reg.", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true },
+    { key: "numeroFornitore", label: "N° Forn.", render: (r) => {
+      const xml = findXml(`${r.anno}-${r.numero}`, r.fornitore);
+      const numDoc = xml?.numero_documento;
+      return numDoc ? <span className="font-mono text-xs text-primary">{numDoc}</span> : <span className="text-muted-foreground text-[11px]">—</span>;
+    }, sortable: false },
     { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
     { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
     { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
