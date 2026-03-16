@@ -309,7 +309,7 @@ const AcquistiPage = () => {
               <DocumentiAcquistoSection dropZoneOnly compact />
 
               {hasCentri && (
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
+                <Button size="sm" variant="outline" className="h-7 text-xs" title="Classifica automaticamente con intelligenza artificiale" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
                   {classifying ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
                   {classifying ? "AI..." : `AI (${unclassifiedCount})`}
                 </Button>
