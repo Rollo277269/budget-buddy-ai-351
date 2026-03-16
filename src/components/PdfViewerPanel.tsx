@@ -31,18 +31,24 @@ export const PdfViewerPanel = forwardRef<HTMLDivElement, PdfViewerPanelProps>(
 
     // Load PDF
     useEffect(() => {
-      const byteChars = atob(base64);
-      const byteArray = new Uint8Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+      let cancelled = false;
+      let loadingTask: any;
+      (async () => {
+        const pdfjsLib = await getPdfjs();
+        const byteChars = atob(base64);
+        const byteArray = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
 
-      const loadingTask = pdfjsLib.getDocument({ data: byteArray });
-      loadingTask.promise.then((doc) => {
-        setPdfDoc(doc);
-        setTotalPages(doc.numPages);
-        setCurrentPage(1);
-        setFitWidth(true);
-      });
-      return () => { loadingTask.destroy(); };
+        loadingTask = pdfjsLib.getDocument({ data: byteArray });
+        const doc = await loadingTask.promise;
+        if (!cancelled) {
+          setPdfDoc(doc);
+          setTotalPages(doc.numPages);
+          setCurrentPage(1);
+          setFitWidth(true);
+        }
+      })();
+      return () => { cancelled = true; if (loadingTask) loadingTask.destroy(); };
     }, [base64]);
 
     const renderPage = useCallback(async (pageNum: number) => {
