@@ -112,7 +112,7 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
                   <TableHead className="text-xs text-right">T2</TableHead>
                   <TableHead className="text-xs text-right">T3</TableHead>
                   <TableHead className="text-xs text-right">T4</TableHead>
-                  <TableHead className="text-xs text-right">Split Payment</TableHead>
+                  <TableHead className="text-xs text-right">IVA Art.17</TableHead>
                   <TableHead className="text-xs text-right">Totale</TableHead>
                 </TableRow>
               </TableHeader>
