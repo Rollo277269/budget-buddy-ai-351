@@ -42,7 +42,7 @@ function ContiCorrentiTab() {
           <h3 className="text-sm font-semibold">Conti Correnti</h3>
           <p className="text-xs text-muted-foreground">Gestisci i dati dei conti correnti bancari</p>
         </div>
-        <Button size="sm" onClick={() => setEditing({ ...empty })}>
+        <Button size="sm" title="Aggiungi un nuovo conto corrente" onClick={() => setEditing({ ...empty })}>
           <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
         </Button>
       </div>
@@ -108,10 +108,10 @@ function ContiCorrentiTab() {
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(c)}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica conto" onClick={() => setEditing(c)}>
                       <FileText className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(c.id)}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" title="Elimina conto" onClick={() => handleDelete(c.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -157,7 +157,7 @@ function NamingRulesTab() {
           <h3 className="text-sm font-semibold">Regole di Denominazione</h3>
           <p className="text-xs text-muted-foreground">Definisci le convenzioni per i nomi dei file caricati</p>
         </div>
-        <Button size="sm" onClick={() => setEditing({ ...empty })}>
+        <Button size="sm" title="Aggiungi una nuova regola di denominazione" onClick={() => setEditing({ ...empty })}>
           <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
         </Button>
       </div>
@@ -216,10 +216,10 @@ function NamingRulesTab() {
               }
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(r)}>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica regola" onClick={() => setEditing(r)}>
                     <FileText className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(r.id)}>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" title="Elimina regola" onClick={() => handleDelete(r.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -442,10 +442,10 @@ function CentriCostoRicavoTab() {
           </TableCell>
           <TableCell>
             <div className="flex gap-0.5">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEditSub}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Salva modifiche" onClick={saveEditSub}>
                 <Check className="w-3.5 h-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Annulla modifiche" onClick={() => setEditingId(null)}>
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -463,10 +463,10 @@ function CentriCostoRicavoTab() {
           <TableCell className="text-xs text-muted-foreground">{sub.paroleChiaveMatching || "—"}</TableCell>
           <TableCell>
             <div className="flex gap-0.5">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditSub(sub)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Modifica voce" onClick={() => startEditSub(sub)}>
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Elimina voce" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -493,10 +493,10 @@ function CentriCostoRicavoTab() {
       </TableCell>
       <TableCell>
         <div className="flex gap-0.5">
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => handleAddSub(categoriaId, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Conferma nuova voce" onClick={() => handleAddSub(categoriaId, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
             <Check className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddingToCat(null); setAddingUnclassified(null); }}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="Annulla" onClick={() => { setAddingToCat(null); setAddingUnclassified(null); }}>
             <X className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -524,12 +524,12 @@ function CentriCostoRicavoTab() {
             </Badge>
           </div>
           <div className="flex gap-1.5">
-            <Button variant="outline" size="sm" className="h-7 text-xs"
+            <Button variant="outline" size="sm" className="h-7 text-xs" title="Aggiungi nuova voce senza categoria"
               onClick={() => { setAddingUnclassified(tipo); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}
               disabled={isAddingUncl}>
               <Plus className="w-3.5 h-3.5 mr-1" /> Voce
             </Button>
-            <Button variant="outline" size="sm" className="h-7 text-xs"
+            <Button variant="outline" size="sm" className="h-7 text-xs" title="Aggiungi nuova categoria"
               onClick={() => { setAddingCatTo(tipo); setNewCatCodice(""); setNewCatDescrizione(""); }}
               disabled={isAddingCat}>
               <FolderOpen className="w-3.5 h-3.5 mr-1" /> Categoria

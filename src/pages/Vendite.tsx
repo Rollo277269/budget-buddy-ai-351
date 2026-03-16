@@ -239,13 +239,13 @@ const VenditePage = () => {
           const k = `${r.anno}-${r.numero}`;
           const xml = findXml(k, r.cliente);
           if (xml) return (
-            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
+            <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza XML associato" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
             </Button>
           );
           if (xmlRecords.some(x => !x.matched)) {
             return (
-              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setXmlPickerInvoice(r); }}>
+              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-muted-foreground" title="Associa XML manualmente" onClick={(e) => { e.stopPropagation(); setXmlPickerInvoice(r); }}>
                 <Link2 className="h-3.5 w-3.5" />
               </Button>
             );
@@ -260,7 +260,7 @@ const VenditePage = () => {
           const xml = findXml(`${r.anno}-${r.numero}`, r.cliente);
           if (xml) {
             return (
-              <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {
+              <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza PDF allegato" onClick={(e) => {
                 e.stopPropagation();
                 openPdf(xml, `Fattura_${r.numero}-${r.anno}.pdf`);
               }}>
@@ -333,6 +333,7 @@ const VenditePage = () => {
               <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
               <div
                 className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                title="Carica fatture elettroniche XML"
                 onDragEnter={handleXmlDragEnter}
                 onDragLeave={handleXmlDragLeave}
                 onDragOver={handleXmlDragOver}
@@ -346,6 +347,7 @@ const VenditePage = () => {
               <input ref={csvInputRef} type="file" accept=".csv" multiple className="hidden" onChange={handleCsvFileInput} />
               <div
                 className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                title="Carica elenco ricavi CSV"
                 onDragEnter={handleCsvDragEnter}
                 onDragLeave={handleCsvDragLeave}
                 onDragOver={handleCsvDragOver}
@@ -359,7 +361,7 @@ const VenditePage = () => {
               <DocumentiAcquistoSection dropZoneOnly compact />
 
               {hasCentri && (
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
+                <Button size="sm" variant="outline" className="h-7 text-xs" title="Classifica automaticamente con intelligenza artificiale" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
                   {classifying ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
                   {classifying ? "AI..." : `AI (${unclassifiedCount})`}
                 </Button>
@@ -389,7 +391,7 @@ const VenditePage = () => {
                   {xmlDuplicateCount > 0 && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive">
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" title="Elimina file XML caricati più volte">
                           <Trash2 className="h-3 w-3 mr-1" />Duplicati ({xmlDuplicateCount})
                         </Button>
                       </AlertDialogTrigger>
@@ -407,7 +409,7 @@ const VenditePage = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   )}
-                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" title="Riprova associazione automatica XML" onClick={rematchAll}>
                     <RefreshCw className="h-3 w-3 mr-1" />Riassocia
                   </Button>
                 </div>

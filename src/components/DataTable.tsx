@@ -264,7 +264,7 @@ export function DataTable<T extends Record<string, any>>({
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs">
+              <Button variant="outline" size="sm" className="text-xs" title="Mostra/nascondi colonne">
                 <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colonne
               </Button>
             </DropdownMenuTrigger>
@@ -316,12 +316,12 @@ export function DataTable<T extends Record<string, any>>({
                     {col.headerRender ? col.headerRender() : <span className="whitespace-normal break-words leading-tight">{col.label}</span>}
                     <div className="flex items-center shrink-0">
                       {col.sortable && (
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toggleSort(col.key)}>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title="Ordina colonna" onClick={() => toggleSort(col.key)}>
                           {sortKey === col.key && sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : sortKey === col.key && sortDir === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                         </Button>
                       )}
                       {col.filterable && (
-                        <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`} onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}>
+                        <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${columnFilters[col.key] ? "text-primary" : ""}`} title="Filtra colonna" onClick={() => setFilterOpen(filterOpen === col.key ? null : col.key)}>
                           <Search className="h-3 w-3" />
                         </Button>
                       )}
@@ -372,6 +372,7 @@ export function DataTable<T extends Record<string, any>>({
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0"
+                                title={isExpanded ? "Comprimi dettaglio" : "Espandi dettaglio"}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setExpandedRows((prev) => {

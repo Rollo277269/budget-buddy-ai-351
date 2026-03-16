@@ -83,7 +83,7 @@ const Index = () => {
             onFiltersChange={setFilters}
             options={filterOptions}
           />
-          <Button variant="outline" size="sm" onClick={() => window.print()} className="shrink-0">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="shrink-0" title="Esporta il cruscotto in PDF">
             <Printer className="h-4 w-4 mr-1" /> Stampa PDF
           </Button>
         </div>

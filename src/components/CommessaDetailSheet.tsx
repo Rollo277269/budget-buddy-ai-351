@@ -398,11 +398,11 @@ export function CommessaDetailSheet({
               {cssr?.cig_derivato && <Badge variant="outline" className="font-mono text-sm">CIG Derivato: {cssr.cig_derivato}</Badge>}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 no-print">
+              <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 no-print" title="Esporta report commessa in PDF">
                 <FileText className="h-3.5 w-3.5" />
                 Report
               </Button>
-              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 no-print">
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 no-print" title="Chiudi e torna alla lista commesse">
                 <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
                 Torna a Commesse
               </Button>

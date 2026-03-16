@@ -79,7 +79,7 @@ export function XmlPickerSheet({
               className="pl-8 h-9 text-sm"
             />
             {search && (
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-7 w-7" onClick={() => setSearch("")}>
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-7 w-7" title="Cancella ricerca" onClick={() => setSearch("")}>
                 <X className="h-3 w-3" />
               </Button>
             )}

@@ -140,7 +140,7 @@ export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete, invoices
                         <span className="text-xs font-medium">{a.nome}</span>
                         <span className="text-[10px] text-muted-foreground ml-2">{a.formato}</span>
                       </div>
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => handleDownloadAttachment(a.base64, a.nome, a.formato)}>
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px]" title="Scarica allegato" onClick={() => handleDownloadAttachment(a.base64, a.nome, a.formato)}>
                         <Download className="h-3 w-3 mr-1" />Scarica
                       </Button>
                     </div>
@@ -222,7 +222,7 @@ export function XmlInvoiceSheet({ record, open, onOpenChange, onDelete, invoices
 
         <div className="mt-4 flex gap-2">
           {onDelete && (
-            <Button size="sm" variant="destructive" onClick={() => { onDelete(record.id, record.storage_path); onOpenChange(false); }}>
+            <Button size="sm" variant="destructive" title="Elimina questo file XML" onClick={() => { onDelete(record.id, record.storage_path); onOpenChange(false); }}>
               <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
             </Button>
           )}

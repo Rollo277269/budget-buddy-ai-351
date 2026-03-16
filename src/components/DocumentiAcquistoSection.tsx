@@ -368,10 +368,10 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: P
                   <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza PDF" onClick={(e) => { e.stopPropagation(); openPdf(doc); }}>
                     <FileDown className="h-3 w-3" />
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza dettaglio" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
                     <Eye className="h-3 w-3" />
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); deleteDocumento(doc.id, doc.storage_path); }}>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" title="Elimina documento" onClick={(e) => { e.stopPropagation(); deleteDocumento(doc.id, doc.storage_path); }}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
@@ -408,7 +408,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: P
           {documenti.length > 0 && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs">
+                <Button variant="outline" size="sm" className="h-7 text-xs" title="Mostra/nascondi colonne">
                   <Columns3 className="h-3.5 w-3.5 mr-1" /> Colonne
                 </Button>
               </PopoverTrigger>
@@ -428,9 +428,9 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: P
           {!isTableOnly && (
             <>
               <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
-              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-                {uploading ? "Analisi in corso..." : "Carica PDF"}
+               <Button size="sm" variant="outline" title="Carica documenti PDF (ricevute, marche da bollo, affitti)" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                 {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                 {uploading ? "Analisi in corso..." : "Carica PDF"}
               </Button>
             </>
           )}
@@ -543,7 +543,7 @@ function DocDetailContent({ doc, centroLookup, onDelete }: { doc: DocumentoAcqui
             </ScrollArea>
           </div>
         )}
-        <Button size="sm" variant="destructive" onClick={onDelete}>
+        <Button size="sm" variant="destructive" title="Elimina questo documento" onClick={onDelete}>
           <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
         </Button>
       </div>
