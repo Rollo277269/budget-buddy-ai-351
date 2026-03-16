@@ -584,6 +584,7 @@ const VenditePage = () => {
         {/* Table content */}
         <div className="px-4 pb-4 pt-2">
           <DataTable<SaleInvoice>
+            toolbarPortalRef={toolbarPortalRef}
             columns={columns}
             data={displayedSales}
             defaultSort={{ key: "data", dir: "desc" }}

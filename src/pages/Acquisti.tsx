@@ -406,6 +406,7 @@ const AcquistiPage = () => {
         {/* Table content */}
         <div className="px-4 pb-4">
           <DataTable<PurchaseInvoice>
+            toolbarPortalRef={toolbarPortalRef}
             columns={columns}
             data={displayedPurchases}
             defaultSort={{ key: "data", dir: "desc" }}
