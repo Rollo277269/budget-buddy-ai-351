@@ -109,6 +109,14 @@ async function saveAssignment(invoiceKey: string, tipo: "costo" | "ricavo", cont
   } as any, { onConflict: "invoice_key,tipo,context" });
 }
 
+async function deleteAssignment(invoiceKey: string, tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
+  await supabase.from("centro_assignments" as any)
+    .delete()
+    .eq("invoice_key", invoiceKey)
+    .eq("tipo", tipo)
+    .eq("context", context);
+}
+
 export async function updateCentroCodeInAssignments(oldCodice: string, newCodice: string) {
   await supabase
     .from("centro_assignments" as any)
@@ -139,7 +147,19 @@ export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acq
     [tipo, context]
   );
 
-  return { map, assign, refresh };
+  const remove = useCallback(
+    (key: string) => {
+      setMap((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        deleteAssignment(key, tipo, context);
+        return next;
+      });
+    },
+    [tipo, context]
+  );
+
+  return { map, assign, remove, refresh };
 }
 
 export function useCentriData() {

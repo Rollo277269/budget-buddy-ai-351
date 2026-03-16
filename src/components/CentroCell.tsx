@@ -1,4 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { CentroCR } from "@/hooks/useCentri";
 
 interface CentroCellProps {
@@ -7,9 +9,10 @@ interface CentroCellProps {
   centri: CentroCR[];
   centroMap: Record<string, string>;
   onAssign: (key: string, codice: string) => void;
+  onRemove?: (key: string) => void;
 }
 
-export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign }: CentroCellProps) {
+export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRemove }: CentroCellProps) {
   const filtered = centri.filter((c) => c.tipo === tipo).sort((a, b) => a.descrizione.localeCompare(b.descrizione));
   const assigned = centroMap[invoiceKey];
 
@@ -18,18 +21,31 @@ export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign }: Ce
   }
 
   return (
-    <Select value={assigned || ""} onValueChange={(v) => onAssign(invoiceKey, v)}>
-      <SelectTrigger className="h-7 text-[11px] w-[130px] font-mono">
-        <SelectValue placeholder="—" />
-      </SelectTrigger>
-      <SelectContent>
-        {filtered.map((c) => (
-          <SelectItem key={c.codice} value={c.codice} className="text-xs">
-            <span className="font-mono">{c.codice}</span>
-            <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="flex items-center gap-0.5">
+      <Select value={assigned || ""} onValueChange={(v) => onAssign(invoiceKey, v)}>
+        <SelectTrigger className="h-7 text-[11px] w-[130px] font-mono">
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          {filtered.map((c) => (
+            <SelectItem key={c.codice} value={c.codice} className="text-xs">
+              <span className="font-mono">{c.codice}</span>
+              <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {assigned && onRemove && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+          onClick={(e) => { e.stopPropagation(); onRemove(invoiceKey); }}
+          title="Rimuovi assegnazione"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
   );
 }
