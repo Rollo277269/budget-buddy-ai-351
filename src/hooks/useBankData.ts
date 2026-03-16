@@ -506,7 +506,7 @@ function autoMatch(
     }
 
     let bestScore = 0;
-    let bestType: "vendita" | "acquisto" = "vendita";
+    let bestType: "vendita" | "acquisto" | "documento" = "vendita";
     let bestAnno = 0;
     let bestNumero = 0;
 
