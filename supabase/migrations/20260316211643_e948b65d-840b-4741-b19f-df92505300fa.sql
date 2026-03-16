@@ -1,0 +1,1 @@
+ALTER TABLE public.fatture_xml ADD COLUMN numero_documento text DEFAULT '';
