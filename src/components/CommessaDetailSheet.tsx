@@ -1199,6 +1199,9 @@ export function CommessaDetailSheet({
       invoiceNumero={xmlPickerInvoice?.inv.numero || 0}
       invoiceName={xmlPickerInvoice ? (xmlPickerInvoice.type === "vendita" ? (xmlPickerInvoice.inv as SaleInvoice).cliente : (xmlPickerInvoice.inv as PurchaseInvoice).fornitore) : ""}
       invoiceTotale={xmlPickerInvoice?.inv.totale || 0}
+      invoiceImposta={xmlPickerInvoice?.inv.imposta || 0}
+      invoiceCig={xmlPickerInvoice?.inv.cig || ""}
+      tipo={xmlPickerInvoice?.type || "vendita"}
       onMatch={xmlPickerInvoice?.type === "acquisto" ? manualMatchAcquisto : manualMatchVendita}
     />
   </>
