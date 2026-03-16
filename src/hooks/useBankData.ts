@@ -796,7 +796,11 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     await deleteReconciliationFromDb(movementId, invoiceKey);
     setReconciliations((prev) => {
       if (invoiceKey) {
-        return prev.filter((r) => !(r.movementId === movementId && `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` === invoiceKey));
+        return prev.filter((r) => {
+          if (r.movementId !== movementId) return true;
+          if (r.documentoId) return `documento-${r.documentoId}` !== invoiceKey;
+          return `${r.invoiceType}-${r.invoiceAnno}-${r.invoiceNumero}` !== invoiceKey;
+        });
       }
       return prev.filter((r) => r.movementId !== movementId);
     });
