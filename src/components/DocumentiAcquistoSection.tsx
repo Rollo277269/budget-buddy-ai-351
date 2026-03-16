@@ -543,7 +543,7 @@ function DocDetailContent({ doc, centroLookup, onDelete }: { doc: DocumentoAcqui
             </ScrollArea>
           </div>
         )}
-        <Button size="sm" variant="destructive" onClick={onDelete}>
+        <Button size="sm" variant="destructive" title="Elimina questo documento" onClick={onDelete}>
           <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
         </Button>
       </div>
