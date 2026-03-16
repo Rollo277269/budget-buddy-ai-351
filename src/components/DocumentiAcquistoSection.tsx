@@ -368,10 +368,10 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: P
                   <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza PDF" onClick={(e) => { e.stopPropagation(); openPdf(doc); }}>
                     <FileDown className="h-3 w-3" />
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza dettaglio" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
                     <Eye className="h-3 w-3" />
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); deleteDocumento(doc.id, doc.storage_path); }}>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" title="Elimina documento" onClick={(e) => { e.stopPropagation(); deleteDocumento(doc.id, doc.storage_path); }}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
