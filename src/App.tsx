@@ -20,6 +20,7 @@ const SchedeContabiliPage = lazy(() => import("./pages/SchedeContabili"));
 const BilancioPage = lazy(() => import("./pages/Bilancio"));
 const StrumentiPage = lazy(() => import("./pages/Strumenti"));
 const ScadenzarioPage = lazy(() => import("./pages/Scadenzario"));
+const IvaPage = lazy(() => import("./pages/Iva"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
