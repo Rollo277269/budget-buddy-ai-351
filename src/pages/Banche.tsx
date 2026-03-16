@@ -189,8 +189,16 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
     const key = `${type}-${anno}-${numero}`;
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);else
-      next.add(key);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleDocumento = (docId: string) => {
+    const key = `documento-${docId}`;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
@@ -198,6 +206,11 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
   const handleConfirm = () => {
     if (selected.size === 0) return;
     const invoices: MatchedInvoice[] = Array.from(selected).map((key) => {
+      if (key.startsWith("documento-")) {
+        const docId = key.replace("documento-", "");
+        const doc = documenti.find(d => d.id === docId);
+        return { type: "documento" as const, anno: 0, numero: 0, documentoId: docId, documentoLabel: doc?.fornitore || doc?.file_name || "Doc" };
+      }
       const [type, anno, numero] = key.split("-");
       return { type: type as "vendita" | "acquisto", anno: Number(anno), numero: Number(numero) };
     });
@@ -226,9 +239,11 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
           <div className="space-y-1">
               {movement.matchedInvoices.map((inv, i) =>
             <div key={i} className="flex items-center justify-between text-xs rounded border px-2 py-1">
-                  <span className="font-mono">{inv.type === "vendita" ? "V" : "A"} {inv.anno}/{inv.numero}</span>
+                  <span className="font-mono">
+                    {inv.type === "documento" ? `📄 ${inv.documentoLabel || "Doc"}` : `${inv.type === "vendita" ? "V" : "A"} ${inv.anno}/${inv.numero}`}
+                  </span>
                   <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
-              onClick={() => onRemove(movement.id, `${inv.type}-${inv.anno}-${inv.numero}`)}>
+              onClick={() => onRemove(movement.id, inv.type === "documento" ? `documento-${inv.documentoId}` : `${inv.type}-${inv.anno}-${inv.numero}`)}>
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
@@ -239,17 +254,20 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
             </div>
           }
           <div className="flex gap-1">
-            <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Fatture Vendita</Button>
-            <Button variant={currentTab === "acquisto" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("acquisto")}>Fatture Acquisto</Button>
+            <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Vendita</Button>
+            <Button variant={currentTab === "acquisto" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("acquisto")}>Acquisto</Button>
+            <Button variant={currentTab === "documento" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("documento")}>
+              <FileText className="h-3 w-3 mr-1" />Documenti
+            </Button>
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Cerca fattura..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
+            <Input placeholder={currentTab === "documento" ? "Cerca documento..." : "Cerca fattura..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
           </div>
           {selected.size > 0 &&
           <div className="flex items-center justify-between rounded-lg border bg-primary/5 border-primary/30 p-2">
               <div className="text-xs">
-                <span className="font-medium">{selected.size} fattur{selected.size === 1 ? "a" : "e"}</span>
+                <span className="font-medium">{selected.size} element{selected.size === 1 ? "o" : "i"}</span>
                 <span className="text-muted-foreground ml-2">Totale: {formatCurrency(selectedTotal)}</span>
                 <span className={`ml-2 font-medium ${Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--warning))]"}`}>
                   {Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "✓ Quadra" : `Δ ${formatCurrency(selectedTotal - Math.abs(movement.importo))}`}
@@ -262,38 +280,68 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
           }
           <ScrollArea className="h-[350px]">
             <div className="space-y-1 pr-3">
-              {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
-              {scoredItems.map(({ inv, score, name }) => {
-                const invKey = `${currentTab}-${inv.anno}-${inv.numero}`;
-                const isSelected = selected.has(invKey);
-                const isVendita = currentTab === "vendita";
-                return (
-                  <button
-                    key={invKey}
-                    className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
-                    onClick={() => toggleInvoice(currentTab, inv.anno, inv.numero)}>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Checkbox checked={isSelected} className="pointer-events-none" />
-                        <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
-                        {score >= 35 &&
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
-                        }
-                      </div>
-                      <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground truncate ml-6">{name}</p>
-                    {inv.cig && <span className="text-[10px] font-mono text-muted-foreground ml-6">CIG: {inv.cig}</span>}
-                  </button>);
-
-              })}
+              {currentTab !== "documento" && (
+                <>
+                  {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
+                  {scoredItems.map(({ inv, score, name }) => {
+                    const invKey = `${currentTab}-${inv.anno}-${inv.numero}`;
+                    const isSelected = selected.has(invKey);
+                    const isVendita = currentTab === "vendita";
+                    return (
+                      <button
+                        key={invKey}
+                        className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                        onClick={() => toggleInvoice(currentTab as "vendita" | "acquisto", inv.anno, inv.numero)}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={isSelected} className="pointer-events-none" />
+                            <span className="text-xs font-medium">{inv.anno}/{inv.numero}</span>
+                            {score >= 35 &&
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
+                            }
+                          </div>
+                          <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate ml-6">{name}</p>
+                        {inv.cig && <span className="text-[10px] font-mono text-muted-foreground ml-6">CIG: {inv.cig}</span>}
+                      </button>);
+                  })}
+                </>
+              )}
+              {currentTab === "documento" && (
+                <>
+                  {scoredDocumenti.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessun documento trovato</p>}
+                  {scoredDocumenti.map(({ doc, score, name }) => {
+                    const docKey = `documento-${doc.id}`;
+                    const isSelected = selected.has(docKey);
+                    return (
+                      <button
+                        key={docKey}
+                        className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                        onClick={() => toggleDocumento(doc.id)}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={isSelected} className="pointer-events-none" />
+                            <FileText className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs font-medium truncate max-w-[200px]">{name}</span>
+                            {score >= 35 &&
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
+                            }
+                          </div>
+                          <span className="text-xs font-mono font-medium text-expense">{formatCurrency(Math.abs(doc.importo || 0))}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate ml-8">{doc.file_name}</p>
+                        {doc.data_documento && <span className="text-[10px] text-muted-foreground ml-8">{doc.data_documento}</span>}
+                        {doc.cig && <span className="text-[10px] font-mono text-muted-foreground ml-8"> CIG: {doc.cig}</span>}
+                      </button>);
+                  })}
+                </>
+              )}
             </div>
           </ScrollArea>
         </div>
       </SheetContent>
     </Sheet>);
-
 }
 
 const ACCEPTED_TYPES = [
