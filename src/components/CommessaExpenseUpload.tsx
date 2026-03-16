@@ -17,6 +17,7 @@ async function getPdfjs() {
 }
 
 async function extractTextFromPdf(file: File): Promise<string> {
+  const pdfjsLib = await getPdfjs();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let text = "";
