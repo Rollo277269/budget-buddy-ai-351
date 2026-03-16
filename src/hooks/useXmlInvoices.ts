@@ -292,6 +292,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
           const purchaseMatch = findPurchaseMatch(
             parsed.cedente.denominazione,
             parsed.importoTotale,
+            xmlAnno || null,
+            parsed.numero || null,
+            null, // no CIG from raw XML parse
             invoices,
             alreadyMatchedKeys
           );
