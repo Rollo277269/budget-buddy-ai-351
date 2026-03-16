@@ -51,68 +51,80 @@ Per ogni fattura/riga, analizza attentamente la DESCRIZIONE, il ${soggettoLabel.
 Usa le parole chiave associate ai centri per guidare la classificazione.
 Se non riesci a determinare il centro con sicurezza, rispondi con "N/A".`;
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: `Classifica queste fatture/righe.\n\n${invoiceList}`,
-            },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "classify_invoices",
-                description: `Classifica le fatture assegnando un centro di ${tipo} a ciascuna`,
-                parameters: {
-                  type: "object",
-                  properties: {
-                    classifications: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string", description: "ID fattura/riga (es. 2024-15 o 2024-15-0)" },
-                          codice: { type: "string", description: `Codice del centro di ${tipo} assegnato, o N/A` },
+    const MAX_RETRIES = 3;
+    let response: Response | null = null;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+        await new Promise(r => setTimeout(r, delay));
+        console.log(`Retry attempt ${attempt + 1}/${MAX_RETRIES}`);
+      }
+      response = await fetch(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              { role: "system", content: systemPrompt },
+              {
+                role: "user",
+                content: `Classifica queste fatture/righe.\n\n${invoiceList}`,
+              },
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "classify_invoices",
+                  description: `Classifica le fatture assegnando un centro di ${tipo} a ciascuna`,
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      classifications: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string", description: "ID fattura/riga (es. 2024-15 o 2024-15-0)" },
+                            codice: { type: "string", description: `Codice del centro di ${tipo} assegnato, o N/A` },
+                          },
+                          required: ["id", "codice"],
+                          additionalProperties: false,
                         },
-                        required: ["id", "codice"],
-                        additionalProperties: false,
                       },
                     },
+                    required: ["classifications"],
+                    additionalProperties: false,
                   },
-                  required: ["classifications"],
-                  additionalProperties: false,
                 },
               },
-            },
-          ],
-          tool_choice: { type: "function", function: { name: "classify_invoices" } },
-        }),
-      }
-    );
+            ],
+            tool_choice: { type: "function", function: { name: "classify_invoices" } },
+          }),
+        }
+      );
 
-    if (!response.ok) {
-      if (response.status === 429) {
+      if (response!.ok || response!.status === 429 || response!.status === 402) break;
+      console.error(`AI gateway error (attempt ${attempt + 1}):`, response!.status);
+    }
+
+    if (!response!.ok) {
+      if (response!.status === 429) {
         return new Response(JSON.stringify({ error: "Limite richieste superato, riprova tra poco." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (response.status === 402) {
+      if (response!.status === 402) {
         return new Response(JSON.stringify({ error: "Crediti AI esauriti." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Errore gateway AI" }),
+      const t = await response!.text();
+      console.error("AI gateway error after retries:", response!.status, t);
+      return new Response(JSON.stringify({ error: "Errore gateway AI, riprova tra qualche secondo." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
