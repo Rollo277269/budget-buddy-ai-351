@@ -435,8 +435,8 @@ const VenditePage = () => {
           </div>
         )}
 
-        {/* XML Report per anno */}
-        {xmlRecords.length > 0 && (() => {
+
+
           const yearStats = new Map<number, { matched: number; unmatched: number; duplicates: number }>();
           const seenByYear = new Map<number, Set<string>>();
           for (const r of xmlRecords) {
