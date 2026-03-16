@@ -77,7 +77,7 @@ const VenditePage = () => {
   const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
   const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: SaleInvoice[]; colliding: SaleInvoice[] } | null>(null);
-
+  const toolbarPortalRef = useRef<HTMLDivElement>(null);
   const displayedSales = useMemo(() => {
     const selectedYear = filters.anno.trim();
     const yearFilteredSales = selectedYear
@@ -569,18 +569,22 @@ const VenditePage = () => {
             </Collapsible>
           )}
 
-          {/* Row 2: Compact filters */}
-          <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
-            ...filterOptions,
-            centriRicavo: centriRicavo
-              .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
-              .sort((a, b) => a.label.localeCompare(b.label)),
-          }} hideFornitore />
+          {/* Row 2: Compact filters + DataTable toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
+              ...filterOptions,
+              centriRicavo: centriRicavo
+                .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
+                .sort((a, b) => a.label.localeCompare(b.label)),
+            }} hideFornitore />
+            <div ref={toolbarPortalRef} className="flex items-center gap-2 ml-auto" />
+          </div>
         </div>
 
         {/* Table content */}
         <div className="px-4 pb-4 pt-2">
           <DataTable<SaleInvoice>
+            toolbarPortalRef={toolbarPortalRef}
             columns={columns}
             data={displayedSales}
             defaultSort={{ key: "data", dir: "desc" }}

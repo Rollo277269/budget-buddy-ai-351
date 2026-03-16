@@ -66,6 +66,7 @@ const AcquistiPage = () => {
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
   const [xmlExpanded, setXmlExpanded] = useState(false);
+  const toolbarPortalRef = useRef<HTMLDivElement>(null);
 
   const displayedPurchases = useMemo(() => {
     if (!filters.centroCosto) return purchases;
@@ -385,13 +386,16 @@ const AcquistiPage = () => {
             </Collapsible>
           )}
 
-          {/* Row 2: Compact filters */}
-          <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
-            ...filterOptions,
-            centriCosto: centriCosto
-              .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
-              .sort((a, b) => a.label.localeCompare(b.label)),
-          }} hideCliente />
+          {/* Row 2: Compact filters + DataTable toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
+              ...filterOptions,
+              centriCosto: centriCosto
+                .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
+                .sort((a, b) => a.label.localeCompare(b.label)),
+            }} hideCliente />
+            <div ref={toolbarPortalRef} className="flex items-center gap-2 ml-auto" />
+          </div>
         </div>
 
         {/* Documenti table */}
@@ -402,6 +406,7 @@ const AcquistiPage = () => {
         {/* Table content */}
         <div className="px-4 pb-4">
           <DataTable<PurchaseInvoice>
+            toolbarPortalRef={toolbarPortalRef}
             columns={columns}
             data={displayedPurchases}
             defaultSort={{ key: "data", dir: "desc" }}
