@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from "xlsx";
+import type * as XLSXType from "xlsx";
+
+async function getXLSX(): Promise<typeof XLSXType> {
+  return await import("xlsx");
+}
 
 export interface SaleInvoiceRiga {
   descrizione: string;
