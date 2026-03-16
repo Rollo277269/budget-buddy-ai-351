@@ -157,7 +157,7 @@ function NamingRulesTab() {
           <h3 className="text-sm font-semibold">Regole di Denominazione</h3>
           <p className="text-xs text-muted-foreground">Definisci le convenzioni per i nomi dei file caricati</p>
         </div>
-        <Button size="sm" onClick={() => setEditing({ ...empty })}>
+        <Button size="sm" title="Aggiungi una nuova regola di denominazione" onClick={() => setEditing({ ...empty })}>
           <Plus className="h-3.5 w-3.5 mr-1" />Aggiungi
         </Button>
       </div>
