@@ -202,9 +202,9 @@ const AcquistiPage = () => {
         const k = `${r.anno}-${r.numero}`;
         const xml = findXml(k, r.fornitore);
         if (xml) return (
-          <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={(e) => {e.stopPropagation();openXmlSheet(xml);}}>
+           <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza XML associato" onClick={(e) => {e.stopPropagation();openXmlSheet(xml);}}>
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-            </Button>);
+             </Button>);
 
         if (xmlRecords.some(x => !x.matched)) {
           return (
