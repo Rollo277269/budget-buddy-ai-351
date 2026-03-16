@@ -30,6 +30,7 @@ export interface ColumnDef<T> {
   wrap?: boolean;
   minWidth?: number;
   defaultWidth?: number;
+  summaryRender?: (rows: T[]) => ReactNode;
 }
 
 interface DataTableProps<T> {
