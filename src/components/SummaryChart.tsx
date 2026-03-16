@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { BankMovement } from "@/hooks/useBankData";
