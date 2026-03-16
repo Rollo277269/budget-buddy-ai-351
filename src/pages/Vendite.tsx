@@ -347,6 +347,7 @@ const VenditePage = () => {
               <input ref={csvInputRef} type="file" accept=".csv" multiple className="hidden" onChange={handleCsvFileInput} />
               <div
                 className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                title="Carica elenco ricavi CSV"
                 onDragEnter={handleCsvDragEnter}
                 onDragLeave={handleCsvDragLeave}
                 onDragOver={handleCsvDragOver}
