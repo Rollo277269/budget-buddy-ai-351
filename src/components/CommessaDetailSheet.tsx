@@ -189,7 +189,7 @@ export function CommessaDetailSheet({
   }, [fetchParsedVendita, fetchParsedAcquisto]);
 
   const openPdf = useCallback(async (inv: SaleInvoice | PurchaseInvoice, type: "vendita" | "acquisto") => {
-    const key = `${inv.anno}-${inv.numero}`;
+    const key = type === "vendita" ? buildSalesXmlKey(inv.anno, inv.numero, (inv as SaleInvoice).suffisso) : `${inv.anno}-${inv.numero}`;
     const xmlRecord = type === "vendita" ? xmlMapVendita.get(key) : xmlMapAcquisto.get(key);
     if (!xmlRecord) {
       toast.error("Nessun XML associato a questa fattura");
