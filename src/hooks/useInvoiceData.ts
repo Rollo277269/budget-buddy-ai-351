@@ -287,24 +287,45 @@ async function loadAll() {
     return;
   }
 
-  // DB empty → seed from static Excel files
-  console.log("[InvoiceData] DB empty, seeding from Excel files...");
-  const [salesRows, purchaseRows] = await Promise.all([
-    loadExcel("/data/Fatture_Full.xlsx"),
-    loadExcel("/data/FattureAcquisto_Full.xlsx"),
-  ]);
-  const sales = parseExcelSales(salesRows);
-  const purchases = parseExcelPurchases(purchaseRows);
+  // DB empty → try seeding from static Excel files (if they exist)
+  console.log("[InvoiceData] DB empty, attempting seed from Excel files...");
+  try {
+    const [salesRes, purchasesRes] = await Promise.all([
+      fetch("/data/Fatture_Full.xlsx"),
+      fetch("/data/FattureAcquisto_Full.xlsx"),
+    ]);
+    if (!salesRes.ok && !purchasesRes.ok) {
+      console.warn("[InvoiceData] Excel files not found — data must be imported from Strumenti.");
+      cachedSales = [];
+      cachedPurchases = [];
+      return;
+    }
+    const [salesBuf, purchasesBuf] = await Promise.all([
+      salesRes.ok ? salesRes.arrayBuffer() : Promise.resolve(null),
+      purchasesRes.ok ? purchasesRes.arrayBuffer() : Promise.resolve(null),
+    ]);
+    const XLSX = await getXLSX();
+    const toRows = (buf: ArrayBuffer | null) => {
+      if (!buf) return [];
+      const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
+      return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "", raw: true });
+    };
+    const sales = parseExcelSales(toRows(salesBuf));
+    const purchases = parseExcelPurchases(toRows(purchasesBuf));
 
-  // Save to DB
-  await Promise.all([
-    seedSalesFromExcel(sales, "Fatture_Full.xlsx"),
-    seedPurchasesFromExcel(purchases, "FattureAcquisto_Full.xlsx"),
-  ]);
+    await Promise.all([
+      sales.length > 0 ? seedSalesFromExcel(sales, "Fatture_Full.xlsx") : Promise.resolve(),
+      purchases.length > 0 ? seedPurchasesFromExcel(purchases, "FattureAcquisto_Full.xlsx") : Promise.resolve(),
+    ]);
 
-  cachedSales = sales;
-  cachedPurchases = purchases;
-  console.log(`[InvoiceData] Seeded ${sales.length} sales + ${purchases.length} purchases`);
+    cachedSales = sales;
+    cachedPurchases = purchases;
+    console.log(`[InvoiceData] Seeded ${sales.length} sales + ${purchases.length} purchases`);
+  } catch (err) {
+    console.warn("[InvoiceData] Seeding failed:", err);
+    cachedSales = [];
+    cachedPurchases = [];
+  }
 }
 
 export interface Filters {
