@@ -30,6 +30,7 @@ export interface ColumnDef<T> {
   wrap?: boolean;
   minWidth?: number;
   defaultWidth?: number;
+  summaryRender?: (rows: T[]) => ReactNode;
 }
 
 interface DataTableProps<T> {
@@ -342,6 +343,22 @@ export function DataTable<T extends Record<string, any>>({
               ))}
             </TableRow>
           </TableHeader>
+          {hasActiveFilters && activeColumns.some((c) => c.summaryRender) && (
+            <TableHeader className="bg-muted/50">
+              <TableRow className="border-b border-border">
+                {expandable && <TableHead className="w-8 text-xs py-1" />}
+                {activeColumns.map((col) => (
+                  <TableHead
+                    key={`sum-${col.key}`}
+                    className={`text-xs py-1.5 font-semibold ${col.align === "right" ? "text-right" : ""}`}
+                    style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
+                  >
+                    {col.summaryRender ? col.summaryRender(sorted) : null}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+          )}
           <TableBody>
             {sorted.length === 0 ? (
               <TableRow>
