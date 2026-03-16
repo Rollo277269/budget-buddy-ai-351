@@ -162,10 +162,82 @@ const VenditePage = () => {
     e.preventDefault(); e.stopPropagation();
   }, []);
   const processCsvFiles = useCallback(async (fileList: File[]) => {
-    const files = fileList.filter((f) => f.name.toLowerCase().endsWith(".csv"));
-    if (files.length === 0) { toast.error("Seleziona file CSV"); return; }
-    toast.info(`${files.length} file CSV ricevuti — funzionalità in arrivo`);
+    const csvFiles = fileList.filter((f) => f.name.toLowerCase().endsWith(".csv"));
+    const xlsFiles = fileList.filter((f) => /\.(xlsx?|xls)$/i.test(f.name));
+
+    if (csvFiles.length > 0) {
+      toast.info(`${csvFiles.length} file CSV ricevuti — funzionalità in arrivo`);
+    }
+
+    for (const file of xlsFiles) {
+      try {
+        const buf = await file.arrayBuffer();
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
+        const parsed = parseExcelSales(rows);
+        if (parsed.length === 0) { toast.error(`Nessuna fattura vendita trovata in ${file.name}`); continue; }
+
+        // Check collisions
+        const keys = parsed.map((i) => `${i.anno}-${i.numero}-${i.tipo || ""}`);
+        const { data: existing } = await supabase
+          .from("fatture_vendita")
+          .select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig, source_file")
+          .or(keys.map(k => { const [a, n] = k.split("-"); return `and(anno.eq.${a},numero.eq.${n})`; }).join(","));
+
+        const existingMap = new Map<string, any>();
+        (existing || []).forEach((r: any) => existingMap.set(`${r.anno}-${r.numero}-${r.tipo || ""}`, r));
+
+        const newOnly = parsed.filter((i) => !existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+        const colliding = parsed.filter((i) => existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+
+        if (colliding.length === 0) {
+          await seedSalesFromExcel(parsed, file.name);
+          toast.success(`Importate ${parsed.length} fatture vendita da ${file.name}`);
+          invalidateInvoiceCache();
+          setTimeout(() => window.location.reload(), 800);
+        } else {
+          setExcelCollisions(colliding.map((item) => {
+            const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
+            const ex = existingMap.get(key)!;
+            const newHasMore = ((item.descrizione || "").length > (ex.descrizione || "").length) || (item.cig && !ex.cig);
+            return { key, anno: item.anno, numero: item.numero, tipo: item.tipo || "", existingDesc: `${ex.tipo} — ${(ex.descrizione || "").slice(0, 60)}`, newDesc: `${item.tipo || ""} — ${(item.descrizione || "").slice(0, 60)}`, selected: newHasMore || ex.source_file === file.name };
+          }));
+          setPendingExcelUpload({ fileName: file.name, newOnly, colliding });
+          setShowExcelCollisionDialog(true);
+        }
+      } catch (err) {
+        console.error("Excel upload error:", err);
+        toast.error(`Errore importazione ${file.name}`);
+      }
+    }
+
+    if (csvFiles.length === 0 && xlsFiles.length === 0) {
+      toast.error("Seleziona file CSV o Excel (.xlsx)");
+    }
   }, []);
+
+  const handleExcelConfirmCollisions = useCallback(async () => {
+    if (!pendingExcelUpload) return;
+    setShowExcelCollisionDialog(false);
+    const selectedKeys = new Set(excelCollisions.filter(c => c.selected).map(c => c.key));
+    const overwrite = pendingExcelUpload.colliding.filter((i) => selectedKeys.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+    const all = [...pendingExcelUpload.newOnly, ...overwrite];
+    if (all.length === 0) { toast.info("Nessun record importato"); return; }
+    await seedSalesFromExcel(all, pendingExcelUpload.fileName);
+    const skipped = excelCollisions.length - selectedKeys.size;
+    toast.success(`Importati ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""));
+    invalidateInvoiceCache();
+    setTimeout(() => window.location.reload(), 800);
+  }, [pendingExcelUpload, excelCollisions]);
+
+  const handleExcelCancelCollisions = useCallback(() => {
+    setShowExcelCollisionDialog(false);
+    setPendingExcelUpload(null);
+    setExcelCollisions([]);
+  }, []);
+
   const handleCsvDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
     csvDragCounter.current = 0;
