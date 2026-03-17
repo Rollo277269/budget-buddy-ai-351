@@ -92,9 +92,9 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 
-  // Editing CIG inline
-  const [editingCigId, setEditingCigId] = useState<string | null>(null);
-  const [editingCigValue, setEditingCigValue] = useState("");
+  // Inline editing state: { docId, field }
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [editingValue, setEditingValue] = useState("");
 
   const centroLookup = useMemo(() => new Map(centri.map(c => [c.codice, c.descrizione])), [centri]);
 
