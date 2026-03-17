@@ -861,10 +861,17 @@ const BanchePage = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {rate.map((r) => (
-                            <TableRow key={r.id} className={`text-xs ${r.pagata ? "opacity-50" : ""}`}>
+                          {rate.map((r) => {
+                            const parts = r.data_scadenza.split("/");
+                            const scadDate = parts.length === 3 ? new Date(+parts[2], +parts[1] - 1, +parts[0]) : null;
+                            const isOverdue = !r.pagata && scadDate && scadDate < new Date();
+                            return (
+                            <TableRow key={r.id} className={`text-xs ${r.pagata ? "opacity-50" : isOverdue ? "bg-destructive/10" : ""}`}>
                               <TableCell className="py-1.5 text-[11px] text-muted-foreground">{r.numero_rata}</TableCell>
-                              <TableCell className="py-1.5 text-[11px] font-mono whitespace-nowrap">{r.data_scadenza}</TableCell>
+                              <TableCell className={`py-1.5 text-[11px] font-mono whitespace-nowrap ${isOverdue ? "text-destructive font-semibold" : ""}`}>
+                                {r.data_scadenza}
+                                {isOverdue && <span className="ml-1 text-[9px]">⚠</span>}
+                              </TableCell>
                               <TableCell className="py-1.5 text-[11px] font-mono text-right">{formatCurrency(r.importo_rata)}</TableCell>
                               <TableCell className="py-1.5 text-[11px] font-mono text-right">{formatCurrency(r.importo_capitale)}</TableCell>
                               <TableCell className="py-1.5 text-[11px] font-mono text-right text-muted-foreground">{formatCurrency(r.importo_interessi)}</TableCell>
