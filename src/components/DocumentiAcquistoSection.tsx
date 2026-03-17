@@ -66,7 +66,7 @@ interface Props {
 }
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
-  const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto(tipo);
+  const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField } = useDocumentiAcquisto(tipo);
   const { centriCosto, centriRicavo } = useCentriData();
   const centri = tipo === "vendita" ? centriRicavo : centriCosto;
   const ALL_COLUMNS = useMemo(() => buildColumns(tipo), [tipo]);
@@ -92,9 +92,9 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 
-  // Editing CIG inline
-  const [editingCigId, setEditingCigId] = useState<string | null>(null);
-  const [editingCigValue, setEditingCigValue] = useState("");
+  // Inline editing state: { docId, field }
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [editingValue, setEditingValue] = useState("");
 
   const centroLookup = useMemo(() => new Map(centri.map(c => [c.codice, c.descrizione])), [centri]);
 
@@ -212,11 +212,31 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const handlePdfDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); }, []);
   const handlePdfDrop = useCallback(async (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); pdfDragCounter.current = 0; setPdfDragging(false); await processPdfFiles(Array.from(e.dataTransfer.files)); }, [processPdfFiles]);
 
-  const saveCig = useCallback(async (id: string) => {
-    await updateCig(id, editingCigValue.trim());
-    setEditingCigId(null);
-    setEditingCigValue("");
-  }, [updateCig, editingCigValue]);
+  const startEditing = useCallback((id: string, field: string, currentValue: string) => {
+    setEditingCell({ id, field });
+    setEditingValue(currentValue);
+  }, []);
+
+  const saveEditing = useCallback(async () => {
+    if (!editingCell) return;
+    const { id, field } = editingCell;
+    const trimmed = editingValue.trim();
+    if (field === "importo") {
+      const num = parseFloat(trimmed.replace(",", "."));
+      await updateField(id, field, isNaN(num) ? null : num);
+    } else if (field === "cig") {
+      await updateCig(id, trimmed);
+    } else {
+      await updateField(id, field, trimmed || null);
+    }
+    setEditingCell(null);
+    setEditingValue("");
+  }, [editingCell, editingValue, updateField, updateCig]);
+
+  const cancelEditing = useCallback(() => {
+    setEditingCell(null);
+    setEditingValue("");
+  }, []);
 
   // Drop zone only mode
   if (dropZoneOnly) {
@@ -308,40 +328,71 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
           {docs.map((doc) => (
             <TableRow key={doc.id} className="cursor-pointer hover:bg-accent/50" onClick={() => setSelectedDoc(doc)}>
               {visibleCols.has("descrizione") && (
-                <TableCell className="text-xs py-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
-                    <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
-                  </div>
+                <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
+                  {editingCell?.id === doc.id && editingCell?.field === "descrizione" ? (
+                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
+                      className="h-6 text-[10px] w-[180px]" autoFocus />
+                  ) : (
+                    <div className="flex items-center gap-1.5 cursor-text hover:text-primary transition-colors"
+                      onClick={() => startEditing(doc.id, "descrizione", doc.descrizione || doc.file_name)}>
+                      <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
+                    </div>
+                  )}
                 </TableCell>
               )}
               {visibleCols.has("fornitore") && (
-                <TableCell className="text-xs py-1.5 truncate max-w-[140px]">{doc.fornitore || "—"}</TableCell>
+                <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
+                  {editingCell?.id === doc.id && editingCell?.field === "fornitore" ? (
+                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
+                      className="h-6 text-[10px] w-[140px]" autoFocus />
+                  ) : (
+                    <span className="truncate max-w-[140px] cursor-text hover:text-primary transition-colors"
+                      onClick={() => startEditing(doc.id, "fornitore", doc.fornitore || "")}>
+                      {doc.fornitore || "—"}
+                    </span>
+                  )}
+                </TableCell>
               )}
               {visibleCols.has("data") && (
-                <TableCell className="text-xs py-1.5">{doc.data_documento || "—"}</TableCell>
+                <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
+                  {editingCell?.id === doc.id && editingCell?.field === "data_documento" ? (
+                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
+                      className="h-6 text-[10px] w-[100px]" autoFocus placeholder="dd/mm/yyyy" />
+                  ) : (
+                    <span className="cursor-text hover:text-primary transition-colors"
+                      onClick={() => startEditing(doc.id, "data_documento", doc.data_documento || "")}>
+                      {doc.data_documento || "—"}
+                    </span>
+                  )}
+                </TableCell>
               )}
               {visibleCols.has("importo") && (
-                <TableCell className="text-xs py-1.5 text-right font-mono">
-                  {doc.importo ? formatCurrency(doc.importo) : "—"}
+                <TableCell className="text-xs py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
+                  {editingCell?.id === doc.id && editingCell?.field === "importo" ? (
+                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
+                      className="h-6 text-[10px] w-[100px] font-mono text-right" autoFocus />
+                  ) : (
+                    <span className="font-mono cursor-text hover:text-primary transition-colors"
+                      onClick={() => startEditing(doc.id, "importo", doc.importo ? String(doc.importo) : "")}>
+                      {doc.importo ? formatCurrency(doc.importo) : "—"}
+                    </span>
+                  )}
                 </TableCell>
               )}
               {visibleCols.has("cig") && (
                 <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
-                  {editingCigId === doc.id ? (
-                    <Input
-                      value={editingCigValue}
-                      onChange={(e) => setEditingCigValue(e.target.value)}
-                      onBlur={() => saveCig(doc.id)}
-                      onKeyDown={(e) => { if (e.key === "Enter") saveCig(doc.id); if (e.key === "Escape") setEditingCigId(null); }}
-                      className="h-6 text-[10px] w-[120px] font-mono"
-                      autoFocus
-                    />
+                  {editingCell?.id === doc.id && editingCell?.field === "cig" ? (
+                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
+                      className="h-6 text-[10px] w-[120px] font-mono" autoFocus />
                   ) : (
-                    <span
-                      className="font-mono cursor-text hover:text-primary transition-colors"
-                      onClick={() => { setEditingCigId(doc.id); setEditingCigValue(doc.cig || ""); }}
-                    >
+                    <span className="font-mono cursor-text hover:text-primary transition-colors"
+                      onClick={() => startEditing(doc.id, "cig", doc.cig || "")}>
                       {doc.cig || "—"}
                     </span>
                   )}
