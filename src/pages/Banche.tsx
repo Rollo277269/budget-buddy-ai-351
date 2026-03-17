@@ -30,6 +30,10 @@ import { toast } from "sonner";
 // Load conti from shared hook
 import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
 import { BankLogo } from "@/components/BankLogo";
+import { useRateFinanziamento, RataFinanziamento } from "@/hooks/useRateFinanziamento";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox as CheckboxUI } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 
 function ReconciliationBadge({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "auto") {
