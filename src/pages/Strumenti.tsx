@@ -1212,6 +1212,7 @@ const StrumentiPage = () => {
       <Separator />
       <UploadFattureSection />
       <ExportImportSection />
+      <CigIntegrityCheck />
     </div>
   );
 };
