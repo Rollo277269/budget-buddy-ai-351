@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { parsePaymentTerms } from "@/lib/paymentTerms";
+import { supabase } from "@/integrations/supabase/client";
 import { useSearchParams } from "react-router-dom";
 import {
   ResponsiveContainer,
