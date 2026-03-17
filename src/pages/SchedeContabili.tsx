@@ -417,22 +417,24 @@ function SchedaDetail({
 
         {/* Grafico andamento saldo */}
         {rows.length > 1 && (() => {
-          const chartData = rows.map((r) => {
+          // Sort chronologically (ascending) and aggregate by year
+          const chronoRows = [...rows].sort((a, b) => a.dataSort - b.dataSort);
+          const yearAgg: Record<string, { dare: number; avere: number }> = {};
+          for (const r of chronoRows) {
             const d = parseDate(r.data);
-            return {
-              data: r.data,
-              anno: d ? String(d.getFullYear()) : r.data,
-              Dare: Math.round(r.dare),
-              Avere: Math.round(r.avere),
-              Saldo: Math.round(r.saldo),
-            };
-          });
-          // Only show tick for first occurrence of each year
-          const seenYears = new Set<string>();
-          const yearTicks = chartData.reduce<number[]>((acc, item, idx) => {
-            if (!seenYears.has(item.anno)) { seenYears.add(item.anno); acc.push(idx); }
-            return acc;
-          }, []);
+            const anno = d ? String(d.getFullYear()) : "N/D";
+            if (!yearAgg[anno]) yearAgg[anno] = { dare: 0, avere: 0 };
+            yearAgg[anno].dare += r.dare;
+            yearAgg[anno].avere += r.avere;
+          }
+          let saldoProgressivo = 0;
+          const chartData = Object.entries(yearAgg)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([anno, v]) => {
+              saldoProgressivo += v.dare - v.avere;
+              return { anno, Dare: Math.round(v.dare), Avere: Math.round(v.avere), Saldo: Math.round(saldoProgressivo) };
+            });
+
           return (
             <div className="rounded-xl border bg-card p-5">
               <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
@@ -440,7 +442,7 @@ function SchedaDetail({
               </h3>
               <ResponsiveContainer width="100%" height={260}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
-                  <XAxis dataKey="anno" tick={{ fontSize: 10 }} ticks={yearTicks.map(i => chartData[i]?.anno)} interval={0} />
+                  <XAxis dataKey="anno" tick={{ fontSize: 10 }} interval={0} />
                   <YAxis
                     tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                     tick={{ fontSize: 10 }}
@@ -448,19 +450,19 @@ function SchedaDetail({
                   />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
-                    contentStyle={{ borderRadius: "0.5rem", border: "1px solid hsl(220 14% 89%)", fontSize: "0.75rem" }}
+                    contentStyle={{ borderRadius: "0.5rem", border: "1px solid hsl(var(--border))", fontSize: "0.75rem" }}
                   />
                   <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
                   <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
-                  <Bar dataKey="Dare" fill="hsl(152 60% 36%)" radius={[3, 3, 0, 0]} barSize={14} />
-                  <Bar dataKey="Avere" fill="hsl(0 72% 51%)" radius={[3, 3, 0, 0]} barSize={14} />
+                  <Bar dataKey="Dare" fill="hsl(var(--success))" radius={[3, 3, 0, 0]} barSize={18} />
+                  <Bar dataKey="Avere" fill="hsl(var(--destructive))" radius={[3, 3, 0, 0]} barSize={18} />
                   <Area
                     type="monotone"
                     dataKey="Saldo"
                     stroke="hsl(210 80% 50%)"
                     fill="hsl(210 80% 50% / 0.1)"
                     strokeWidth={2}
-                    dot={{ r: 2.5 }}
+                    dot={{ r: 3 }}
                     name="Saldo"
                   />
                 </ComposedChart>
