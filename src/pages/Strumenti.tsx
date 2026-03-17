@@ -16,6 +16,7 @@ import { useRef as useFileRef } from "react";
 // ─── Conti Correnti ──────────────────────────────────────────────
 
 import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
+import { PianoAmmortamentoUpload } from "@/components/PianoAmmortamentoUpload";
 
 function ContiCorrentiTab() {
   const { conti, saveConto, deleteConto } = useContiCorrenti();
@@ -119,6 +120,9 @@ function ContiCorrentiTab() {
                     </Button>
                   </div>
                 </div>
+                {c.tipo === "finanziamento" && (
+                  <PianoAmmortamentoUpload contoId={c.id} bancaName={c.banca} />
+                )}
               </CardContent>
             </Card>
         )}

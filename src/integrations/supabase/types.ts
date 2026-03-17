@@ -500,6 +500,48 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_finanziamento: {
+        Row: {
+          conto_id: string
+          created_at: string
+          data_scadenza: string
+          debito_residuo: number
+          id: string
+          importo_capitale: number
+          importo_interessi: number
+          importo_rata: number
+          note: string
+          numero_rata: number
+          pagata: boolean
+        }
+        Insert: {
+          conto_id: string
+          created_at?: string
+          data_scadenza: string
+          debito_residuo?: number
+          id?: string
+          importo_capitale?: number
+          importo_interessi?: number
+          importo_rata?: number
+          note?: string
+          numero_rata: number
+          pagata?: boolean
+        }
+        Update: {
+          conto_id?: string
+          created_at?: string
+          data_scadenza?: string
+          debito_residuo?: number
+          id?: string
+          importo_capitale?: number
+          importo_interessi?: number
+          importo_rata?: number
+          note?: string
+          numero_rata?: number
+          pagata?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
