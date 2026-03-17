@@ -753,12 +753,13 @@ const BanchePage = () => {
 
               // Find matching movements for this loan
               const loanRef = conto.iban.replace(/\s/g, "");
+              const addebitoId = conto.conto_addebito_id;
               const matchingMovements = rawMovements.filter(m => {
                 const desc = m.descrizione.replace(/\s/g, "").toUpperCase();
-                return (
-                  (m.causale.toUpperCase().includes("PAGAMENTO RATE") || m.causale.toUpperCase().includes("FINANZIAMENTO") || desc.includes("FIN.") || desc.includes("PAG.RATA")) &&
-                  desc.includes(loanRef.toUpperCase())
-                );
+                const isRataPayment = m.causale.toUpperCase().includes("PAGAMENTO RATE") || m.causale.toUpperCase().includes("FINANZIAMENTO") || desc.includes("FIN.") || desc.includes("PAG.RATA");
+                const matchesLoanRef = desc.includes(loanRef.toUpperCase());
+                const matchesAccount = addebitoId ? m.accountId === addebitoId : true;
+                return isRataPayment && matchesLoanRef && matchesAccount;
               });
 
               const handleReconciliaRate = async () => {
