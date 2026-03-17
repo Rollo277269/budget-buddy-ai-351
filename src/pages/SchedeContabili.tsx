@@ -159,8 +159,9 @@ function buildRows(
     const actualPaymentDate = parseDate(actualPaymentDateStr);
     if (!actualPaymentDate) continue;
 
-    // Get calculated due date (last installment)
-    const parsed = parsePaymentTerms(e.scadenza, e.data);
+    // Default empty scadenza to "Vista fattura" (due date = invoice date)
+    const scadenza = e.scadenza?.trim() ? e.scadenza : "Vista fattura";
+    const parsed = parsePaymentTerms(scadenza, e.data);
     if (parsed) {
       const delay = Math.round(
         (actualPaymentDate.getTime() - parsed.lastDueDate.getTime()) / (1000 * 60 * 60 * 24)
