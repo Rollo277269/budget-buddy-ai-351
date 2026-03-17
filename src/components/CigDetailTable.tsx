@@ -1,8 +1,6 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-
 import { formatCurrency } from "@/lib/format";
 
 interface CigRow {
@@ -40,9 +38,17 @@ function makeColumns(onCigClick: (cig: string) => void): ColumnDef<CigRow>[] {
   ];
 }
 
-export function CigDetailTable({ sales, purchases }: { sales: SaleInvoice[]; purchases: PurchaseInvoice[] }) {
-  const navigate = useNavigate();
-  const columns = useMemo(() => makeColumns((cig) => navigate(`/?cig=${encodeURIComponent(cig)}`)), [navigate]);
+interface CigDetailTableProps {
+  sales: SaleInvoice[];
+  purchases: PurchaseInvoice[];
+  onCigClick?: (cig: string) => void;
+}
+
+export function CigDetailTable({ sales, purchases, onCigClick }: CigDetailTableProps) {
+  const columns = useMemo(
+    () => makeColumns(onCigClick || (() => {})),
+    [onCigClick]
+  );
 
   const rows = useMemo(() => {
     const map: Record<string, CigRow> = {};
