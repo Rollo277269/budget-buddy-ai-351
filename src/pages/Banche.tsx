@@ -733,7 +733,22 @@ const BanchePage = () => {
               const pagate = rate.filter(r => r.pagata);
               const pagato = pagate.reduce((a, r) => a + r.importo_rata, 0);
               const residuo = rate.length > 0 ? rate[rate.length - 1].debito_residuo : 0;
-              const prossima = rate.find(r => !r.pagata);
+              const oggi = new Date();
+              const prossima = rate
+                .filter(r => !r.pagata)
+                .map(r => {
+                  const parts = r.data_scadenza.split("/");
+                  const d = parts.length === 3 ? new Date(+parts[2], +parts[1] - 1, +parts[0]) : new Date(0);
+                  return { ...r, _date: d };
+                })
+                .sort((a, b) => {
+                  // Prefer the closest future date, then closest past date
+                  const aFuture = a._date >= oggi;
+                  const bFuture = b._date >= oggi;
+                  if (aFuture && !bFuture) return -1;
+                  if (!aFuture && bFuture) return 1;
+                  return aFuture ? a._date.getTime() - b._date.getTime() : b._date.getTime() - a._date.getTime();
+                })[0];
               const percentuale = totalePiano > 0 ? Math.round((pagato / totalePiano) * 100) : 0;
 
               // Find matching movements for this loan
