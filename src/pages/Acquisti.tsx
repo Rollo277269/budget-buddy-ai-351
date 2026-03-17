@@ -282,6 +282,20 @@ const AcquistiPage = () => {
       render: (r) => <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="costo" centri={centri} centroMap={costoMap.map} onAssign={costoMap.assign} onRemove={costoMap.remove} />
     },
     { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
+    { key: "dataScadenza", label: "Data Scadenza", render: (r) => {
+      const parsed = parsePaymentTerms(r.scadenza, r.data);
+      if (!parsed) return <span className="text-xs text-muted-foreground">—</span>;
+      return (
+        <div className="text-xs space-y-0.5">
+          {parsed.installments.map((inst, i) => (
+            <div key={i} className="font-mono">
+              {formatDateIT(inst.dueDate)}
+              {parsed.installments.length > 1 && <span className="text-muted-foreground ml-1 text-[10px]">({inst.days}gg)</span>}
+            </div>
+          ))}
+        </div>
+      );
+    }, sortable: false, defaultHidden: false },
     { key: "pagamento", label: "Pagamento", render: (r) => <span className="text-xs">{r.pagamento || "—"}</span>, sortable: true, defaultHidden: true },
     { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span>, defaultHidden: true },
     { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true }],
