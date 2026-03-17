@@ -105,6 +105,7 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
         centro_costo: aiData.centro_costo || null,
         parsed_text: extractedText.substring(0, 10000),
         ai_summary: aiData.summary || null,
+        tipo,
       } as any);
 
     if (insertError) {
