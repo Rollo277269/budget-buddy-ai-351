@@ -124,6 +124,10 @@ function ContiCorrentiTab() {
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
+                    {c.tipo === "finanziamento" && c.conto_addebito_id && (() => {
+                      const ca = conti.find(x => x.id === c.conto_addebito_id);
+                      return ca ? <p className="text-xs text-muted-foreground">Addebito su: <span className="font-medium">{ca.banca}</span></p> : null;
+                    })()}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica conto" onClick={() => setEditing(c)}>
