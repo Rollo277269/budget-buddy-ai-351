@@ -82,6 +82,20 @@ function ContiCorrentiTab() {
                 <Label className="text-xs">Note</Label>
                 <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
               </div>
+              {editing.tipo === "finanziamento" && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Conto di addebito rate</Label>
+                  <select
+                    value={editing.conto_addebito_id}
+                    onChange={(e) => setEditing({ ...editing, conto_addebito_id: e.target.value })}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <option value="">— Nessuno —</option>
+                    {conti.filter(c => c.tipo === "conto_corrente").map(c => (
+                      <option key={c.id} value={c.id}>{c.banca} — {c.iban.slice(-8)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
