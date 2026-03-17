@@ -84,10 +84,20 @@ export function useRateFinanziamento(contoId?: string) {
     await fetchRate();
   }, [fetchRate]);
 
+  const updateRata = useCallback(async (id: string, updates: Partial<Omit<RataFinanziamento, "id" | "conto_id">>) => {
+    const { error } = await supabase
+      .from("rate_finanziamento" as any)
+      .update(updates as any)
+      .eq("id", id);
+    if (error) { toast.error("Errore aggiornamento rata"); console.error(error); return; }
+    toast.success("Rata aggiornata");
+    await fetchRate();
+  }, [fetchRate]);
+
   const deleteRateForConto = useCallback(async (contoId: string) => {
     await supabase.from("rate_finanziamento" as any).delete().eq("conto_id", contoId);
     await fetchRate();
   }, [fetchRate]);
 
-  return { rate, loading, importRate, togglePagata, deleteRateForConto, refetch: fetchRate };
+  return { rate, loading, importRate, togglePagata, updateRata, deleteRateForConto, refetch: fetchRate };
 }
