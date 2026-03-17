@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileText } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileText, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
@@ -417,6 +417,30 @@ function SchedaDetail({
               </h3>
               {stats.paymentTiming ? (
                 <div className="space-y-3">
+                  {/* Star rating */}
+                  {(() => {
+                    const avg = stats.paymentTiming!.avg;
+                    // 0-30 days = 5 stars, 31-60 = 4, 61-90 = 3, 91-120 = 2, >120 = 1
+                    const stars = avg <= 30 ? 5 : avg <= 60 ? 4 : avg <= 90 ? 3 : avg <= 120 ? 2 : 1;
+                    const ratingLabels = ["", "Critica", "Scarsa", "Sufficiente", "Buona", "Eccellente"];
+                    const ratingColors = ["", "text-destructive", "text-destructive", "text-[hsl(var(--warning))]", "text-primary", "text-[hsl(var(--success))]"];
+                    return (
+                      <div className="flex flex-col items-center gap-1 py-1">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <Star
+                              key={i}
+                              className={`h-5 w-5 ${i <= stars ? ratingColors[stars] : "text-muted"}`}
+                              fill={i <= stars ? "currentColor" : "none"}
+                            />
+                          ))}
+                        </div>
+                        <p className={`text-xs font-semibold ${ratingColors[stars]}`}>
+                          {ratingLabels[stars]}
+                        </p>
+                      </div>
+                    );
+                  })()}
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="rounded-md bg-muted/40 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">Min</p>
