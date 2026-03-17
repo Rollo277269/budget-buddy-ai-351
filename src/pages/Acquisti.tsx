@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw, Link2, Trash2, ChevronDown } from "lucide-react";
+import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw, Link2, Trash2, ChevronDown, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,6 +67,8 @@ const AcquistiPage = () => {
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
   const [xmlExpanded, setXmlExpanded] = useState(false);
+  const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
+  const [editingCigValue, setEditingCigValue] = useState("");
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
 
   const displayedPurchases = useMemo(() => {
@@ -190,12 +192,43 @@ const AcquistiPage = () => {
     { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
     { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
     { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
-    { key: "cig", label: "CIG", render: (r) => r.cig ?
-      <span
-        className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
-        onClick={(e) => {e.stopPropagation();navigate(`/?cig=${encodeURIComponent(r.cig)}`);}}>
-        {r.cig}</span> :
-      <span className="font-mono text-[11px]">—</span>, sortable: true, filterable: true },
+    { key: "cig", label: "CIG", render: (r) => {
+      const k = `${r.anno}-${r.numero}`;
+      if (editingCigKey === k) {
+        return (
+          <span className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+            <input
+              autoFocus
+              value={editingCigValue}
+              onChange={(e) => setEditingCigValue(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  supabase.from("fatture_acquisto").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero).then(() => {
+                    r.cig = editingCigValue;
+                    toast.success("CIG salvato");
+                  });
+                  setEditingCigKey(null);
+                } else if (e.key === "Escape") setEditingCigKey(null);
+              }}
+              className="h-6 w-[110px] px-1 text-[11px] font-mono border rounded bg-background"
+            />
+            <button className="p-0.5 text-primary hover:text-primary/80" onClick={() => {
+              supabase.from("fatture_acquisto").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero).then(() => { r.cig = editingCigValue; toast.success("CIG salvato"); });
+              setEditingCigKey(null);
+            }}><Check className="h-3 w-3" /></button>
+            <button className="p-0.5 text-muted-foreground hover:text-foreground" onClick={() => setEditingCigKey(null)}><X className="h-3 w-3" /></button>
+          </span>
+        );
+      }
+      return r.cig ?
+        <span
+          className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+          onClick={(e) => {e.stopPropagation();navigate(`/?cig=${encodeURIComponent(r.cig)}`);}}>
+          {r.cig}</span> :
+        <span className="font-mono text-[11px] text-muted-foreground cursor-pointer hover:text-primary flex items-center gap-0.5" onClick={(e) => { e.stopPropagation(); setEditingCigKey(k); setEditingCigValue(""); }}>
+          — <Pencil className="h-3 w-3 opacity-50" />
+        </span>;
+    }, sortable: true, filterable: true },
     { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imponibile) : r.imponibile), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
     { key: "cassa", label: "Cassa", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{r.cassa ? formatCreditAmount(r.cassa, nc) : "—"}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.cassa || 0) : (r.cassa || 0)), 0); return sum ? <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span> : null; } },
     { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imposta) : r.imposta), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
