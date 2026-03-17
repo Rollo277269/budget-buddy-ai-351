@@ -45,14 +45,16 @@ interface ColumnDef {
   defaultVisible: boolean;
 }
 
-const ALL_COLUMNS: ColumnDef[] = [
-  { key: "descrizione", label: "Documento", defaultVisible: true },
-  { key: "fornitore", label: "Fornitore", defaultVisible: true },
-  { key: "data", label: "Data", defaultVisible: true },
-  { key: "importo", label: "Importo", defaultVisible: true },
-  { key: "cig", label: "CIG", defaultVisible: true },
-  { key: "centro_costo", label: "Centro Costo", defaultVisible: true },
-];
+function buildColumns(tipo: "acquisto" | "vendita"): ColumnDef[] {
+  return [
+    { key: "descrizione", label: "Documento", defaultVisible: true },
+    { key: "fornitore", label: tipo === "vendita" ? "Cliente" : "Fornitore", defaultVisible: true },
+    { key: "data", label: "Data", defaultVisible: true },
+    { key: "importo", label: "Importo", defaultVisible: true },
+    { key: "cig", label: "CIG", defaultVisible: true },
+    { key: "centro_costo", label: tipo === "vendita" ? "Centro Ricavo" : "Centro Costo", defaultVisible: true },
+  ];
+}
 
 type SortDir = "asc" | "desc" | null;
 
