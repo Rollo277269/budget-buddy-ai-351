@@ -72,6 +72,43 @@ const AcquistiPage = () => {
   const [editingCigValue, setEditingCigValue] = useState("");
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
 
+  // ── Reconciliation data for payment columns ──
+  const [reconMap, setReconMap] = useState<Record<string, { paid: number; lastDate: string }>>({});
+  useEffect(() => {
+    (async () => {
+      const { data: recons } = await supabase
+        .from("bank_reconciliations")
+        .select("movement_id, invoice_anno, invoice_numero, invoice_type")
+        .eq("invoice_type", "acquisto");
+      if (!recons || recons.length === 0) { setReconMap({}); return; }
+
+      const movementIds = [...new Set(recons.map((r: any) => r.movement_id))];
+      const movements: Record<string, { importo: number; data: string }> = {};
+      for (let i = 0; i < movementIds.length; i += 500) {
+        const batch = movementIds.slice(i, i + 500);
+        const { data: movs } = await supabase
+          .from("bank_movements")
+          .select("id, importo, data")
+          .in("id", batch);
+        if (movs) movs.forEach((m: any) => { movements[m.id] = { importo: Math.abs(Number(m.importo)), data: m.data }; });
+      }
+
+      const map: Record<string, { paid: number; lastDate: string }> = {};
+      for (const r of recons as any[]) {
+        const key = `${r.invoice_anno}-${r.invoice_numero}`;
+        const mov = movements[r.movement_id];
+        if (!mov) continue;
+        if (!map[key]) {
+          map[key] = { paid: mov.importo, lastDate: mov.data };
+        } else {
+          map[key].paid += mov.importo;
+          if (mov.data > map[key].lastDate) map[key].lastDate = mov.data;
+        }
+      }
+      setReconMap(map);
+    })();
+  }, [purchases]);
+
   const displayedPurchases = useMemo(() => {
     if (!filters.centroCosto) return purchases;
     return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
@@ -238,6 +275,31 @@ const AcquistiPage = () => {
     { key: "ritenute", label: "Ritenute", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{r.ritenute ? formatCreditAmount(r.ritenute, nc) : "—"}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.ritenute || 0) : (r.ritenute || 0)), 0); return sum ? <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span> : null; } },
     { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.totale) : r.totale), 0); return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>; } },
     { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
+    { key: "importoPagato", label: "Importo Pagato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
+      const k = `${r.anno}-${r.numero}`;
+      const rec = reconMap[k];
+      if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+      return <span className="text-xs font-mono text-right block">{formatCurrency(rec.paid)}</span>;
+    }, summaryRender: (rows) => {
+      const sum = rows.reduce((s, r) => s + (reconMap[`${r.anno}-${r.numero}`]?.paid || 0), 0);
+      return sum ? <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span> : null;
+    }},
+    { key: "differenza", label: "Differenza", align: "right", sortable: true, defaultHidden: false, render: (r) => {
+      const k = `${r.anno}-${r.numero}`;
+      const rec = reconMap[k];
+      if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+      const diff = Math.round((r.totale - rec.paid) * 100) / 100;
+      if (Math.abs(diff) < 0.01) return <span className="text-xs font-mono text-right block text-green-600">0,00</span>;
+      return <span className={`text-xs font-mono text-right block ${diff > 0 ? "text-destructive" : "text-green-600"}`}>{formatCurrency(Math.abs(diff))}{diff > 0 ? "" : " +"}</span>;
+    }},
+    { key: "dataSaldo", label: "Data Saldo", sortable: true, defaultHidden: false, render: (r) => {
+      const k = `${r.anno}-${r.numero}`;
+      const rec = reconMap[k];
+      if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+      const diff = Math.round((r.totale - rec.paid) * 100) / 100;
+      if (Math.abs(diff) > 0.01) return <span className="text-xs text-muted-foreground italic">Parziale</span>;
+      return <span className="text-xs font-mono">{rec.lastDate}</span>;
+    }},
     {
       key: "xml", label: "XML", filterable: true,
       filterValue: (r) => hasXml(`${r.anno}-${r.numero}`) ? "sì" : "no",
@@ -301,7 +363,7 @@ const AcquistiPage = () => {
     { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span>, defaultHidden: true },
     { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true }],
 
-    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf]
+    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap]
   );
 
   const xmlDuplicateCount = useMemo(() => {
