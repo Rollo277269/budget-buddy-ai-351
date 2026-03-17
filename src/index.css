@@ -404,10 +404,9 @@
   }
 
   body.print-report .pdf-desc-cell {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    max-width: 260px;
+    white-space: normal;
+    word-break: break-word;
   }
 
   body.print-report .pdf-table-total td {
