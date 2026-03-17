@@ -37,7 +37,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
 }
 
 /* ── Column definitions ── */
-type ColumnKey = "descrizione" | "fornitore" | "data" | "importo" | "cig" | "centro_costo";
+type ColumnKey = "descrizione" | "file_name" | "fornitore" | "data" | "importo" | "cig" | "centro_costo";
 
 interface ColumnDef {
   key: ColumnKey;
