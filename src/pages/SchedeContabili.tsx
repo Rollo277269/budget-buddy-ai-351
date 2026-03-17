@@ -291,8 +291,35 @@ function SchedaDetail({
   );
 
   const [selectedCig, setSelectedCig] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("data");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
   const handleCigClick = useCallback((cig: string) => setSelectedCig(cig), []);
+
+  const toggleSort = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) { setSortDir((d) => d === "asc" ? "desc" : "asc"); return key; }
+      setSortDir(key === "data" ? "desc" : "asc");
+      return key;
+    });
+  }, []);
+
+  const filteredRows = useMemo(() => {
+    let result = rows;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((r) =>
+        r.data.toLowerCase().includes(q) ||
+        r.numero.toLowerCase().includes(q) ||
+        r.descrizione.toLowerCase().includes(q) ||
+        (r.cig || "").toLowerCase().includes(q) ||
+        r.stato.toLowerCase().includes(q) ||
+        (r.scadenza || "").toLowerCase().includes(q)
+      );
+    }
+    return sortRows(result, sortKey, sortDir);
+  }, [rows, search, sortKey, sortDir]);
 
   const commessa = selectedCig ? {
     numero: "", oggetto: "", committente: "", assegnataria: "", cig: selectedCig,
