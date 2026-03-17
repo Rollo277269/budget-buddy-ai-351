@@ -268,19 +268,11 @@ function SchedaDetail({
     numero: "", oggetto: "", committente: "", assegnataria: "", cig: selectedCig,
   } : null;
 
-  return (
-    <>
-      {/* Screen content */}
-      <div className="space-y-5 scheda-screen-content">
-        {/* Export button */}
-        <div className="flex justify-end no-print">
-          <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5" title="Esporta scheda contabile in PDF">
-            <FileText className="h-3.5 w-3.5" />
-            Report
-          </Button>
-        </div>
-
-        {/* KPI */}
+    return (
+      <>
+        {/* Screen content */}
+        <div className="space-y-5 scheda-screen-content">
+          {/* KPI */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="rounded-lg border bg-card p-4 space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -531,66 +523,56 @@ export default function SchedeContabiliPage() {
     );
   }
 
+  const activeNome = tab === "clienti" ? selectedCliente : selectedFornitore;
+
   return (
-    <div className="p-6 space-y-5">
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="clienti" className="gap-1.5">
-            <Users className="h-3.5 w-3.5" /> Clienti ({clienti.length})
-          </TabsTrigger>
-          <TabsTrigger value="fornitori" className="gap-1.5">
-            <Truck className="h-3.5 w-3.5" /> Fornitori ({fornitori.length})
-          </TabsTrigger>
-        </TabsList>
+    <div className="p-6 space-y-0">
+      {/* Sticky header: tabs + combobox + report */}
+      <div className="sticky top-0 z-20 bg-background pb-3 -mx-6 px-6 pt-0 border-b border-border mb-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <Tabs value={tab} onValueChange={setTab} className="flex-shrink-0">
+            <TabsList>
+              <TabsTrigger value="clienti" className="gap-1.5">
+                <Users className="h-3.5 w-3.5" /> Clienti ({clienti.length})
+              </TabsTrigger>
+              <TabsTrigger value="fornitori" className="gap-1.5">
+                <Truck className="h-3.5 w-3.5" /> Fornitori ({fornitori.length})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-        <TabsContent value="clienti" className="mt-4 space-y-4">
-          <div className="max-w-sm no-print">
+          <div className="w-64 no-print">
             <Combobox
-              value={selectedCliente}
-              onValueChange={setSelectedCliente}
-              options={clienteOptions}
-              placeholder="Cerca cliente..."
+              value={tab === "clienti" ? selectedCliente : selectedFornitore}
+              onValueChange={tab === "clienti" ? setSelectedCliente : setSelectedFornitore}
+              options={tab === "clienti" ? clienteOptions : fornitoreOptions}
+              placeholder={tab === "clienti" ? "Cerca cliente..." : "Cerca fornitore..."}
             />
           </div>
-          {selectedCliente ? (
-            <SchedaDetail
-              tipo="cliente"
-              nome={selectedCliente}
-              allSales={allSales}
-              allPurchases={allPurchases}
-            />
-          ) : (
-            <div className="text-center py-16 text-muted-foreground">
-              <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Seleziona un cliente per visualizzare la scheda contabile</p>
-            </div>
-          )}
-        </TabsContent>
 
-        <TabsContent value="fornitori" className="mt-4 space-y-4">
-          <div className="max-w-sm no-print">
-            <Combobox
-              value={selectedFornitore}
-              onValueChange={setSelectedFornitore}
-              options={fornitoreOptions}
-              placeholder="Cerca fornitore..."
-            />
-          </div>
-          {selectedFornitore ? (
-            <SchedaDetail
-              tipo="fornitore"
-              nome={selectedFornitore}
-              allSales={allSales}
-              allPurchases={allPurchases}
-            />
-          ) : (
-            <div className="text-center py-16 text-muted-foreground">
-              <Truck className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Seleziona un fornitore per visualizzare la scheda contabile</p>
-            </div>
+          {activeNome && (
+            <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 ml-auto no-print" title="Esporta scheda contabile in PDF">
+              <FileText className="h-3.5 w-3.5" />
+              Report
+            </Button>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
+
+      {/* Content */}
+      {activeNome ? (
+        <SchedaDetail
+          tipo={tab === "clienti" ? "cliente" : "fornitore"}
+          nome={activeNome}
+          allSales={allSales}
+          allPurchases={allPurchases}
+        />
+      ) : (
+        <div className="text-center py-16 text-muted-foreground">
+          {tab === "clienti" ? <Users className="h-10 w-10 mx-auto mb-3 opacity-30" /> : <Truck className="h-10 w-10 mx-auto mb-3 opacity-30" />}
+          <p className="text-sm">Seleziona {tab === "clienti" ? "un cliente" : "un fornitore"} per visualizzare la scheda contabile</p>
+        </div>
+      )}
     </div>
   );
 }
