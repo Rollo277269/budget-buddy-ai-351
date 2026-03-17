@@ -37,7 +37,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
 }
 
 /* ── Column definitions ── */
-type ColumnKey = "descrizione" | "fornitore" | "data" | "importo" | "cig" | "centro_costo";
+type ColumnKey = "descrizione" | "file_name" | "fornitore" | "data" | "importo" | "cig" | "centro_costo";
 
 interface ColumnDef {
   key: ColumnKey;
@@ -48,6 +48,7 @@ interface ColumnDef {
 function buildColumns(tipo: "acquisto" | "vendita"): ColumnDef[] {
   return [
     { key: "descrizione", label: "Documento", defaultVisible: true },
+    { key: "file_name", label: "Nome file", defaultVisible: true },
     { key: "fornitore", label: tipo === "vendita" ? "Cliente" : "Fornitore", defaultVisible: true },
     { key: "data", label: "Data", defaultVisible: true },
     { key: "importo", label: "Importo", defaultVisible: true },
@@ -120,6 +121,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const getSortValue = (doc: DocumentoAcquisto, key: ColumnKey): string | number => {
     switch (key) {
       case "descrizione": return (doc.descrizione || doc.file_name || "").toLowerCase();
+      case "file_name": return (doc.file_name || "").toLowerCase();
       case "fornitore": return (doc.fornitore || "").toLowerCase();
       case "data": return doc.data_documento || "";
       case "importo": return doc.importo || 0;
@@ -296,6 +298,11 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 <span className="flex items-center gap-1">Documento <SortIcon col="descrizione" /></span>
               </TableHead>
             )}
+            {visibleCols.has("file_name") && (
+              <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("file_name")}>
+                <span className="flex items-center gap-1">Nome file <SortIcon col="file_name" /></span>
+              </TableHead>
+            )}
             {visibleCols.has("fornitore") && (
               <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("fornitore")}>
                 <span className="flex items-center gap-1">{ALL_COLUMNS.find(c => c.key === "fornitore")?.label} <SortIcon col="fornitore" /></span>
@@ -340,6 +347,11 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
                     </div>
                   )}
+                </TableCell>
+              )}
+              {visibleCols.has("file_name") && (
+                <TableCell className="text-xs py-1.5 text-muted-foreground">
+                  <span className="truncate max-w-[160px] block" title={doc.file_name}>{doc.file_name}</span>
                 </TableCell>
               )}
               {visibleCols.has("fornitore") && (
