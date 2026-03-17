@@ -139,6 +139,24 @@ function buildRows(
   const totaleDare = entries.reduce((a, e) => a + e.dare, 0);
   const totaleAvere = entries.reduce((a, e) => a + e.avere, 0);
 
+  // Compute payment timing stats (days between invoice date and due date)
+  const daysDiffs: number[] = [];
+  for (const e of entries) {
+    const dataFattura = parseDate(e.data);
+    const dataScadenza = parseDate(e.scadenza);
+    if (dataFattura && dataScadenza) {
+      const diff = Math.round((dataScadenza.getTime() - dataFattura.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff >= 0) daysDiffs.push(diff);
+    }
+  }
+
+  const paymentTiming = daysDiffs.length > 0 ? {
+    min: Math.min(...daysDiffs),
+    max: Math.max(...daysDiffs),
+    avg: Math.round(daysDiffs.reduce((a, b) => a + b, 0) / daysDiffs.length),
+    count: daysDiffs.length,
+  } : null;
+
   return {
     rows,
     stats: {
@@ -149,6 +167,7 @@ function buildRows(
       mediaImporto: entries.length > 0 ? (totaleDare + totaleAvere) / entries.length : 0,
       totaleImponibile: entries.reduce((a, e) => a + e.imponibile, 0),
       totaleImposta: entries.reduce((a, e) => a + e.imposta, 0),
+      paymentTiming,
     },
   };
 }
@@ -360,8 +379,8 @@ function SchedaDetail({
       <>
         {/* Screen content */}
         <div className="space-y-5 scheda-screen-content">
-          {/* KPI table + Centro chart side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* KPI table + Affidabilità + Centro chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left: KPI summary table */}
             <div className="rounded-lg border bg-card overflow-hidden">
               <table className="w-full text-sm">
@@ -391,6 +410,62 @@ function SchedaDetail({
               </table>
             </div>
 
+            {/* Center: Affidabilità / Tempi */}
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                {tipo === "cliente" ? "Tempi di Incasso" : "Tempi di Pagamento"}
+              </h3>
+              {stats.paymentTiming ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-md bg-muted/40 p-3">
+                      <p className="text-[10px] text-muted-foreground uppercase">Min</p>
+                      <p className="text-xl font-bold font-mono text-[hsl(var(--success))]">{stats.paymentTiming.min}</p>
+                      <p className="text-[10px] text-muted-foreground">giorni</p>
+                    </div>
+                    <div className="rounded-md bg-muted/40 p-3">
+                      <p className="text-[10px] text-muted-foreground uppercase">Media</p>
+                      <p className="text-xl font-bold font-mono text-primary">{stats.paymentTiming.avg}</p>
+                      <p className="text-[10px] text-muted-foreground">giorni</p>
+                    </div>
+                    <div className="rounded-md bg-muted/40 p-3">
+                      <p className="text-[10px] text-muted-foreground uppercase">Max</p>
+                      <p className="text-xl font-bold font-mono text-destructive">{stats.paymentTiming.max}</p>
+                      <p className="text-[10px] text-muted-foreground">giorni</p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-muted-foreground">
+                      Calcolato su <span className="font-semibold">{stats.paymentTiming.count}</span> documenti con data fattura e scadenza
+                    </p>
+                  </div>
+                  {/* Visual bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] text-muted-foreground font-mono">
+                      <span>{stats.paymentTiming.min}g</span>
+                      <span>{stats.paymentTiming.avg}g</span>
+                      <span>{stats.paymentTiming.max}g</span>
+                    </div>
+                    <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[hsl(var(--success))] via-primary to-destructive"
+                        style={{ width: "100%" }}
+                      />
+                      {stats.paymentTiming.max > 0 && (
+                        <div
+                          className="absolute top-0 h-full w-0.5 bg-foreground"
+                          style={{ left: `${(stats.paymentTiming.avg / stats.paymentTiming.max) * 100}%` }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-8">
+                  Dati insufficienti per il calcolo dei tempi
+                </p>
+              )}
+            </div>
             {/* Right: Centro chart */}
             <div className="rounded-lg border bg-card p-4">
               <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
