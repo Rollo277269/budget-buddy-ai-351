@@ -748,17 +748,22 @@ const BanchePage = () => {
 
               const handleReconciliaRate = async () => {
                 let matched = 0;
-                for (const rata of rate) {
-                  if (rata.pagata) continue;
-                  // Find a movement matching this rata's amount
-                  const mov = matchingMovements.find(m => 
-                    Math.abs(Math.abs(m.importo) - rata.importo_rata) < 0.05
-                  );
-                  if (mov) {
-                    // Also try matching by rata number in description
-                    const descNorm = mov.descrizione.replace(/\s/g, "").toUpperCase();
-                    const rataNumMatch = descNorm.match(/RATA\s*N\.?\s*(\d+)/i) || mov.descrizione.match(/RATA\s*N\.?\s*(\d+)/i);
-                    // Accept if amount matches (even without rata number match)
+                for (const mov of matchingMovements) {
+                  // Try to extract rata number from description
+                  const rataNumMatch = mov.descrizione.match(/RATA\s*N\.?\s*(\d+)/i);
+                  if (rataNumMatch) {
+                    const rataNum = parseInt(rataNumMatch[1], 10);
+                    const rata = rate.find(r => r.numero_rata === rataNum && !r.pagata);
+                    if (rata) {
+                      await togglePagata(rata.id, true);
+                      matched++;
+                      continue;
+                    }
+                  }
+                  // Fallback: match by amount
+                  const movAbs = Math.abs(mov.importo);
+                  const rata = rate.find(r => !r.pagata && Math.abs(r.importo_rata - movAbs) < 0.05);
+                  if (rata) {
                     await togglePagata(rata.id, true);
                     matched++;
                   }
