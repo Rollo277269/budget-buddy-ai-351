@@ -99,5 +99,5 @@ export function useRateFinanziamento(contoId?: string) {
     await fetchRate();
   }, [fetchRate]);
 
-  return { rate, loading, importRate, togglePagata, deleteRateForConto, refetch: fetchRate };
+  return { rate, loading, importRate, togglePagata, updateRata, deleteRateForConto, refetch: fetchRate };
 }
