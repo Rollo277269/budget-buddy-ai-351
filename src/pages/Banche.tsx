@@ -885,7 +885,8 @@ const BanchePage = () => {
                                 />
                               </TableCell>
                             </TableRow>
-                          ))}
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
