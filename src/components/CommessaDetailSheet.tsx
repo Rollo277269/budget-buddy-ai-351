@@ -662,7 +662,7 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoSaleKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
-                onRowClick={(inv) => openPdf(inv, "vendita")}
+                onRowClick={(inv) => setDetailInvoice({ inv, type: "vendita" })}
                 findXml={(k, name) => findXmlVendita(k, name)}
                 hasXml={hasXmlVendita}
                 onOpenXml={(record) => openXmlSheet(record, "vendita")}
