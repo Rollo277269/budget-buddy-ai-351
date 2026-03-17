@@ -381,7 +381,7 @@ const BanchePage = () => {
   const { documenti } = useDocumentiAcquisto();
   const { findXml } = useXmlInvoices(allPurchases, "acquisto");
   const contiFinanziamento = useMemo(() => conti.filter(c => c.tipo === "finanziamento"), [conti]);
-  const { rate: allRate, togglePagata } = useRateFinanziamento();
+  const { rate: allRate, togglePagata, refetch: refetchRate } = useRateFinanziamento();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -736,6 +736,45 @@ const BanchePage = () => {
               const prossima = rate.find(r => !r.pagata);
               const percentuale = totalePiano > 0 ? Math.round((pagato / totalePiano) * 100) : 0;
 
+              // Find matching movements for this loan
+              const loanRef = conto.iban.replace(/\s/g, "");
+              const matchingMovements = rawMovements.filter(m => {
+                const desc = m.descrizione.replace(/\s/g, "").toUpperCase();
+                return (
+                  (m.causale.toUpperCase().includes("PAGAMENTO RATE") || m.causale.toUpperCase().includes("FINANZIAMENTO") || desc.includes("FIN.") || desc.includes("PAG.RATA")) &&
+                  desc.includes(loanRef.toUpperCase())
+                );
+              });
+
+              const handleReconciliaRate = async () => {
+                let matched = 0;
+                for (const mov of matchingMovements) {
+                  // Try to extract rata number from description
+                  const rataNumMatch = mov.descrizione.match(/RATA\s*N\.?\s*(\d+)/i);
+                  if (rataNumMatch) {
+                    const rataNum = parseInt(rataNumMatch[1], 10);
+                    const rata = rate.find(r => r.numero_rata === rataNum && !r.pagata);
+                    if (rata) {
+                      await togglePagata(rata.id, true);
+                      matched++;
+                      continue;
+                    }
+                  }
+                  // Fallback: match by amount
+                  const movAbs = Math.abs(mov.importo);
+                  const rata = rate.find(r => !r.pagata && Math.abs(r.importo_rata - movAbs) < 0.05);
+                  if (rata) {
+                    await togglePagata(rata.id, true);
+                    matched++;
+                  }
+                }
+                if (matched > 0) {
+                  toast.success(`${matched} rate riconciliate con i movimenti bancari`);
+                } else {
+                  toast.info("Nessuna nuova rata da riconciliare trovata");
+                }
+              };
+
               return (
                 <Card key={conto.id} className="overflow-hidden">
                   <CardContent className="p-0">
@@ -748,7 +787,15 @@ const BanchePage = () => {
                           {conto.note && <span className="text-xs text-muted-foreground ml-2">— {conto.note}</span>}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-[10px]">{rate.length} rate</Badge>
+                      <div className="flex items-center gap-2">
+                        {matchingMovements.length > 0 && (
+                          <Button variant="outline" size="sm" className="text-[10px] h-7" onClick={handleReconciliaRate}>
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Riconcilia ({matchingMovements.length} mov.)
+                          </Button>
+                        )}
+                        <Badge variant="outline" className="text-[10px]">{rate.length} rate</Badge>
+                      </div>
                     </div>
 
                     {/* KPI row */}
