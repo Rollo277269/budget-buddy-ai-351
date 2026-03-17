@@ -32,7 +32,7 @@ import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil
 } from "lucide-react";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
