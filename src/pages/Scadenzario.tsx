@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
@@ -5,7 +6,9 @@ import { useRateFinanziamento } from "@/hooks/useRateFinanziamento";
 import { useContiCorrenti } from "@/hooks/useContiCorrenti";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
-import { AlertTriangle, Clock, CheckCircle2, Landmark } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScadenzarioCalendar } from "@/components/ScadenzarioCalendar";
+import { AlertTriangle, Clock, CheckCircle2, Landmark, CalendarDays, List } from "lucide-react";
 
 function parseDate(d: string): Date | null {
   if (!d) return null;
