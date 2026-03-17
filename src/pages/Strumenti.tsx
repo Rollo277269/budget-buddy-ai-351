@@ -701,7 +701,7 @@ function CentriCostoRicavoTab() {
 // ─── Export / Import ──────────────────────────────────────────────
 
 function ExportImportSection() {
-  const fileInputRef = useFileRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     try {
