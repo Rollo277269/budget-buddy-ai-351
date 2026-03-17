@@ -139,14 +139,13 @@ function buildRows(
   const totaleDare = entries.reduce((a, e) => a + e.dare, 0);
   const totaleAvere = entries.reduce((a, e) => a + e.avere, 0);
 
-  // Compute payment timing stats (days between invoice date and due date)
+  // Compute payment timing stats using parsed payment terms
   const daysDiffs: number[] = [];
   for (const e of entries) {
-    const dataFattura = parseDate(e.data);
-    const dataScadenza = parseDate(e.scadenza);
-    if (dataFattura && dataScadenza) {
-      const diff = Math.round((dataScadenza.getTime() - dataFattura.getTime()) / (1000 * 60 * 60 * 24));
-      if (diff >= 0) daysDiffs.push(diff);
+    const parsed = parsePaymentTerms(e.scadenza, e.data);
+    if (parsed) {
+      // Use the last installment (total days until full payment)
+      if (parsed.totalDays >= 0) daysDiffs.push(parsed.totalDays);
     }
   }
 
