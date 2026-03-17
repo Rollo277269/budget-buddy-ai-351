@@ -349,6 +349,11 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                   )}
                 </TableCell>
               )}
+              {visibleCols.has("file_name") && (
+                <TableCell className="text-xs py-1.5 text-muted-foreground">
+                  <span className="truncate max-w-[160px] block" title={doc.file_name}>{doc.file_name}</span>
+                </TableCell>
+              )}
               {visibleCols.has("fornitore") && (
                 <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
                   {editingCell?.id === doc.id && editingCell?.field === "fornitore" ? (
