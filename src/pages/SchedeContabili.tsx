@@ -260,6 +260,14 @@ function SchedaDetail({
     [allSales, allPurchases, tipo, nome]
   );
 
+  const [selectedCig, setSelectedCig] = useState<string | null>(null);
+  const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
+  const handleCigClick = useCallback((cig: string) => setSelectedCig(cig), []);
+
+  const commessa = selectedCig ? {
+    numero: "", oggetto: "", committente: "", assegnataria: "", cig: selectedCig,
+  } : null;
+
   return (
     <>
       {/* Screen content */}
