@@ -119,6 +119,9 @@ function ContiCorrentiTab() {
                     </Button>
                   </div>
                 </div>
+                {c.tipo === "finanziamento" && (
+                  <PianoAmmortamentoUpload contoId={c.id} bancaName={c.banca} />
+                )}
               </CardContent>
             </Card>
         )}
