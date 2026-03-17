@@ -703,7 +703,7 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
-                onRowClick={(inv) => setEditingExpense(inv as PurchaseInvoice)}
+                onRowClick={(inv) => setDetailInvoice({ inv, type: "acquisto" })}
                 findXml={(k, name) => findXmlAcquisto(k, name)}
                 hasXml={hasXmlAcquisto}
                 onOpenXml={(record) => openXmlSheet(record, "acquisto")}
