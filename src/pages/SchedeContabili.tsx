@@ -104,7 +104,8 @@ function buildRows(
   allSales: SaleInvoice[],
   allPurchases: PurchaseInvoice[],
   tipo: "cliente" | "fornitore",
-  nome: string
+  nome: string,
+  paymentDatesMap: Map<string, string> // key: "tipo-anno-numero" → payment date string
 ) {
   const entries: Omit<PrimaNotaRow, "saldo">[] = [];
 
@@ -141,21 +142,38 @@ function buildRows(
   const totaleDare = entries.reduce((a, e) => a + e.dare, 0);
   const totaleAvere = entries.reduce((a, e) => a + e.avere, 0);
 
-  // Compute payment timing stats using parsed payment terms
-  const daysDiffs: number[] = [];
+  // Compute payment timing: delay between actual payment date and calculated due date
+  const paymentDelays: number[] = [];
   for (const e of entries) {
+    // Extract anno and numero from "numero/anno" format
+    const parts = e.numero.split("/");
+    if (parts.length !== 2) continue;
+    const numero = parts[0];
+    const anno = parts[1];
+    const invoiceType = e.tipo === "vendita" ? "vendita" : "acquisto";
+    const key = `${invoiceType}-${anno}-${numero}`;
+    
+    const actualPaymentDateStr = paymentDatesMap.get(key);
+    if (!actualPaymentDateStr) continue;
+    
+    const actualPaymentDate = parseDate(actualPaymentDateStr);
+    if (!actualPaymentDate) continue;
+
+    // Get calculated due date (last installment)
     const parsed = parsePaymentTerms(e.scadenza, e.data);
     if (parsed) {
-      // Use the last installment (total days until full payment)
-      if (parsed.totalDays >= 0) daysDiffs.push(parsed.totalDays);
+      const delay = Math.round(
+        (actualPaymentDate.getTime() - parsed.lastDueDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      paymentDelays.push(delay);
     }
   }
 
-  const paymentTiming = daysDiffs.length > 0 ? {
-    min: Math.min(...daysDiffs),
-    max: Math.max(...daysDiffs),
-    avg: Math.round(daysDiffs.reduce((a, b) => a + b, 0) / daysDiffs.length),
-    count: daysDiffs.length,
+  const paymentTiming = paymentDelays.length > 0 ? {
+    min: Math.min(...paymentDelays),
+    max: Math.max(...paymentDelays),
+    avg: Math.round(paymentDelays.reduce((a, b) => a + b, 0) / paymentDelays.length),
+    count: paymentDelays.length,
   } : null;
 
   return {
