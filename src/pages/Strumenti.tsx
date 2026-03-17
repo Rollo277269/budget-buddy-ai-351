@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useRef as useFileRef } from "react";
+
 // ─── Conti Correnti ──────────────────────────────────────────────
 
 import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
@@ -701,7 +701,7 @@ function CentriCostoRicavoTab() {
 // ─── Export / Import ──────────────────────────────────────────────
 
 function ExportImportSection() {
-  const fileInputRef = useFileRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     try {
