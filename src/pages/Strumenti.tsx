@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Settings, Landmark, FileText, Plus, Trash2, Save, Building2, TrendingUp, TrendingDown, Pencil, Check, X, GripVertical, Tag, ChevronDown, ChevronRight, FolderOpen, Download, Upload } from "lucide-react";
+import { BankLogo } from "@/components/BankLogo";
 import { CigIntegrityCheck } from "@/components/CigIntegrityCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -101,6 +102,7 @@ function ContiCorrentiTab() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
+                      <BankLogo bankName={c.banca} tipo={c.tipo} className="h-5 w-5" />
                       <p className="text-sm font-semibold">{c.banca}</p>
                       <Badge variant="outline" className="text-[10px]">{{ conto_corrente: "C/C", carta_credito: "Carta", finanziamento: "Finanz.", crediti_fiscali: "Cred. Fiscali" }[c.tipo]}</Badge>
                     </div>
