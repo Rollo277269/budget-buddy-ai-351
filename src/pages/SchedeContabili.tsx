@@ -139,6 +139,24 @@ function buildRows(
   const totaleDare = entries.reduce((a, e) => a + e.dare, 0);
   const totaleAvere = entries.reduce((a, e) => a + e.avere, 0);
 
+  // Compute payment timing stats (days between invoice date and due date)
+  const daysDiffs: number[] = [];
+  for (const e of entries) {
+    const dataFattura = parseDate(e.data);
+    const dataScadenza = parseDate(e.scadenza);
+    if (dataFattura && dataScadenza) {
+      const diff = Math.round((dataScadenza.getTime() - dataFattura.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff >= 0) daysDiffs.push(diff);
+    }
+  }
+
+  const paymentTiming = daysDiffs.length > 0 ? {
+    min: Math.min(...daysDiffs),
+    max: Math.max(...daysDiffs),
+    avg: Math.round(daysDiffs.reduce((a, b) => a + b, 0) / daysDiffs.length),
+    count: daysDiffs.length,
+  } : null;
+
   return {
     rows,
     stats: {
@@ -149,6 +167,7 @@ function buildRows(
       mediaImporto: entries.length > 0 ? (totaleDare + totaleAvere) / entries.length : 0,
       totaleImponibile: entries.reduce((a, e) => a + e.imponibile, 0),
       totaleImposta: entries.reduce((a, e) => a + e.imposta, 0),
+      paymentTiming,
     },
   };
 }
