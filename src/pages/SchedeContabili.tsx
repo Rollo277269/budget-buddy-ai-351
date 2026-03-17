@@ -675,7 +675,7 @@ export default function SchedeContabiliPage() {
             </TabsList>
           </Tabs>
 
-          <div className="w-64 no-print">
+          <div className="w-96 no-print">
             <Combobox
               value={tab === "clienti" ? selectedCliente : selectedFornitore}
               onValueChange={tab === "clienti" ? setSelectedCliente : setSelectedFornitore}
