@@ -278,7 +278,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             )}
             {visibleCols.has("fornitore") && (
               <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("fornitore")}>
-                <span className="flex items-center gap-1">Fornitore <SortIcon col="fornitore" /></span>
+                <span className="flex items-center gap-1">{ALL_COLUMNS.find(c => c.key === "fornitore")?.label} <SortIcon col="fornitore" /></span>
               </TableHead>
             )}
             {visibleCols.has("data") && (
