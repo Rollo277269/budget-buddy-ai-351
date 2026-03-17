@@ -18,7 +18,7 @@ export interface DocumentoAcquisto {
   created_at: string | null;
 }
 
-export function useDocumentiAcquisto() {
+export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") {
   const [documenti, setDocumenti] = useState<DocumentoAcquisto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +26,7 @@ export function useDocumentiAcquisto() {
     const { data, error } = await supabase
       .from("documenti_acquisto" as any)
       .select("*")
+      .eq("tipo", tipo)
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching documenti:", error);
@@ -33,7 +34,7 @@ export function useDocumentiAcquisto() {
     }
     setDocumenti((data || []) as unknown as DocumentoAcquisto[]);
     setLoading(false);
-  }, []);
+  }, [tipo]);
 
   useEffect(() => { fetchDocumenti(); }, [fetchDocumenti]);
 
@@ -104,6 +105,7 @@ export function useDocumentiAcquisto() {
         centro_costo: aiData.centro_costo || null,
         parsed_text: extractedText.substring(0, 10000),
         ai_summary: aiData.summary || null,
+        tipo,
       } as any);
 
     if (insertError) {

@@ -1,0 +1,1 @@
+ALTER TABLE public.documenti_acquisto ADD COLUMN tipo text NOT NULL DEFAULT 'acquisto';

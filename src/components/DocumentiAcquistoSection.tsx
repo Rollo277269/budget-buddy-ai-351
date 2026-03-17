@@ -60,10 +60,11 @@ interface Props {
   dropZoneOnly?: boolean;
   tableOnly?: boolean;
   compact?: boolean;
+  tipo?: "acquisto" | "vendita";
 }
 
-export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact }: Props) {
-  const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto();
+export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
+  const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto(tipo);
   const { centriCosto } = useCentriData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

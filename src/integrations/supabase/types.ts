@@ -256,6 +256,7 @@ export type Database = {
           importo: number | null
           parsed_text: string | null
           storage_path: string
+          tipo: string
         }
         Insert: {
           ai_summary?: string | null
@@ -270,6 +271,7 @@ export type Database = {
           importo?: number | null
           parsed_text?: string | null
           storage_path: string
+          tipo?: string
         }
         Update: {
           ai_summary?: string | null
@@ -284,6 +286,7 @@ export type Database = {
           importo?: number | null
           parsed_text?: string | null
           storage_path?: string
+          tipo?: string
         }
         Relationships: []
       }
