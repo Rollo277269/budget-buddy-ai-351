@@ -459,55 +459,43 @@ const AcquistiPage = () => {
           </div>
         </div>
 
-        {/* ── Sottosezione: Ricevute e Documenti ── */}
+        {/* ── Schede: Ricevute e Documenti / Fatture XML ── */}
         <div className="px-4 pt-3">
-          <Collapsible open={docSectionOpen} onOpenChange={setDocSectionOpen}>
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-2 w-full text-left group py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors border border-border/50">
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${docSectionOpen ? "rotate-180" : ""}`} />
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Ricevute e Documenti</span>
-                <Badge variant="secondary" className="text-[10px] ml-1">{/* count managed by child */}Doc</Badge>
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="pt-2">
-                <DocumentiAcquistoSection tableOnly />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
+          <Tabs defaultValue="documenti" className="w-full">
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="documenti" className="text-xs gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                Ricevute e Documenti
+              </TabsTrigger>
+              <TabsTrigger value="xml" className="text-xs gap-1.5">
+                <FileCode2 className="h-3.5 w-3.5" />
+                Fatture XML
+                {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px] ml-1 h-4 px-1">{xmlUnmatchedCount}</Badge>}
+              </TabsTrigger>
+            </TabsList>
 
-        {/* ── Sottosezione: Fatture XML ── */}
-        <div className="px-4 pt-2">
-          <Collapsible open={xmlSectionOpen} onOpenChange={setXmlSectionOpen}>
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-2 w-full text-left group py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors border border-border/50">
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${xmlSectionOpen ? "rotate-180" : ""}`} />
-                <FileCode2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Fatture XML</span>
-                <Badge variant="outline" className="text-[10px] ml-1">{xmlRecords.length} totali</Badge>
-                <Badge className="text-[10px] ml-0.5">{xmlMatchedCount} assoc.</Badge>
-                {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px] ml-0.5">{xmlUnmatchedCount} non assoc.</Badge>}
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="pt-2 space-y-2">
-                {xmlUnmatchedCount > 0 && (
-                  <div className="flex items-center gap-2 px-1">
+            <TabsContent value="documenti">
+              <DocumentiAcquistoSection tableOnly />
+            </TabsContent>
+
+            <TabsContent value="xml">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
+                  <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
+                  {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px]">{xmlUnmatchedCount} non assoc.</Badge>}
+                  <div className="ml-auto flex gap-1">
                     {xmlDuplicateCount > 0 && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" title="Elimina file XML caricati più volte">
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive">
                             <Trash2 className="h-3 w-3 mr-1" />Duplicati ({xmlDuplicateCount})
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Rimuovere {xmlDuplicateCount} XML duplicati?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Verranno eliminati {xmlDuplicateCount} file XML caricati più volte con lo stesso nome. Questa azione è irreversibile.
-                            </AlertDialogDescription>
+                            <AlertDialogDescription>Verranno eliminati {xmlDuplicateCount} file XML caricati più volte con lo stesso nome.</AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Annulla</AlertDialogCancel>
@@ -516,11 +504,13 @@ const AcquistiPage = () => {
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                    <Button size="sm" variant="ghost" className="h-6 text-[10px]" title="Riprova associazione automatica XML" onClick={rematchAll}>
-                      <RefreshCw className="h-3 w-3 mr-1" />Riassocia
-                    </Button>
+                    {xmlUnmatchedCount > 0 && (
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
+                        <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+                      </Button>
+                    )}
                   </div>
-                )}
+                </div>
                 {xmlUnmatchedCount > 0 && (
                   <div className="max-h-[300px] overflow-auto">
                     <Table>
@@ -562,12 +552,15 @@ const AcquistiPage = () => {
                     </Table>
                   </div>
                 )}
-                {xmlUnmatchedCount === 0 && (
-                  <p className="text-xs text-muted-foreground px-1 py-2">Tutte le fatture XML sono associate. ✓</p>
+                {xmlUnmatchedCount === 0 && xmlRecords.length > 0 && (
+                  <p className="text-xs text-muted-foreground py-2">Tutte le fatture XML sono associate. ✓</p>
+                )}
+                {xmlRecords.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-2">Nessuna fattura XML caricata. Usa il pulsante XML nell'header per caricare.</p>
                 )}
               </div>
-            </CollapsibleContent>
-          </Collapsible>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Table content */}
