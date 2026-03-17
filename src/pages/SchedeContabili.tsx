@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileText } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileText, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
