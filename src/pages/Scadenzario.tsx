@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
@@ -5,7 +6,9 @@ import { useRateFinanziamento } from "@/hooks/useRateFinanziamento";
 import { useContiCorrenti } from "@/hooks/useContiCorrenti";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
-import { AlertTriangle, Clock, CheckCircle2, Landmark } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScadenzarioCalendar } from "@/components/ScadenzarioCalendar";
+import { AlertTriangle, Clock, CheckCircle2, Landmark, CalendarDays, List } from "lucide-react";
 
 function parseDate(d: string): Date | null {
   if (!d) return null;
@@ -173,10 +176,25 @@ export default function ScadenzarioPage() {
         </Card>
       </div>
 
-      <DataTable<ScadenzaRow>
-        columns={scadenzaCols}
-        data={rows}
-        rowKey={(r) => `${r.tipo}-${r.numero}-${r.soggetto}`} />
+      <Tabs defaultValue="calendario" className="space-y-3">
+        <TabsList>
+          <TabsTrigger value="calendario" className="text-xs">
+            <CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendario
+          </TabsTrigger>
+          <TabsTrigger value="tabella" className="text-xs">
+            <List className="h-3.5 w-3.5 mr-1.5" />Tabella
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="calendario">
+          <ScadenzarioCalendar events={rows} />
+        </TabsContent>
+        <TabsContent value="tabella">
+          <DataTable<ScadenzaRow>
+            columns={scadenzaCols}
+            data={rows}
+            rowKey={(r) => `${r.tipo}-${r.numero}-${r.soggetto}`} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
