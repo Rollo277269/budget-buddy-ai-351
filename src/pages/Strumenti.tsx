@@ -42,7 +42,7 @@ function ContiCorrentiTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold">Conti Correnti</h3>
+          <h3 className="text-sm font-semibold">Conti</h3>
           <p className="text-xs text-muted-foreground">Gestisci i dati dei conti correnti bancari</p>
         </div>
         <Button size="sm" title="Aggiungi un nuovo conto corrente" onClick={() => setEditing({ ...empty })}>
@@ -82,20 +82,20 @@ function ContiCorrentiTab() {
                 <Label className="text-xs">Note</Label>
                 <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
               </div>
-              {editing.tipo === "finanziamento" && (
-                <div className="space-y-1">
+              {editing.tipo === "finanziamento" &&
+            <div className="space-y-1">
                   <Label className="text-xs">Conto di addebito rate</Label>
                   <select
-                    value={editing.conto_addebito_id}
-                    onChange={(e) => setEditing({ ...editing, conto_addebito_id: e.target.value })}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                value={editing.conto_addebito_id}
+                onChange={(e) => setEditing({ ...editing, conto_addebito_id: e.target.value })}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                     <option value="">— Nessuno —</option>
-                    {conti.filter(c => c.tipo === "conto_corrente").map(c => (
-                      <option key={c.id} value={c.id}>{c.banca} — {c.iban.slice(-8)}</option>
-                    ))}
+                    {conti.filter((c) => c.tipo === "conto_corrente").map((c) =>
+                <option key={c.id} value={c.id}>{c.banca} — {c.iban.slice(-8)}</option>
+                )}
                   </select>
                 </div>
-              )}
+            }
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
@@ -125,9 +125,9 @@ function ContiCorrentiTab() {
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
                     {c.tipo === "finanziamento" && c.conto_addebito_id && (() => {
-                      const ca = conti.find(x => x.id === c.conto_addebito_id);
-                      return ca ? <p className="text-xs text-muted-foreground">Addebito su: <span className="font-medium">{ca.banca}</span></p> : null;
-                    })()}
+                  const ca = conti.find((x) => x.id === c.conto_addebito_id);
+                  return ca ? <p className="text-xs text-muted-foreground">Addebito su: <span className="font-medium">{ca.banca}</span></p> : null;
+                })()}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica conto" onClick={() => setEditing(c)}>
@@ -138,16 +138,16 @@ function ContiCorrentiTab() {
                     </Button>
                   </div>
                 </div>
-                {c.tipo === "finanziamento" && (
-                  <PianoAmmortamentoUpload contoId={c.id} bancaName={c.banca} />
-                )}
+                {c.tipo === "finanziamento" &&
+            <PianoAmmortamentoUpload contoId={c.id} bancaName={c.banca} />
+            }
               </CardContent>
             </Card>
         )}
         </div>
       }
-    </div>
-  );
+    </div>);
+
 }
 
 
@@ -253,8 +253,8 @@ function NamingRulesTab() {
         )}
         </div>
       }
-    </div>
-  );
+    </div>);
+
 }
 
 // ─── Centri di Costo / Ricavo ────────────────────────────────────
@@ -264,8 +264,8 @@ import {
   fetchCentriFromDb, fetchCategorieFromDb,
   upsertCentro, deleteCentroDb,
   upsertCategoria, deleteCategoriaDb,
-  updateCentroCodeInAssignments,
-} from "@/hooks/useCentri";
+  updateCentroCodeInAssignments } from
+"@/hooks/useCentri";
 
 function CentriCostoRicavoTab() {
   const [centri, setCentri] = useState<CentroCR[]>([]);
@@ -276,7 +276,7 @@ function CentriCostoRicavoTab() {
     fetchCentriFromDb().then(setCentri);
     fetchCategorieFromDb().then((cats) => {
       setCategorie(cats);
-      setExpandedCats(new Set(cats.map(c => c.id)));
+      setExpandedCats(new Set(cats.map((c) => c.id)));
     });
   }, []);
 
@@ -311,7 +311,7 @@ function CentriCostoRicavoTab() {
   const toggleExpand = (catId: string) => {
     setExpandedCats((prev) => {
       const next = new Set(prev);
-      if (next.has(catId)) next.delete(catId); else next.add(catId);
+      if (next.has(catId)) next.delete(catId);else next.add(catId);
       return next;
     });
   };
@@ -320,13 +320,13 @@ function CentriCostoRicavoTab() {
   const handleDropOnCategory = (catId: string) => {
     const itemId = dragItemRef.current;
     if (!itemId) return;
-    const item = centri.find(c => c.id === itemId);
-    if (!item || item.categoriaId === catId) { dragItemRef.current = null; setDragOverCatId(null); return; }
+    const item = centri.find((c) => c.id === itemId);
+    if (!item || item.categoriaId === catId) {dragItemRef.current = null;setDragOverCatId(null);return;}
     const updatedItem = { ...item, categoriaId: catId };
-    setCentri(prev => prev.map(c => c.id === itemId ? updatedItem : c));
+    setCentri((prev) => prev.map((c) => c.id === itemId ? updatedItem : c));
     upsertCentro(updatedItem);
-    dragItemRef.current = null; setDragOverCatId(null);
-    const cat = categorie.find(c => c.id === catId);
+    dragItemRef.current = null;setDragOverCatId(null);
+    const cat = categorie.find((c) => c.id === catId);
     toast.success(`"${item.codice}" spostata in ${cat?.codice || "categoria"}`);
     if (!expandedCats.has(catId)) toggleExpand(catId);
   };
@@ -334,43 +334,43 @@ function CentriCostoRicavoTab() {
   const handleDropOnUnclassified = (tipo: "costo" | "ricavo") => {
     const itemId = dragItemRef.current;
     if (!itemId) return;
-    const item = centri.find(c => c.id === itemId);
-    if (!item || !item.categoriaId) { dragItemRef.current = null; setDragOverUnclassified(null); return; }
+    const item = centri.find((c) => c.id === itemId);
+    if (!item || !item.categoriaId) {dragItemRef.current = null;setDragOverUnclassified(null);return;}
     const updatedItem = { ...item, categoriaId: undefined };
-    setCentri(prev => prev.map(c => c.id === itemId ? updatedItem : c));
+    setCentri((prev) => prev.map((c) => c.id === itemId ? updatedItem : c));
     upsertCentro(updatedItem);
-    dragItemRef.current = null; setDragOverUnclassified(null);
+    dragItemRef.current = null;setDragOverUnclassified(null);
     toast.success(`"${item.codice}" rimossa dalla categoria`);
   };
 
   // ── Category CRUD ──
   const handleAddCategory = (tipo: "costo" | "ricavo") => {
     if (!newCatCodice.trim() || !newCatDescrizione.trim()) {
-      toast.error("Codice e descrizione categoria obbligatori"); return;
+      toast.error("Codice e descrizione categoria obbligatori");return;
     }
     const dup = categorie.find((c) => c.codice === newCatCodice.toUpperCase());
-    if (dup) { toast.error("Codice categoria già esistente"); return; }
+    if (dup) {toast.error("Codice categoria già esistente");return;}
     const cat: CategoriaCentro = { id: crypto.randomUUID(), tipo, codice: newCatCodice.toUpperCase(), descrizione: newCatDescrizione };
-    setCategorie(prev => [...prev, cat]);
+    setCategorie((prev) => [...prev, cat]);
     upsertCategoria(cat);
-    setAddingCatTo(null); setNewCatCodice(""); setNewCatDescrizione("");
+    setAddingCatTo(null);setNewCatCodice("");setNewCatDescrizione("");
     setExpandedCats((prev) => new Set([...prev, cat.id]));
     toast.success("Categoria aggiunta");
   };
 
   const startEditCat = (c: CategoriaCentro) => {
-    setEditingCatId(c.id); setEditCatCodice(c.codice); setEditCatDescrizione(c.descrizione);
+    setEditingCatId(c.id);setEditCatCodice(c.codice);setEditCatDescrizione(c.descrizione);
   };
 
   const saveEditCat = () => {
     if (!editingCatId || !editCatCodice.trim() || !editCatDescrizione.trim()) {
-      toast.error("Codice e descrizione obbligatori"); return;
+      toast.error("Codice e descrizione obbligatori");return;
     }
     const dup = categorie.find((c) => c.codice === editCatCodice.toUpperCase() && c.id !== editingCatId);
-    if (dup) { toast.error("Codice già esistente"); return; }
+    if (dup) {toast.error("Codice già esistente");return;}
     const updated = categorie.map((c) => c.id === editingCatId ? { ...c, codice: editCatCodice.toUpperCase(), descrizione: editCatDescrizione } : c);
     setCategorie(updated);
-    const editedCat = updated.find(c => c.id === editingCatId);
+    const editedCat = updated.find((c) => c.id === editingCatId);
     if (editedCat) upsertCategoria(editedCat);
     setEditingCatId(null);
     toast.success("Categoria aggiornata");
@@ -378,15 +378,15 @@ function CentriCostoRicavoTab() {
 
   const deleteCategory = (catId: string) => {
     const subs = centri.filter((c) => c.categoriaId === catId);
-    const msg = subs.length > 0
-      ? `Questa categoria contiene ${subs.length} voci. Le voci verranno spostate tra le "Non classificate". Procedere?`
-      : `Eliminare la categoria?`;
+    const msg = subs.length > 0 ?
+    `Questa categoria contiene ${subs.length} voci. Le voci verranno spostate tra le "Non classificate". Procedere?` :
+    `Eliminare la categoria?`;
     if (!confirm(msg)) return;
     const updatedCentri = centri.map((c) => c.categoriaId === catId ? { ...c, categoriaId: undefined } : c);
     setCentri(updatedCentri);
     // Update each orphaned centro in DB
-    subs.forEach(s => upsertCentro({ ...s, categoriaId: undefined }));
-    setCategorie(prev => prev.filter(c => c.id !== catId));
+    subs.forEach((s) => upsertCentro({ ...s, categoriaId: undefined }));
+    setCategorie((prev) => prev.filter((c) => c.id !== catId));
     deleteCategoriaDb(catId);
     toast.success("Categoria eliminata");
   };
@@ -394,39 +394,39 @@ function CentriCostoRicavoTab() {
   // ── Subcategory CRUD ──
   const handleAddSub = (categoriaId: string | undefined, tipo: "costo" | "ricavo") => {
     if (!newSubCodice.trim() || !newSubDescrizione.trim()) {
-      toast.error("Codice e descrizione obbligatori"); return;
+      toast.error("Codice e descrizione obbligatori");return;
     }
     const dup = centri.find((c) => c.codice === newSubCodice.toUpperCase());
-    if (dup) { toast.error("Codice già esistente"); return; }
+    if (dup) {toast.error("Codice già esistente");return;}
     const newItem: CentroCR = {
       id: crypto.randomUUID(), tipo, categoriaId,
       codice: newSubCodice.toUpperCase(), descrizione: newSubDescrizione,
       paroleChiaveMatching: newSubParoleChiave, note: ""
     };
-    setCentri(prev => [...prev, newItem]);
+    setCentri((prev) => [...prev, newItem]);
     upsertCentro(newItem);
-    setAddingToCat(null); setAddingUnclassified(null);
-    setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave("");
+    setAddingToCat(null);setAddingUnclassified(null);
+    setNewSubCodice("");setNewSubDescrizione("");setNewSubParoleChiave("");
     toast.success("Voce aggiunta");
   };
 
   const startEditSub = (c: CentroCR) => {
-    setEditingId(c.id); setEditCodice(c.codice); setEditDescrizione(c.descrizione); setEditParoleChiave(c.paroleChiaveMatching);
+    setEditingId(c.id);setEditCodice(c.codice);setEditDescrizione(c.descrizione);setEditParoleChiave(c.paroleChiaveMatching);
   };
 
   const saveEditSub = () => {
     if (!editingId || !editCodice.trim() || !editDescrizione.trim()) {
-      toast.error("Codice e descrizione obbligatori"); return;
+      toast.error("Codice e descrizione obbligatori");return;
     }
     const dup = centri.find((c) => c.codice === editCodice.toUpperCase() && c.id !== editingId);
-    if (dup) { toast.error("Codice già esistente"); return; }
+    if (dup) {toast.error("Codice già esistente");return;}
     const old = centri.find((c) => c.id === editingId);
     const oldCodice = old?.codice;
     const newCodice = editCodice.toUpperCase();
     const updatedItem: CentroCR = {
       ...old!, codice: newCodice, descrizione: editDescrizione, paroleChiaveMatching: editParoleChiave
     };
-    setCentri(prev => prev.map(c => c.id === editingId ? updatedItem : c));
+    setCentri((prev) => prev.map((c) => c.id === editingId ? updatedItem : c));
     upsertCentro(updatedItem);
     // Update centro assignments if codice changed
     if (oldCodice && oldCodice !== newCodice) {
@@ -437,22 +437,22 @@ function CentriCostoRicavoTab() {
   };
 
   const deleteSub = (id: string) => {
-    setCentri(prev => prev.filter(c => c.id !== id));
+    setCentri((prev) => prev.filter((c) => c.id !== id));
     deleteCentroDb(id);
     toast.success("Voce eliminata");
   };
 
   // ── Render a draggable voce row ──
-  const renderVoceRow = (sub: CentroCR, indented: boolean) => (
-    <TableRow
-      key={sub.id}
-      draggable={editingId !== sub.id}
-      onDragStart={() => { dragItemRef.current = sub.id; }}
-      onDragEnd={() => { dragItemRef.current = null; setDragOverCatId(null); setDragOverUnclassified(null); }}
-      className="cursor-grab active:cursor-grabbing [&>td]:py-1.5"
-    >
-      {editingId === sub.id ? (
-        <>
+  const renderVoceRow = (sub: CentroCR, indented: boolean) =>
+  <TableRow
+    key={sub.id}
+    draggable={editingId !== sub.id}
+    onDragStart={() => {dragItemRef.current = sub.id;}}
+    onDragEnd={() => {dragItemRef.current = null;setDragOverCatId(null);setDragOverUnclassified(null);}}
+    className="cursor-grab active:cursor-grabbing [&>td]:py-1.5">
+    
+      {editingId === sub.id ?
+    <>
           <TableCell className={indented ? "pl-12" : ""}>
             <div className="flex items-center gap-2">
               <GripVertical className="w-3.5 h-3.5 opacity-30 shrink-0" />
@@ -475,9 +475,9 @@ function CentriCostoRicavoTab() {
               </Button>
             </div>
           </TableCell>
-        </>
-      ) : (
-        <>
+        </> :
+
+    <>
           <TableCell className={indented ? "pl-12" : ""}>
             <div className="flex items-center gap-2">
               <GripVertical className="w-3.5 h-3.5 opacity-30 shrink-0" />
@@ -491,19 +491,19 @@ function CentriCostoRicavoTab() {
               <Button variant="ghost" size="icon" className="h-7 w-7" title="Modifica voce" onClick={() => startEditSub(sub)}>
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Elimina voce" onClick={() => { if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id); }}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Elimina voce" onClick={() => {if (confirm(`Eliminare "${sub.codice}"?`)) deleteSub(sub.id);}}>
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
           </TableCell>
         </>
-      )}
-    </TableRow>
-  );
+    }
+    </TableRow>;
+
 
   // ── Render add row ──
-  const renderAddRow = (categoriaId: string | undefined, tipo: "costo" | "ricavo", indented: boolean) => (
-    <TableRow>
+  const renderAddRow = (categoriaId: string | undefined, tipo: "costo" | "ricavo", indented: boolean) =>
+  <TableRow>
       <TableCell className={indented ? "pl-12" : ""}>
         <div className="flex items-center gap-2">
           <div className="w-3.5" />
@@ -521,20 +521,20 @@ function CentriCostoRicavoTab() {
           <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" title="Conferma nuova voce" onClick={() => handleAddSub(categoriaId, tipo)} disabled={!newSubCodice.trim() || !newSubDescrizione.trim()}>
             <Check className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" title="Annulla" onClick={() => { setAddingToCat(null); setAddingUnclassified(null); }}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="Annulla" onClick={() => {setAddingToCat(null);setAddingUnclassified(null);}}>
             <X className="w-3.5 h-3.5" />
           </Button>
         </div>
       </TableCell>
-    </TableRow>
-  );
+    </TableRow>;
+
 
   const renderTable = (tipo: "costo" | "ricavo") => {
     const cats = categorie.filter((c) => c.tipo === tipo);
     const title = tipo === "costo" ? "Centri di Costo" : "Centri di Ricavo";
     const isAddingCat = addingCatTo === tipo;
     const allItems = centri.filter((c) => c.tipo === tipo);
-    const unclassified = allItems.filter((c) => !c.categoriaId || !cats.some(cat => cat.id === c.categoriaId));
+    const unclassified = allItems.filter((c) => !c.categoriaId || !cats.some((cat) => cat.id === c.categoriaId));
     const isAddingUncl = addingUnclassified === tipo;
 
     return (
@@ -550,21 +550,21 @@ function CentriCostoRicavoTab() {
           </div>
           <div className="flex gap-1.5">
             <Button variant="outline" size="sm" className="h-7 text-xs" title="Aggiungi nuova voce senza categoria"
-              onClick={() => { setAddingUnclassified(tipo); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}
-              disabled={isAddingUncl}>
+            onClick={() => {setAddingUnclassified(tipo);setNewSubCodice("");setNewSubDescrizione("");setNewSubParoleChiave("");}}
+            disabled={isAddingUncl}>
               <Plus className="w-3.5 h-3.5 mr-1" /> Voce
             </Button>
             <Button variant="outline" size="sm" className="h-7 text-xs" title="Aggiungi nuova categoria"
-              onClick={() => { setAddingCatTo(tipo); setNewCatCodice(""); setNewCatDescrizione(""); }}
-              disabled={isAddingCat}>
+            onClick={() => {setAddingCatTo(tipo);setNewCatCodice("");setNewCatDescrizione("");}}
+            disabled={isAddingCat}>
               <FolderOpen className="w-3.5 h-3.5 mr-1" /> Categoria
             </Button>
           </div>
         </div>
 
         {/* Add category row */}
-        {isAddingCat && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border">
+        {isAddingCat &&
+        <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border">
             <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
             <Input value={newCatCodice} onChange={(e) => setNewCatCodice(e.target.value.toUpperCase())} className="h-8 text-sm font-mono w-28" placeholder="Codice..." autoFocus />
             <Input value={newCatDescrizione} onChange={(e) => setNewCatDescrizione(e.target.value)} className="h-8 text-sm flex-1" placeholder="Descrizione categoria..." />
@@ -575,15 +575,15 @@ function CentriCostoRicavoTab() {
               <X className="w-3.5 h-3.5" />
             </Button>
           </div>
-        )}
+        }
 
         {/* Empty state */}
-        {cats.length === 0 && unclassified.length === 0 && !isAddingCat && !isAddingUncl && (
-          <div className="text-center py-8 text-muted-foreground text-sm">
+        {cats.length === 0 && unclassified.length === 0 && !isAddingCat && !isAddingUncl &&
+        <div className="text-center py-8 text-muted-foreground text-sm">
             <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-30" />
             Nessuna voce configurata
           </div>
-        )}
+        }
 
         {/* Categories with drop targets */}
         {cats.map((cat) => {
@@ -599,31 +599,31 @@ function CentriCostoRicavoTab() {
               <div
                 className={`flex items-center gap-2 px-4 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""} ${isDragOver ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
                 onClick={() => !isEditingCat && toggleExpand(cat.id)}
-                onDragOver={(e) => { e.preventDefault(); setDragOverCatId(cat.id); setDragOverUnclassified(null); }}
+                onDragOver={(e) => {e.preventDefault();setDragOverCatId(cat.id);setDragOverUnclassified(null);}}
                 onDragLeave={() => setDragOverCatId(null)}
-                onDrop={(e) => { e.preventDefault(); handleDropOnCategory(cat.id); }}
-              >
+                onDrop={(e) => {e.preventDefault();handleDropOnCategory(cat.id);}}>
+                
                 {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
 
-                {isEditingCat ? (
-                  <>
+                {isEditingCat ?
+                <>
                     <Input value={editCatCodice} onChange={(e) => setEditCatCodice(e.target.value.toUpperCase())} className="h-7 text-sm font-mono w-28" autoFocus onClick={(e) => e.stopPropagation()} />
                     <Input value={editCatDescrizione} onChange={(e) => setEditCatDescrizione(e.target.value)} className="h-7 text-sm flex-1" onClick={(e) => e.stopPropagation()} />
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600 shrink-0" onClick={(e) => { e.stopPropagation(); saveEditCat(); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600 shrink-0" onClick={(e) => {e.stopPropagation();saveEditCat();}}>
                       <Check className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); setEditingCatId(null); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => {e.stopPropagation();setEditingCatId(null);}}>
                       <X className="w-3.5 h-3.5" />
                     </Button>
-                  </>
-                ) : (
-                  <>
+                  </> :
+
+                <>
                     <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span className="font-mono text-xs font-semibold">{cat.codice}</span>
                     <span className="text-xs text-muted-foreground flex-1">— {cat.descrizione}</span>
                     <Badge variant="outline" className="text-[10px] mr-1">{subs.length}</Badge>
                     <div className="flex gap-0.5 shrink-0 opacity-0 group-hover/cat:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); if (!isExpanded) toggleExpand(cat.id); }}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {setAddingToCat(cat.id);setNewSubCodice("");setNewSubDescrizione("");setNewSubParoleChiave("");if (!isExpanded) toggleExpand(cat.id);}}>
                         <Plus className="w-3.5 h-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditCat(cat)}>
@@ -634,12 +634,12 @@ function CentriCostoRicavoTab() {
                       </Button>
                     </div>
                   </>
-                )}
+                }
               </div>
 
               {/* Subcategories */}
-              {isExpanded && (
-                <div className="bg-muted/20">
+              {isExpanded &&
+              <div className="bg-muted/20">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -650,39 +650,39 @@ function CentriCostoRicavoTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subs.length === 0 && !isAddingSub && (
-                        <TableRow>
+                      {subs.length === 0 && !isAddingSub &&
+                    <TableRow>
                           <TableCell colSpan={4} className="text-center py-4 text-muted-foreground text-xs">
                             Trascina qui una voce per classificarla in questa categoria
                           </TableCell>
                         </TableRow>
-                      )}
+                    }
                       {subs.map((sub) => renderVoceRow(sub, true))}
                       {isAddingSub && renderAddRow(cat.id, tipo, true)}
                     </TableBody>
                   </Table>
-                  {!isAddingSub && subs.length > 0 && (
-                    <div className="px-4 py-1.5 border-t border-border/50">
+                  {!isAddingSub && subs.length > 0 &&
+                <div className="px-4 py-1.5 border-t border-border/50">
                       <Button variant="ghost" size="sm" className="h-6 text-[11px] text-muted-foreground"
-                        onClick={() => { setAddingToCat(cat.id); setNewSubCodice(""); setNewSubDescrizione(""); setNewSubParoleChiave(""); }}>
+                  onClick={() => {setAddingToCat(cat.id);setNewSubCodice("");setNewSubDescrizione("");setNewSubParoleChiave("");}}>
                         <Plus className="w-3 h-3 mr-1" /> Aggiungi voce
                       </Button>
                     </div>
-                  )}
+                }
                 </div>
-              )}
-            </div>
-          );
+              }
+            </div>);
+
         })}
 
         {/* Unclassified items — drop target to remove from category */}
-        {(unclassified.length > 0 || isAddingUncl) && (
-          <div
-            className={`border-t border-border ${dragOverUnclassified === tipo ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
-            onDragOver={(e) => { e.preventDefault(); setDragOverUnclassified(tipo); setDragOverCatId(null); }}
-            onDragLeave={() => setDragOverUnclassified(null)}
-            onDrop={(e) => { e.preventDefault(); handleDropOnUnclassified(tipo); }}
-          >
+        {(unclassified.length > 0 || isAddingUncl) &&
+        <div
+          className={`border-t border-border ${dragOverUnclassified === tipo ? "bg-accent ring-2 ring-inset ring-primary/40" : ""}`}
+          onDragOver={(e) => {e.preventDefault();setDragOverUnclassified(tipo);setDragOverCatId(null);}}
+          onDragLeave={() => setDragOverUnclassified(null)}
+          onDrop={(e) => {e.preventDefault();handleDropOnUnclassified(tipo);}}>
+          
             <div className="flex items-center gap-2 px-4 py-2 bg-muted/40">
               <Tag className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground">Non classificate</span>
@@ -695,9 +695,9 @@ function CentriCostoRicavoTab() {
               </TableBody>
             </Table>
           </div>
-        )}
-      </div>
-    );
+        }
+      </div>);
+
   };
 
   return (
@@ -712,8 +712,8 @@ function CentriCostoRicavoTab() {
         {renderTable("ricavo")}
         {renderTable("costo")}
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 // ─── Export / Import ──────────────────────────────────────────────
@@ -724,12 +724,12 @@ function ExportImportSection() {
   const handleExport = async () => {
     try {
       const [centri, categorie, conti, naming, assignments] = await Promise.all([
-        supabase.from("centri_cr").select("*").then(r => r.data || []),
-        supabase.from("categorie_centri").select("*").then(r => r.data || []),
-        supabase.from("conti_correnti").select("*").then(r => r.data || []),
-        supabase.from("naming_rules").select("*").then(r => r.data || []),
-        supabase.from("centro_assignments").select("*").then(r => r.data || []),
-      ]);
+      supabase.from("centri_cr").select("*").then((r) => r.data || []),
+      supabase.from("categorie_centri").select("*").then((r) => r.data || []),
+      supabase.from("conti_correnti").select("*").then((r) => r.data || []),
+      supabase.from("naming_rules").select("*").then((r) => r.data || []),
+      supabase.from("centro_assignments").select("*").then((r) => r.data || [])]
+      );
 
       const payload = {
         version: 1,
@@ -738,7 +738,7 @@ function ExportImportSection() {
         categorie_centri: categorie,
         conti_correnti: conti,
         naming_rules: naming,
-        centro_assignments: assignments,
+        centro_assignments: assignments
       };
 
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -788,11 +788,11 @@ function ExportImportSection() {
         await supabase.from("categorie_centri").delete().neq("id", "00000000-0000-0000-0000-000000000000");
         const { error } = await supabase.from("categorie_centri").insert(
           data.categorie_centri.map((r: any) => ({
-            id: r.id, tipo: r.tipo, codice: r.codice, descrizione: r.descrizione || "",
+            id: r.id, tipo: r.tipo, codice: r.codice, descrizione: r.descrizione || ""
           }))
         );
-        if (error) console.error("Import categorie error:", error);
-        else imported += data.categorie_centri.length;
+        if (error) console.error("Import categorie error:", error);else
+        imported += data.categorie_centri.length;
       }
 
       if (data.centri_cr?.length) {
@@ -801,11 +801,11 @@ function ExportImportSection() {
           data.centri_cr.map((r: any) => ({
             id: r.id, tipo: r.tipo, codice: r.codice, descrizione: r.descrizione || "",
             parole_chiave_matching: r.parole_chiave_matching || r.paroleChiaveMatching || "",
-            note: r.note || "", categoria_id: r.categoria_id || r.categoriaId || null,
+            note: r.note || "", categoria_id: r.categoria_id || r.categoriaId || null
           }))
         );
-        if (error) console.error("Import centri error:", error);
-        else imported += data.centri_cr.length;
+        if (error) console.error("Import centri error:", error);else
+        imported += data.centri_cr.length;
       }
 
       if (data.conti_correnti?.length) {
@@ -813,32 +813,32 @@ function ExportImportSection() {
         const { error } = await supabase.from("conti_correnti").insert(
           data.conti_correnti.map((r: any) => ({
             id: r.id, tipo: r.tipo || "conto_corrente", banca: r.banca, iban: r.iban,
-            intestatario: r.intestatario || "", note: r.note || "",
+            intestatario: r.intestatario || "", note: r.note || ""
           }))
         );
-        if (error) console.error("Import conti error:", error);
-        else imported += data.conti_correnti.length;
+        if (error) console.error("Import conti error:", error);else
+        imported += data.conti_correnti.length;
       }
 
       if (data.naming_rules?.length) {
         await supabase.from("naming_rules").delete().neq("id", "00000000-0000-0000-0000-000000000000");
         const { error } = await supabase.from("naming_rules").insert(
           data.naming_rules.map((r: any) => ({
-            id: r.id, tipo: r.tipo, pattern: r.pattern, esempio: r.esempio || "",
+            id: r.id, tipo: r.tipo, pattern: r.pattern, esempio: r.esempio || ""
           }))
         );
-        if (error) console.error("Import naming error:", error);
-        else imported += data.naming_rules.length;
+        if (error) console.error("Import naming error:", error);else
+        imported += data.naming_rules.length;
       }
 
       if (data.centro_assignments?.length) {
         await supabase.from("centro_assignments").delete().neq("id", "00000000-0000-0000-0000-000000000000");
         for (let i = 0; i < data.centro_assignments.length; i += 100) {
           const batch = data.centro_assignments.slice(i, i + 100).map((r: any) => ({
-            invoice_key: r.invoice_key, tipo: r.tipo, context: r.context, centro_codice: r.centro_codice,
+            invoice_key: r.invoice_key, tipo: r.tipo, context: r.context, centro_codice: r.centro_codice
           }));
           const { error } = await supabase.from("centro_assignments").insert(batch);
-          if (error) { console.error("Import assignments error:", error); break; }
+          if (error) {console.error("Import assignments error:", error);break;}
         }
         imported += data.centro_assignments.length;
       }
@@ -874,11 +874,11 @@ function ExportImportSection() {
           type="file"
           accept=".json"
           className="hidden"
-          onChange={handleImport}
-        />
+          onChange={handleImport} />
+        
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 }
 
 // ─── Upload Fatture Excel ────────────────────────────────────────
@@ -925,11 +925,11 @@ function UploadFattureSection() {
 
       if (type === "vendita") {
         const sales = parseExcelSales(rows);
-        if (sales.length === 0) { toast.error("Nessuna fattura vendita trovata nel file"); setUploading(false); return; }
+        if (sales.length === 0) {toast.error("Nessuna fattura vendita trovata nel file");setUploading(false);return;}
         await checkCollisionsAndProceed(sales, [], type, file.name);
       } else {
         const purchases = parseExcelPurchases(rows);
-        if (purchases.length === 0) { toast.error("Nessuna fattura acquisto trovata nel file"); setUploading(false); return; }
+        if (purchases.length === 0) {toast.error("Nessuna fattura acquisto trovata nel file");setUploading(false);return;}
         await checkCollisionsAndProceed([], purchases, type, file.name);
       }
     } catch (err) {
@@ -940,28 +940,28 @@ function UploadFattureSection() {
   };
 
   const checkCollisionsAndProceed = async (
-    sales: SaleInvoice[], purchases: PurchaseInvoice[],
-    type: "vendita" | "acquisto", fileName: string
-  ) => {
+  sales: SaleInvoice[], purchases: PurchaseInvoice[],
+  type: "vendita" | "acquisto", fileName: string) =>
+  {
     const table = type === "vendita" ? "fatture_vendita" : "fatture_acquisto";
     const items = type === "vendita" ? sales : purchases;
     const keys = items.map((i: any) => `${i.anno}-${i.numero}-${i.tipo || ""}`);
 
     // Fetch existing records that might collide (include more fields for completeness comparison)
-    const { data: existing } = await supabase
-      .from(table as any)
-      .select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig, source_file")
-      .or(keys.map(k => {
-        const [a, n] = k.split("-");
-        return `and(anno.eq.${a},numero.eq.${n})`;
-      }).join(","));
+    const { data: existing } = await supabase.
+    from(table as any).
+    select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig, source_file").
+    or(keys.map((k) => {
+      const [a, n] = k.split("-");
+      return `and(anno.eq.${a},numero.eq.${n})`;
+    }).join(","));
 
-    const existingMap = new Map<string, { tipo: string; descrizione: string; imponibile: number; imposta: number; totale: number; cig: string; source_file: string }>();
+    const existingMap = new Map<string, {tipo: string;descrizione: string;imponibile: number;imposta: number;totale: number;cig: string;source_file: string;}>();
     (existing || []).forEach((r: any) => {
       existingMap.set(`${r.anno}-${r.numero}-${r.tipo || ""}`, {
         tipo: r.tipo, descrizione: r.descrizione,
         imponibile: Number(r.imponibile) || 0, imposta: Number(r.imposta) || 0,
-        totale: Number(r.totale) || 0, cig: r.cig || "", source_file: r.source_file || "",
+        totale: Number(r.totale) || 0, cig: r.cig || "", source_file: r.source_file || ""
       });
     });
 
@@ -998,12 +998,12 @@ function UploadFattureSection() {
       const ex = existingMap.get(key)!;
 
       // Determine if new data is more complete/updated
-      const newHasMoreFields = (
-        ((item.descrizione || "").length > (ex.descrizione || "").length) ||
-        (item.cig && !ex.cig) ||
-        (item.imponibile && !ex.imponibile) ||
-        (item.totale && !ex.totale)
-      );
+      const newHasMoreFields =
+      (item.descrizione || "").length > (ex.descrizione || "").length ||
+      item.cig && !ex.cig ||
+      item.imponibile && !ex.imponibile ||
+      item.totale && !ex.totale;
+
       const newFromDifferentFile = ex.source_file && ex.source_file !== fileName;
       // Auto-select if new data has more info, or if same source file (re-import = update)
       const autoSelect = newHasMoreFields || !newFromDifferentFile;
@@ -1015,7 +1015,7 @@ function UploadFattureSection() {
         tipo: item.tipo,
         existingDesc: `${ex.tipo} — ${ex.descrizione?.slice(0, 60) || "—"}`,
         newDesc: `${item.tipo} — ${(item.descrizione || "").slice(0, 60) || "—"}`,
-        selected: autoSelect,
+        selected: autoSelect
       };
     });
 
@@ -1025,17 +1025,17 @@ function UploadFattureSection() {
       sales: type === "vendita" ? sales : undefined,
       purchases: type === "acquisto" ? purchases : undefined,
       newOnly: newItems,
-      colliding: collidingItems,
+      colliding: collidingItems
     });
     setShowCollisionDialog(true);
   };
 
   const toggleCollision = (key: string) => {
-    setCollisions(prev => prev.map(c => c.key === key ? { ...c, selected: !c.selected } : c));
+    setCollisions((prev) => prev.map((c) => c.key === key ? { ...c, selected: !c.selected } : c));
   };
 
   const toggleAll = (selected: boolean) => {
-    setCollisions(prev => prev.map(c => ({ ...c, selected })));
+    setCollisions((prev) => prev.map((c) => ({ ...c, selected })));
   };
 
   const handleConfirmCollisions = async () => {
@@ -1043,7 +1043,7 @@ function UploadFattureSection() {
     setShowCollisionDialog(false);
 
     try {
-      const selectedKeys = new Set(collisions.filter(c => c.selected).map(c => c.key));
+      const selectedKeys = new Set(collisions.filter((c) => c.selected).map((c) => c.key));
       const overwriteItems = (pendingUpload.colliding as any[]).filter(
         (item: any) => selectedKeys.has(`${item.anno}-${item.numero}-${item.tipo || ""}`)
       );
@@ -1063,8 +1063,8 @@ function UploadFattureSection() {
 
       const skipped = collisions.length - selectedKeys.size;
       toast.success(
-        `Importati ${allToSave.length} record` +
-        (skipped > 0 ? `, ${skipped} duplicati ignorati` : "")
+        `Importati ${allToSave.length} record` + (
+        skipped > 0 ? `, ${skipped} duplicati ignorati` : "")
       );
       invalidateInvoiceCache();
       setTimeout(() => window.location.reload(), 800);
@@ -1083,8 +1083,8 @@ function UploadFattureSection() {
     setCollisions([]);
   };
 
-  const allSelected = collisions.length > 0 && collisions.every(c => c.selected);
-  const noneSelected = collisions.every(c => !c.selected);
+  const allSelected = collisions.length > 0 && collisions.every((c) => c.selected);
+  const noneSelected = collisions.every((c) => !c.selected);
   const newCount = pendingUpload?.newOnly?.length || 0;
 
   return (
@@ -1102,16 +1102,16 @@ function UploadFattureSection() {
         <CardContent className="flex gap-3 flex-wrap">
           <div
             className="relative"
-            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-primary"); }}
-            onDragLeave={(e) => { e.currentTarget.classList.remove("ring-2", "ring-primary"); }}
+            onDragOver={(e) => {e.preventDefault();e.currentTarget.classList.add("ring-2", "ring-primary");}}
+            onDragLeave={(e) => {e.currentTarget.classList.remove("ring-2", "ring-primary");}}
             onDrop={(e) => {
               e.preventDefault();
               e.currentTarget.classList.remove("ring-2", "ring-primary");
               const f = e.dataTransfer.files?.[0];
-              if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) handleUpload(f, "vendita");
-              else toast.error("Trascina un file .xlsx o .xls");
-            }}
-          >
+              if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) handleUpload(f, "vendita");else
+              toast.error("Trascina un file .xlsx o .xls");
+            }}>
+            
             <Button variant="outline" size="sm" disabled={uploading} onClick={() => salesRef.current?.click()}>
               <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
               {uploading ? "Importazione..." : "Importa Vendite (.xlsx)"}
@@ -1119,29 +1119,29 @@ function UploadFattureSection() {
           </div>
           <div
             className="relative"
-            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-primary"); }}
-            onDragLeave={(e) => { e.currentTarget.classList.remove("ring-2", "ring-primary"); }}
+            onDragOver={(e) => {e.preventDefault();e.currentTarget.classList.add("ring-2", "ring-primary");}}
+            onDragLeave={(e) => {e.currentTarget.classList.remove("ring-2", "ring-primary");}}
             onDrop={(e) => {
               e.preventDefault();
               e.currentTarget.classList.remove("ring-2", "ring-primary");
               const f = e.dataTransfer.files?.[0];
-              if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) handleUpload(f, "acquisto");
-              else toast.error("Trascina un file .xlsx o .xls");
-            }}
-          >
+              if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) handleUpload(f, "acquisto");else
+              toast.error("Trascina un file .xlsx o .xls");
+            }}>
+            
             <Button variant="outline" size="sm" disabled={uploading} onClick={() => purchasesRef.current?.click()}>
               <TrendingDown className="h-3.5 w-3.5 mr-1.5" />
               {uploading ? "Importazione..." : "Importa Acquisti (.xlsx)"}
             </Button>
           </div>
           <input ref={salesRef} type="file" accept=".xlsx,.xls" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "vendita"); e.target.value = ""; }} />
+          onChange={(e) => {const f = e.target.files?.[0];if (f) handleUpload(f, "vendita");e.target.value = "";}} />
           <input ref={purchasesRef} type="file" accept=".xlsx,.xls" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, "acquisto"); e.target.value = ""; }} />
+          onChange={(e) => {const f = e.target.files?.[0];if (f) handleUpload(f, "acquisto");e.target.value = "";}} />
         </CardContent>
       </Card>
 
-      <Dialog open={showCollisionDialog} onOpenChange={(open) => { if (!open) handleCancelCollisions(); }}>
+      <Dialog open={showCollisionDialog} onOpenChange={(open) => {if (!open) handleCancelCollisions();}}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
@@ -1174,8 +1174,8 @@ function UploadFattureSection() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {collisions.map((c) => (
-                  <TableRow key={c.key} className={c.selected ? "bg-accent/40" : ""}>
+                {collisions.map((c) =>
+                <TableRow key={c.key} className={c.selected ? "bg-accent/40" : ""}>
                     <TableCell>
                       <Checkbox checked={c.selected} onCheckedChange={() => toggleCollision(c.key)} />
                     </TableCell>
@@ -1183,7 +1183,7 @@ function UploadFattureSection() {
                     <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{c.existingDesc}</TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">{c.newDesc}</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </ScrollArea>
@@ -1193,14 +1193,14 @@ function UploadFattureSection() {
               Annulla importazione
             </Button>
             <Button size="sm" onClick={handleConfirmCollisions}>
-              Importa {newCount + collisions.filter(c => c.selected).length} record
-              {collisions.filter(c => !c.selected).length > 0 && ` (${collisions.filter(c => !c.selected).length} ignorati)`}
+              Importa {newCount + collisions.filter((c) => c.selected).length} record
+              {collisions.filter((c) => !c.selected).length > 0 && ` (${collisions.filter((c) => !c.selected).length} ignorati)`}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
-  );
+    </>);
+
 }
 
 // ─── Main Page ───────────────────────────────────────────────────
@@ -1247,8 +1247,8 @@ const StrumentiPage = () => {
 
       <Separator />
       <UploadFattureSection />
-    </div>
-  );
+    </div>);
+
 };
 
 export default StrumentiPage;
