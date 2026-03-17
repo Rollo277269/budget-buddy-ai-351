@@ -33,8 +33,32 @@ import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileTe
 import { Button } from "@/components/ui/button";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
+import { useCentroMap, useCentriData } from "@/hooks/useCentri";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
+type SortKey = "data" | "numero" | "descrizione" | "cig" | "scadenza" | "stato" | "imponibile" | "imposta" | "dare" | "avere" | "saldo";
+type SortDir = "asc" | "desc";
+
+function sortRows(rows: PrimaNotaRow[], key: SortKey, dir: SortDir): PrimaNotaRow[] {
+  return [...rows].sort((a, b) => {
+    let cmp = 0;
+    switch (key) {
+      case "data": cmp = a.dataSort - b.dataSort; break;
+      case "numero": cmp = a.numero.localeCompare(b.numero); break;
+      case "descrizione": cmp = a.descrizione.localeCompare(b.descrizione); break;
+      case "cig": cmp = (a.cig || "").localeCompare(b.cig || ""); break;
+      case "scadenza": cmp = (a.scadenza || "").localeCompare(b.scadenza || ""); break;
+      case "stato": cmp = a.stato.localeCompare(b.stato); break;
+      case "imponibile": cmp = a.imponibile - b.imponibile; break;
+      case "imposta": cmp = a.imposta - b.imposta; break;
+      case "dare": cmp = a.dare - b.dare; break;
+      case "avere": cmp = a.avere - b.avere; break;
+      case "saldo": cmp = a.saldo - b.saldo; break;
+    }
+    return dir === "asc" ? cmp : -cmp;
+  });
+}
 
 /* ── Helpers ── */
 
