@@ -316,7 +316,7 @@ export function DataTable<T extends Record<string, any>>({
       >
         <Table>
            <TableHeader className="sticky top-0 z-10 bg-card">
-            {hasActiveFilters && activeColumns.some((c) => c.summaryRender) && (
+            {activeColumns.some((c) => c.summaryRender) && (
               <TableRow className="border-b border-border bg-muted/50">
                 {expandable && <TableHead className="w-8 text-xs py-1" />}
                 {activeColumns.map((col) => (
