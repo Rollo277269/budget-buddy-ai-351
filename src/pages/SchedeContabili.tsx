@@ -405,7 +405,14 @@ function SchedaDetail({
                       <TableCell className="font-mono text-[11px] py-2 whitespace-nowrap">{row.data}</TableCell>
                       <TableCell className="font-mono text-[11px] py-2">{row.numero}</TableCell>
                       <TableCell className="py-2 max-w-[260px] truncate text-[11px]">{row.descrizione}</TableCell>
-                      <TableCell className="font-mono text-[11px] py-2">{row.cig || "—"}</TableCell>
+                      <TableCell className="font-mono text-[11px] py-2">
+                        {row.cig ? (
+                          <span
+                            className="text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+                            onClick={() => handleCigClick(row.cig)}
+                          >{row.cig}</span>
+                        ) : "—"}
+                      </TableCell>
                       <TableCell className="font-mono text-[11px] py-2 whitespace-nowrap">{row.scadenza || "—"}</TableCell>
                       <TableCell className="py-2"><StatusBadge stato={row.stato} /></TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imponibile)}</TableCell>
