@@ -48,6 +48,7 @@ interface ColumnDef {
 function buildColumns(tipo: "acquisto" | "vendita"): ColumnDef[] {
   return [
     { key: "descrizione", label: "Documento", defaultVisible: true },
+    { key: "file_name", label: "Nome file", defaultVisible: true },
     { key: "fornitore", label: tipo === "vendita" ? "Cliente" : "Fornitore", defaultVisible: true },
     { key: "data", label: "Data", defaultVisible: true },
     { key: "importo", label: "Importo", defaultVisible: true },
