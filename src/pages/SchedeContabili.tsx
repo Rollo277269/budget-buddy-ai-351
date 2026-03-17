@@ -473,32 +473,60 @@ function SchedaDetail({
 
         {/* Prima nota */}
         <div>
-          <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-            Prima Nota — Movimenti in ordine cronologico
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Prima Nota — {filteredRows.length} di {rows.length} movimenti
+            </h3>
+            <div className="relative w-56">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Cerca..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+          </div>
 
-          {rows.length === 0 ? (
+          {filteredRows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">Nessun movimento trovato</p>
           ) : (
             <div className="rounded-md border overflow-auto max-h-[calc(100vh-380px)]">
               <Table>
                 <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
                   <TableRow>
-                    <TableHead className="text-[11px] font-semibold w-[85px]">Data</TableHead>
-                    <TableHead className="text-[11px] font-semibold w-[75px]">N°</TableHead>
-                    <TableHead className="text-[11px] font-semibold">Descrizione</TableHead>
-                    <TableHead className="text-[11px] font-semibold w-[90px]">CIG</TableHead>
-                    <TableHead className="text-[11px] font-semibold w-[85px]">Scadenza</TableHead>
-                    <TableHead className="text-[11px] font-semibold w-[70px]">Stato</TableHead>
-                    <TableHead className="text-[11px] font-semibold text-right w-[100px]">Imponibile</TableHead>
-                    <TableHead className="text-[11px] font-semibold text-right w-[80px]">IVA</TableHead>
-                    <TableHead className="text-[11px] font-semibold text-right w-[110px]">Dare</TableHead>
-                    <TableHead className="text-[11px] font-semibold text-right w-[110px]">Avere</TableHead>
-                    <TableHead className="text-[11px] font-semibold text-right w-[110px]">Saldo</TableHead>
+                    {([
+                      { key: "data" as SortKey, label: "Data", w: "w-[85px]", align: "" },
+                      { key: "numero" as SortKey, label: "N°", w: "w-[75px]", align: "" },
+                      { key: "descrizione" as SortKey, label: "Descrizione", w: "", align: "" },
+                      { key: "cig" as SortKey, label: "CIG", w: "w-[90px]", align: "" },
+                      { key: "scadenza" as SortKey, label: "Scadenza", w: "w-[85px]", align: "" },
+                      { key: "stato" as SortKey, label: "Stato", w: "w-[70px]", align: "" },
+                      { key: "imponibile" as SortKey, label: "Imponibile", w: "w-[100px]", align: "text-right" },
+                      { key: "imposta" as SortKey, label: "IVA", w: "w-[80px]", align: "text-right" },
+                      { key: "dare" as SortKey, label: "Dare", w: "w-[110px]", align: "text-right" },
+                      { key: "avere" as SortKey, label: "Avere", w: "w-[110px]", align: "text-right" },
+                      { key: "saldo" as SortKey, label: "Saldo", w: "w-[110px]", align: "text-right" },
+                    ]).map((col) => (
+                      <TableHead
+                        key={col.key}
+                        className={`text-[11px] font-semibold ${col.w} ${col.align} cursor-pointer select-none hover:text-foreground`}
+                        onClick={() => toggleSort(col.key)}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {col.label}
+                          {sortKey === col.key ? (
+                            sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                          ) : (
+                            <ArrowUpDown className="h-3 w-3 opacity-30" />
+                          )}
+                        </span>
+                      </TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row, i) => (
+                  {filteredRows.map((row, i) => (
                     <TableRow key={i} className="text-xs hover:bg-muted/30">
                       <TableCell className="font-mono text-[11px] py-2 whitespace-nowrap">{row.data}</TableCell>
                       <TableCell className="font-mono text-[11px] py-2">{row.numero}</TableCell>
@@ -516,12 +544,12 @@ function SchedaDetail({
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imponibile)}</TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imposta)}</TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">
-                        {row.dare > 0 ? <span className="text-emerald-600">{formatCurrency(row.dare)}</span> : "—"}
+                        {row.dare > 0 ? <span className="text-[hsl(var(--success))]">{formatCurrency(row.dare)}</span> : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">
                         {row.avere > 0 ? <span className="text-destructive">{formatCurrency(row.avere)}</span> : "—"}
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-[11px] font-semibold py-2 ${row.saldo >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                      <TableCell className={`text-right font-mono text-[11px] font-semibold py-2 ${row.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
                         {formatCurrency(row.saldo)}
                       </TableCell>
                     </TableRow>
@@ -530,9 +558,9 @@ function SchedaDetail({
                     <TableCell colSpan={6} className="text-[11px] py-2.5">TOTALE</TableCell>
                     <TableCell className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImponibile)}</TableCell>
                     <TableCell className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImposta)}</TableCell>
-                    <TableCell className="text-right font-mono text-[11px] py-2.5 text-emerald-600">{formatCurrency(stats.totaleDare)}</TableCell>
+                    <TableCell className="text-right font-mono text-[11px] py-2.5 text-[hsl(var(--success))]">{formatCurrency(stats.totaleDare)}</TableCell>
                     <TableCell className="text-right font-mono text-[11px] py-2.5 text-destructive">{formatCurrency(stats.totaleAvere)}</TableCell>
-                    <TableCell className={`text-right font-mono text-[11px] py-2.5 font-bold ${stats.saldo >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    <TableCell className={`text-right font-mono text-[11px] py-2.5 font-bold ${stats.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
                       {formatCurrency(stats.saldo)}
                     </TableCell>
                   </TableRow>
