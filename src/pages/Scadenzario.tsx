@@ -176,10 +176,25 @@ export default function ScadenzarioPage() {
         </Card>
       </div>
 
-      <DataTable<ScadenzaRow>
-        columns={scadenzaCols}
-        data={rows}
-        rowKey={(r) => `${r.tipo}-${r.numero}-${r.soggetto}`} />
+      <Tabs defaultValue="calendario" className="space-y-3">
+        <TabsList>
+          <TabsTrigger value="calendario" className="text-xs">
+            <CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendario
+          </TabsTrigger>
+          <TabsTrigger value="tabella" className="text-xs">
+            <List className="h-3.5 w-3.5 mr-1.5" />Tabella
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="calendario">
+          <ScadenzarioCalendar events={rows} />
+        </TabsContent>
+        <TabsContent value="tabella">
+          <DataTable<ScadenzaRow>
+            columns={scadenzaCols}
+            data={rows}
+            rowKey={(r) => `${r.tipo}-${r.numero}-${r.soggetto}`} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
