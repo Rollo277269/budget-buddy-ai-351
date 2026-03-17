@@ -32,6 +32,7 @@ export function useContiCorrenti() {
       iban: d.iban,
       intestatario: d.intestatario || "",
       note: d.note || "",
+      conto_addebito_id: d.conto_addebito_id || "",
     })));
     setLoading(false);
   }, []);
