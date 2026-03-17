@@ -33,7 +33,8 @@ import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileTe
 import { Button } from "@/components/ui/button";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
-import { useCentroMap, useCentriData } from "@/hooks/useCentri";
+import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 /* ── Helpers ── */
 
