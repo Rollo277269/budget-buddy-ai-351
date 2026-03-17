@@ -6,11 +6,15 @@ import {
   ComposedChart,
   Area,
   Bar,
+  BarChart,
   XAxis,
   YAxis,
   Tooltip,
   Legend,
   ReferenceLine,
+  Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 import { formatCurrency } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +33,7 @@ import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileTe
 import { Button } from "@/components/ui/button";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
+import { useCentroMap, useCentriData } from "@/hooks/useCentri";
 
 /* ── Helpers ── */
 
