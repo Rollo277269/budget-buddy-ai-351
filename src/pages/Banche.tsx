@@ -29,6 +29,7 @@ import { toast } from "sonner";
 
 // Load conti from shared hook
 import { useContiCorrenti, ContoCorrente } from "@/hooks/useContiCorrenti";
+import { BankLogo } from "@/components/BankLogo";
 
 function ReconciliationBadge({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "auto") {
