@@ -556,28 +556,29 @@ const AcquistiPage = () => {
                 {xmlRecords.length === 0 && (
                   <p className="text-xs text-muted-foreground py-2">Nessuna fattura XML caricata. Usa il pulsante XML nell'header per caricare.</p>
                 )}
+                {/* Main invoices table */}
+                <div className="pt-2">
+                  <DataTable<PurchaseInvoice>
+                    toolbarPortalRef={toolbarPortalRef}
+                    columns={columns}
+                    data={displayedPurchases}
+                    defaultSort={{ key: "data", dir: "desc" }}
+                    rowKey={(r) => `${r.anno}-${r.numero}`}
+                    onRowClick={setSelectedInvoice}
+                    rowClassName={(r) => {
+                      const nc = isNotaCredito(r);
+                      const xml = hasXml(`${r.anno}-${r.numero}`);
+                      return [
+                        nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
+                        xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+                      ].filter(Boolean).join(" ");
+                    }}
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>
         </div>
-
-        {/* Table content */}
-        <div className="px-4 pb-4">
-          <DataTable<PurchaseInvoice>
-            toolbarPortalRef={toolbarPortalRef}
-            columns={columns}
-            data={displayedPurchases}
-            defaultSort={{ key: "data", dir: "desc" }}
-            rowKey={(r) => `${r.anno}-${r.numero}`}
-            onRowClick={setSelectedInvoice}
-            rowClassName={(r) => {
-              const nc = isNotaCredito(r);
-              const xml = hasXml(`${r.anno}-${r.numero}`);
-              return [
-                nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
-                xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
-              ].filter(Boolean).join(" ");
-            }}
           />
         </div>
 
