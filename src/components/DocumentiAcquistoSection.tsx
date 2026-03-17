@@ -66,7 +66,7 @@ interface Props {
 }
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
-  const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto(tipo);
+  const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField } = useDocumentiAcquisto(tipo);
   const { centriCosto, centriRicavo } = useCentriData();
   const centri = tipo === "vendita" ? centriRicavo : centriCosto;
   const ALL_COLUMNS = useMemo(() => buildColumns(tipo), [tipo]);
