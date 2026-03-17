@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Settings, Landmark, FileText, Plus, Trash2, Save, Building2, TrendingUp, TrendingDown, Pencil, Check, X, GripVertical, Tag, ChevronDown, ChevronRight, FolderOpen, Download, Upload } from "lucide-react";
+import { Settings, Landmark, FileText, Plus, Trash2, Save, Building2, TrendingUp, TrendingDown, Pencil, Check, X, GripVertical, Tag, ChevronDown, ChevronRight, FolderOpen, Download, Upload, CheckCircle2 } from "lucide-react";
 import { BankLogo } from "@/components/BankLogo";
 import { CigIntegrityCheck } from "@/components/CigIntegrityCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1210,7 +1210,7 @@ const StrumentiPage = () => {
     <div className="p-6 space-y-6">
 
       <Tabs defaultValue="conti" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="conti" className="text-xs">
             <Landmark className="h-3.5 w-3.5 mr-1.5" />Conti Correnti
           </TabsTrigger>
@@ -1219,6 +1219,12 @@ const StrumentiPage = () => {
           </TabsTrigger>
           <TabsTrigger value="naming" className="text-xs">
             <FileText className="h-3.5 w-3.5 mr-1.5" />Denominazione file
+          </TabsTrigger>
+          <TabsTrigger value="export" className="text-xs">
+            <Settings className="h-3.5 w-3.5 mr-1.5" />Trasferimento Config
+          </TabsTrigger>
+          <TabsTrigger value="cig" className="text-xs">
+            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />Integrità CIG
           </TabsTrigger>
         </TabsList>
 
@@ -1231,12 +1237,16 @@ const StrumentiPage = () => {
         <TabsContent value="naming">
           <NamingRulesTab />
         </TabsContent>
+        <TabsContent value="export">
+          <ExportImportSection />
+        </TabsContent>
+        <TabsContent value="cig">
+          <CigIntegrityCheck />
+        </TabsContent>
       </Tabs>
 
       <Separator />
       <UploadFattureSection />
-      <ExportImportSection />
-      <CigIntegrityCheck />
     </div>
   );
 };
