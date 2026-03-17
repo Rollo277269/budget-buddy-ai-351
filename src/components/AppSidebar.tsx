@@ -102,9 +102,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="flex items-center px-2 pt-3 pb-1">
-        <SidebarTrigger className="h-8 w-8" />
-      </SidebarHeader>
+      <SidebarHeader className="flex items-center px-2 pt-3 pb-1" />
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>

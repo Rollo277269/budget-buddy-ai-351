@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -51,6 +51,32 @@ function useFullscreen() {
   return { isFs, toggle };
 }
 
+function SidebarHoverWrapper({ children }: { children: React.ReactNode }) {
+  const { setOpen } = useSidebar();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setOpen(true);
+  }, [setOpen]);
+
+  const handleMouseLeave = useCallback(() => {
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 300);
+  }, [setOpen]);
+
+  return (
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="shrink-0"
+    >
+      {children}
+    </div>
+  );
+}
+
 export function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
   const title = pageTitles[location.pathname] || "Cruscotto";
@@ -58,9 +84,11 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { isFs, toggle: toggleFs } = useFullscreen();
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full">
-        <AppSidebar />
+        <SidebarHoverWrapper>
+          <AppSidebar />
+        </SidebarHoverWrapper>
         <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-30 border-b bg-card h-14 flex items-center px-4 gap-3 shrink-0">
             <div className="flex items-center gap-2">
