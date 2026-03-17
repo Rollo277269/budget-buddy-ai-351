@@ -212,11 +212,31 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const handlePdfDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); }, []);
   const handlePdfDrop = useCallback(async (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); pdfDragCounter.current = 0; setPdfDragging(false); await processPdfFiles(Array.from(e.dataTransfer.files)); }, [processPdfFiles]);
 
-  const saveCig = useCallback(async (id: string) => {
-    await updateCig(id, editingCigValue.trim());
-    setEditingCigId(null);
-    setEditingCigValue("");
-  }, [updateCig, editingCigValue]);
+  const startEditing = useCallback((id: string, field: string, currentValue: string) => {
+    setEditingCell({ id, field });
+    setEditingValue(currentValue);
+  }, []);
+
+  const saveEditing = useCallback(async () => {
+    if (!editingCell) return;
+    const { id, field } = editingCell;
+    const trimmed = editingValue.trim();
+    if (field === "importo") {
+      const num = parseFloat(trimmed.replace(",", "."));
+      await updateField(id, field, isNaN(num) ? null : num);
+    } else if (field === "cig") {
+      await updateCig(id, trimmed);
+    } else {
+      await updateField(id, field, trimmed || null);
+    }
+    setEditingCell(null);
+    setEditingValue("");
+  }, [editingCell, editingValue, updateField, updateCig]);
+
+  const cancelEditing = useCallback(() => {
+    setEditingCell(null);
+    setEditingValue("");
+  }, []);
 
   // Drop zone only mode
   if (dropZoneOnly) {
