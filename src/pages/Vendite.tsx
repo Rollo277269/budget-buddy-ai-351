@@ -617,7 +617,7 @@ const VenditePage = () => {
             </TabsList>
 
             <TabsContent value="documenti">
-              <DocumentiAcquistoSection tableOnly />
+              <DocumentiAcquistoSection tableOnly tipo="vendita" />
             </TabsContent>
 
             <TabsContent value="xml">
