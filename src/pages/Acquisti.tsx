@@ -459,9 +459,115 @@ const AcquistiPage = () => {
           </div>
         </div>
 
-        {/* Documenti table */}
+        {/* ── Sottosezione: Ricevute e Documenti ── */}
+        <div className="px-4 pt-3">
+          <Collapsible open={docSectionOpen} onOpenChange={setDocSectionOpen}>
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center gap-2 w-full text-left group py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors border border-border/50">
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${docSectionOpen ? "rotate-180" : ""}`} />
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">Ricevute e Documenti</span>
+                <Badge variant="secondary" className="text-[10px] ml-1">{/* count managed by child */}Doc</Badge>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="pt-2">
+                <DocumentiAcquistoSection tableOnly />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+
+        {/* ── Sottosezione: Fatture XML ── */}
         <div className="px-4 pt-2">
-          <DocumentiAcquistoSection tableOnly />
+          <Collapsible open={xmlSectionOpen} onOpenChange={setXmlSectionOpen}>
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center gap-2 w-full text-left group py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors border border-border/50">
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${xmlSectionOpen ? "rotate-180" : ""}`} />
+                <FileCode2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">Fatture XML</span>
+                <Badge variant="outline" className="text-[10px] ml-1">{xmlRecords.length} totali</Badge>
+                <Badge className="text-[10px] ml-0.5">{xmlMatchedCount} assoc.</Badge>
+                {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px] ml-0.5">{xmlUnmatchedCount} non assoc.</Badge>}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="pt-2 space-y-2">
+                {xmlUnmatchedCount > 0 && (
+                  <div className="flex items-center gap-2 px-1">
+                    {xmlDuplicateCount > 0 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" title="Elimina file XML caricati più volte">
+                            <Trash2 className="h-3 w-3 mr-1" />Duplicati ({xmlDuplicateCount})
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Rimuovere {xmlDuplicateCount} XML duplicati?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Verranno eliminati {xmlDuplicateCount} file XML caricati più volte con lo stesso nome. Questa azione è irreversibile.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annulla</AlertDialogCancel>
+                            <AlertDialogAction onClick={removeDuplicates} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Elimina</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    <Button size="sm" variant="ghost" className="h-6 text-[10px]" title="Riprova associazione automatica XML" onClick={rematchAll}>
+                      <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+                    </Button>
+                  </div>
+                )}
+                {xmlUnmatchedCount > 0 && (
+                  <div className="max-h-[300px] overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="text-[10px]">
+                          <TableHead className="h-7 text-[10px]">File</TableHead>
+                          <TableHead className="h-7 text-[10px]">N° Doc</TableHead>
+                          <TableHead className="h-7 text-[10px]">Cedente</TableHead>
+                          <TableHead className="h-7 text-[10px] text-right">Importo</TableHead>
+                          <TableHead className="h-7 text-[10px]">Data</TableHead>
+                          <TableHead className="h-7 text-[10px] w-[70px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {xmlRecords.filter((r) => !r.matched).map((r) => (
+                          <TableRow key={r.id} className="cursor-pointer hover:bg-accent/50" onClick={() => openXmlSheet(r)}>
+                            <TableCell className="text-[11px] py-1 max-w-[180px] truncate">
+                              <FileText className="h-3 w-3 mr-1 inline text-muted-foreground" />
+                              {r.file_name}
+                            </TableCell>
+                            <TableCell className="text-[11px] py-1 font-mono">
+                              {r.numero_documento || `${r.numero || "?"}/${r.anno || "?"}`}
+                            </TableCell>
+                            <TableCell className="text-[11px] py-1 max-w-[160px] truncate">{r.cedente_denominazione || "—"}</TableCell>
+                            <TableCell className="text-[11px] py-1 font-mono text-right">{r.importo_totale != null ? formatCurrency(r.importo_totale) : "—"}</TableCell>
+                            <TableCell className="text-[11px] py-1">{r.data_fattura || "—"}</TableCell>
+                            <TableCell className="py-1">
+                              <Button size="sm" variant="outline" className="h-5 text-[10px] px-2" onClick={(e) => {
+                                e.stopPropagation();
+                                const fakePurchase = { anno: r.anno || 0, numero: r.numero || 0, fornitore: r.cedente_denominazione || "", totale: r.importo_totale || 0, imposta: 0, cig: "" } as PurchaseInvoice;
+                                setXmlPickerInvoice(fakePurchase);
+                              }}>
+                                <Link2 className="h-3 w-3 mr-1" />Associa
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+                {xmlUnmatchedCount === 0 && (
+                  <p className="text-xs text-muted-foreground px-1 py-2">Tutte le fatture XML sono associate. ✓</p>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Table content */}
