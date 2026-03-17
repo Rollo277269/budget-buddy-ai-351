@@ -693,7 +693,7 @@ const BanchePage = () => {
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      {c.tipo === "carta_credito" ? <CreditCard className="h-4 w-4 text-muted-foreground" /> : <Landmark className="h-4 w-4 text-muted-foreground" />}
+                      <BankLogo bankName={c.banca} tipo={c.tipo} className="h-5 w-5" />
                       <span className="text-sm font-semibold truncate">{c.banca}</span>
                     </div>
                     <Badge variant="outline" className="text-[10px]">{st.movimenti} mov.</Badge>
