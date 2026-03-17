@@ -181,6 +181,15 @@ export function DataTable<T extends Record<string, any>>({
       if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av;
       const as = String(av ?? "");
       const bs = String(bv ?? "");
+      // Handle dd/mm/yyyy date strings
+      const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+      const aMatch = as.match(dateRegex);
+      const bMatch = bs.match(dateRegex);
+      if (aMatch && bMatch) {
+        const aDate = `${aMatch[3]}${aMatch[2].padStart(2, "0")}${aMatch[1].padStart(2, "0")}`;
+        const bDate = `${bMatch[3]}${bMatch[2].padStart(2, "0")}${bMatch[1].padStart(2, "0")}`;
+        return sortDir === "asc" ? aDate.localeCompare(bDate) : bDate.localeCompare(aDate);
+      }
       return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
     });
   }, [filtered, sortKey, sortDir]);
