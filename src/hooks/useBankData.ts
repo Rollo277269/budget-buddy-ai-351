@@ -678,13 +678,22 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     });
   }, []);
 
-  const refreshAutoMatch = useCallback(() => {
-    const currentMovements = autoMatch(
-      activeAccountId === "all" ? rawMovements : rawMovements.filter(m => (m.accountId || "default") === activeAccountId),
-      sales, purchases, reconciliations
-    );
+  const refreshAutoMatch = useCallback((): number => {
+    // Identify movements that already have a reconciliation in DB — never touch them
+    const reconciledMovementIds = new Set(reconciliations.map(r => r.movementId));
+
+    // Only run auto-match on orphan movements (no existing reconciliation)
+    const scope = (activeAccountId === "all" ? rawMovements : rawMovements.filter(m => (m.accountId || "default") === activeAccountId))
+      .filter(m => !reconciledMovementIds.has(m.id));
+
+    if (scope.length === 0) {
+      setRefreshKey((k) => k + 1);
+      return 0;
+    }
+
+    const matched = autoMatch(scope, sales, purchases, reconciliations);
     const newRecs: Reconciliation[] = [];
-    for (const m of currentMovements) {
+    for (const m of matched) {
       if (m.matchConfidence === "auto" && m.matchedInvoices.length > 0) {
         for (const inv of m.matchedInvoices) {
           newRecs.push({ movementId: m.id, invoiceType: inv.type, invoiceAnno: inv.anno, invoiceNumero: inv.numero });
@@ -695,13 +704,13 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
       setReconciliations((prev) => {
         const existing = new Set(prev.map(r => `${r.movementId}|${r.invoiceType}|${r.invoiceAnno}|${r.invoiceNumero}`));
         const toAdd = newRecs.filter(r => !existing.has(`${r.movementId}|${r.invoiceType}|${r.invoiceAnno}|${r.invoiceNumero}`));
-        const next = [...prev, ...toAdd];
         // Save new recs to DB
         toAdd.forEach(r => saveReconciliationToDb(r, r.movementId));
-        return next;
+        return [...prev, ...toAdd];
       });
     }
     setRefreshKey((k) => k + 1);
+    return newRecs.length;
   }, [rawMovements, sales, purchases, reconciliations, activeAccountId]);
 
   const fingerprint = (m: Pick<RawMovement, "accountId" | "data" | "dataValuta" | "descrizione" | "importo">) =>
