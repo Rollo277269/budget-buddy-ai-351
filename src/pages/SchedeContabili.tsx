@@ -482,11 +482,12 @@ function SchedaDetail({
               </h3>
               {stats.paymentTiming ? (
                 <div className="space-y-3">
-                  {/* Star rating */}
+                  {/* Star rating based on delay (actual payment - due date) */}
                   {(() => {
                     const avg = stats.paymentTiming!.avg;
-                    // 0-30 days = 5 stars, 31-60 = 4, 61-90 = 3, 91-120 = 2, >120 = 1
-                    const stars = avg <= 30 ? 5 : avg <= 60 ? 4 : avg <= 90 ? 3 : avg <= 120 ? 2 : 1;
+                    // avg is delay in days: negative = early, 0 = on time, positive = late
+                    // ≤-15 (very early) = 5★, ≤0 (on time) = 5★, ≤15 = 4★, ≤30 = 3★, ≤60 = 2★, >60 = 1★
+                    const stars = avg <= 0 ? 5 : avg <= 15 ? 4 : avg <= 30 ? 3 : avg <= 60 ? 2 : 1;
                     const ratingLabels = ["", "Critica", "Scarsa", "Sufficiente", "Buona", "Eccellente"];
                     const ratingColors = ["", "text-destructive", "text-destructive", "text-[hsl(var(--warning))]", "text-primary", "text-[hsl(var(--success))]"];
                     return (
@@ -509,43 +510,64 @@ function SchedaDetail({
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="rounded-md bg-muted/40 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">Min</p>
-                      <p className="text-xl font-bold font-mono text-[hsl(var(--success))]">{stats.paymentTiming.min}</p>
+                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.min <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                        {stats.paymentTiming.min > 0 ? "+" : ""}{stats.paymentTiming.min}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">giorni</p>
                     </div>
                     <div className="rounded-md bg-muted/40 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">Media</p>
-                      <p className="text-xl font-bold font-mono text-primary">{stats.paymentTiming.avg}</p>
+                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.avg <= 0 ? "text-[hsl(var(--success))]" : stats.paymentTiming.avg <= 15 ? "text-primary" : "text-destructive"}`}>
+                        {stats.paymentTiming.avg > 0 ? "+" : ""}{stats.paymentTiming.avg}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">giorni</p>
                     </div>
                     <div className="rounded-md bg-muted/40 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">Max</p>
-                      <p className="text-xl font-bold font-mono text-destructive">{stats.paymentTiming.max}</p>
+                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.max <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                        {stats.paymentTiming.max > 0 ? "+" : ""}{stats.paymentTiming.max}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">giorni</p>
                     </div>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-muted-foreground">
-                      Calcolato su <span className="font-semibold">{stats.paymentTiming.count}</span> documenti con data fattura e scadenza
+                      Ritardo rispetto alla scadenza · <span className="font-semibold">{stats.paymentTiming.count}</span> fatture riconciliate
                     </p>
                   </div>
                   {/* Visual bar */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-[9px] text-muted-foreground font-mono">
-                      <span>{stats.paymentTiming.min}g</span>
-                      <span>{stats.paymentTiming.avg}g</span>
-                      <span>{stats.paymentTiming.max}g</span>
+                      <span>{stats.paymentTiming.min > 0 ? "+" : ""}{stats.paymentTiming.min}g</span>
+                      <span>{stats.paymentTiming.avg > 0 ? "+" : ""}{stats.paymentTiming.avg}g</span>
+                      <span>{stats.paymentTiming.max > 0 ? "+" : ""}{stats.paymentTiming.max}g</span>
                     </div>
                     <div className="relative h-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[hsl(var(--success))] via-primary to-destructive"
-                        style={{ width: "100%" }}
-                      />
-                      {stats.paymentTiming.max > 0 && (
-                        <div
-                          className="absolute top-0 h-full w-0.5 bg-foreground"
-                          style={{ left: `${(stats.paymentTiming.avg / stats.paymentTiming.max) * 100}%` }}
-                        />
-                      )}
+                      {(() => {
+                        const range = Math.max(1, stats.paymentTiming.max - stats.paymentTiming.min);
+                        const zeroPos = Math.max(0, Math.min(100, ((0 - stats.paymentTiming.min) / range) * 100));
+                        const avgPos = ((stats.paymentTiming.avg - stats.paymentTiming.min) / range) * 100;
+                        return (
+                          <>
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[hsl(var(--success))] via-primary to-destructive"
+                              style={{ width: "100%" }}
+                            />
+                            {/* Zero line (on-time marker) */}
+                            <div
+                              className="absolute top-0 h-full w-0.5 bg-foreground/50"
+                              style={{ left: `${zeroPos}%` }}
+                              title="Scadenza"
+                            />
+                            {/* Average marker */}
+                            <div
+                              className="absolute top-0 h-full w-1 bg-foreground rounded"
+                              style={{ left: `${avgPos}%` }}
+                              title="Media"
+                            />
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
