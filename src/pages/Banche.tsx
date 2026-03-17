@@ -815,7 +815,15 @@ const BanchePage = () => {
                     </div>
 
                     {/* KPI row */}
-                    <div className="grid grid-cols-4 gap-0 border-b text-center">
+                    {(() => {
+                      const now = new Date();
+                      const scadute = rate.filter(r => {
+                        if (r.pagata) return false;
+                        const p = r.data_scadenza.split("/");
+                        return p.length === 3 && new Date(+p[2], +p[1] - 1, +p[0]) < now;
+                      });
+                      return (
+                    <div className="grid grid-cols-5 gap-0 border-b text-center">
                       <div className="p-3 border-r">
                         <p className="text-[10px] text-muted-foreground">Totale Piano</p>
                         <p className="text-sm font-semibold font-mono">{formatCurrency(totalePiano)}</p>
@@ -828,11 +836,19 @@ const BanchePage = () => {
                         <p className="text-[10px] text-muted-foreground">Debito Residuo</p>
                         <p className="text-sm font-semibold font-mono text-destructive">{formatCurrency(residuo)}</p>
                       </div>
+                      <div className="p-3 border-r">
+                        <p className="text-[10px] text-muted-foreground">Scadute</p>
+                        <p className={`text-sm font-semibold ${scadute.length > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                          {scadute.length > 0 ? `${scadute.length} ⚠` : "0"}
+                        </p>
+                      </div>
                       <div className="p-3">
                         <p className="text-[10px] text-muted-foreground">Avanzamento</p>
                         <p className="text-sm font-semibold">{pagate.length}/{rate.length} ({percentuale}%)</p>
                       </div>
                     </div>
+                      );
+                    })()}
 
                     {/* Progress bar */}
                     <div className="px-4 pt-3 pb-1">
@@ -861,10 +877,17 @@ const BanchePage = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {rate.map((r) => (
-                            <TableRow key={r.id} className={`text-xs ${r.pagata ? "opacity-50" : ""}`}>
+                          {rate.map((r) => {
+                            const parts = r.data_scadenza.split("/");
+                            const scadDate = parts.length === 3 ? new Date(+parts[2], +parts[1] - 1, +parts[0]) : null;
+                            const isOverdue = !r.pagata && scadDate && scadDate < new Date();
+                            return (
+                            <TableRow key={r.id} className={`text-xs ${r.pagata ? "opacity-50" : isOverdue ? "bg-destructive/10" : ""}`}>
                               <TableCell className="py-1.5 text-[11px] text-muted-foreground">{r.numero_rata}</TableCell>
-                              <TableCell className="py-1.5 text-[11px] font-mono whitespace-nowrap">{r.data_scadenza}</TableCell>
+                              <TableCell className={`py-1.5 text-[11px] font-mono whitespace-nowrap ${isOverdue ? "text-destructive font-semibold" : ""}`}>
+                                {r.data_scadenza}
+                                {isOverdue && <span className="ml-1 text-[9px]">⚠</span>}
+                              </TableCell>
                               <TableCell className="py-1.5 text-[11px] font-mono text-right">{formatCurrency(r.importo_rata)}</TableCell>
                               <TableCell className="py-1.5 text-[11px] font-mono text-right">{formatCurrency(r.importo_capitale)}</TableCell>
                               <TableCell className="py-1.5 text-[11px] font-mono text-right text-muted-foreground">{formatCurrency(r.importo_interessi)}</TableCell>
@@ -878,7 +901,8 @@ const BanchePage = () => {
                                 />
                               </TableCell>
                             </TableRow>
-                          ))}
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
