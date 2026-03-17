@@ -32,7 +32,7 @@ import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil
 } from "lucide-react";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
@@ -102,6 +102,7 @@ export function CommessaDetailSheet({
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const [editingExpense, setEditingExpense] = useState<PurchaseInvoice | null>(null);
+  const [detailInvoice, setDetailInvoice] = useState<{ inv: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
 
   // -- Dati Commessa slot-based grid reorder --
   const isAdmin = true; // TODO: replace with actual admin check
@@ -661,7 +662,7 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoSaleKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={ricavoMap.map} onAssignCentro={ricavoMap.assign}
-                onRowClick={(inv) => openPdf(inv, "vendita")}
+                onRowClick={(inv) => setDetailInvoice({ inv, type: "vendita" })}
                 findXml={(k, name) => findXmlVendita(k, name)}
                 hasXml={hasXmlVendita}
                 onOpenXml={(record) => openXmlSheet(record, "vendita")}
@@ -702,7 +703,7 @@ export function CommessaDetailSheet({
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
                 onRemoveLink={onRemoveLink}
                 centri={centri} centroMap={costoMap.map} onAssignCentro={costoMap.assign}
-                onRowClick={(inv) => setEditingExpense(inv as PurchaseInvoice)}
+                onRowClick={(inv) => setDetailInvoice({ inv, type: "acquisto" })}
                 findXml={(k, name) => findXmlAcquisto(k, name)}
                 hasXml={hasXmlAcquisto}
                 onOpenXml={(record) => openXmlSheet(record, "acquisto")}
@@ -1204,7 +1205,132 @@ export function CommessaDetailSheet({
       tipo={xmlPickerInvoice?.type || "vendita"}
       onMatch={xmlPickerInvoice?.type === "acquisto" ? manualMatchAcquisto : manualMatchVendita}
     />
-  </>
+
+    {/* Invoice detail dialog with centro editing */}
+    {detailInvoice && (() => {
+      const inv = detailInvoice.inv;
+      const invType = detailInvoice.type;
+      const counterpart = invType === "vendita" ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
+      const centroTipo = invType === "vendita" ? "ricavo" as const : "costo" as const;
+      const centroMapRef = invType === "vendita" ? ricavoMap : costoMap;
+      const key = invType === "vendita" ? buildSalesXmlKey(inv.anno, inv.numero, (inv as SaleInvoice).suffisso) : `${inv.anno}-${inv.numero}`;
+      const hasRighe = invType === "vendita" && (inv as SaleInvoice).righe?.length > 1;
+
+      return (
+        <Dialog open={!!detailInvoice} onOpenChange={(o) => { if (!o) setDetailInvoice(null); }}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Receipt className="h-4 w-4" />
+                Fattura {inv.numero}/{inv.anno}
+              </DialogTitle>
+              <DialogDescription>
+                {invType === "vendita" ? "Vendita" : "Acquisto"} — {counterpart}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Info */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-xs text-muted-foreground block">Data</span>
+                  <span>{inv.data}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Stato</span>
+                  <span>{inv.stato || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Imponibile</span>
+                  <span className="font-mono">{formatCurrency(inv.imponibile)}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Totale</span>
+                  <span className="font-mono font-semibold">{formatCurrency(inv.totale)}</span>
+                </div>
+                {inv.cig && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block">CIG</span>
+                    <span className="font-mono text-xs">{inv.cig}</span>
+                  </div>
+                )}
+                {inv.descrizione && (
+                  <div className="col-span-2">
+                    <span className="text-xs text-muted-foreground block">Descrizione</span>
+                    <span className="text-xs leading-relaxed">{inv.descrizione}</span>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Centro di Costo/Ricavo */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5" />
+                  {invType === "vendita" ? "Centro Ricavo" : "Centro Costo"}
+                </h4>
+
+                {hasRighe ? (
+                  <div className="space-y-2">
+                    {(inv as SaleInvoice).righe.map((riga, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-2 rounded-lg border p-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs truncate">{riga.descrizione || `Riga ${idx + 1}`}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">{formatCurrency(riga.totale)}</p>
+                        </div>
+                        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <CentroCell
+                            invoiceKey={`${inv.anno}-${inv.numero}-${idx}`}
+                            tipo={centroTipo}
+                            centri={centri}
+                            centroMap={centroMapRef.map}
+                            onAssign={centroMapRef.assign}
+                            onRemove={centroMapRef.remove}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-lg border p-3" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-xs text-muted-foreground">Classificazione:</span>
+                    <CentroCell
+                      invoiceKey={key}
+                      tipo={centroTipo}
+                      centri={centri}
+                      centroMap={centroMapRef.map}
+                      onAssign={centroMapRef.assign}
+                      onRemove={centroMapRef.remove}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Quick actions */}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  openPdf(inv, invType);
+                }} className="text-xs gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  Vedi PDF
+                </Button>
+                {invType === "acquisto" && (
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setDetailInvoice(null);
+                    setEditingExpense(inv as PurchaseInvoice);
+                  }} className="text-xs gap-1.5">
+                    <Pencil className="h-3.5 w-3.5" />
+                    Modifica
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      );
+    })()}
+    </>
   );
 }
 
