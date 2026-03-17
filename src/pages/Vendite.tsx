@@ -13,7 +13,7 @@ import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -22,7 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, ChevronDown, AlertTriangle } from "lucide-react";
+import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +73,7 @@ const VenditePage = () => {
   const csvDragCounter = useRef(0);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
-  const [xmlExpanded, setXmlExpanded] = useState(false);
+  
   // Excel import collision state
   const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
@@ -589,78 +589,6 @@ const VenditePage = () => {
             </div>
           )}
 
-          {/* Collapsible unmatched XML */}
-          {xmlUnmatchedCount > 0 && (
-            <Collapsible open={xmlExpanded} onOpenChange={setXmlExpanded}>
-              <div className="flex items-center gap-2">
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-destructive hover:text-destructive gap-1">
-                    <ChevronDown className={`h-3 w-3 transition-transform ${xmlExpanded ? "rotate-180" : ""}`} />
-                    {xmlUnmatchedCount} XML non associati
-                  </Button>
-                </CollapsibleTrigger>
-                <div className="flex gap-1">
-                  {xmlDuplicateCount > 0 && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" title="Elimina file XML caricati più volte">
-                          <Trash2 className="h-3 w-3 mr-1" />Duplicati ({xmlDuplicateCount})
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Rimuovere {xmlDuplicateCount} XML duplicati?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Verranno eliminati {xmlDuplicateCount} file XML caricati più volte con lo stesso nome. Questa azione è irreversibile.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annulla</AlertDialogCancel>
-                          <AlertDialogAction onClick={removeDuplicates} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Elimina</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" title="Riprova associazione automatica XML" onClick={rematchAll}>
-                    <RefreshCw className="h-3 w-3 mr-1" />Riassocia
-                  </Button>
-                </div>
-              </div>
-              <CollapsibleContent>
-                <div className="border rounded-md mt-1.5 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="text-[10px] py-1 h-7">File</TableHead>
-                        <TableHead className="text-[10px] py-1 h-7">N° Doc</TableHead>
-                        <TableHead className="text-[10px] py-1 h-7">Cessionario</TableHead>
-                        <TableHead className="text-[10px] py-1 h-7 text-right">Importo</TableHead>
-                        <TableHead className="text-[10px] py-1 h-7">Data</TableHead>
-                        <TableHead className="text-[10px] py-1 h-7 w-[80px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {xmlRecords.filter((r) => !r.matched).map((r) => (
-                        <TableRow key={r.id} className="cursor-pointer hover:bg-muted/30" onClick={() => openXmlSheet(r)}>
-                          <TableCell className="text-[11px] py-1.5 font-mono max-w-[200px] truncate">{r.file_name}</TableCell>
-                          <TableCell className="text-[11px] py-1.5 font-mono">{r.numero_documento || `${r.numero}/${r.anno}`}</TableCell>
-                          <TableCell className="text-[11px] py-1.5 max-w-[200px] truncate">{r.cessionario_denominazione || "—"}</TableCell>
-                          <TableCell className="text-[11px] py-1.5 font-mono text-right">{r.importo_totale ? formatCurrency(r.importo_totale) : "—"}</TableCell>
-                          <TableCell className="text-[11px] py-1.5">{r.data_fattura || "—"}</TableCell>
-                          <TableCell className="py-1.5">
-                            <Button size="sm" variant="outline" className="h-5 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); openXmlSheet(r); }}>
-                              <Link2 className="h-3 w-3 mr-1" />Associa
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-
           {/* Row 2: Compact filters + DataTable toolbar */}
           <div className="flex flex-wrap items-center gap-2">
             <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
@@ -673,68 +601,165 @@ const VenditePage = () => {
           </div>
         </div>
 
-        {/* Table content */}
-        <div className="px-4 pb-4 pt-2">
-          <DataTable<SaleInvoice>
-            toolbarPortalRef={toolbarPortalRef}
-            columns={columns}
-            data={displayedSales}
-            defaultSort={{ key: "data", dir: "desc" }}
-            rowKey={(r) => `${r.anno}-${r.numero}-${r.suffisso}-${r.tipo}`}
-            onRowClick={setSelectedInvoice}
-            rowClassName={(r) => {
-              const nc = isNotaCredito(r);
-              const xml = hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso));
-              return [
-                nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
-                xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
-              ].filter(Boolean).join(" ");
-            }}
-            expandable={(r) => r.righe.length > 1}
-            renderExpandedContent={(r) => (
-              <div className="px-4 py-2">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-border/50">
-                      <TableHead className="text-[10px] font-semibold text-muted-foreground">Riga</TableHead>
-                      <TableHead className="text-[10px] font-semibold text-muted-foreground">Descrizione</TableHead>
-                      <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Imponibile</TableHead>
-                      <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">IVA</TableHead>
-                      <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Totale</TableHead>
-                      <TableHead className="text-[10px] font-semibold text-muted-foreground">CIG</TableHead>
-                      <TableHead className="text-[10px] font-semibold text-muted-foreground">Centro Ricavo</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                     {(Array.isArray(r.righe) ? r.righe : []).map((riga, idx) => {
+        {/* ── Schede: Ricevute e Documenti / Fatture XML ── */}
+        <div className="px-4 pt-3">
+          <Tabs defaultValue="documenti" className="w-full">
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="documenti" className="text-xs gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                Ricevute e Documenti
+              </TabsTrigger>
+              <TabsTrigger value="xml" className="text-xs gap-1.5">
+                <FileCode2 className="h-3.5 w-3.5" />
+                Fatture XML
+                {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px] ml-1 h-4 px-1">{xmlUnmatchedCount}</Badge>}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="documenti">
+              <DocumentiAcquistoSection tableOnly />
+            </TabsContent>
+
+            <TabsContent value="xml">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
+                  <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
+                  {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px]">{xmlUnmatchedCount} non assoc.</Badge>}
+                  <div className="ml-auto flex gap-1">
+                    {xmlDuplicateCount > 0 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3 mr-1" />Duplicati ({xmlDuplicateCount})
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Rimuovere {xmlDuplicateCount} XML duplicati?</AlertDialogTitle>
+                            <AlertDialogDescription>Verranno eliminati {xmlDuplicateCount} file XML caricati più volte con lo stesso nome.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annulla</AlertDialogCancel>
+                            <AlertDialogAction onClick={removeDuplicates} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Elimina</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    {xmlUnmatchedCount > 0 && (
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
+                        <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {xmlUnmatchedCount > 0 && (
+                  <div className="max-h-[300px] overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="text-[10px]">
+                          <TableHead className="h-7 text-[10px]">File</TableHead>
+                          <TableHead className="h-7 text-[10px]">N° Doc</TableHead>
+                          <TableHead className="h-7 text-[10px]">Cessionario</TableHead>
+                          <TableHead className="h-7 text-[10px] text-right">Importo</TableHead>
+                          <TableHead className="h-7 text-[10px]">Data</TableHead>
+                          <TableHead className="h-7 text-[10px] w-[80px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {xmlRecords.filter((r) => !r.matched).map((r) => (
+                          <TableRow key={r.id} className="cursor-pointer hover:bg-accent/50" onClick={() => openXmlSheet(r)}>
+                            <TableCell className="text-[11px] py-1 max-w-[180px] truncate">
+                              <FileText className="h-3 w-3 mr-1 inline text-muted-foreground" />
+                              {r.file_name}
+                            </TableCell>
+                            <TableCell className="text-[11px] py-1 font-mono">{r.numero_documento || `${r.numero}/${r.anno}`}</TableCell>
+                            <TableCell className="text-[11px] py-1 max-w-[200px] truncate">{r.cessionario_denominazione || "—"}</TableCell>
+                            <TableCell className="text-[11px] py-1 font-mono text-right">{r.importo_totale ? formatCurrency(r.importo_totale) : "—"}</TableCell>
+                            <TableCell className="text-[11px] py-1">{r.data_fattura || "—"}</TableCell>
+                            <TableCell className="py-1">
+                              <Button size="sm" variant="outline" className="h-5 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); openXmlSheet(r); }}>
+                                <Link2 className="h-3 w-3 mr-1" />Associa
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+                {xmlUnmatchedCount === 0 && xmlRecords.length > 0 && (
+                  <p className="text-xs text-muted-foreground py-2">Tutte le fatture XML sono associate. ✓</p>
+                )}
+                {xmlRecords.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-2">Nessuna fattura XML caricata. Usa il pulsante XML nell'header per caricare.</p>
+                )}
+                {/* Main invoices table */}
+                <div className="pt-2">
+                  <DataTable<SaleInvoice>
+                    toolbarPortalRef={toolbarPortalRef}
+                    columns={columns}
+                    data={displayedSales}
+                    defaultSort={{ key: "data", dir: "desc" }}
+                    rowKey={(r) => `${r.anno}-${r.numero}-${r.suffisso}-${r.tipo}`}
+                    onRowClick={setSelectedInvoice}
+                    rowClassName={(r) => {
                       const nc = isNotaCredito(r);
-                      const amtClass = nc ? "text-destructive" : "";
-                      return (
-                      <TableRow key={idx} className="border-b border-border/30">
-                        <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
-                        <TableCell className="text-[11px] max-w-[300px] whitespace-normal break-words leading-snug py-1.5">{riga.descrizione || "—"}</TableCell>
-                        <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
-                        <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imposta, nc)}</TableCell>
-                        <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.totale, nc)}</TableCell>
-                        <TableCell className="text-[11px] font-mono py-1.5">{riga.cig || "—"}</TableCell>
-                        <TableCell className="py-1.5">
-                          <CentroCell
-                            invoiceKey={`${r.anno}-${r.numero}-${idx}`}
-                            tipo="ricavo"
-                            centri={centri}
-                            centroMap={ricavoMap.map}
-                            onAssign={ricavoMap.assign}
-                            onRemove={ricavoMap.remove}
-                          />
-                        </TableCell>
-                      </TableRow>
-                      );
-                     })}
-                  </TableBody>
-                </Table>
+                      const xml = hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso));
+                      return [
+                        nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
+                        xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+                      ].filter(Boolean).join(" ");
+                    }}
+                    expandable={(r) => r.righe.length > 1}
+                    renderExpandedContent={(r) => (
+                      <div className="px-4 py-2">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-b border-border/50">
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Riga</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Descrizione</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Imponibile</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">IVA</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Totale</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">CIG</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Centro Ricavo</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(Array.isArray(r.righe) ? r.righe : []).map((riga, idx) => {
+                              const nc = isNotaCredito(r);
+                              const amtClass = nc ? "text-destructive" : "";
+                              return (
+                                <TableRow key={idx} className="border-b border-border/30">
+                                  <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
+                                  <TableCell className="text-[11px] max-w-[300px] whitespace-normal break-words leading-snug py-1.5">{riga.descrizione || "—"}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imposta, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.totale, nc)}</TableCell>
+                                  <TableCell className="text-[11px] font-mono py-1.5">{riga.cig || "—"}</TableCell>
+                                  <TableCell className="py-1.5">
+                                    <CentroCell
+                                      invoiceKey={`${r.anno}-${r.numero}-${idx}`}
+                                      tipo="ricavo"
+                                      centri={centri}
+                                      centroMap={ricavoMap.map}
+                                      onAssign={ricavoMap.assign}
+                                      onRemove={ricavoMap.remove}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  />
+                </div>
               </div>
-            )}
-          />
+            </TabsContent>
+          </Tabs>
         </div>
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="vendita" />
         <XmlInvoiceSheet record={selectedXml} open={!!selectedXml} onOpenChange={(open) => !open && setSelectedXml(null)} onDelete={deleteRecord} invoices={sales} xmlMap={xmlMap} tipo="vendita" onManualMatch={manualMatch} />
