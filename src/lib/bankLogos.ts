@@ -19,6 +19,10 @@ const BANK_LOGO_MAP: Record<string, string> = {
   "deutsche bank": "/bank-logos/deutsche-bank.png",
   "ing": "/bank-logos/ing.png",
   "sella": "/bank-logos/sella.png",
+  "widiba": "/bank-logos/widiba.png",
+  "illimity": "/bank-logos/illimity.png",
+  "popolare di sondrio": "/bank-logos/popolare-sondrio.png",
+  "popso": "/bank-logos/popolare-sondrio.png",
 };
 
 export function getBankLogoUrl(bankName: string): string | null {
