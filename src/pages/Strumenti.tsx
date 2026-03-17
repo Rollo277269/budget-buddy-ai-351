@@ -22,7 +22,7 @@ function ContiCorrentiTab() {
   const { conti, saveConto, deleteConto } = useContiCorrenti();
   const [editing, setEditing] = useState<ContoCorrente | null>(null);
 
-  const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" };
+  const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "", conto_addebito_id: "" };
 
   const handleSave = async () => {
     if (!editing) return;
