@@ -570,7 +570,7 @@ const VenditePage = () => {
                 <span className="text-[11px] font-medium">CSV / Excel</span>
               </div>
 
-              <DocumentiAcquistoSection dropZoneOnly compact />
+              <DocumentiAcquistoSection dropZoneOnly compact tipo="vendita" />
 
               {hasCentri && (
                 <Button size="sm" variant="outline" className="h-7 text-xs" title="Classifica automaticamente con intelligenza artificiale" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
