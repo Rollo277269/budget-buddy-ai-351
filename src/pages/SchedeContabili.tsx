@@ -447,6 +447,18 @@ function SchedaDetail({
 
       {/* Hidden PDF report */}
       <PdfReport tipo={tipo} nome={nome} rows={rows} stats={stats} />
+
+      <CommessaDetailSheet
+        commessa={commessa}
+        open={!!selectedCig}
+        onOpenChange={(open) => { if (!open) setSelectedCig(null); }}
+        allSales={allSales}
+        allPurchases={allPurchases}
+        manualLinks={links}
+        onAddLink={addLink}
+        onRemoveLink={removeLink}
+        onExpenseAdded={refreshLinks}
+      />
     </>
   );
 }
