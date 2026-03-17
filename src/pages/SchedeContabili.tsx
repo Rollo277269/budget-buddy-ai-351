@@ -268,19 +268,11 @@ function SchedaDetail({
     numero: "", oggetto: "", committente: "", assegnataria: "", cig: selectedCig,
   } : null;
 
-  return (
-    <>
-      {/* Screen content */}
-      <div className="space-y-5 scheda-screen-content">
-        {/* Export button */}
-        <div className="flex justify-end no-print">
-          <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5" title="Esporta scheda contabile in PDF">
-            <FileText className="h-3.5 w-3.5" />
-            Report
-          </Button>
-        </div>
-
-        {/* KPI */}
+    return (
+      <>
+        {/* Screen content */}
+        <div className="space-y-5 scheda-screen-content">
+          {/* KPI */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="rounded-lg border bg-card p-4 space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
