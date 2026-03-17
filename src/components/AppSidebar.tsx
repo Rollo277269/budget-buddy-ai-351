@@ -29,7 +29,7 @@ const defaultItems: MenuItem[] = [
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
   { title: "Bilancio", url: "/bilancio", icon: Scale },
   { title: "IVA", url: "/iva", icon: Receipt },
-  { title: "Banche", url: "/banche", icon: Landmark },
+  { title: "Conti", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: Briefcase },
   { title: "Gare", url: "/offerte", icon: Gavel },
   { title: "Riepiloghi per CIG", url: "/commesse", icon: FolderKanban },
