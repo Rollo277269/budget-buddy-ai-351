@@ -815,7 +815,15 @@ const BanchePage = () => {
                     </div>
 
                     {/* KPI row */}
-                    <div className="grid grid-cols-4 gap-0 border-b text-center">
+                    {(() => {
+                      const now = new Date();
+                      const scadute = rate.filter(r => {
+                        if (r.pagata) return false;
+                        const p = r.data_scadenza.split("/");
+                        return p.length === 3 && new Date(+p[2], +p[1] - 1, +p[0]) < now;
+                      });
+                      return (
+                    <div className="grid grid-cols-5 gap-0 border-b text-center">
                       <div className="p-3 border-r">
                         <p className="text-[10px] text-muted-foreground">Totale Piano</p>
                         <p className="text-sm font-semibold font-mono">{formatCurrency(totalePiano)}</p>
@@ -828,11 +836,19 @@ const BanchePage = () => {
                         <p className="text-[10px] text-muted-foreground">Debito Residuo</p>
                         <p className="text-sm font-semibold font-mono text-destructive">{formatCurrency(residuo)}</p>
                       </div>
+                      <div className="p-3 border-r">
+                        <p className="text-[10px] text-muted-foreground">Scadute</p>
+                        <p className={`text-sm font-semibold ${scadute.length > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                          {scadute.length > 0 ? `${scadute.length} ⚠` : "0"}
+                        </p>
+                      </div>
                       <div className="p-3">
                         <p className="text-[10px] text-muted-foreground">Avanzamento</p>
                         <p className="text-sm font-semibold">{pagate.length}/{rate.length} ({percentuale}%)</p>
                       </div>
                     </div>
+                      );
+                    })()}
 
                     {/* Progress bar */}
                     <div className="px-4 pt-3 pb-1">
