@@ -96,7 +96,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const [editingCigId, setEditingCigId] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
 
-  const centroLookup = useMemo(() => new Map(centriCosto.map(c => [c.codice, c.descrizione])), [centriCosto]);
+  const centroLookup = useMemo(() => new Map(centri.map(c => [c.codice, c.descrizione])), [centri]);
 
   const toggleCol = (key: ColumnKey) => {
     setVisibleCols(prev => {
