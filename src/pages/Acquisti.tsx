@@ -68,6 +68,8 @@ const AcquistiPage = () => {
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
   const [xmlExpanded, setXmlExpanded] = useState(false);
+  const [docSectionOpen, setDocSectionOpen] = useState(false);
+  const [xmlSectionOpen, setXmlSectionOpen] = useState(false);
   const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
