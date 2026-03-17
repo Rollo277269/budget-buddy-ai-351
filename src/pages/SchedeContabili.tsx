@@ -273,56 +273,95 @@ function SchedaDetail({
     numero: "", oggetto: "", committente: "", assegnataria: "", cig: selectedCig,
   } : null;
 
-    return (
+  const centroContext = tipo === "cliente" ? "vendite" : "acquisti";
+  const centroTipo = tipo === "cliente" ? "ricavo" : "costo";
+  const { map: centroMap } = useCentroMap(centroTipo as "costo" | "ricavo", centroContext as "vendite" | "acquisti");
+  const { centri } = useCentriData();
+
+  const CHART_COLORS = [
+    "hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))",
+    "hsl(var(--destructive))", "hsl(210 80% 50%)", "hsl(280 60% 50%)",
+    "hsl(170 60% 40%)", "hsl(30 80% 50%)", "hsl(330 60% 50%)", "hsl(200 70% 45%)",
+  ];
+
+  const centroChartData = useMemo(() => {
+    const invoices = tipo === "cliente"
+      ? allSales.filter((s) => s.cliente === nome)
+      : allPurchases.filter((p) => p.fornitore === nome);
+
+    const totals: Record<string, number> = {};
+    for (const inv of invoices) {
+      const key = `${inv.numero}-${inv.anno}`;
+      const codice = centroMap[key];
+      const label = codice
+        ? (centri.find((c) => c.codice === codice)?.descrizione || codice)
+        : "Non assegnato";
+      totals[label] = (totals[label] || 0) + Math.abs(inv.totale);
+    }
+
+    return Object.entries(totals)
+      .map(([name, value]) => ({ name, value: Math.round(value) }))
+      .sort((a, b) => b.value - a.value);
+  }, [tipo, nome, allSales, allPurchases, centroMap, centri]);
+
+  return (
       <>
         {/* Screen content */}
         <div className="space-y-5 scheda-screen-content">
-          {/* KPI */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="rounded-lg border bg-card p-4 space-y-1">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <TrendingUp className="h-3.5 w-3.5" />
-              {tipo === "cliente" ? "Fatturato" : "Dare"}
+          {/* KPI table + Centro chart side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Left: KPI summary table */}
+            <div className="rounded-lg border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <tbody>
+                  {[
+                    { label: tipo === "cliente" ? "Fatturato" : "Dare", value: stats.totaleDare, cls: "text-[hsl(var(--success))]" },
+                    { label: tipo === "fornitore" ? "Totale Acquisti" : "Avere", value: stats.totaleAvere, cls: "text-destructive" },
+                    { label: "Saldo", value: stats.saldo, cls: stats.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive" },
+                    { label: "Totale Imponibile", value: stats.totaleImponibile, cls: "" },
+                    { label: "Totale IVA", value: stats.totaleImposta, cls: "" },
+                  ].map((row, i) => (
+                    <tr key={i} className={i % 2 === 0 ? "bg-muted/30" : ""}>
+                      <td className="px-4 py-2.5 text-xs text-muted-foreground font-medium">{row.label}</td>
+                      <td className={`px-4 py-2.5 text-right font-mono text-sm font-semibold ${row.cls}`}>
+                        {formatCurrency(row.value)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="border-t">
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground font-medium">Documenti</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-sm">
+                      {stats.numFatture}
+                      <span className="text-[10px] text-muted-foreground ml-2">media {formatCurrency(stats.mediaImporto)}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <p className="text-lg font-semibold font-mono">{formatCurrency(stats.totaleDare)}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-4 space-y-1">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <TrendingDown className="h-3.5 w-3.5" />
-              {tipo === "fornitore" ? "Totale Acquisti" : "Avere"}
-            </div>
-            <p className="text-lg font-semibold font-mono">{formatCurrency(stats.totaleAvere)}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-4 space-y-1">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Scale className="h-3.5 w-3.5" />
-              Saldo
-            </div>
-            <p className={`text-lg font-semibold font-mono ${stats.saldo >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-              {formatCurrency(stats.saldo)}
-            </p>
-          </div>
-          <div className="rounded-lg border bg-card p-4 space-y-1">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Receipt className="h-3.5 w-3.5" />
-              Documenti
-            </div>
-            <p className="text-lg font-semibold">{stats.numFatture}</p>
-            <p className="text-[10px] text-muted-foreground">Media: {formatCurrency(stats.mediaImporto)}</p>
-          </div>
-        </div>
 
-        {/* Dettaglio imponibile/IVA */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border bg-card p-3 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Totale Imponibile</span>
-            <span className="font-mono text-sm font-semibold">{formatCurrency(stats.totaleImponibile)}</span>
+            {/* Right: Centro chart */}
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                {tipo === "cliente" ? "Fatturato per Centro di Ricavo" : "Acquisti per Centro di Costo"}
+              </h3>
+              {centroChartData.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">Nessun centro assegnato</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={centroChartData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                    <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: "0.5rem", border: "1px solid hsl(var(--border))", fontSize: "0.75rem" }} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={18} name="Importo">
+                      {centroChartData.map((_, idx) => (
+                        <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
-          <div className="rounded-lg border bg-card p-3 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Totale IVA</span>
-            <span className="font-mono text-sm font-semibold">{formatCurrency(stats.totaleImposta)}</span>
-          </div>
-        </div>
 
         {/* Grafico andamento saldo */}
         {rows.length > 1 && (() => {
