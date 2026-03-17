@@ -72,6 +72,43 @@ const AcquistiPage = () => {
   const [editingCigValue, setEditingCigValue] = useState("");
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
 
+  // ── Reconciliation data for payment columns ──
+  const [reconMap, setReconMap] = useState<Record<string, { paid: number; lastDate: string }>>({});
+  useEffect(() => {
+    (async () => {
+      const { data: recons } = await supabase
+        .from("bank_reconciliations")
+        .select("movement_id, invoice_anno, invoice_numero, invoice_type")
+        .eq("invoice_type", "acquisto");
+      if (!recons || recons.length === 0) { setReconMap({}); return; }
+
+      const movementIds = [...new Set(recons.map((r: any) => r.movement_id))];
+      const movements: Record<string, { importo: number; data: string }> = {};
+      for (let i = 0; i < movementIds.length; i += 500) {
+        const batch = movementIds.slice(i, i + 500);
+        const { data: movs } = await supabase
+          .from("bank_movements")
+          .select("id, importo, data")
+          .in("id", batch);
+        if (movs) movs.forEach((m: any) => { movements[m.id] = { importo: Math.abs(Number(m.importo)), data: m.data }; });
+      }
+
+      const map: Record<string, { paid: number; lastDate: string }> = {};
+      for (const r of recons as any[]) {
+        const key = `${r.invoice_anno}-${r.invoice_numero}`;
+        const mov = movements[r.movement_id];
+        if (!mov) continue;
+        if (!map[key]) {
+          map[key] = { paid: mov.importo, lastDate: mov.data };
+        } else {
+          map[key].paid += mov.importo;
+          if (mov.data > map[key].lastDate) map[key].lastDate = mov.data;
+        }
+      }
+      setReconMap(map);
+    })();
+  }, [purchases]);
+
   const displayedPurchases = useMemo(() => {
     if (!filters.centroCosto) return purchases;
     return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
