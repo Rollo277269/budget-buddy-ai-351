@@ -719,6 +719,114 @@ const BanchePage = () => {
         </div>
       }
 
+      {/* Finanziamenti section */}
+      {contiFinanziamento.length > 0 && allRate.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Banknote className="h-4 w-4" /> Prestiti e Finanziamenti
+          </h3>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {contiFinanziamento.map((conto) => {
+              const rate = allRate.filter(r => r.conto_id === conto.id);
+              if (rate.length === 0) return null;
+              const totalePiano = rate.reduce((a, r) => a + r.importo_rata, 0);
+              const pagate = rate.filter(r => r.pagata);
+              const pagato = pagate.reduce((a, r) => a + r.importo_rata, 0);
+              const residuo = rate.length > 0 ? rate[rate.length - 1].debito_residuo : 0;
+              const prossima = rate.find(r => !r.pagata);
+              const percentuale = totalePiano > 0 ? Math.round((pagato / totalePiano) * 100) : 0;
+
+              return (
+                <Card key={conto.id} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+                      <div className="flex items-center gap-2">
+                        <BankLogo bankName={conto.banca} tipo={conto.tipo} className="h-5 w-5" />
+                        <div>
+                          <span className="text-sm font-semibold">{conto.banca}</span>
+                          {conto.note && <span className="text-xs text-muted-foreground ml-2">— {conto.note}</span>}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">{rate.length} rate</Badge>
+                    </div>
+
+                    {/* KPI row */}
+                    <div className="grid grid-cols-4 gap-0 border-b text-center">
+                      <div className="p-3 border-r">
+                        <p className="text-[10px] text-muted-foreground">Totale Piano</p>
+                        <p className="text-sm font-semibold font-mono">{formatCurrency(totalePiano)}</p>
+                      </div>
+                      <div className="p-3 border-r">
+                        <p className="text-[10px] text-muted-foreground">Pagato</p>
+                        <p className="text-sm font-semibold font-mono text-[hsl(var(--success))]">{formatCurrency(pagato)}</p>
+                      </div>
+                      <div className="p-3 border-r">
+                        <p className="text-[10px] text-muted-foreground">Debito Residuo</p>
+                        <p className="text-sm font-semibold font-mono text-destructive">{formatCurrency(residuo)}</p>
+                      </div>
+                      <div className="p-3">
+                        <p className="text-[10px] text-muted-foreground">Avanzamento</p>
+                        <p className="text-sm font-semibold">{pagate.length}/{rate.length} ({percentuale}%)</p>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="px-4 pt-3 pb-1">
+                      <Progress value={percentuale} className="h-2" />
+                    </div>
+
+                    {/* Prossima rata */}
+                    {prossima && (
+                      <div className="px-4 py-2 text-xs text-muted-foreground">
+                        Prossima rata: <span className="font-medium text-foreground">{prossima.data_scadenza}</span> — <span className="font-mono font-medium">{formatCurrency(prossima.importo_rata)}</span>
+                      </div>
+                    )}
+
+                    {/* Rate table (compact, scrollable) */}
+                    <div className="max-h-[240px] overflow-auto">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
+                          <TableRow>
+                            <TableHead className="text-[10px] w-[30px]">#</TableHead>
+                            <TableHead className="text-[10px]">Scadenza</TableHead>
+                            <TableHead className="text-[10px] text-right">Rata</TableHead>
+                            <TableHead className="text-[10px] text-right">Capitale</TableHead>
+                            <TableHead className="text-[10px] text-right">Interessi</TableHead>
+                            <TableHead className="text-[10px] text-right">Residuo</TableHead>
+                            <TableHead className="text-[10px] w-[50px] text-center">Pagata</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rate.map((r) => (
+                            <TableRow key={r.id} className={`text-xs ${r.pagata ? "opacity-50" : ""}`}>
+                              <TableCell className="py-1.5 text-[11px] text-muted-foreground">{r.numero_rata}</TableCell>
+                              <TableCell className="py-1.5 text-[11px] font-mono whitespace-nowrap">{r.data_scadenza}</TableCell>
+                              <TableCell className="py-1.5 text-[11px] font-mono text-right">{formatCurrency(r.importo_rata)}</TableCell>
+                              <TableCell className="py-1.5 text-[11px] font-mono text-right">{formatCurrency(r.importo_capitale)}</TableCell>
+                              <TableCell className="py-1.5 text-[11px] font-mono text-right text-muted-foreground">{formatCurrency(r.importo_interessi)}</TableCell>
+                              <TableCell className="py-1.5 text-[11px] font-mono text-right">{formatCurrency(r.debito_residuo)}</TableCell>
+                              <TableCell className="py-1.5 text-center">
+                                <input
+                                  type="checkbox"
+                                  className="h-3.5 w-3.5 rounded accent-primary"
+                                  checked={r.pagata}
+                                  onChange={() => togglePagata(r.id, !r.pagata)}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {isLoading &&
       <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
