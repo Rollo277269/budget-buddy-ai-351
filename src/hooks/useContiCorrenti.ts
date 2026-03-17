@@ -52,7 +52,7 @@ export function useContiCorrenti() {
       // Insert
       const { error } = await supabase
         .from("conti_correnti" as any)
-        .insert({ tipo: conto.tipo, banca: conto.banca, iban: conto.iban, intestatario: conto.intestatario, note: conto.note } as any);
+        .insert({ tipo: conto.tipo, banca: conto.banca, iban: conto.iban, intestatario: conto.intestatario, note: conto.note, conto_addebito_id: conto.conto_addebito_id || null } as any);
       if (error) { toast.error("Errore inserimento conto"); return; }
       toast.success("Conto aggiunto");
     }
