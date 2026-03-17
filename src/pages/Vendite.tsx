@@ -366,6 +366,28 @@ const VenditePage = () => {
       { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imposta) : r.imposta), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
       { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.totale) : r.totale), 0); return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>; } },
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
+      { key: "importoPagato", label: "Importo Pagato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
+        const rec = reconMap[`${r.anno}-${r.numero}`];
+        if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+        return <span className="text-xs font-mono text-right block">{formatCurrency(rec.paid)}</span>;
+      }, summaryRender: (rows) => {
+        const sum = rows.reduce((s, r) => s + (reconMap[`${r.anno}-${r.numero}`]?.paid || 0), 0);
+        return sum ? <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span> : null;
+      }},
+      { key: "differenza", label: "Differenza", align: "right", sortable: true, defaultHidden: false, render: (r) => {
+        const rec = reconMap[`${r.anno}-${r.numero}`];
+        if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+        const diff = Math.round((r.totale - rec.paid) * 100) / 100;
+        if (Math.abs(diff) < 0.01) return <span className="text-xs font-mono text-right block text-[hsl(var(--success))]">0,00</span>;
+        return <span className={`text-xs font-mono text-right block ${diff > 0 ? "text-destructive" : "text-[hsl(var(--success))]"}`}>{formatCurrency(Math.abs(diff))}{diff > 0 ? "" : " +"}</span>;
+      }},
+      { key: "dataSaldo", label: "Data Saldo", sortable: true, defaultHidden: false, render: (r) => {
+        const rec = reconMap[`${r.anno}-${r.numero}`];
+        if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+        const diff = Math.round((r.totale - rec.paid) * 100) / 100;
+        if (Math.abs(diff) > 0.01) return <span className="text-xs text-muted-foreground italic">Parziale</span>;
+        return <span className="text-xs font-mono">{rec.lastDate}</span>;
+      }},
       {
         key: "xml", label: "XML", filterable: true,
         filterValue: (r) => hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso)) ? "sì" : "no",
