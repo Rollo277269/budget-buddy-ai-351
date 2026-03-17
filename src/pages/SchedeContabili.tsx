@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { parsePaymentTerms } from "@/lib/paymentTerms";
+import { supabase } from "@/integrations/supabase/client";
 import { useSearchParams } from "react-router-dom";
 import {
   ResponsiveContainer,
@@ -103,7 +104,8 @@ function buildRows(
   allSales: SaleInvoice[],
   allPurchases: PurchaseInvoice[],
   tipo: "cliente" | "fornitore",
-  nome: string
+  nome: string,
+  paymentDatesMap: Map<string, string> // key: "tipo-anno-numero" → payment date string
 ) {
   const entries: Omit<PrimaNotaRow, "saldo">[] = [];
 
@@ -140,21 +142,38 @@ function buildRows(
   const totaleDare = entries.reduce((a, e) => a + e.dare, 0);
   const totaleAvere = entries.reduce((a, e) => a + e.avere, 0);
 
-  // Compute payment timing stats using parsed payment terms
-  const daysDiffs: number[] = [];
+  // Compute payment timing: delay between actual payment date and calculated due date
+  const paymentDelays: number[] = [];
   for (const e of entries) {
+    // Extract anno and numero from "numero/anno" format
+    const parts = e.numero.split("/");
+    if (parts.length !== 2) continue;
+    const numero = parts[0];
+    const anno = parts[1];
+    const invoiceType = e.tipo === "vendita" ? "vendita" : "acquisto";
+    const key = `${invoiceType}-${anno}-${numero}`;
+    
+    const actualPaymentDateStr = paymentDatesMap.get(key);
+    if (!actualPaymentDateStr) continue;
+    
+    const actualPaymentDate = parseDate(actualPaymentDateStr);
+    if (!actualPaymentDate) continue;
+
+    // Get calculated due date (last installment)
     const parsed = parsePaymentTerms(e.scadenza, e.data);
     if (parsed) {
-      // Use the last installment (total days until full payment)
-      if (parsed.totalDays >= 0) daysDiffs.push(parsed.totalDays);
+      const delay = Math.round(
+        (actualPaymentDate.getTime() - parsed.lastDueDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      paymentDelays.push(delay);
     }
   }
 
-  const paymentTiming = daysDiffs.length > 0 ? {
-    min: Math.min(...daysDiffs),
-    max: Math.max(...daysDiffs),
-    avg: Math.round(daysDiffs.reduce((a, b) => a + b, 0) / daysDiffs.length),
-    count: daysDiffs.length,
+  const paymentTiming = paymentDelays.length > 0 ? {
+    min: Math.min(...paymentDelays),
+    max: Math.max(...paymentDelays),
+    avg: Math.round(paymentDelays.reduce((a, b) => a + b, 0) / paymentDelays.length),
+    count: paymentDelays.length,
   } : null;
 
   return {
@@ -304,9 +323,55 @@ function SchedaDetail({
   allSales: SaleInvoice[];
   allPurchases: PurchaseInvoice[];
 }) {
+  // Load payment dates from bank reconciliations
+  const [paymentDatesMap, setPaymentDatesMap] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    async function loadPaymentDates() {
+      const invoiceType = tipo === "cliente" ? "vendita" : "acquisto";
+      const { data, error } = await supabase
+        .from("bank_reconciliations")
+        .select("invoice_type, invoice_anno, invoice_numero, movement_id")
+        .eq("invoice_type", invoiceType);
+      if (error || !data || data.length === 0) return;
+
+      const movementIds = [...new Set(data.map((r: any) => r.movement_id))];
+      const map = new Map<string, string>();
+
+      for (let i = 0; i < movementIds.length; i += 100) {
+        const batch = movementIds.slice(i, i + 100);
+        const { data: movements } = await supabase
+          .from("bank_movements")
+          .select("id, data")
+          .in("id", batch);
+        if (movements) {
+          const movDateMap = new Map(movements.map((m: any) => [m.id, m.data]));
+          for (const rec of data) {
+            const movDate = movDateMap.get(rec.movement_id);
+            if (movDate && rec.invoice_anno && rec.invoice_numero) {
+              const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
+              const existing = map.get(key);
+              if (!existing) {
+                map.set(key, movDate);
+              } else {
+                const existDate = parseDate(existing);
+                const newDate = parseDate(movDate);
+                if (existDate && newDate && newDate > existDate) {
+                  map.set(key, movDate);
+                }
+              }
+            }
+          }
+        }
+      }
+      setPaymentDatesMap(map);
+    }
+    loadPaymentDates();
+  }, [tipo]);
+
   const { rows, stats } = useMemo(
-    () => buildRows(allSales, allPurchases, tipo, nome),
-    [allSales, allPurchases, tipo, nome]
+    () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap),
+    [allSales, allPurchases, tipo, nome, paymentDatesMap]
   );
 
   const [selectedCig, setSelectedCig] = useState<string | null>(null);
@@ -417,11 +482,12 @@ function SchedaDetail({
               </h3>
               {stats.paymentTiming ? (
                 <div className="space-y-3">
-                  {/* Star rating */}
+                  {/* Star rating based on delay (actual payment - due date) */}
                   {(() => {
                     const avg = stats.paymentTiming!.avg;
-                    // 0-30 days = 5 stars, 31-60 = 4, 61-90 = 3, 91-120 = 2, >120 = 1
-                    const stars = avg <= 30 ? 5 : avg <= 60 ? 4 : avg <= 90 ? 3 : avg <= 120 ? 2 : 1;
+                    // avg is delay in days: negative = early, 0 = on time, positive = late
+                    // ≤-15 (very early) = 5★, ≤0 (on time) = 5★, ≤15 = 4★, ≤30 = 3★, ≤60 = 2★, >60 = 1★
+                    const stars = avg <= 0 ? 5 : avg <= 15 ? 4 : avg <= 30 ? 3 : avg <= 60 ? 2 : 1;
                     const ratingLabels = ["", "Critica", "Scarsa", "Sufficiente", "Buona", "Eccellente"];
                     const ratingColors = ["", "text-destructive", "text-destructive", "text-[hsl(var(--warning))]", "text-primary", "text-[hsl(var(--success))]"];
                     return (
@@ -444,43 +510,64 @@ function SchedaDetail({
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="rounded-md bg-muted/40 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">Min</p>
-                      <p className="text-xl font-bold font-mono text-[hsl(var(--success))]">{stats.paymentTiming.min}</p>
+                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.min <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                        {stats.paymentTiming.min > 0 ? "+" : ""}{stats.paymentTiming.min}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">giorni</p>
                     </div>
                     <div className="rounded-md bg-muted/40 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">Media</p>
-                      <p className="text-xl font-bold font-mono text-primary">{stats.paymentTiming.avg}</p>
+                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.avg <= 0 ? "text-[hsl(var(--success))]" : stats.paymentTiming.avg <= 15 ? "text-primary" : "text-destructive"}`}>
+                        {stats.paymentTiming.avg > 0 ? "+" : ""}{stats.paymentTiming.avg}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">giorni</p>
                     </div>
                     <div className="rounded-md bg-muted/40 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">Max</p>
-                      <p className="text-xl font-bold font-mono text-destructive">{stats.paymentTiming.max}</p>
+                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.max <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                        {stats.paymentTiming.max > 0 ? "+" : ""}{stats.paymentTiming.max}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">giorni</p>
                     </div>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-muted-foreground">
-                      Calcolato su <span className="font-semibold">{stats.paymentTiming.count}</span> documenti con data fattura e scadenza
+                      Ritardo rispetto alla scadenza · <span className="font-semibold">{stats.paymentTiming.count}</span> fatture riconciliate
                     </p>
                   </div>
                   {/* Visual bar */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-[9px] text-muted-foreground font-mono">
-                      <span>{stats.paymentTiming.min}g</span>
-                      <span>{stats.paymentTiming.avg}g</span>
-                      <span>{stats.paymentTiming.max}g</span>
+                      <span>{stats.paymentTiming.min > 0 ? "+" : ""}{stats.paymentTiming.min}g</span>
+                      <span>{stats.paymentTiming.avg > 0 ? "+" : ""}{stats.paymentTiming.avg}g</span>
+                      <span>{stats.paymentTiming.max > 0 ? "+" : ""}{stats.paymentTiming.max}g</span>
                     </div>
                     <div className="relative h-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[hsl(var(--success))] via-primary to-destructive"
-                        style={{ width: "100%" }}
-                      />
-                      {stats.paymentTiming.max > 0 && (
-                        <div
-                          className="absolute top-0 h-full w-0.5 bg-foreground"
-                          style={{ left: `${(stats.paymentTiming.avg / stats.paymentTiming.max) * 100}%` }}
-                        />
-                      )}
+                      {(() => {
+                        const range = Math.max(1, stats.paymentTiming.max - stats.paymentTiming.min);
+                        const zeroPos = Math.max(0, Math.min(100, ((0 - stats.paymentTiming.min) / range) * 100));
+                        const avgPos = ((stats.paymentTiming.avg - stats.paymentTiming.min) / range) * 100;
+                        return (
+                          <>
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[hsl(var(--success))] via-primary to-destructive"
+                              style={{ width: "100%" }}
+                            />
+                            {/* Zero line (on-time marker) */}
+                            <div
+                              className="absolute top-0 h-full w-0.5 bg-foreground/50"
+                              style={{ left: `${zeroPos}%` }}
+                              title="Scadenza"
+                            />
+                            {/* Average marker */}
+                            <div
+                              className="absolute top-0 h-full w-1 bg-foreground rounded"
+                              style={{ left: `${avgPos}%` }}
+                              title="Media"
+                            />
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
