@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -27,6 +27,8 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, Scale, Receipt, Loader2, Users, Truck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
+import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 
 /* ── Helpers ── */
 
@@ -258,6 +260,14 @@ function SchedaDetail({
     [allSales, allPurchases, tipo, nome]
   );
 
+  const [selectedCig, setSelectedCig] = useState<string | null>(null);
+  const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
+  const handleCigClick = useCallback((cig: string) => setSelectedCig(cig), []);
+
+  const commessa = selectedCig ? {
+    numero: "", oggetto: "", committente: "", assegnataria: "", cig: selectedCig,
+  } : null;
+
   return (
     <>
       {/* Screen content */}
@@ -395,7 +405,14 @@ function SchedaDetail({
                       <TableCell className="font-mono text-[11px] py-2 whitespace-nowrap">{row.data}</TableCell>
                       <TableCell className="font-mono text-[11px] py-2">{row.numero}</TableCell>
                       <TableCell className="py-2 max-w-[260px] truncate text-[11px]">{row.descrizione}</TableCell>
-                      <TableCell className="font-mono text-[11px] py-2">{row.cig || "—"}</TableCell>
+                      <TableCell className="font-mono text-[11px] py-2">
+                        {row.cig ? (
+                          <span
+                            className="text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+                            onClick={() => handleCigClick(row.cig)}
+                          >{row.cig}</span>
+                        ) : "—"}
+                      </TableCell>
                       <TableCell className="font-mono text-[11px] py-2 whitespace-nowrap">{row.scadenza || "—"}</TableCell>
                       <TableCell className="py-2"><StatusBadge stato={row.stato} /></TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imponibile)}</TableCell>
@@ -430,6 +447,18 @@ function SchedaDetail({
 
       {/* Hidden PDF report */}
       <PdfReport tipo={tipo} nome={nome} rows={rows} stats={stats} />
+
+      <CommessaDetailSheet
+        commessa={commessa}
+        open={!!selectedCig}
+        onOpenChange={(open) => { if (!open) setSelectedCig(null); }}
+        allSales={allSales}
+        allPurchases={allPurchases}
+        manualLinks={links}
+        onAddLink={addLink}
+        onRemoveLink={removeLink}
+        onExpenseAdded={refreshLinks}
+      />
     </>
   );
 }
