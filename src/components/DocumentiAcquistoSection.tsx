@@ -45,14 +45,16 @@ interface ColumnDef {
   defaultVisible: boolean;
 }
 
-const ALL_COLUMNS: ColumnDef[] = [
-  { key: "descrizione", label: "Documento", defaultVisible: true },
-  { key: "fornitore", label: "Fornitore", defaultVisible: true },
-  { key: "data", label: "Data", defaultVisible: true },
-  { key: "importo", label: "Importo", defaultVisible: true },
-  { key: "cig", label: "CIG", defaultVisible: true },
-  { key: "centro_costo", label: "Centro Costo", defaultVisible: true },
-];
+function buildColumns(tipo: "acquisto" | "vendita"): ColumnDef[] {
+  return [
+    { key: "descrizione", label: "Documento", defaultVisible: true },
+    { key: "fornitore", label: tipo === "vendita" ? "Cliente" : "Fornitore", defaultVisible: true },
+    { key: "data", label: "Data", defaultVisible: true },
+    { key: "importo", label: "Importo", defaultVisible: true },
+    { key: "cig", label: "CIG", defaultVisible: true },
+    { key: "centro_costo", label: tipo === "vendita" ? "Centro Ricavo" : "Centro Costo", defaultVisible: true },
+  ];
+}
 
 type SortDir = "asc" | "desc" | null;
 
@@ -65,7 +67,9 @@ interface Props {
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
   const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto(tipo);
-  const { centriCosto } = useCentriData();
+  const { centriCosto, centriRicavo } = useCentriData();
+  const centri = tipo === "vendita" ? centriRicavo : centriCosto;
+  const ALL_COLUMNS = useMemo(() => buildColumns(tipo), [tipo]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<DocumentoAcquisto | null>(null);
@@ -92,7 +96,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const [editingCigId, setEditingCigId] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
 
-  const centroLookup = useMemo(() => new Map(centriCosto.map(c => [c.codice, c.descrizione])), [centriCosto]);
+  const centroLookup = useMemo(() => new Map(centri.map(c => [c.codice, c.descrizione])), [centri]);
 
   const toggleCol = (key: ColumnKey) => {
     setVisibleCols(prev => {
@@ -274,7 +278,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             )}
             {visibleCols.has("fornitore") && (
               <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("fornitore")}>
-                <span className="flex items-center gap-1">Fornitore <SortIcon col="fornitore" /></span>
+                <span className="flex items-center gap-1">{ALL_COLUMNS.find(c => c.key === "fornitore")?.label} <SortIcon col="fornitore" /></span>
               </TableHead>
             )}
             {visibleCols.has("data") && (
@@ -294,7 +298,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             )}
             {visibleCols.has("centro_costo") && (
               <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("centro_costo")}>
-                <span className="flex items-center gap-1">Centro Costo <SortIcon col="centro_costo" /></span>
+                <span className="flex items-center gap-1">{ALL_COLUMNS.find(c => c.key === "centro_costo")?.label} <SortIcon col="centro_costo" /></span>
               </TableHead>
             )}
             <TableHead className="text-[11px] h-8 w-[100px]"></TableHead>
@@ -345,13 +349,13 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
               )}
               {visibleCols.has("centro_costo") && (
                 <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
-                  {centriCosto.length > 0 ? (
+                  {centri.length > 0 ? (
                     <Select value={doc.centro_costo || ""} onValueChange={(val) => updateCentroCosto(doc.id, val)}>
                       <SelectTrigger className="h-6 text-[10px] w-[160px]">
                         <SelectValue placeholder="—" />
                       </SelectTrigger>
                       <SelectContent>
-                        {centriCosto.map((c) => (
+                        {centri.map((c) => (
                           <SelectItem key={c.id} value={c.codice} className="text-xs">
                             <span className="font-mono">{c.codice}</span>
                             <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
