@@ -64,6 +64,7 @@ function ContiCorrentiTab() {
                   <option value="carta_credito">Carta di Credito</option>
                   <option value="finanziamento">Finanziamento</option>
                   <option value="crediti_fiscali">Crediti Fiscali</option>
+                  <option value="anticipo_presidente">Anticipo Presidente</option>
                 </select>
               </div>
               <div className="space-y-1">
