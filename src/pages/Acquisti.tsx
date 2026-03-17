@@ -578,7 +578,7 @@ const AcquistiPage = () => {
               </div>
             </TabsContent>
           </Tabs>
-
+        </div>
 
 
         <InvoiceDetailSheet invoice={selectedInvoice} open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)} type="acquisto" />
