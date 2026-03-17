@@ -9,6 +9,7 @@ export interface ContoCorrente {
   iban: string;
   intestatario: string;
   note: string;
+  conto_addebito_id: string;
 }
 
 export function useContiCorrenti() {
