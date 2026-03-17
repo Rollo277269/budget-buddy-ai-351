@@ -212,6 +212,7 @@ export type Database = {
       conti_correnti: {
         Row: {
           banca: string
+          conto_addebito_id: string | null
           created_at: string
           iban: string
           id: string
@@ -221,6 +222,7 @@ export type Database = {
         }
         Insert: {
           banca: string
+          conto_addebito_id?: string | null
           created_at?: string
           iban: string
           id?: string
@@ -230,6 +232,7 @@ export type Database = {
         }
         Update: {
           banca?: string
+          conto_addebito_id?: string | null
           created_at?: string
           iban?: string
           id?: string
