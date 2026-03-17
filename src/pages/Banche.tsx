@@ -609,7 +609,7 @@ const BanchePage = () => {
               {conti.map((c) =>
               <SelectItem key={c.id} value={c.id}>
                   <span className="flex items-center gap-1.5">
-                    {c.tipo === "carta_credito" ? <CreditCard className="h-3 w-3" /> : <Landmark className="h-3 w-3" />}
+                    <BankLogo bankName={c.banca} tipo={c.tipo} className="h-4 w-4" />
                     {c.banca} — {c.iban.slice(-4)}
                   </span>
                 </SelectItem>
