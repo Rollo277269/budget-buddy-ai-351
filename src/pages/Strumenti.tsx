@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Settings, Landmark, FileText, Plus, Trash2, Save, Building2, TrendingUp, TrendingDown, Pencil, Check, X, GripVertical, Tag, ChevronDown, ChevronRight, FolderOpen, Download, Upload } from "lucide-react";
+import { CigIntegrityCheck } from "@/components/CigIntegrityCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1211,6 +1212,7 @@ const StrumentiPage = () => {
       <Separator />
       <UploadFattureSection />
       <ExportImportSection />
+      <CigIntegrityCheck />
     </div>
   );
 };
