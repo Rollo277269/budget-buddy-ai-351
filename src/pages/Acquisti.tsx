@@ -47,7 +47,7 @@ function StatusBadge({ stato }: {stato: string;}) {
 const AcquistiPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { purchases, allSales, allPurchases, loading, filters, setFilters, filterOptions } = useInvoiceData();
+  const { purchases, allSales, allPurchases, loading, filters, setFilters, filterOptions, refresh: refreshInvoices } = useInvoiceData();
 
   // Read centroCosto from URL on mount
   useEffect(() => {
