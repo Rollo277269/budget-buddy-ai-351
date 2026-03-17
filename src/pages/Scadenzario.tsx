@@ -1,9 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { useRateFinanziamento } from "@/hooks/useRateFinanziamento";
+import { useContiCorrenti } from "@/hooks/useContiCorrenti";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
-import { AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle2, Landmark } from "lucide-react";
 
 function parseDate(d: string): Date | null {
   if (!d) return null;
@@ -13,7 +15,7 @@ function parseDate(d: string): Date | null {
 }
 
 interface ScadenzaRow {
-  tipo: "credito" | "debito";
+  tipo: "credito" | "debito" | "finanziamento";
   numero: string;
   soggetto: string;
   totale: number;
@@ -35,9 +37,12 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
   },
   {
     key: "tipo", label: "Tipo", sortable: true, filterable: true,
-    render: (r) => <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>
+    render: (r) => {
+      if (r.tipo === "finanziamento") return <Badge className="bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] text-[10px]"><Landmark className="h-3 w-3 mr-1" />Rata</Badge>;
+      return <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>;
+    }
   },
-  { key: "numero", label: "N° Fattura", sortable: true, render: (r) => <span className="text-xs font-mono">{r.numero}</span> },
+  { key: "numero", label: "N° / Rata", sortable: true, render: (r) => <span className="text-xs font-mono">{r.numero}</span> },
   { key: "soggetto", label: "Soggetto", filterable: true, render: (r) => <span className="text-xs truncate max-w-[200px] block">{r.soggetto}</span> },
   { key: "scadenza", label: "Scadenza", sortable: true, render: (r) => <span className="text-xs">{r.scadenza}</span> },
   {
@@ -56,9 +61,13 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
 
 export default function ScadenzarioPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
+  const { rate, loading: loadingRate } = useRateFinanziamento();
+  const { conti } = useContiCorrenti();
+
+  const contiMap = new Map(conti.filter(c => c.tipo === "finanziamento").map(c => [c.id, c]));
 
   const rows: ScadenzaRow[] = (() => {
-    if (loading) return [];
+    if (loading || loadingRate) return [];
     const now = new Date();
     const result: ScadenzaRow[] = [];
 
@@ -91,15 +100,37 @@ export default function ScadenzarioPage() {
       }
     });
 
+    // Add unpaid finanziamento installments
+    rate.filter(r => !r.pagata).forEach((r) => {
+      const d = parseDate(r.data_scadenza);
+      const days = d ? Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 9999;
+      const stato = d ? (days < 0 ? "scaduta" : days <= 30 ? "in_scadenza" : "regolare") : "regolare";
+      const conto = contiMap.get(r.conto_id);
+      if (stato !== "regolare") {
+        result.push({
+          tipo: "finanziamento",
+          numero: `Rata ${r.numero_rata}`,
+          soggetto: conto ? conto.banca : "Finanziamento",
+          totale: r.importo_rata,
+          scadenza: r.data_scadenza,
+          scadenzaDate: d,
+          giorniRimasti: days,
+          stato,
+          cig: "",
+        });
+      }
+    });
+
     return result.sort((a, b) => a.giorniRimasti - b.giorniRimasti);
   })();
 
   const totCrediti = rows.filter((r) => r.tipo === "credito").reduce((s, r) => s + r.totale, 0);
   const totDebiti = rows.filter((r) => r.tipo === "debito").reduce((s, r) => s + r.totale, 0);
+  const totRate = rows.filter((r) => r.tipo === "finanziamento").reduce((s, r) => s + r.totale, 0);
   const scadute = rows.filter((r) => r.stato === "scaduta").length;
   const inScadenza = rows.filter((r) => r.stato === "in_scadenza").length;
 
-  if (loading) {
+  if (loading || loadingRate) {
     return (
       <div className="flex items-center justify-center h-40">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -109,7 +140,7 @@ export default function ScadenzarioPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Scadute</p>
@@ -134,12 +165,18 @@ export default function ScadenzarioPage() {
             <p className="text-lg font-bold font-mono text-expense">{formatCurrency(totDebiti)}</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Rate finanziamento</p>
+            <p className="text-lg font-bold font-mono text-expense">{formatCurrency(totRate)}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <DataTable<ScadenzaRow>
         columns={scadenzaCols}
         data={rows}
-        rowKey={(r) => `${r.tipo}-${r.numero}`} />
+        rowKey={(r) => `${r.tipo}-${r.numero}-${r.soggetto}`} />
     </div>
   );
 }
