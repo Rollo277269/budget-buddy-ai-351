@@ -349,13 +349,13 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
               )}
               {visibleCols.has("centro_costo") && (
                 <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
-                  {centriCosto.length > 0 ? (
+                  {centri.length > 0 ? (
                     <Select value={doc.centro_costo || ""} onValueChange={(val) => updateCentroCosto(doc.id, val)}>
                       <SelectTrigger className="h-6 text-[10px] w-[160px]">
                         <SelectValue placeholder="—" />
                       </SelectTrigger>
                       <SelectContent>
-                        {centriCosto.map((c) => (
+                        {centri.map((c) => (
                           <SelectItem key={c.id} value={c.codice} className="text-xs">
                             <span className="font-mono">{c.codice}</span>
                             <span className="text-muted-foreground ml-1">- {c.descrizione}</span>
