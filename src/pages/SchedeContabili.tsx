@@ -98,7 +98,7 @@ function buildRows(
     });
   }
 
-  entries.sort((a, b) => a.dataSort - b.dataSort);
+  entries.sort((a, b) => b.dataSort - a.dataSort);
 
   let saldo = 0;
   const rows: PrimaNotaRow[] = entries.map((e) => {
