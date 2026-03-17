@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
-import { Upload, FileSpreadsheet, Trash2, Check, X, Calendar } from "lucide-react";
+import { Upload, FileSpreadsheet, Trash2, Check, X, Calendar, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
 import { useRateFinanziamento, RataFinanziamento } from "@/hooks/useRateFinanziamento";
@@ -16,14 +17,11 @@ interface Props {
 function parseDate(val: any): string {
   if (!val) return "";
   if (typeof val === "number") {
-    // Excel serial date
     const d = new Date((val - 25569) * 86400 * 1000);
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
   }
   const s = String(val).trim();
-  // Already dd/mm/yyyy
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) return s;
-  // yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
     const [y, m, d] = s.substring(0, 10).split("-");
     return `${d}/${m}/${y}`;
@@ -38,10 +36,35 @@ function findCol(headers: string[], ...patterns: string[]): number {
   });
 }
 
+interface EditingRata {
+  id: string;
+  numero_rata: string;
+  data_scadenza: string;
+  importo_rata: string;
+  importo_capitale: string;
+  importo_interessi: string;
+  debito_residuo: string;
+  note: string;
+}
+
+function rataToEditing(r: RataFinanziamento): EditingRata {
+  return {
+    id: r.id,
+    numero_rata: String(r.numero_rata),
+    data_scadenza: r.data_scadenza,
+    importo_rata: String(r.importo_rata),
+    importo_capitale: String(r.importo_capitale),
+    importo_interessi: String(r.importo_interessi),
+    debito_residuo: String(r.debito_residuo),
+    note: r.note,
+  };
+}
+
 export function PianoAmmortamentoUpload({ contoId, bancaName }: Props) {
-  const { rate, loading, importRate, togglePagata, deleteRateForConto } = useRateFinanziamento(contoId);
+  const { rate, loading, importRate, togglePagata, updateRata, deleteRateForConto } = useRateFinanziamento(contoId);
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [editingRata, setEditingRata] = useState<EditingRata | null>(null);
 
   const handleFile = async (file: File) => {
     const { read, utils } = await import("xlsx");
@@ -109,6 +132,20 @@ export function PianoAmmortamentoUpload({ contoId, bancaName }: Props) {
     e.target.value = "";
   };
 
+  const handleSaveEdit = async () => {
+    if (!editingRata) return;
+    await updateRata(editingRata.id, {
+      numero_rata: parseInt(editingRata.numero_rata) || 0,
+      data_scadenza: editingRata.data_scadenza,
+      importo_rata: parseFloat(editingRata.importo_rata) || 0,
+      importo_capitale: parseFloat(editingRata.importo_capitale) || 0,
+      importo_interessi: parseFloat(editingRata.importo_interessi) || 0,
+      debito_residuo: parseFloat(editingRata.debito_residuo) || 0,
+      note: editingRata.note,
+    });
+    setEditingRata(null);
+  };
+
   if (loading) return null;
 
   return (
@@ -156,10 +193,12 @@ export function PianoAmmortamentoUpload({ contoId, bancaName }: Props) {
                     <TableHead className="text-right">Interessi</TableHead>
                     <TableHead className="text-right">Residuo</TableHead>
                     <TableHead className="w-16 text-center">Pagata</TableHead>
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rate.map((r) => {
+                    const isEditing = editingRata?.id === r.id;
                     const isOverdue = !r.pagata && (() => {
                       const parts = r.data_scadenza.split("/");
                       if (parts.length === 3) {
@@ -168,6 +207,75 @@ export function PianoAmmortamentoUpload({ contoId, bancaName }: Props) {
                       }
                       return false;
                     })();
+
+                    if (isEditing) {
+                      return (
+                        <TableRow key={r.id} className="bg-accent/30">
+                          <TableCell className="p-1">
+                            <Input
+                              value={editingRata.numero_rata}
+                              onChange={(e) => setEditingRata({ ...editingRata, numero_rata: e.target.value })}
+                              className="h-7 text-xs text-center w-12"
+                            />
+                          </TableCell>
+                          <TableCell className="p-1">
+                            <Input
+                              value={editingRata.data_scadenza}
+                              onChange={(e) => setEditingRata({ ...editingRata, data_scadenza: e.target.value })}
+                              className="h-7 text-xs w-24"
+                              placeholder="dd/mm/yyyy"
+                            />
+                          </TableCell>
+                          <TableCell className="p-1">
+                            <Input
+                              value={editingRata.importo_rata}
+                              onChange={(e) => setEditingRata({ ...editingRata, importo_rata: e.target.value })}
+                              className="h-7 text-xs text-right w-20"
+                              type="number"
+                              step="0.01"
+                            />
+                          </TableCell>
+                          <TableCell className="p-1">
+                            <Input
+                              value={editingRata.importo_capitale}
+                              onChange={(e) => setEditingRata({ ...editingRata, importo_capitale: e.target.value })}
+                              className="h-7 text-xs text-right w-20"
+                              type="number"
+                              step="0.01"
+                            />
+                          </TableCell>
+                          <TableCell className="p-1">
+                            <Input
+                              value={editingRata.importo_interessi}
+                              onChange={(e) => setEditingRata({ ...editingRata, importo_interessi: e.target.value })}
+                              className="h-7 text-xs text-right w-20"
+                              type="number"
+                              step="0.01"
+                            />
+                          </TableCell>
+                          <TableCell className="p-1">
+                            <Input
+                              value={editingRata.debito_residuo}
+                              onChange={(e) => setEditingRata({ ...editingRata, debito_residuo: e.target.value })}
+                              className="h-7 text-xs text-right w-20"
+                              type="number"
+                              step="0.01"
+                            />
+                          </TableCell>
+                          <TableCell className="text-center p-1">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-primary" onClick={handleSaveEdit}>
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                          <TableCell className="p-1">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground" onClick={() => setEditingRata(null)}>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
                     return (
                       <TableRow key={r.id} className={r.pagata ? "opacity-50" : isOverdue ? "bg-destructive/5" : ""}>
                         <TableCell className="text-center text-xs font-mono">{r.numero_rata}</TableCell>
@@ -184,6 +292,16 @@ export function PianoAmmortamentoUpload({ contoId, bancaName }: Props) {
                             onClick={() => togglePagata(r.id, !r.pagata)}
                           >
                             {r.pagata ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 hover:!opacity-100"
+                            onClick={() => setEditingRata(rataToEditing(r))}
+                          >
+                            <Pencil className="h-3 w-3" />
                           </Button>
                         </TableCell>
                       </TableRow>
