@@ -328,38 +328,39 @@ function SchedaDetail({
 
   useEffect(() => {
     async function loadPaymentDates() {
-      const invoiceType = tipo === "cliente" ? "vendita" : "acquisto";
+      // Fetch ALL reconciliations (both vendita and acquisto) so we cover all invoices
       const { data, error } = await supabase
         .from("bank_reconciliations")
-        .select("invoice_type, invoice_anno, invoice_numero, movement_id")
-        .eq("invoice_type", invoiceType);
+        .select("invoice_type, invoice_anno, invoice_numero, movement_id");
       if (error || !data || data.length === 0) return;
 
       const movementIds = [...new Set(data.map((r: any) => r.movement_id))];
-      const map = new Map<string, string>();
+      const movDateMap = new Map<string, string>();
 
-      for (let i = 0; i < movementIds.length; i += 100) {
-        const batch = movementIds.slice(i, i + 100);
+      for (let i = 0; i < movementIds.length; i += 500) {
+        const batch = movementIds.slice(i, i + 500);
         const { data: movements } = await supabase
           .from("bank_movements")
           .select("id, data")
           .in("id", batch);
         if (movements) {
-          const movDateMap = new Map(movements.map((m: any) => [m.id, m.data]));
-          for (const rec of data) {
-            const movDate = movDateMap.get(rec.movement_id);
-            if (movDate && rec.invoice_anno && rec.invoice_numero) {
-              const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
-              const existing = map.get(key);
-              if (!existing) {
-                map.set(key, movDate);
-              } else {
-                const existDate = parseDate(existing);
-                const newDate = parseDate(movDate);
-                if (existDate && newDate && newDate > existDate) {
-                  map.set(key, movDate);
-                }
-              }
+          movements.forEach((m: any) => movDateMap.set(m.id, m.data));
+        }
+      }
+
+      const map = new Map<string, string>();
+      for (const rec of data as any[]) {
+        const movDate = movDateMap.get(rec.movement_id);
+        if (movDate && rec.invoice_anno && rec.invoice_numero && rec.invoice_type) {
+          const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
+          const existing = map.get(key);
+          if (!existing) {
+            map.set(key, movDate);
+          } else {
+            const existDate = parseDate(existing);
+            const newDate = parseDate(movDate);
+            if (existDate && newDate && newDate > existDate) {
+              map.set(key, movDate);
             }
           }
         }
@@ -367,7 +368,7 @@ function SchedaDetail({
       setPaymentDatesMap(map);
     }
     loadPaymentDates();
-  }, [tipo]);
+  }, [tipo, nome]);
 
   const { rows, stats } = useMemo(
     () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap),
