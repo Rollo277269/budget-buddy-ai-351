@@ -1,0 +1,1 @@
+ALTER TABLE public.conti_correnti ADD COLUMN conto_addebito_id uuid DEFAULT NULL;

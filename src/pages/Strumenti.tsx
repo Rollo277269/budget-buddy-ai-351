@@ -22,7 +22,7 @@ function ContiCorrentiTab() {
   const { conti, saveConto, deleteConto } = useContiCorrenti();
   const [editing, setEditing] = useState<ContoCorrente | null>(null);
 
-  const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "" };
+  const empty: ContoCorrente = { id: "", tipo: "conto_corrente", banca: "", iban: "", intestatario: "", note: "", conto_addebito_id: "" };
 
   const handleSave = async () => {
     if (!editing) return;
@@ -82,6 +82,20 @@ function ContiCorrentiTab() {
                 <Label className="text-xs">Note</Label>
                 <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
               </div>
+              {editing.tipo === "finanziamento" && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Conto di addebito rate</Label>
+                  <select
+                    value={editing.conto_addebito_id}
+                    onChange={(e) => setEditing({ ...editing, conto_addebito_id: e.target.value })}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <option value="">— Nessuno —</option>
+                    {conti.filter(c => c.tipo === "conto_corrente").map(c => (
+                      <option key={c.id} value={c.id}>{c.banca} — {c.iban.slice(-8)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={() => setEditing(null)}>Annulla</Button>
@@ -110,6 +124,10 @@ function ContiCorrentiTab() {
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
+                    {c.tipo === "finanziamento" && c.conto_addebito_id && (() => {
+                      const ca = conti.find(x => x.id === c.conto_addebito_id);
+                      return ca ? <p className="text-xs text-muted-foreground">Addebito su: <span className="font-medium">{ca.banca}</span></p> : null;
+                    })()}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica conto" onClick={() => setEditing(c)}>

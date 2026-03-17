@@ -9,6 +9,7 @@ export interface ContoCorrente {
   iban: string;
   intestatario: string;
   note: string;
+  conto_addebito_id: string;
 }
 
 export function useContiCorrenti() {
@@ -31,6 +32,7 @@ export function useContiCorrenti() {
       iban: d.iban,
       intestatario: d.intestatario || "",
       note: d.note || "",
+      conto_addebito_id: d.conto_addebito_id || "",
     })));
     setLoading(false);
   }, []);
@@ -42,7 +44,7 @@ export function useContiCorrenti() {
       // Update
       const { error } = await supabase
         .from("conti_correnti" as any)
-        .update({ tipo: conto.tipo, banca: conto.banca, iban: conto.iban, intestatario: conto.intestatario, note: conto.note } as any)
+        .update({ tipo: conto.tipo, banca: conto.banca, iban: conto.iban, intestatario: conto.intestatario, note: conto.note, conto_addebito_id: conto.conto_addebito_id || null } as any)
         .eq("id", conto.id);
       if (error) { toast.error("Errore aggiornamento conto"); return; }
       toast.success("Conto aggiornato");
@@ -50,7 +52,7 @@ export function useContiCorrenti() {
       // Insert
       const { error } = await supabase
         .from("conti_correnti" as any)
-        .insert({ tipo: conto.tipo, banca: conto.banca, iban: conto.iban, intestatario: conto.intestatario, note: conto.note } as any);
+        .insert({ tipo: conto.tipo, banca: conto.banca, iban: conto.iban, intestatario: conto.intestatario, note: conto.note, conto_addebito_id: conto.conto_addebito_id || null } as any);
       if (error) { toast.error("Errore inserimento conto"); return; }
       toast.success("Conto aggiunto");
     }
