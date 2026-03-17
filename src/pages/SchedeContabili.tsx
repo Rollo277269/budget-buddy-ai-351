@@ -365,12 +365,22 @@ function SchedaDetail({
 
         {/* Grafico andamento saldo */}
         {rows.length > 1 && (() => {
-          const chartData = rows.map((r) => ({
-            data: r.data,
-            Dare: Math.round(r.dare),
-            Avere: Math.round(r.avere),
-            Saldo: Math.round(r.saldo),
-          }));
+          const chartData = rows.map((r) => {
+            const d = parseDate(r.data);
+            return {
+              data: r.data,
+              anno: d ? String(d.getFullYear()) : r.data,
+              Dare: Math.round(r.dare),
+              Avere: Math.round(r.avere),
+              Saldo: Math.round(r.saldo),
+            };
+          });
+          // Only show tick for first occurrence of each year
+          const seenYears = new Set<string>();
+          const yearTicks = chartData.reduce<number[]>((acc, item, idx) => {
+            if (!seenYears.has(item.anno)) { seenYears.add(item.anno); acc.push(idx); }
+            return acc;
+          }, []);
           return (
             <div className="rounded-xl border bg-card p-5">
               <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
@@ -378,7 +388,7 @@ function SchedaDetail({
               </h3>
               <ResponsiveContainer width="100%" height={260}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
-                  <XAxis dataKey="data" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                  <XAxis dataKey="anno" tick={{ fontSize: 10 }} ticks={yearTicks.map(i => chartData[i]?.anno)} interval={0} />
                   <YAxis
                     tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                     tick={{ fontSize: 10 }}
