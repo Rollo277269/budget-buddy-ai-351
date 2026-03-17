@@ -923,8 +923,6 @@ const StrumentiPage = () => {
         </TabsContent>
       </Tabs>
 
-      <Separator />
-      <UploadFattureSection />
     </div>);
 
 };
