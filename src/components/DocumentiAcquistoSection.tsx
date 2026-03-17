@@ -121,6 +121,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const getSortValue = (doc: DocumentoAcquisto, key: ColumnKey): string | number => {
     switch (key) {
       case "descrizione": return (doc.descrizione || doc.file_name || "").toLowerCase();
+      case "file_name": return (doc.file_name || "").toLowerCase();
       case "fornitore": return (doc.fornitore || "").toLowerCase();
       case "data": return doc.data_documento || "";
       case "importo": return doc.importo || 0;
