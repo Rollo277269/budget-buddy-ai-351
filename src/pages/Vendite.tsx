@@ -473,7 +473,8 @@ const VenditePage = () => {
       },
       { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
       { key: "dataScadenza", label: "Data Scadenza", render: (r) => {
-        const parsed = parsePaymentTerms(r.scadenza, r.data);
+        const scadenza = r.scadenza?.trim() ? r.scadenza : "Vista fattura";
+        const parsed = parsePaymentTerms(scadenza, r.data);
         if (!parsed) return <span className="text-xs text-muted-foreground">—</span>;
         return (
           <div className="text-xs space-y-0.5">
