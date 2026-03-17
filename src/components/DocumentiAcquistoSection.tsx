@@ -67,7 +67,9 @@ interface Props {
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
   const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig } = useDocumentiAcquisto(tipo);
-  const { centriCosto } = useCentriData();
+  const { centriCosto, centriRicavo } = useCentriData();
+  const centri = tipo === "vendita" ? centriRicavo : centriCosto;
+  const ALL_COLUMNS = useMemo(() => buildColumns(tipo), [tipo]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<DocumentoAcquisto | null>(null);
