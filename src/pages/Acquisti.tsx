@@ -201,20 +201,22 @@ const AcquistiPage = () => {
               autoFocus
               value={editingCigValue}
               onChange={(e) => setEditingCigValue(e.target.value.toUpperCase())}
-              onKeyDown={(e) => {
+              onKeyDown={async (e) => {
                 if (e.key === "Enter") {
-                  supabase.from("fatture_acquisto").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero).then(() => {
-                    r.cig = editingCigValue;
-                    toast.success("CIG salvato");
-                  });
+                  e.preventDefault();
+                  await supabase.from("fatture_acquisto").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero);
+                  toast.success("CIG salvato");
                   setEditingCigKey(null);
+                  refreshInvoices();
                 } else if (e.key === "Escape") setEditingCigKey(null);
               }}
               className="h-6 w-[110px] px-1 text-[11px] font-mono border rounded bg-background"
             />
-            <button className="p-0.5 text-primary hover:text-primary/80" onClick={() => {
-              supabase.from("fatture_acquisto").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero).then(() => { r.cig = editingCigValue; toast.success("CIG salvato"); });
+            <button className="p-0.5 text-primary hover:text-primary/80" onClick={async () => {
+              await supabase.from("fatture_acquisto").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero);
+              toast.success("CIG salvato");
               setEditingCigKey(null);
+              refreshInvoices();
             }}><Check className="h-3 w-3" /></button>
             <button className="p-0.5 text-muted-foreground hover:text-foreground" onClick={() => setEditingCigKey(null)}><X className="h-3 w-3" /></button>
           </span>
