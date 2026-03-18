@@ -41,6 +41,7 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
   {
     key: "tipo", label: "Tipo", sortable: true, filterable: true,
     render: (r) => {
+      if (r.tipo === "credito_fiscale") return <Badge className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-[10px]"><Landmark className="h-3 w-3 mr-1" />Cred. Fiscale</Badge>;
       if (r.tipo === "finanziamento") return <Badge className="bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] text-[10px]"><Landmark className="h-3 w-3 mr-1" />Rata</Badge>;
       return <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>;
     }
