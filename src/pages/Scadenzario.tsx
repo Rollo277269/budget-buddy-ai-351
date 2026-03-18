@@ -18,7 +18,7 @@ function parseDate(d: string): Date | null {
 }
 
 interface ScadenzaRow {
-  tipo: "credito" | "debito" | "finanziamento";
+  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale";
   numero: string;
   soggetto: string;
   totale: number;
