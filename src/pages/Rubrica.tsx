@@ -26,6 +26,8 @@ const emptyContatto: ContattoRubrica = {
   tipo: "cliente",
   partita_iva: "",
   email: "",
+  pec: "",
+  codice_sdi: "",
   telefono: "",
   indirizzo: "",
   note: "",
