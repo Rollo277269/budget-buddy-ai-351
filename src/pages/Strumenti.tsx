@@ -141,7 +141,7 @@ function ContiCorrentiTab() {
                     </Button>
                   </div>
                 </div>
-                {c.tipo === "finanziamento" &&
+                {(c.tipo === "finanziamento" || c.tipo === "crediti_fiscali") &&
             <PianoAmmortamentoUpload contoId={c.id} bancaName={c.banca} />
             }
               </CardContent>
