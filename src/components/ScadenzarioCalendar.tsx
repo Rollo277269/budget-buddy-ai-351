@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface CalendarEvent {
-  tipo: "credito" | "debito" | "finanziamento";
+  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale";
   numero: string;
   soggetto: string;
   totale: number;
