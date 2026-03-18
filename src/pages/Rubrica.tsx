@@ -264,12 +264,29 @@ export default function RubricaPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Denominazione</TableHead>
-                  <TableHead className="text-xs w-[100px]">Tipo</TableHead>
-                  <TableHead className="text-xs">P.IVA</TableHead>
-                  <TableHead className="text-xs">Email</TableHead>
-                  <TableHead className="text-xs">Telefono</TableHead>
-                  <TableHead className="text-xs">Note</TableHead>
+                  {([
+                    ["denominazione", "Denominazione"],
+                    ["tipo", "Tipo"],
+                    ["partita_iva", "P.IVA"],
+                    ["email", "Email"],
+                    ["telefono", "Telefono"],
+                    ["note", "Note"],
+                  ] as [SortKey, string][]).map(([key, label]) => (
+                    <TableHead
+                      key={key}
+                      className={`text-xs cursor-pointer select-none hover:bg-muted/50 transition-colors ${key === "tipo" ? "w-[100px]" : ""}`}
+                      onClick={() => toggleSort(key)}
+                    >
+                      <div className="flex items-center gap-1">
+                        {label}
+                        {sortKey === key ? (
+                          sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-30" />
+                        )}
+                      </div>
+                    </TableHead>
+                  ))}
                   <TableHead className="text-xs w-[70px]"></TableHead>
                 </TableRow>
               </TableHeader>
