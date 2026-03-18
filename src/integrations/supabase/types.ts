@@ -557,6 +557,8 @@ export type Database = {
           indirizzo: string
           note: string
           partita_iva: string
+          sede_legale: Json
+          sede_operativa: Json
           telefono: string
           tipo: string
         }
@@ -568,6 +570,8 @@ export type Database = {
           indirizzo?: string
           note?: string
           partita_iva?: string
+          sede_legale?: Json
+          sede_operativa?: Json
           telefono?: string
           tipo?: string
         }
@@ -579,6 +583,8 @@ export type Database = {
           indirizzo?: string
           note?: string
           partita_iva?: string
+          sede_legale?: Json
+          sede_operativa?: Json
           telefono?: string
           tipo?: string
         }
