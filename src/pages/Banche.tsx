@@ -380,7 +380,7 @@ const BanchePage = () => {
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
   const { findXml } = useXmlInvoices(allPurchases, "acquisto");
-  const contiFinanziamento = useMemo(() => conti.filter(c => c.tipo === "finanziamento"), [conti]);
+  const contiFinanziamento = useMemo(() => conti.filter(c => c.tipo === "finanziamento" || c.tipo === "crediti_fiscali"), [conti]);
   const { rate: allRate, togglePagata, refetch: refetchRate } = useRateFinanziamento();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
