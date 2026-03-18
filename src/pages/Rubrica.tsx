@@ -1,0 +1,290 @@
+import { useState, useMemo, useCallback } from "react";
+import { useRubrica, ContattoRubrica } from "@/hooks/useRubrica";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil } from "lucide-react";
+import { toast } from "sonner";
+
+const TIPO_LABELS: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "outline" }> = {
+  cliente: { label: "Cliente", icon: UserCheck, variant: "secondary" },
+  fornitore: { label: "Fornitore", icon: UserCog, variant: "outline" },
+  socio: { label: "Socio", icon: Handshake, variant: "default" },
+};
+
+const emptyContatto: ContattoRubrica = {
+  id: "",
+  denominazione: "",
+  tipo: "cliente",
+  partita_iva: "",
+  email: "",
+  telefono: "",
+  indirizzo: "",
+  note: "",
+};
+
+export default function RubricaPage() {
+  const { contatti, loading, saveContatto, deleteContatto, importFromInvoices } = useRubrica();
+  const [editing, setEditing] = useState<ContattoRubrica | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterTipo, setFilterTipo] = useState<string>("");
+  const [importing, setImporting] = useState(false);
+
+  const filtered = useMemo(() => {
+    let list = contatti;
+    if (filterTipo) list = list.filter((c) => c.tipo === filterTipo);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.denominazione.toLowerCase().includes(q) ||
+          c.partita_iva.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q) ||
+          c.note.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [contatti, search, filterTipo]);
+
+  const counts = useMemo(() => ({
+    totale: contatti.length,
+    clienti: contatti.filter((c) => c.tipo === "cliente").length,
+    fornitori: contatti.filter((c) => c.tipo === "fornitore").length,
+    soci: contatti.filter((c) => c.tipo === "socio").length,
+  }), [contatti]);
+
+  const handleSave = useCallback(async () => {
+    if (!editing) return;
+    if (!editing.denominazione.trim()) {
+      toast.error("La denominazione è obbligatoria");
+      return;
+    }
+    await saveContatto(editing);
+    setEditing(null);
+  }, [editing, saveContatto]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!confirm("Eliminare questo contatto?")) return;
+      await deleteContatto(id);
+    },
+    [deleteContatto]
+  );
+
+  const handleImport = useCallback(async () => {
+    setImporting(true);
+    try {
+      await importFromInvoices();
+    } finally {
+      setImporting(false);
+    }
+  }, [importFromInvoices]);
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Users className="h-5 w-5 text-primary" />
+          <h1 className="text-xl font-bold tracking-tight">Rubrica</h1>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleImport} disabled={importing}>
+            <Download className="h-3.5 w-3.5 mr-1" />
+            {importing ? "Importazione..." : "Importa da fatture"}
+          </Button>
+          <Button size="sm" onClick={() => setEditing({ ...emptyContatto })}>
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Nuovo contatto
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card className="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" onClick={() => setFilterTipo("")}>
+          <CardContent className="p-3 text-center">
+            <p className="text-2xl font-bold">{counts.totale}</p>
+            <p className="text-xs text-muted-foreground">Totale</p>
+          </CardContent>
+        </Card>
+        <Card className={`cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all ${filterTipo === "cliente" ? "ring-1 ring-primary" : ""}`} onClick={() => setFilterTipo(filterTipo === "cliente" ? "" : "cliente")}>
+          <CardContent className="p-3 text-center">
+            <p className="text-2xl font-bold">{counts.clienti}</p>
+            <p className="text-xs text-muted-foreground">Clienti</p>
+          </CardContent>
+        </Card>
+        <Card className={`cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all ${filterTipo === "fornitore" ? "ring-1 ring-primary" : ""}`} onClick={() => setFilterTipo(filterTipo === "fornitore" ? "" : "fornitore")}>
+          <CardContent className="p-3 text-center">
+            <p className="text-2xl font-bold">{counts.fornitori}</p>
+            <p className="text-xs text-muted-foreground">Fornitori</p>
+          </CardContent>
+        </Card>
+        <Card className={`cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all ${filterTipo === "socio" ? "ring-1 ring-primary" : ""}`} onClick={() => setFilterTipo(filterTipo === "socio" ? "" : "socio")}>
+          <CardContent className="p-3 text-center">
+            <p className="text-2xl font-bold">{counts.soci}</p>
+            <p className="text-xs text-muted-foreground">Soci</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Edit form */}
+      {editing && (
+        <Card className="border-primary/30">
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Denominazione *</Label>
+                <Input
+                  value={editing.denominazione}
+                  onChange={(e) => setEditing({ ...editing, denominazione: e.target.value })}
+                  placeholder="Ragione sociale o nome"
+                  className="h-9 text-sm"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Tipo</Label>
+                <select
+                  value={editing.tipo}
+                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as ContattoRubrica["tipo"] })}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="cliente">Cliente</option>
+                  <option value="fornitore">Fornitore</option>
+                  <option value="socio">Socio (Cliente + Fornitore)</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Partita IVA</Label>
+                <Input
+                  value={editing.partita_iva}
+                  onChange={(e) => setEditing({ ...editing, partita_iva: e.target.value })}
+                  placeholder="IT01234567890"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Email</Label>
+                <Input
+                  value={editing.email}
+                  onChange={(e) => setEditing({ ...editing, email: e.target.value })}
+                  placeholder="email@example.com"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Telefono</Label>
+                <Input
+                  value={editing.telefono}
+                  onChange={(e) => setEditing({ ...editing, telefono: e.target.value })}
+                  placeholder="+39 ..."
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Indirizzo</Label>
+                <Input
+                  value={editing.indirizzo}
+                  onChange={(e) => setEditing({ ...editing, indirizzo: e.target.value })}
+                  placeholder="Via, Città"
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Note</Label>
+              <Input
+                value={editing.note}
+                onChange={(e) => setEditing({ ...editing, note: e.target.value })}
+                placeholder="Note aggiuntive"
+                className="h-9 text-sm"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
+                <X className="h-3.5 w-3.5 mr-1" />Annulla
+              </Button>
+              <Button size="sm" onClick={handleSave}>
+                <Save className="h-3.5 w-3.5 mr-1" />Salva
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cerca per nome, P.IVA, email..."
+          className="pl-9 h-9 text-sm"
+        />
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Caricamento...</div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-40 rounded-xl border bg-card text-muted-foreground">
+          <Users className="h-10 w-10 mb-3 opacity-30" />
+          <p className="text-sm">{contatti.length === 0 ? "Rubrica vuota — importa i contatti dalle fatture" : "Nessun risultato"}</p>
+        </div>
+      ) : (
+        <Card>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Denominazione</TableHead>
+                  <TableHead className="text-xs w-[100px]">Tipo</TableHead>
+                  <TableHead className="text-xs">P.IVA</TableHead>
+                  <TableHead className="text-xs">Email</TableHead>
+                  <TableHead className="text-xs">Telefono</TableHead>
+                  <TableHead className="text-xs">Note</TableHead>
+                  <TableHead className="text-xs w-[70px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((c) => {
+                  const info = TIPO_LABELS[c.tipo] || TIPO_LABELS.cliente;
+                  const Icon = info.icon;
+                  return (
+                    <TableRow key={c.id} className="group">
+                      <TableCell className="text-sm font-medium py-2">{c.denominazione}</TableCell>
+                      <TableCell className="py-2">
+                        <Badge variant={info.variant} className="text-[10px] gap-1">
+                          <Icon className="h-3 w-3" />
+                          {info.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs py-2 text-muted-foreground font-mono">{c.partita_iva || "—"}</TableCell>
+                      <TableCell className="text-xs py-2 text-muted-foreground">{c.email || "—"}</TableCell>
+                      <TableCell className="text-xs py-2 text-muted-foreground">{c.telefono || "—"}</TableCell>
+                      <TableCell className="text-xs py-2 text-muted-foreground max-w-[200px] truncate">{c.note || "—"}</TableCell>
+                      <TableCell className="py-2">
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica" onClick={() => setEditing(c)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" title="Elimina" onClick={() => handleDelete(c.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
