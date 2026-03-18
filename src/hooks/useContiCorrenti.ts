@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 export interface ContoCorrente {
   id: string;
-  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali" | "anticipo_presidente";
+  tipo: "conto_corrente" | "carta_credito" | "finanziamento" | "crediti_fiscali" | "anticipo_presidente" | "cassa_contanti" | "bolli";
   banca: string;
   iban: string;
   intestatario: string;
