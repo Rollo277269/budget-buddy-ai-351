@@ -202,6 +202,7 @@ export function useRubrica() {
       return 0;
     }
 
+    const entries = Array.from(toInsert.values());
     // Separate new inserts from existing contacts to upgrade to socio
     const newEntries: typeof entries = [];
     const upgradeToSocio: typeof entries = [];
