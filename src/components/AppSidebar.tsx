@@ -27,6 +27,7 @@ const defaultItems: MenuItem[] = [
   { title: "Vendite", url: "/vendite", icon: FileOutput },
   { title: "Acquisti", url: "/acquisti", icon: FileInput },
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
+  { title: "Rubrica", url: "/rubrica", icon: Users },
   { title: "Bilancio", url: "/bilancio", icon: Scale },
   { title: "IVA", url: "/iva", icon: Receipt },
   { title: "Conti", url: "/banche", icon: Landmark },
