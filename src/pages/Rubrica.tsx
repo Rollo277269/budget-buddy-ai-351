@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil } from "lucide-react";
+import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
+
+type SortKey = "denominazione" | "tipo" | "partita_iva" | "email" | "telefono" | "note";
+type SortDir = "asc" | "desc";
 
 const TIPO_LABELS: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "outline" }> = {
   cliente: { label: "Cliente", icon: UserCheck, variant: "secondary" },
