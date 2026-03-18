@@ -202,11 +202,31 @@ export function useRubrica() {
       return 0;
     }
 
-    const entries = Array.from(toInsert.values());
+    // Separate new inserts from existing contacts to upgrade to socio
+    const newEntries: typeof entries = [];
+    const upgradeToSocio: typeof entries = [];
+    for (const e of entries) {
+      const key = e.denominazione.toLowerCase().trim();
+      const existing = contatti.find((c) => c.denominazione.toLowerCase().trim() === key);
+      if (existing && e.tipo === "socio") {
+        upgradeToSocio.push(e);
+      } else if (!existing) {
+        newEntries.push(e);
+      }
+    }
+
+    // Update existing contacts to socio
+    for (const e of upgradeToSocio) {
+      const existing = contatti.find((c) => c.denominazione.toLowerCase().trim() === e.denominazione.toLowerCase().trim());
+      if (existing) {
+        await supabase.from("rubrica" as any).update({ tipo: "socio" } as any).eq("id", existing.id);
+      }
+    }
+
     const batchSize = 50;
     let inserted = 0;
-    for (let i = 0; i < entries.length; i += batchSize) {
-      const batch = entries.slice(i, i + batchSize).map((e) => ({
+    for (let i = 0; i < newEntries.length; i += batchSize) {
+      const batch = newEntries.slice(i, i + batchSize).map((e) => ({
         denominazione: e.denominazione,
         tipo: e.tipo,
         partita_iva: e.partita_iva,
@@ -215,8 +235,8 @@ export function useRubrica() {
       if (!error) inserted += batch.length;
     }
 
-    toast.success(`${inserted} contatti importati`);
-    await fetchContatti();
+    const total = inserted + upgradeToSocio.length;
+    toast.success(total > 0 ? `${inserted} contatti importati, ${upgradeToSocio.length} aggiornati a Socio` : "Nessun nuovo contatto da importare");
     return inserted;
   }, [contatti, fetchContatti]);
 
