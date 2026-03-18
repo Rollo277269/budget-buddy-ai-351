@@ -35,6 +35,19 @@ export default function RubricaPage() {
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("");
   const [importing, setImporting] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("denominazione");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const toggleSort = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        return key;
+      }
+      setSortDir("asc");
+      return key;
+    });
+  }, []);
 
   const filtered = useMemo(() => {
     let list = contatti;
@@ -49,8 +62,15 @@ export default function RubricaPage() {
           c.note.toLowerCase().includes(q)
       );
     }
-    return list;
-  }, [contatti, search, filterTipo]);
+    // Sort
+    const sorted = [...list].sort((a, b) => {
+      const aVal = (a[sortKey] || "").toLowerCase();
+      const bVal = (b[sortKey] || "").toLowerCase();
+      const cmp = aVal.localeCompare(bVal, "it");
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [contatti, search, filterTipo, sortKey, sortDir]);
 
   const counts = useMemo(() => ({
     totale: contatti.length,
