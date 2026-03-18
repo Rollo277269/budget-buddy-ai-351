@@ -67,7 +67,7 @@ export default function ScadenzarioPage() {
   const { rate, loading: loadingRate } = useRateFinanziamento();
   const { conti } = useContiCorrenti();
 
-  const contiMap = new Map(conti.filter(c => c.tipo === "finanziamento").map(c => [c.id, c]));
+  const contiMap = new Map(conti.filter(c => c.tipo === "finanziamento" || c.tipo === "crediti_fiscali").map(c => [c.id, c]));
 
   const rows: ScadenzaRow[] = (() => {
     if (loading || loadingRate) return [];

@@ -85,7 +85,7 @@ function ContiCorrentiTab() {
                 <Label className="text-xs">Note</Label>
                 <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
               </div>
-              {editing.tipo === "finanziamento" &&
+              {(editing.tipo === "finanziamento" || editing.tipo === "crediti_fiscali") &&
             <div className="space-y-1">
                   <Label className="text-xs">Conto di addebito rate</Label>
                   <select
@@ -127,7 +127,7 @@ function ContiCorrentiTab() {
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
-                    {c.tipo === "finanziamento" && c.conto_addebito_id && (() => {
+                    {(c.tipo === "finanziamento" || c.tipo === "crediti_fiscali") && c.conto_addebito_id && (() => {
                   const ca = conti.find((x) => x.id === c.conto_addebito_id);
                   return ca ? <p className="text-xs text-muted-foreground">Addebito su: <span className="font-medium">{ca.banca}</span></p> : null;
                 })()}
@@ -141,7 +141,7 @@ function ContiCorrentiTab() {
                     </Button>
                   </div>
                 </div>
-                {c.tipo === "finanziamento" &&
+                {(c.tipo === "finanziamento" || c.tipo === "crediti_fiscali") &&
             <PianoAmmortamentoUpload contoId={c.id} bancaName={c.banca} />
             }
               </CardContent>
