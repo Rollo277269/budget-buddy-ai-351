@@ -59,6 +59,8 @@ export function useRubrica() {
         tipo: d.tipo as ContattoRubrica["tipo"],
         partita_iva: d.partita_iva || "",
         email: d.email || "",
+        pec: d.pec || "",
+        codice_sdi: d.codice_sdi || "",
         telefono: d.telefono || "",
         indirizzo: d.indirizzo || "",
         note: d.note || "",
