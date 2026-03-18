@@ -189,6 +189,7 @@ export function ScadenzarioCalendar({ events }: Props) {
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-income" />Crediti</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-expense" />Debiti</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-accent-foreground" />Rate</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" />Cred. Fiscali</span>
           <span className="flex items-center gap-1"><AlertTriangle className="h-2.5 w-2.5 text-destructive" />Scadute</span>
           <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5 text-[hsl(var(--warning))]" />In scadenza</span>
         </div>
