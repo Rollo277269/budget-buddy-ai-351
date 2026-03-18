@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface CalendarEvent {
-  tipo: "credito" | "debito" | "finanziamento";
+  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale";
   numero: string;
   soggetto: string;
   totale: number;
@@ -34,9 +34,11 @@ function getMonday(d: Date) {
 function EventDot({ event }: { event: CalendarEvent }) {
   const color = event.tipo === "credito"
     ? "bg-income"
-    : event.tipo === "finanziamento"
-      ? "bg-accent-foreground"
-      : "bg-expense";
+    : event.tipo === "credito_fiscale"
+      ? "bg-primary"
+      : event.tipo === "finanziamento"
+        ? "bg-accent-foreground"
+        : "bg-expense";
   return (
     <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", color)} title={`${event.soggetto} — ${formatCurrency(event.totale)}`} />
   );
@@ -53,9 +55,9 @@ function EventCard({ event }: { event: CalendarEvent }) {
       "bg-muted/50 border-border"
     )}>
       <div className="flex items-center gap-1">
-        {event.tipo === "finanziamento" && <Landmark className="h-2.5 w-2.5 shrink-0" />}
-        {isOverdue && event.tipo !== "finanziamento" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
-        {isWarning && event.tipo !== "finanziamento" && !isOverdue && <Clock className="h-2.5 w-2.5 shrink-0" />}
+        {(event.tipo === "finanziamento" || event.tipo === "credito_fiscale") && <Landmark className="h-2.5 w-2.5 shrink-0" />}
+        {isOverdue && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
+        {isWarning && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && !isOverdue && <Clock className="h-2.5 w-2.5 shrink-0" />}
         <span className="truncate font-medium">{event.soggetto}</span>
       </div>
       <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : "text-expense")}>
@@ -291,7 +293,9 @@ export function ScadenzarioCalendar({ events }: Props) {
                   )}>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex flex-col items-center">
-                        {ev.tipo === "finanziamento" ? (
+                        {ev.tipo === "credito_fiscale" ? (
+                          <Badge className="bg-primary text-primary-foreground text-[10px]">Cred. Fiscale</Badge>
+                        ) : ev.tipo === "finanziamento" ? (
                           <Badge className="bg-accent text-accent-foreground text-[10px]">Rata</Badge>
                         ) : (
                           <Badge variant={ev.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">

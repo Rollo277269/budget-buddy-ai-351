@@ -18,7 +18,7 @@ function parseDate(d: string): Date | null {
 }
 
 interface ScadenzaRow {
-  tipo: "credito" | "debito" | "finanziamento";
+  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale";
   numero: string;
   soggetto: string;
   totale: number;
@@ -41,6 +41,7 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
   {
     key: "tipo", label: "Tipo", sortable: true, filterable: true,
     render: (r) => {
+      if (r.tipo === "credito_fiscale") return <Badge className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-[10px]"><Landmark className="h-3 w-3 mr-1" />Cred. Fiscale</Badge>;
       if (r.tipo === "finanziamento") return <Badge className="bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] text-[10px]"><Landmark className="h-3 w-3 mr-1" />Rata</Badge>;
       return <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>;
     }
@@ -110,10 +111,11 @@ export default function ScadenzarioPage() {
       const stato = d ? (days < 0 ? "scaduta" : days <= 30 ? "in_scadenza" : "regolare") : "regolare";
       const conto = contiMap.get(r.conto_id);
       if (stato !== "regolare") {
+        const isCredFisc = conto?.tipo === "crediti_fiscali";
         result.push({
-          tipo: "finanziamento",
-          numero: `Rata ${r.numero_rata}`,
-          soggetto: conto ? conto.banca : "Finanziamento",
+          tipo: isCredFisc ? "credito_fiscale" : "finanziamento",
+          numero: isCredFisc ? `Credito ${r.numero_rata}` : `Rata ${r.numero_rata}`,
+          soggetto: conto ? conto.banca : (isCredFisc ? "Credito Fiscale" : "Finanziamento"),
           totale: r.importo_rata,
           scadenza: r.data_scadenza,
           scadenzaDate: d,
@@ -129,7 +131,7 @@ export default function ScadenzarioPage() {
 
   const totCrediti = rows.filter((r) => r.tipo === "credito").reduce((s, r) => s + r.totale, 0);
   const totDebiti = rows.filter((r) => r.tipo === "debito").reduce((s, r) => s + r.totale, 0);
-  const totRate = rows.filter((r) => r.tipo === "finanziamento").reduce((s, r) => s + r.totale, 0);
+  const totRate = rows.filter((r) => r.tipo === "finanziamento" || r.tipo === "credito_fiscale").reduce((s, r) => s + r.totale, 0);
   const scadute = rows.filter((r) => r.stato === "scaduta").length;
   const inScadenza = rows.filter((r) => r.stato === "in_scadenza").length;
 
