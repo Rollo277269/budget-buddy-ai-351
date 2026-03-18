@@ -550,6 +550,7 @@ export type Database = {
       }
       rubrica: {
         Row: {
+          codice_sdi: string
           created_at: string
           denominazione: string
           email: string
@@ -557,12 +558,14 @@ export type Database = {
           indirizzo: string
           note: string
           partita_iva: string
+          pec: string
           sede_legale: Json
           sede_operativa: Json
           telefono: string
           tipo: string
         }
         Insert: {
+          codice_sdi?: string
           created_at?: string
           denominazione: string
           email?: string
@@ -570,12 +573,14 @@ export type Database = {
           indirizzo?: string
           note?: string
           partita_iva?: string
+          pec?: string
           sede_legale?: Json
           sede_operativa?: Json
           telefono?: string
           tipo?: string
         }
         Update: {
+          codice_sdi?: string
           created_at?: string
           denominazione?: string
           email?: string
@@ -583,6 +588,7 @@ export type Database = {
           indirizzo?: string
           note?: string
           partita_iva?: string
+          pec?: string
           sede_legale?: Json
           sede_operativa?: Json
           telefono?: string

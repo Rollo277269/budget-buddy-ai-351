@@ -26,6 +26,8 @@ const emptyContatto: ContattoRubrica = {
   tipo: "cliente",
   partita_iva: "",
   email: "",
+  pec: "",
+  codice_sdi: "",
   telefono: "",
   indirizzo: "",
   note: "",
@@ -297,6 +299,14 @@ export default function RubricaPage() {
                 <Input value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} placeholder="email@example.com" className="h-9 text-sm" />
               </div>
               <div className="space-y-1">
+                <Label className="text-xs">PEC</Label>
+                <Input value={editing.pec} onChange={(e) => setEditing({ ...editing, pec: e.target.value })} placeholder="pec@pec.it" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Codice SDI</Label>
+                <Input value={editing.codice_sdi} onChange={(e) => setEditing({ ...editing, codice_sdi: e.target.value })} placeholder="0000000" className="h-9 text-sm uppercase" maxLength={7} />
+              </div>
+              <div className="space-y-1">
                 <Label className="text-xs">Telefono</Label>
                 <Input value={editing.telefono} onChange={(e) => setEditing({ ...editing, telefono: e.target.value })} placeholder="+39 ..." className="h-9 text-sm" />
               </div>
@@ -486,6 +496,14 @@ export default function RubricaPage() {
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Email</p>
                       <p>{detailContact.email || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">PEC</p>
+                      <p>{detailContact.pec || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Codice SDI</p>
+                      <p className="font-mono">{detailContact.codice_sdi || "—"}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Telefono</p>

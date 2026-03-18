@@ -18,6 +18,8 @@ export interface ContattoRubrica {
   tipo: "cliente" | "fornitore" | "socio";
   partita_iva: string;
   email: string;
+  pec: string;
+  codice_sdi: string;
   telefono: string;
   indirizzo: string;
   note: string;
@@ -57,6 +59,8 @@ export function useRubrica() {
         tipo: d.tipo as ContattoRubrica["tipo"],
         partita_iva: d.partita_iva || "",
         email: d.email || "",
+        pec: d.pec || "",
+        codice_sdi: d.codice_sdi || "",
         telefono: d.telefono || "",
         indirizzo: d.indirizzo || "",
         note: d.note || "",
@@ -78,6 +82,8 @@ export function useRubrica() {
         tipo: contatto.tipo,
         partita_iva: contatto.partita_iva,
         email: contatto.email,
+        pec: contatto.pec,
+        codice_sdi: contatto.codice_sdi,
         telefono: contatto.telefono,
         indirizzo: contatto.indirizzo,
         note: contatto.note,
