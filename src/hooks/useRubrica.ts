@@ -82,6 +82,8 @@ export function useRubrica() {
         tipo: contatto.tipo,
         partita_iva: contatto.partita_iva,
         email: contatto.email,
+        pec: contatto.pec,
+        codice_sdi: contatto.codice_sdi,
         telefono: contatto.telefono,
         indirizzo: contatto.indirizzo,
         note: contatto.note,
