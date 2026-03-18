@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil } from "lucide-react";
+import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
+
+type SortKey = "denominazione" | "tipo" | "partita_iva" | "email" | "telefono" | "note";
+type SortDir = "asc" | "desc";
 
 const TIPO_LABELS: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "outline" }> = {
   cliente: { label: "Cliente", icon: UserCheck, variant: "secondary" },
@@ -32,6 +35,19 @@ export default function RubricaPage() {
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("");
   const [importing, setImporting] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("denominazione");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const toggleSort = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        return key;
+      }
+      setSortDir("asc");
+      return key;
+    });
+  }, []);
 
   const filtered = useMemo(() => {
     let list = contatti;
@@ -46,8 +62,15 @@ export default function RubricaPage() {
           c.note.toLowerCase().includes(q)
       );
     }
-    return list;
-  }, [contatti, search, filterTipo]);
+    // Sort
+    const sorted = [...list].sort((a, b) => {
+      const aVal = (a[sortKey] || "").toLowerCase();
+      const bVal = (b[sortKey] || "").toLowerCase();
+      const cmp = aVal.localeCompare(bVal, "it");
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [contatti, search, filterTipo, sortKey, sortDir]);
 
   const counts = useMemo(() => ({
     totale: contatti.length,
@@ -241,12 +264,29 @@ export default function RubricaPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Denominazione</TableHead>
-                  <TableHead className="text-xs w-[100px]">Tipo</TableHead>
-                  <TableHead className="text-xs">P.IVA</TableHead>
-                  <TableHead className="text-xs">Email</TableHead>
-                  <TableHead className="text-xs">Telefono</TableHead>
-                  <TableHead className="text-xs">Note</TableHead>
+                  {([
+                    ["denominazione", "Denominazione"],
+                    ["tipo", "Tipo"],
+                    ["partita_iva", "P.IVA"],
+                    ["email", "Email"],
+                    ["telefono", "Telefono"],
+                    ["note", "Note"],
+                  ] as [SortKey, string][]).map(([key, label]) => (
+                    <TableHead
+                      key={key}
+                      className={`text-xs cursor-pointer select-none hover:bg-muted/50 transition-colors ${key === "tipo" ? "w-[100px]" : ""}`}
+                      onClick={() => toggleSort(key)}
+                    >
+                      <div className="flex items-center gap-1">
+                        {label}
+                        {sortKey === key ? (
+                          sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-30" />
+                        )}
+                      </div>
+                    </TableHead>
+                  ))}
                   <TableHead className="text-xs w-[70px]"></TableHead>
                 </TableRow>
               </TableHeader>
