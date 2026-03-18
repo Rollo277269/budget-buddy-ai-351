@@ -498,6 +498,14 @@ export default function RubricaPage() {
                       <p>{detailContact.email || "—"}</p>
                     </div>
                     <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">PEC</p>
+                      <p>{detailContact.pec || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Codice SDI</p>
+                      <p className="font-mono">{detailContact.codice_sdi || "—"}</p>
+                    </div>
+                    <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Telefono</p>
                       <p>{detailContact.telefono || "—"}</p>
                     </div>
