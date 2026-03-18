@@ -548,6 +548,42 @@ export type Database = {
         }
         Relationships: []
       }
+      rubrica: {
+        Row: {
+          created_at: string
+          denominazione: string
+          email: string
+          id: string
+          indirizzo: string
+          note: string
+          partita_iva: string
+          telefono: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          denominazione: string
+          email?: string
+          id?: string
+          indirizzo?: string
+          note?: string
+          partita_iva?: string
+          telefono?: string
+          tipo?: string
+        }
+        Update: {
+          created_at?: string
+          denominazione?: string
+          email?: string
+          id?: string
+          indirizzo?: string
+          note?: string
+          partita_iva?: string
+          telefono?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
