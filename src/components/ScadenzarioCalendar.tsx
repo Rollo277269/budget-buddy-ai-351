@@ -293,7 +293,9 @@ export function ScadenzarioCalendar({ events }: Props) {
                   )}>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex flex-col items-center">
-                        {ev.tipo === "finanziamento" ? (
+                        {ev.tipo === "credito_fiscale" ? (
+                          <Badge className="bg-primary text-primary-foreground text-[10px]">Cred. Fiscale</Badge>
+                        ) : ev.tipo === "finanziamento" ? (
                           <Badge className="bg-accent text-accent-foreground text-[10px]">Rata</Badge>
                         ) : (
                           <Badge variant={ev.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">
