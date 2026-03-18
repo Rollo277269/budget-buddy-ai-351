@@ -34,9 +34,11 @@ function getMonday(d: Date) {
 function EventDot({ event }: { event: CalendarEvent }) {
   const color = event.tipo === "credito"
     ? "bg-income"
-    : event.tipo === "finanziamento"
-      ? "bg-accent-foreground"
-      : "bg-expense";
+    : event.tipo === "credito_fiscale"
+      ? "bg-primary"
+      : event.tipo === "finanziamento"
+        ? "bg-accent-foreground"
+        : "bg-expense";
   return (
     <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", color)} title={`${event.soggetto} — ${formatCurrency(event.totale)}`} />
   );
