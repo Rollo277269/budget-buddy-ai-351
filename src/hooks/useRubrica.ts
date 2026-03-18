@@ -156,7 +156,7 @@ export function useRubrica() {
           (existing.tipo === "cliente" && tipo === "fornitore") ||
           (existing.tipo === "fornitore" && tipo === "cliente")
         ) {
-          if (existing.tipo !== "socio") {
+          if ((existing.tipo as string) !== "socio") {
             // Mark for update to socio
             toInsert.set(key, { denominazione: existing.denominazione, tipo: "socio", partita_iva: existing.partita_iva || piva?.trim() || "" });
             existingMap.set(key, { ...existing, tipo: "socio" });
