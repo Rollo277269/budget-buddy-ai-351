@@ -110,10 +110,11 @@ export default function ScadenzarioPage() {
       const stato = d ? (days < 0 ? "scaduta" : days <= 30 ? "in_scadenza" : "regolare") : "regolare";
       const conto = contiMap.get(r.conto_id);
       if (stato !== "regolare") {
+        const isCredFisc = conto?.tipo === "crediti_fiscali";
         result.push({
-          tipo: "finanziamento",
-          numero: `Rata ${r.numero_rata}`,
-          soggetto: conto ? conto.banca : "Finanziamento",
+          tipo: isCredFisc ? "credito_fiscale" : "finanziamento",
+          numero: isCredFisc ? `Credito ${r.numero_rata}` : `Rata ${r.numero_rata}`,
+          soggetto: conto ? conto.banca : (isCredFisc ? "Credito Fiscale" : "Finanziamento"),
           totale: r.importo_rata,
           scadenza: r.data_scadenza,
           scadenzaDate: d,
