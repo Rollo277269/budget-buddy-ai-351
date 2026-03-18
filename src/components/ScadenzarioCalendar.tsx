@@ -55,9 +55,9 @@ function EventCard({ event }: { event: CalendarEvent }) {
       "bg-muted/50 border-border"
     )}>
       <div className="flex items-center gap-1">
-        {event.tipo === "finanziamento" && <Landmark className="h-2.5 w-2.5 shrink-0" />}
-        {isOverdue && event.tipo !== "finanziamento" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
-        {isWarning && event.tipo !== "finanziamento" && !isOverdue && <Clock className="h-2.5 w-2.5 shrink-0" />}
+        {(event.tipo === "finanziamento" || event.tipo === "credito_fiscale") && <Landmark className="h-2.5 w-2.5 shrink-0" />}
+        {isOverdue && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
+        {isWarning && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && !isOverdue && <Clock className="h-2.5 w-2.5 shrink-0" />}
         <span className="truncate font-medium">{event.soggetto}</span>
       </div>
       <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : "text-expense")}>
