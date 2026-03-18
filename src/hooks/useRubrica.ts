@@ -18,6 +18,8 @@ export interface ContattoRubrica {
   tipo: "cliente" | "fornitore" | "socio";
   partita_iva: string;
   email: string;
+  pec: string;
+  codice_sdi: string;
   telefono: string;
   indirizzo: string;
   note: string;
