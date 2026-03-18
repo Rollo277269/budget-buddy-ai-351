@@ -131,7 +131,7 @@ export default function ScadenzarioPage() {
 
   const totCrediti = rows.filter((r) => r.tipo === "credito").reduce((s, r) => s + r.totale, 0);
   const totDebiti = rows.filter((r) => r.tipo === "debito").reduce((s, r) => s + r.totale, 0);
-  const totRate = rows.filter((r) => r.tipo === "finanziamento").reduce((s, r) => s + r.totale, 0);
+  const totRate = rows.filter((r) => r.tipo === "finanziamento" || r.tipo === "credito_fiscale").reduce((s, r) => s + r.totale, 0);
   const scadute = rows.filter((r) => r.stato === "scaduta").length;
   const inScadenza = rows.filter((r) => r.stato === "in_scadenza").length;
 
