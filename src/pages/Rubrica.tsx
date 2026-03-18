@@ -1,12 +1,14 @@
 import { useState, useMemo, useCallback } from "react";
-import { useRubrica, ContattoRubrica } from "@/hooks/useRubrica";
+import { useRubrica, ContattoRubrica, Indirizzo, emptyIndirizzo } from "@/hooks/useRubrica";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil, ArrowUp, ArrowDown, ArrowUpDown, MapPin, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 type SortKey = "denominazione" | "tipo" | "partita_iva" | "email" | "telefono" | "note";
@@ -27,11 +29,107 @@ const emptyContatto: ContattoRubrica = {
   telefono: "",
   indirizzo: "",
   note: "",
+  sede_legale: { ...emptyIndirizzo },
+  sede_operativa: { ...emptyIndirizzo },
 };
+
+function formatAddress(addr: Indirizzo): string {
+  const parts = [
+    addr.via && addr.civico ? `${addr.via} ${addr.civico}` : addr.via,
+    addr.cap,
+    addr.citta,
+    addr.provincia ? `(${addr.provincia})` : "",
+  ].filter(Boolean);
+  return parts.join(", ");
+}
+
+function buildMapsUrl(addr: Indirizzo): string {
+  const q = formatAddress(addr);
+  return `https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed`;
+}
+
+function hasAddress(addr: Indirizzo): boolean {
+  return !!(addr.via || addr.citta || addr.cap);
+}
+
+interface AddressFieldsProps {
+  label: string;
+  icon: React.ElementType;
+  addr: Indirizzo;
+  onChange: (addr: Indirizzo) => void;
+}
+
+function AddressFields({ label, icon: Icon, addr, onChange }: AddressFieldsProps) {
+  const upd = (key: keyof Indirizzo, val: string) => onChange({ ...addr, [key]: val });
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-primary" />
+        <Label className="text-xs font-semibold">{label}</Label>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="col-span-2 space-y-1">
+          <Label className="text-[10px] text-muted-foreground">Via</Label>
+          <Input value={addr.via} onChange={(e) => upd("via", e.target.value)} placeholder="Via Roma" className="h-8 text-sm" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">N. Civico</Label>
+          <Input value={addr.civico} onChange={(e) => upd("civico", e.target.value)} placeholder="10" className="h-8 text-sm" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">CAP</Label>
+          <Input value={addr.cap} onChange={(e) => upd("cap", e.target.value)} placeholder="00100" className="h-8 text-sm" maxLength={5} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground">Provincia</Label>
+          <Input value={addr.provincia} onChange={(e) => upd("provincia", e.target.value)} placeholder="RM" className="h-8 text-sm uppercase" maxLength={2} />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-[10px] text-muted-foreground">Città</Label>
+        <Input value={addr.citta} onChange={(e) => upd("citta", e.target.value)} placeholder="Roma" className="h-8 text-sm" />
+      </div>
+    </div>
+  );
+}
+
+interface AddressDisplayProps {
+  label: string;
+  icon: React.ElementType;
+  addr: Indirizzo;
+}
+
+function AddressDisplay({ label, icon: Icon, addr }: AddressDisplayProps) {
+  if (!hasAddress(addr)) return null;
+  const formatted = formatAddress(addr);
+  const mapsUrl = buildMapsUrl(addr);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-primary" />
+        <span className="text-xs font-semibold">{label}</span>
+      </div>
+      <p className="text-sm text-muted-foreground">{formatted}</p>
+      <div className="rounded-lg overflow-hidden border h-[200px]">
+        <iframe
+          src={mapsUrl}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`Mappa ${label}`}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function RubricaPage() {
   const { contatti, loading, saveContatto, deleteContatto, importFromInvoices } = useRubrica();
   const [editing, setEditing] = useState<ContattoRubrica | null>(null);
+  const [detailContact, setDetailContact] = useState<ContattoRubrica | null>(null);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("");
   const [importing, setImporting] = useState(false);
@@ -62,7 +160,6 @@ export default function RubricaPage() {
           c.note.toLowerCase().includes(q)
       );
     }
-    // Sort
     const sorted = [...list].sort((a, b) => {
       const aVal = (a[sortKey] || "").toLowerCase();
       const bVal = (b[sortKey] || "").toLowerCase();
@@ -93,6 +190,7 @@ export default function RubricaPage() {
     async (id: string) => {
       if (!confirm("Eliminare questo contatto?")) return;
       await deleteContatto(id);
+      setDetailContact(null);
     },
     [deleteContatto]
   );
@@ -105,6 +203,15 @@ export default function RubricaPage() {
       setImporting(false);
     }
   }, [importFromInvoices]);
+
+  const openEdit = useCallback((c: ContattoRubrica) => {
+    setDetailContact(null);
+    setEditing({
+      ...c,
+      sede_legale: c.sede_legale || { ...emptyIndirizzo },
+      sede_operativa: c.sede_operativa || { ...emptyIndirizzo },
+    });
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -119,7 +226,7 @@ export default function RubricaPage() {
             <Download className="h-3.5 w-3.5 mr-1" />
             {importing ? "Importazione..." : "Importa da fatture"}
           </Button>
-          <Button size="sm" onClick={() => setEditing({ ...emptyContatto })}>
+          <Button size="sm" onClick={() => { setDetailContact(null); setEditing({ ...emptyContatto }); }}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             Nuovo contatto
           </Button>
@@ -157,7 +264,7 @@ export default function RubricaPage() {
       {/* Edit form */}
       {editing && (
         <Card className="border-primary/30">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Denominazione *</Label>
@@ -183,51 +290,43 @@ export default function RubricaPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Partita IVA</Label>
-                <Input
-                  value={editing.partita_iva}
-                  onChange={(e) => setEditing({ ...editing, partita_iva: e.target.value })}
-                  placeholder="IT01234567890"
-                  className="h-9 text-sm"
-                />
+                <Input value={editing.partita_iva} onChange={(e) => setEditing({ ...editing, partita_iva: e.target.value })} placeholder="IT01234567890" className="h-9 text-sm" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Email</Label>
-                <Input
-                  value={editing.email}
-                  onChange={(e) => setEditing({ ...editing, email: e.target.value })}
-                  placeholder="email@example.com"
-                  className="h-9 text-sm"
-                />
+                <Input value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} placeholder="email@example.com" className="h-9 text-sm" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Telefono</Label>
-                <Input
-                  value={editing.telefono}
-                  onChange={(e) => setEditing({ ...editing, telefono: e.target.value })}
-                  placeholder="+39 ..."
-                  className="h-9 text-sm"
-                />
+                <Input value={editing.telefono} onChange={(e) => setEditing({ ...editing, telefono: e.target.value })} placeholder="+39 ..." className="h-9 text-sm" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Indirizzo</Label>
-                <Input
-                  value={editing.indirizzo}
-                  onChange={(e) => setEditing({ ...editing, indirizzo: e.target.value })}
-                  placeholder="Via, Città"
-                  className="h-9 text-sm"
-                />
+                <Label className="text-xs">Note</Label>
+                <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
               </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Note</Label>
-              <Input
-                value={editing.note}
-                onChange={(e) => setEditing({ ...editing, note: e.target.value })}
-                placeholder="Note aggiuntive"
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
+
+            <Separator />
+
+            {/* Sede Legale */}
+            <AddressFields
+              label="Sede Legale"
+              icon={Building2}
+              addr={editing.sede_legale}
+              onChange={(addr) => setEditing({ ...editing, sede_legale: addr })}
+            />
+
+            <Separator />
+
+            {/* Sede Operativa */}
+            <AddressFields
+              label="Sede Operativa"
+              icon={MapPin}
+              addr={editing.sede_operativa}
+              onChange={(addr) => setEditing({ ...editing, sede_operativa: addr })}
+            />
+
+            <div className="flex gap-2 justify-end pt-2">
               <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
                 <X className="h-3.5 w-3.5 mr-1" />Annulla
               </Button>
@@ -295,7 +394,7 @@ export default function RubricaPage() {
                   const info = TIPO_LABELS[c.tipo] || TIPO_LABELS.cliente;
                   const Icon = info.icon;
                   return (
-                    <TableRow key={c.id} className="group">
+                    <TableRow key={c.id} className="group cursor-pointer hover:bg-muted/30" onClick={() => setDetailContact(c)}>
                       <TableCell className="text-sm font-medium py-2">{c.denominazione}</TableCell>
                       <TableCell className="py-2">
                         <Badge variant={info.variant} className="text-[10px] gap-1">
@@ -309,10 +408,10 @@ export default function RubricaPage() {
                       <TableCell className="text-xs py-2 text-muted-foreground max-w-[200px] truncate">{c.note || "—"}</TableCell>
                       <TableCell className="py-2">
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica" onClick={() => setEditing(c)}>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Modifica" onClick={(e) => { e.stopPropagation(); openEdit(c); }}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" title="Elimina" onClick={() => handleDelete(c.id)}>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" title="Elimina" onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -325,6 +424,76 @@ export default function RubricaPage() {
           </div>
         </Card>
       )}
+
+      {/* Detail Sheet */}
+      <Sheet open={!!detailContact} onOpenChange={(open) => { if (!open) setDetailContact(null); }}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          {detailContact && (() => {
+            const info = TIPO_LABELS[detailContact.tipo] || TIPO_LABELS.cliente;
+            const TipoIcon = info.icon;
+            return (
+              <>
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2 text-lg">
+                    {detailContact.denominazione}
+                  </SheetTitle>
+                  <Badge variant={info.variant} className="text-xs gap-1 w-fit">
+                    <TipoIcon className="h-3 w-3" />
+                    {info.label}
+                  </Badge>
+                </SheetHeader>
+
+                <div className="space-y-4 mt-4">
+                  {/* Info generali */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Partita IVA</p>
+                      <p className="font-mono">{detailContact.partita_iva || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Email</p>
+                      <p>{detailContact.email || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Telefono</p>
+                      <p>{detailContact.telefono || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Note</p>
+                      <p>{detailContact.note || "—"}</p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Sede Legale */}
+                  <AddressDisplay label="Sede Legale" icon={Building2} addr={detailContact.sede_legale} />
+
+                  {/* Sede Operativa */}
+                  <AddressDisplay label="Sede Operativa" icon={MapPin} addr={detailContact.sede_operativa} />
+
+                  {!hasAddress(detailContact.sede_legale) && !hasAddress(detailContact.sede_operativa) && (
+                    <p className="text-sm text-muted-foreground italic text-center py-4">
+                      Nessun indirizzo inserito — modifica il contatto per aggiungere le sedi
+                    </p>
+                  )}
+
+                  <Separator />
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" size="sm" onClick={() => openEdit(detailContact)}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />Modifica
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(detailContact.id)}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina
+                    </Button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
