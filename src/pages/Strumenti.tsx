@@ -127,7 +127,7 @@ function ContiCorrentiTab() {
                     <p className="text-xs font-mono text-muted-foreground">{c.iban}</p>
                     {c.intestatario && <p className="text-xs text-muted-foreground">{c.intestatario}</p>}
                     {c.note && <p className="text-xs text-muted-foreground italic">{c.note}</p>}
-                    {c.tipo === "finanziamento" && c.conto_addebito_id && (() => {
+                    {(c.tipo === "finanziamento" || c.tipo === "crediti_fiscali") && c.conto_addebito_id && (() => {
                   const ca = conti.find((x) => x.id === c.conto_addebito_id);
                   return ca ? <p className="text-xs text-muted-foreground">Addebito su: <span className="font-medium">{ca.banca}</span></p> : null;
                 })()}
