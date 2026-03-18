@@ -143,13 +143,39 @@ export function useRubrica() {
       supabase.from("documenti_acquisto").select("fornitore, tipo"),
     ]);
 
-    const existingNames = new Set(contatti.map((c) => c.denominazione.toLowerCase().trim()));
+    const existingMap = new Map(contatti.map((c) => [c.denominazione.toLowerCase().trim(), c]));
     const toInsert: Map<string, { denominazione: string; tipo: string; partita_iva: string }> = new Map();
 
     const addEntry = (name: string | null, tipo: string, piva?: string | null) => {
       if (!name || !name.trim()) return;
       const key = name.trim().toLowerCase();
-      if (existingNames.has(key) || toInsert.has(key)) return;
+      const existing = existingMap.get(key);
+      if (existing) {
+        // If already in DB as cliente and now seen as fornitore (or vice versa), upgrade to socio
+        if (
+          (existing.tipo === "cliente" && tipo === "fornitore") ||
+          (existing.tipo === "fornitore" && tipo === "cliente")
+        ) {
+          if (existing.tipo !== "socio") {
+            // Mark for update to socio
+            toInsert.set(key, { denominazione: existing.denominazione, tipo: "socio", partita_iva: existing.partita_iva || piva?.trim() || "" });
+            existingMap.set(key, { ...existing, tipo: "socio" });
+          }
+        }
+        return;
+      }
+      const prev = toInsert.get(key);
+      if (prev) {
+        // Both cliente and fornitore in new entries → socio
+        if (
+          (prev.tipo === "cliente" && tipo === "fornitore") ||
+          (prev.tipo === "fornitore" && tipo === "cliente")
+        ) {
+          prev.tipo = "socio";
+          if (!prev.partita_iva && piva?.trim()) prev.partita_iva = piva.trim();
+        }
+        return;
+      }
       toInsert.set(key, {
         denominazione: name.trim(),
         tipo,
