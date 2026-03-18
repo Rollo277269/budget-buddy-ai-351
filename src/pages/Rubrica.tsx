@@ -319,12 +319,45 @@ export default function RubricaPage() {
             <Separator />
 
             {/* Sede Operativa */}
-            <AddressFields
-              label="Sede Operativa"
-              icon={MapPin}
-              addr={editing.sede_operativa}
-              onChange={(addr) => setEditing({ ...editing, sede_operativa: addr })}
-            />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <Label className="text-xs font-semibold">Sede Operativa</Label>
+              </div>
+              {hasAddress(editing.sede_legale) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setEditing({ ...editing, sede_operativa: { ...editing.sede_legale } })}
+                >
+                  <Building2 className="h-3 w-3 mr-1" />Copia da Sede Legale
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div className="col-span-2 space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Via</Label>
+                <Input value={editing.sede_operativa.via} onChange={(e) => setEditing({ ...editing, sede_operativa: { ...editing.sede_operativa, via: e.target.value } })} placeholder="Via Roma" className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">N. Civico</Label>
+                <Input value={editing.sede_operativa.civico} onChange={(e) => setEditing({ ...editing, sede_operativa: { ...editing.sede_operativa, civico: e.target.value } })} placeholder="10" className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">CAP</Label>
+                <Input value={editing.sede_operativa.cap} onChange={(e) => setEditing({ ...editing, sede_operativa: { ...editing.sede_operativa, cap: e.target.value } })} placeholder="00100" className="h-8 text-sm" maxLength={5} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Provincia</Label>
+                <Input value={editing.sede_operativa.provincia} onChange={(e) => setEditing({ ...editing, sede_operativa: { ...editing.sede_operativa, provincia: e.target.value } })} placeholder="RM" className="h-8 text-sm uppercase" maxLength={2} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Città</Label>
+              <Input value={editing.sede_operativa.citta} onChange={(e) => setEditing({ ...editing, sede_operativa: { ...editing.sede_operativa, citta: e.target.value } })} placeholder="Roma" className="h-8 text-sm" />
+            </div>
 
             <div className="flex gap-2 justify-end pt-2">
               <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
