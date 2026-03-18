@@ -85,7 +85,7 @@ function ContiCorrentiTab() {
                 <Label className="text-xs">Note</Label>
                 <Input value={editing.note} onChange={(e) => setEditing({ ...editing, note: e.target.value })} placeholder="Note aggiuntive" className="h-9 text-sm" />
               </div>
-              {editing.tipo === "finanziamento" &&
+              {(editing.tipo === "finanziamento" || editing.tipo === "crediti_fiscali") &&
             <div className="space-y-1">
                   <Label className="text-xs">Conto di addebito rate</Label>
                   <select
