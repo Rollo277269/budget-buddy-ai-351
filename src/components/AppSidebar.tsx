@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
