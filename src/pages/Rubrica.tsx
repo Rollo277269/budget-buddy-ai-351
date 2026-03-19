@@ -280,15 +280,22 @@ export default function RubricaPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Tipo</Label>
-                <select
-                  value={editing.tipo}
-                  onChange={(e) => setEditing({ ...editing, tipo: e.target.value as ContattoRubrica["tipo"] })}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <option value="cliente">Cliente</option>
-                  <option value="fornitore">Fornitore</option>
-                  <option value="socio">Socio (Cliente + Fornitore)</option>
-                </select>
+                <div className="flex gap-2">
+                  {(["cliente", "fornitore", "socio"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setEditing({ ...editing, tipo: t })}
+                      className={`flex-1 h-9 rounded-md border text-sm font-medium transition-colors ${
+                        editing.tipo === t
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-input hover:bg-muted"
+                      }`}
+                    >
+                      {t === "cliente" ? "Cliente" : t === "fornitore" ? "Fornitore" : "Socio"}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Partita IVA</Label>
