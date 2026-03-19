@@ -66,7 +66,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={clientOptions}
             placeholder="Cliente"
             searchPlaceholder="Cerca cliente..."
-            className="w-[160px]"
+            className="w-[200px]"
           />
         )}
 
@@ -77,7 +77,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={supplierOptions}
             placeholder="Fornitore"
             searchPlaceholder="Cerca fornitore..."
-            className="w-[160px]"
+            className="w-[200px]"
           />
         )}
 
