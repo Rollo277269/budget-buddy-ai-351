@@ -87,7 +87,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           options={cigOptions}
           placeholder="CIG"
           searchPlaceholder="Cerca CIG..."
-          className="w-[130px] font-mono text-xs"
+          className="w-[160px] font-mono text-xs"
         />
 
         {options.centriCosto && options.centriCosto.length > 0 && (
