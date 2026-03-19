@@ -291,21 +291,10 @@ export default function RubricaPage() {
                         onClick={() => {
                           const tipos = editing.tipo.split(",").filter(Boolean);
                           let next: string[];
-                          if (t === "socio") {
-                            if (tipos.includes("socio")) {
-                              next = [];
-                            } else {
-                              next = ["cliente", "fornitore", "socio"];
-                            }
+                          if (tipos.includes(t)) {
+                            next = tipos.filter((v) => v !== t);
                           } else {
-                            if (tipos.includes(t)) {
-                              next = tipos.filter((v) => v !== t && v !== "socio");
-                            } else {
-                              next = [...tipos.filter((v) => v !== "socio"), t];
-                              if (next.includes("cliente") && next.includes("fornitore")) {
-                                next.push("socio");
-                              }
-                            }
+                            next = [...tipos, t];
                           }
                           if (next.length === 0) next = [t];
                           setEditing({ ...editing, tipo: next.join(",") });
