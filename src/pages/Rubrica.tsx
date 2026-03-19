@@ -151,7 +151,7 @@ export default function RubricaPage() {
 
   const filtered = useMemo(() => {
     let list = contatti;
-    if (filterTipo) list = list.filter((c) => c.tipo === filterTipo);
+    if (filterTipo) list = list.filter((c) => c.tipo.split(",").includes(filterTipo));
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
