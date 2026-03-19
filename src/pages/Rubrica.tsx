@@ -151,7 +151,7 @@ export default function RubricaPage() {
 
   const filtered = useMemo(() => {
     let list = contatti;
-    if (filterTipo) list = list.filter((c) => c.tipo === filterTipo);
+    if (filterTipo) list = list.filter((c) => c.tipo.split(",").includes(filterTipo));
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -173,9 +173,9 @@ export default function RubricaPage() {
 
   const counts = useMemo(() => ({
     totale: contatti.length,
-    clienti: contatti.filter((c) => c.tipo === "cliente").length,
-    fornitori: contatti.filter((c) => c.tipo === "fornitore").length,
-    soci: contatti.filter((c) => c.tipo === "socio").length,
+    clienti: contatti.filter((c) => c.tipo.split(",").includes("cliente")).length,
+    fornitori: contatti.filter((c) => c.tipo.split(",").includes("fornitore")).length,
+    soci: contatti.filter((c) => c.tipo.split(",").includes("socio")).length,
   }), [contatti]);
 
   const handleSave = useCallback(async () => {
