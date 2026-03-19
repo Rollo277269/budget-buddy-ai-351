@@ -97,7 +97,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={[{ value: "", label: "Tutti i centri" }, ...options.centriCosto]}
             placeholder="C. Costo"
             searchPlaceholder="Cerca centro..."
-            className="w-[150px]"
+            className="w-[180px]"
           />
         )}
 
@@ -108,7 +108,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={[{ value: "", label: "Tutti i centri" }, ...options.centriRicavo]}
             placeholder="C. Ricavo"
             searchPlaceholder="Cerca centro..."
-            className="w-[150px]"
+            className="w-[180px]"
           />
         )}
 
