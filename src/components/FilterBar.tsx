@@ -56,7 +56,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           options={yearOptions}
           placeholder="Anno"
           searchPlaceholder="Cerca anno..."
-          className="w-[100px]"
+          className="w-[130px]"
         />
 
         {!hideCliente && (
@@ -66,7 +66,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={clientOptions}
             placeholder="Cliente"
             searchPlaceholder="Cerca cliente..."
-            className="w-[160px]"
+            className="w-[200px]"
           />
         )}
 
@@ -77,7 +77,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={supplierOptions}
             placeholder="Fornitore"
             searchPlaceholder="Cerca fornitore..."
-            className="w-[160px]"
+            className="w-[200px]"
           />
         )}
 
@@ -87,7 +87,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           options={cigOptions}
           placeholder="CIG"
           searchPlaceholder="Cerca CIG..."
-          className="w-[130px] font-mono text-xs"
+          className="w-[160px] font-mono text-xs"
         />
 
         {options.centriCosto && options.centriCosto.length > 0 && (
@@ -97,7 +97,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={[{ value: "", label: "Tutti i centri" }, ...options.centriCosto]}
             placeholder="C. Costo"
             searchPlaceholder="Cerca centro..."
-            className="w-[150px]"
+            className="w-[180px]"
           />
         )}
 
@@ -108,7 +108,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={[{ value: "", label: "Tutti i centri" }, ...options.centriRicavo]}
             placeholder="C. Ricavo"
             searchPlaceholder="Cerca centro..."
-            className="w-[150px]"
+            className="w-[180px]"
           />
         )}
 
