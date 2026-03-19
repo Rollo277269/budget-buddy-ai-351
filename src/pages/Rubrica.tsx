@@ -289,24 +289,25 @@ export default function RubricaPage() {
                         key={t}
                         type="button"
                         onClick={() => {
+                          const tipos = editing.tipo.split(",").filter(Boolean);
                           let next: string[];
-                          if (isActive) {
-                            next = tipos.filter((v) => v !== t);
+                          if (t === "socio") {
+                            if (tipos.includes("socio")) {
+                              next = [];
+                            } else {
+                              next = ["cliente", "fornitore", "socio"];
+                            }
                           } else {
-                            next = [...tipos, t];
+                            if (tipos.includes(t)) {
+                              next = tipos.filter((v) => v !== t && v !== "socio");
+                            } else {
+                              next = [...tipos.filter((v) => v !== "socio"), t];
+                              if (next.includes("cliente") && next.includes("fornitore")) {
+                                next.push("socio");
+                              }
+                            }
                           }
-                          // If both cliente and fornitore selected, add socio
-                          if (next.includes("cliente") && next.includes("fornitore") && !next.includes("socio")) {
-                            next.push("socio");
-                          }
-                          // If socio deselected, keep only what's left
-                          if (!next.includes("socio")) {
-                            next = next.filter((v) => v !== "socio");
-                          }
-                          // If socio selected alone, also add cliente+fornitore
-                          if (next.includes("socio") && !next.includes("cliente")) next.push("cliente");
-                          if (next.includes("socio") && !next.includes("fornitore")) next.push("fornitore");
-                          if (next.length === 0) next = [t]; // prevent empty
+                          if (next.length === 0) next = [t];
                           setEditing({ ...editing, tipo: next.join(",") });
                         }}
                         className={`flex-1 h-9 rounded-md border text-sm font-medium transition-colors ${
