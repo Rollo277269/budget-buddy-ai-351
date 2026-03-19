@@ -15,7 +15,7 @@ export const emptyIndirizzo: Indirizzo = { via: "", civico: "", cap: "", citta: 
 export interface ContattoRubrica {
   id: string;
   denominazione: string;
-  tipo: "cliente" | "fornitore" | "socio";
+  tipo: string;
   partita_iva: string;
   email: string;
   pec: string;
