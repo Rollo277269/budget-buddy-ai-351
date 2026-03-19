@@ -465,8 +465,10 @@ export default function RubricaPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((c) => {
-                  const info = TIPO_LABELS[c.tipo] || TIPO_LABELS.cliente;
+              {filtered.map((c) => {
+                  const tipos = c.tipo.split(",").filter(Boolean);
+                  const displayTipo = filterTipo && tipos.includes(filterTipo) ? filterTipo : (tipos.includes("socio") ? "socio" : tipos[0] || "cliente");
+                  const info = TIPO_LABELS[displayTipo] || TIPO_LABELS.cliente;
                   const Icon = info.icon;
                   return (
                     <TableRow key={c.id} className="group cursor-pointer hover:bg-muted/30" onClick={() => setDetailContact(c)}>
