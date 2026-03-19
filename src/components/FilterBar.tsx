@@ -56,7 +56,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           options={yearOptions}
           placeholder="Anno"
           searchPlaceholder="Cerca anno..."
-          className="w-[100px]"
+          className="w-[130px]"
         />
 
         {!hideCliente && (
