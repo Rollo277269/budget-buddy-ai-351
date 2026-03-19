@@ -281,20 +281,44 @@ export default function RubricaPage() {
               <div className="space-y-1">
                 <Label className="text-xs">Tipo</Label>
                 <div className="flex gap-2">
-                  {(["cliente", "fornitore", "socio"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setEditing({ ...editing, tipo: t })}
-                      className={`flex-1 h-9 rounded-md border text-sm font-medium transition-colors ${
-                        editing.tipo === t
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-input hover:bg-muted"
-                      }`}
-                    >
-                      {t === "cliente" ? "Cliente" : t === "fornitore" ? "Fornitore" : "Socio"}
-                    </button>
-                  ))}
+                  {(["cliente", "fornitore", "socio"] as const).map((t) => {
+                    const tipos = editing.tipo.split(",").filter(Boolean);
+                    const isActive = tipos.includes(t);
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => {
+                          let next: string[];
+                          if (isActive) {
+                            next = tipos.filter((v) => v !== t);
+                          } else {
+                            next = [...tipos, t];
+                          }
+                          // If both cliente and fornitore selected, add socio
+                          if (next.includes("cliente") && next.includes("fornitore") && !next.includes("socio")) {
+                            next.push("socio");
+                          }
+                          // If socio deselected, keep only what's left
+                          if (!next.includes("socio")) {
+                            next = next.filter((v) => v !== "socio");
+                          }
+                          // If socio selected alone, also add cliente+fornitore
+                          if (next.includes("socio") && !next.includes("cliente")) next.push("cliente");
+                          if (next.includes("socio") && !next.includes("fornitore")) next.push("fornitore");
+                          if (next.length === 0) next = [t]; // prevent empty
+                          setEditing({ ...editing, tipo: next.join(",") });
+                        }}
+                        className={`flex-1 h-9 rounded-md border text-sm font-medium transition-colors ${
+                          isActive
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-input hover:bg-muted"
+                        }`}
+                      >
+                        {t === "cliente" ? "Cliente" : t === "fornitore" ? "Fornitore" : "Socio"}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="space-y-1">
