@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useInvoiceData, PurchaseInvoice, parseExcelPurchases, seedPurchasesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
+import { parseFatturaPA } from "@/lib/fatturaPA";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
@@ -335,10 +336,10 @@ const AcquistiPage = () => {
     setEnriching(true);
     let updated = 0;
     try {
-      // Load all matched XML records with parsed_data
+      // Load all matched XML records with parsed_data and storage_path
       const { data: xmlRows } = await supabase
         .from("fatture_xml")
-        .select("anno, numero, parsed_data, matched")
+        .select("id, anno, numero, parsed_data, matched, storage_path")
         .eq("tipo", "acquisto")
         .eq("matched", true);
       if (!xmlRows || xmlRows.length === 0) {
@@ -348,11 +349,32 @@ const AcquistiPage = () => {
       }
 
       for (const xml of xmlRows as any[]) {
-        if (!xml.parsed_data || !xml.anno || !xml.numero) continue;
-        const pd = xml.parsed_data as any;
+        if (!xml.anno || !xml.numero) continue;
+        const pd = xml.parsed_data as any || {};
 
         // Extract CIG from parsed XML data
         let xmlCig = pd.cig || "";
+        
+        // If CIG not in parsed_data, re-parse the raw XML file from storage
+        if (!xmlCig && xml.storage_path) {
+          try {
+            const { data: fileData } = await supabase.storage.from("fatture-xml").download(xml.storage_path);
+            if (fileData) {
+              const rawText = await fileData.text();
+              const reParsed = parseFatturaPA(rawText);
+              xmlCig = reParsed.cig || "";
+              
+              // Also update parsed_data in fatture_xml with the new CIG for future use
+              if (xmlCig) {
+                const updatedPd = { ...pd, cig: xmlCig };
+                await supabase.from("fatture_xml" as any).update({ parsed_data: updatedPd } as any).eq("id", xml.id);
+              }
+            }
+          } catch (e) {
+            console.warn("Could not re-parse XML for CIG:", xml.storage_path, e);
+          }
+        }
+
         if (!xmlCig) {
           // Search in causale
           const causale = pd.causale || [];
