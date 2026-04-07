@@ -539,12 +539,19 @@ const VenditePage = () => {
         return;
       }
 
-      const invoicesNeedingUpdate = allSales.filter(s => !s.cig || !s.cup || !s.partitaIva || !s.scadenza);
+      // If specific XMLs are selected, filter to only those
+      const targetXmls = selectedXmlIds.size > 0
+        ? (xmlRows as any[]).filter(x => selectedXmlIds.has(x.id))
+        : xmlRows as any[];
+
+      const invoicesNeedingUpdate = selectedXmlIds.size > 0
+        ? allSales
+        : allSales.filter(s => !s.cig || !s.cup || !s.partitaIva || !s.scadenza);
       const needingSet = new Set(invoicesNeedingUpdate.map(s => `${s.anno}-${s.numero}`));
-      const relevantXmls = (xmlRows as any[]).filter(x => x.anno && x.numero && needingSet.has(`${x.anno}-${x.numero}`));
+      const relevantXmls = targetXmls.filter(x => x.anno && x.numero && needingSet.has(`${x.anno}-${x.numero}`));
 
       if (relevantXmls.length === 0) {
-        toast.info("Tutte le fatture sono già complete");
+        toast.info(selectedXmlIds.size > 0 ? "Nessun XML selezionato associato trovato" : "Tutte le fatture sono già complete");
         setEnriching(false);
         return;
       }
@@ -604,6 +611,7 @@ const VenditePage = () => {
         toast.success(`${updated} fatture aggiornate da XML`);
         invalidateInvoiceCache();
         refreshInvoices();
+        setSelectedXmlIds(new Set());
       } else {
         toast.info("Tutte le fatture sono già complete");
       }
@@ -613,7 +621,7 @@ const VenditePage = () => {
     } finally {
       setEnriching(false);
     }
-  }, [allSales, refreshInvoices]);
+  }, [allSales, refreshInvoices, selectedXmlIds]);
 
   if (loading) {
     return (
