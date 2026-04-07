@@ -734,7 +734,38 @@ const AcquistiPage = () => {
           <PdfViewerPanel base64={pdfData.base64} fileName={pdfData.fileName} onClose={() => setPdfData(null)} />
         </div>
       )}
-    </div>);
+    </div>
+
+    {/* Excel collision dialog */}
+    <Dialog open={showExcelCollisionDialog} onOpenChange={(open) => { if (!open) handleExcelCancelCollisions(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Record duplicati</DialogTitle>
+          <DialogDescription>
+            {pendingExcelUpload && `${pendingExcelUpload.newOnly.length} nuovi record verranno importati. ${excelCollisions.length} record esistono già — seleziona quelli da sovrascrivere:`}
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="max-h-64">
+          <div className="space-y-2 pr-3">
+            {excelCollisions.map((c, i) => (
+              <label key={c.key} className="flex items-start gap-2 p-2 rounded border hover:bg-muted/50 cursor-pointer text-xs">
+                <Checkbox checked={c.selected} onCheckedChange={(v) => setExcelCollisions(prev => prev.map((item, idx) => idx === i ? { ...item, selected: !!v } : item))} className="mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium">{c.tipo} {c.anno}/{c.numero}</p>
+                  <p className="text-muted-foreground truncate">Attuale: {c.existingDesc}</p>
+                  <p className="truncate">Nuovo: {c.newDesc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </ScrollArea>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" size="sm" onClick={handleExcelCancelCollisions}>Annulla</Button>
+          <Button size="sm" onClick={handleExcelConfirmCollisions}>Importa</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>);
 
 };
 
