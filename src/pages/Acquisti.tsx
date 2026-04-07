@@ -82,24 +82,6 @@ const AcquistiPage = () => {
   const [editingCigValue, setEditingCigValue] = useState("");
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
 
-  // ── Invoice row selection for bulk operations ──
-  const [selectedInvoiceKeys, setSelectedInvoiceKeys] = useState<Set<string>>(new Set());
-  const toggleInvoiceSelection = useCallback((key: string) => {
-    setSelectedInvoiceKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  }, []);
-  const toggleAllInvoices = useCallback(() => {
-    setSelectedInvoiceKeys(prev => {
-      const keys = displayedPurchases.map(r => `${r.anno}-${r.numero}`);
-      const allSelected = keys.length > 0 && keys.every(k => prev.has(k));
-      if (allSelected) return new Set();
-      return new Set(keys);
-    });
-  }, [displayedPurchases]);
-
   // ── Reconciliation data for payment columns ──
   const [reconMap, setReconMap] = useState<Record<string, { paid: number; lastDate: string }>>({});
   useEffect(() => {
