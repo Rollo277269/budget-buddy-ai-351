@@ -51,20 +51,22 @@ function useFullscreen() {
   return { isFs, toggle };
 }
 
-function SidebarHoverWrapper({ children }: { children: React.ReactNode }) {
+function SidebarHoverWrapper({ children, locked }: { children: React.ReactNode; locked: boolean }) {
   const { setOpen } = useSidebar();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = useCallback(() => {
+    if (locked) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setOpen(true);
-  }, [setOpen]);
+  }, [setOpen, locked]);
 
   const handleMouseLeave = useCallback(() => {
+    if (locked) return;
     timeoutRef.current = setTimeout(() => {
       setOpen(false);
     }, 300);
-  }, [setOpen]);
+  }, [setOpen, locked]);
 
   return (
     <div
