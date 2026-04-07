@@ -524,7 +524,7 @@ const VenditePage = () => {
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
   // ── Enrich invoices from XML data ──
-  const [enriching, setEnriching] = useState(false);
+  
   const handleEnrichFromXml = useCallback(async () => {
     setEnriching(true);
     let updated = 0;
