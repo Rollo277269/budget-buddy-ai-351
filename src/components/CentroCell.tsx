@@ -10,11 +10,16 @@ interface CentroCellProps {
   centroMap: Record<string, string>;
   onAssign: (key: string, codice: string) => void;
   onRemove?: (key: string) => void;
+  importo?: number;
 }
 
-export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRemove }: CentroCellProps) {
+export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRemove, importo }: CentroCellProps) {
   const filtered = centri.filter((c) => c.tipo === tipo).sort((a, b) => a.descrizione.localeCompare(b.descrizione));
   const assigned = centroMap[invoiceKey];
+
+  if (importo === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
 
   if (filtered.length === 0) {
     return <span className="text-xs text-muted-foreground">—</span>;
