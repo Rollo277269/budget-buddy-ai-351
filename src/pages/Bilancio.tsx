@@ -383,7 +383,7 @@ export default function BilancioPage() {
         centri={centri}
         categorie={categorie}
         onRowClick={(codice, tipo) => {
-          if (codice === "__unassigned__") return;
+          // Allow __unassigned__ to navigate and filter unclassified invoices
           const yearParam = annoFilter ? `&anno=${annoFilter}` : "";
           if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}${yearParam}`);
           else navigate(`/acquisti?centroCosto=${encodeURIComponent(codice)}${yearParam}`);

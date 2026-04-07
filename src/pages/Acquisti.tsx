@@ -126,6 +126,10 @@ const AcquistiPage = () => {
 
   const displayedPurchases = useMemo(() => {
     if (!filters.centroCosto) return purchases;
+    // Special case: show unclassified invoices (no centro assigned)
+    if (filters.centroCosto === "__unassigned__") {
+      return purchases.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`]);
+    }
     return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
   }, [purchases, filters.centroCosto, costoMap.map]);
 
