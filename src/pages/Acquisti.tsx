@@ -23,7 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw, Link2, Trash2, ChevronDown, Pencil, Check, X, FileSpreadsheet, AlertTriangle } from "lucide-react";
+import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw, Link2, Trash2, ChevronDown, Pencil, Check, X, FileSpreadsheet, AlertTriangle, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -329,6 +329,87 @@ const AcquistiPage = () => {
     }
   }, [purchases, centri, centriCosto, centriRicavo, costoMap, ricavoMap]);
 
+  // ── Enrich invoices from XML/PDF data ──
+  const [enriching, setEnriching] = useState(false);
+  const handleEnrichFromXml = useCallback(async () => {
+    setEnriching(true);
+    let updated = 0;
+    try {
+      // Load all matched XML records with parsed_data
+      const { data: xmlRows } = await supabase
+        .from("fatture_xml")
+        .select("anno, numero, parsed_data, matched")
+        .eq("tipo", "acquisto")
+        .eq("matched", true);
+      if (!xmlRows || xmlRows.length === 0) {
+        toast.info("Nessun XML associato trovato");
+        setEnriching(false);
+        return;
+      }
+
+      for (const xml of xmlRows as any[]) {
+        if (!xml.parsed_data || !xml.anno || !xml.numero) continue;
+        const pd = xml.parsed_data as any;
+
+        // Extract CIG from parsed XML data
+        let xmlCig = pd.cig || "";
+        if (!xmlCig) {
+          // Search in causale
+          const causale = pd.causale || [];
+          for (const c of causale) {
+            const match = (c || "").match(/CIG[:\s]*([A-Z0-9]{10})/i);
+            if (match) { xmlCig = match[1]; break; }
+          }
+        }
+
+        // Extract CUP similarly
+        let xmlCup = "";
+        const causale = pd.causale || [];
+        for (const c of causale) {
+          const match = (c || "").match(/CUP[:\s]*([A-Z0-9]+)/i);
+          if (match) { xmlCup = match[1]; break; }
+        }
+
+        // Build update payload for empty fields
+        const updates: Record<string, any> = {};
+        
+        // Find the matching invoice to check which fields are empty
+        const inv = allPurchases.find(p => p.anno === xml.anno && p.numero === xml.numero);
+        if (!inv) continue;
+
+        if (!inv.cig && xmlCig) updates.cig = xmlCig.toUpperCase();
+        if (!inv.cup && xmlCup) updates.cup = xmlCup.toUpperCase();
+        if (!inv.partitaIva && pd.cedente?.partitaIva) updates.partita_iva = pd.cedente.partitaIva;
+        if ((!inv.scadenza || inv.scadenza === "") && pd.pagamenti?.length > 0) {
+          const scad = pd.pagamenti[0].dataScadenza;
+          if (scad) updates.scadenza = scad;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          const { error } = await supabase
+            .from("fatture_acquisto")
+            .update(updates)
+            .eq("anno", xml.anno)
+            .eq("numero", xml.numero);
+          if (!error) updated++;
+        }
+      }
+
+      if (updated > 0) {
+        toast.success(`${updated} fatture aggiornate da XML`);
+        invalidateInvoiceCache();
+        refreshInvoices();
+      } else {
+        toast.info("Tutte le fatture sono già complete");
+      }
+    } catch (e) {
+      console.error("Enrich error:", e);
+      toast.error("Errore durante l'aggiornamento");
+    } finally {
+      setEnriching(false);
+    }
+  }, [allPurchases, refreshInvoices]);
+
   const columns: ColumnDef<PurchaseInvoice>[] = useMemo(
     () => [
     { key: "numero", label: "N° Reg.", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true, summaryRender: (rows) => <span className="text-[11px] font-semibold text-muted-foreground">{rows.length} righe</span> },
@@ -558,6 +639,11 @@ const AcquistiPage = () => {
                   {classifying ? "AI..." : `AI (${unclassifiedCount})`}
                 </Button>
               )}
+
+              <Button size="sm" variant="outline" className="h-7 text-xs" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
+                {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
+                {enriching ? "Aggiornamento..." : "Aggiorna da XML"}
+              </Button>
             </div>
           </div>
 
