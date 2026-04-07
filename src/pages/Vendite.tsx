@@ -894,9 +894,11 @@ const VenditePage = () => {
                     rowClassName={(r) => {
                       const nc = isNotaCredito(r);
                       const xml = hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso));
+                      const selected = selectedInvoiceKeys.has(`${r.anno}-${r.numero}`);
                       return [
+                        selected ? "bg-accent/40" : "",
                         nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
-                        xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+                        xml && !nc && !selected ? "bg-green-50/50 dark:bg-green-950/20" : "",
                       ].filter(Boolean).join(" ");
                     }}
                     expandable={(r) => r.righe.length > 1}
