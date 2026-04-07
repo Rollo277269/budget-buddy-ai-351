@@ -336,10 +336,10 @@ const AcquistiPage = () => {
     setEnriching(true);
     let updated = 0;
     try {
-      // Load all matched XML records with parsed_data and storage_path
+      // Load all matched XML records (without heavy parsed_data)
       const { data: xmlRows } = await supabase
         .from("fatture_xml")
-        .select("id, anno, numero, parsed_data, matched, storage_path")
+        .select("id, anno, numero, matched, storage_path")
         .eq("tipo", "acquisto")
         .eq("matched", true);
       if (!xmlRows || xmlRows.length === 0) {
@@ -348,62 +348,73 @@ const AcquistiPage = () => {
         return;
       }
 
-      for (const xml of xmlRows as any[]) {
-        if (!xml.anno || !xml.numero) continue;
-        const pd = xml.parsed_data as any || {};
+      // Only process invoices that have missing fields
+      const invoicesNeedingUpdate = allPurchases.filter(p => !p.cig || !p.cup || !p.partitaIva || !p.scadenza);
+      const needingCigSet = new Set(invoicesNeedingUpdate.map(p => `${p.anno}-${p.numero}`));
 
-        // Extract CIG from parsed XML data
-        let xmlCig = pd.cig || "";
-        
-        // If CIG not in parsed_data, re-parse the raw XML file from storage
-        if (!xmlCig && xml.storage_path) {
+      // Filter XML rows to only those whose invoice needs updating
+      const relevantXmls = (xmlRows as any[]).filter(x => x.anno && x.numero && needingCigSet.has(`${x.anno}-${x.numero}`));
+      
+      if (relevantXmls.length === 0) {
+        toast.info("Tutte le fatture sono già complete");
+        setEnriching(false);
+        return;
+      }
+
+      toast.info(`Analisi di ${relevantXmls.length} XML in corso...`);
+
+      for (const xml of relevantXmls) {
+        const inv = allPurchases.find(p => p.anno === xml.anno && p.numero === xml.numero);
+        if (!inv) continue;
+
+        let xmlCig = "";
+        let xmlCup = "";
+        let pdCedente: any = null;
+        let pdPagamenti: any[] = [];
+
+        // Download and re-parse the XML to extract data
+        if (xml.storage_path) {
           try {
             const { data: fileData } = await supabase.storage.from("fatture-xml").download(xml.storage_path);
             if (fileData) {
               const rawText = await fileData.text();
               const reParsed = parseFatturaPA(rawText);
               xmlCig = reParsed.cig || "";
+              pdCedente = reParsed.cedente;
+              pdPagamenti = reParsed.pagamenti || [];
               
-              // Also update parsed_data in fatture_xml with the new CIG for future use
+              // Search CUP in causale
+              for (const c of reParsed.causale || []) {
+                const match = (c || "").match(/CUP[:\s]*([A-Z0-9]+)/i);
+                if (match) { xmlCup = match[1]; break; }
+              }
+
+              // Update parsed_data with CIG for future use
               if (xmlCig) {
-                const updatedPd = { ...pd, cig: xmlCig };
-                await supabase.from("fatture_xml" as any).update({ parsed_data: updatedPd } as any).eq("id", xml.id);
+                const { data: currentRow } = await supabase
+                  .from("fatture_xml")
+                  .select("parsed_data")
+                  .eq("id", xml.id)
+                  .single();
+                if (currentRow) {
+                  const updatedPd = { ...(currentRow as any).parsed_data, cig: xmlCig };
+                  await supabase.from("fatture_xml" as any).update({ parsed_data: updatedPd } as any).eq("id", xml.id);
+                }
               }
             }
           } catch (e) {
-            console.warn("Could not re-parse XML for CIG:", xml.storage_path, e);
+            console.warn("Could not re-parse XML:", xml.storage_path, e);
+            continue;
           }
-        }
-
-        if (!xmlCig) {
-          // Search in causale
-          const causale = pd.causale || [];
-          for (const c of causale) {
-            const match = (c || "").match(/CIG[:\s]*([A-Z0-9]{10})/i);
-            if (match) { xmlCig = match[1]; break; }
-          }
-        }
-
-        // Extract CUP similarly
-        let xmlCup = "";
-        const causale = pd.causale || [];
-        for (const c of causale) {
-          const match = (c || "").match(/CUP[:\s]*([A-Z0-9]+)/i);
-          if (match) { xmlCup = match[1]; break; }
         }
 
         // Build update payload for empty fields
         const updates: Record<string, any> = {};
-        
-        // Find the matching invoice to check which fields are empty
-        const inv = allPurchases.find(p => p.anno === xml.anno && p.numero === xml.numero);
-        if (!inv) continue;
-
         if (!inv.cig && xmlCig) updates.cig = xmlCig.toUpperCase();
         if (!inv.cup && xmlCup) updates.cup = xmlCup.toUpperCase();
-        if (!inv.partitaIva && pd.cedente?.partitaIva) updates.partita_iva = pd.cedente.partitaIva;
-        if ((!inv.scadenza || inv.scadenza === "") && pd.pagamenti?.length > 0) {
-          const scad = pd.pagamenti[0].dataScadenza;
+        if (!inv.partitaIva && pdCedente?.partitaIva) updates.partita_iva = pdCedente.partitaIva;
+        if ((!inv.scadenza || inv.scadenza === "") && pdPagamenti.length > 0) {
+          const scad = pdPagamenti[0].dataScadenza;
           if (scad) updates.scadenza = scad;
         }
 
