@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useInvoiceData, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { useInvoiceData, PurchaseInvoice, parseExcelPurchases, seedPurchasesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
@@ -15,12 +15,15 @@ import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw, Link2, Trash2, ChevronDown, Pencil, Check, X } from "lucide-react";
+import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, RefreshCw, Link2, Trash2, ChevronDown, Pencil, Check, X, FileSpreadsheet, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,6 +70,12 @@ const AcquistiPage = () => {
   const [xmlDragging, setXmlDragging] = useState(false);
   const xmlDragCounter = useRef(0);
   const [pdfData, setPdfData] = useState<{base64: string;fileName: string;} | null>(null);
+  const [csvDragging, setCsvDragging] = useState(false);
+  const csvDragCounter = useRef(0);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
+  const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
+  const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: PurchaseInvoice[]; colliding: PurchaseInvoice[] } | null>(null);
   const [xmlExpanded, setXmlExpanded] = useState(false);
   const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
@@ -168,6 +177,107 @@ const AcquistiPage = () => {
     setXmlDragging(false);
     await processXmlFiles(Array.from(e.dataTransfer.files));
   }, [processXmlFiles]);
+
+  // CSV/Excel drag handlers
+  const handleCsvDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current++;
+    setCsvDragging(true);
+  }, []);
+  const handleCsvDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current--;
+    if (csvDragCounter.current === 0) setCsvDragging(false);
+  }, []);
+  const handleCsvDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+  }, []);
+  const processCsvFiles = useCallback(async (fileList: File[]) => {
+    const csvFiles = fileList.filter((f) => f.name.toLowerCase().endsWith(".csv"));
+    const xlsFiles = fileList.filter((f) => /\.(xlsx?|xls)$/i.test(f.name));
+
+    if (csvFiles.length > 0) {
+      toast.info(`${csvFiles.length} file CSV ricevuti — funzionalità in arrivo`);
+    }
+
+    for (const file of xlsFiles) {
+      try {
+        const buf = await file.arrayBuffer();
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(buf, { type: "array", cellDates: false, raw: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
+        const parsed = parseExcelPurchases(rows);
+        if (parsed.length === 0) { toast.error(`Nessuna fattura acquisto trovata in ${file.name}`); continue; }
+
+        const keys = parsed.map((i) => `${i.anno}-${i.numero}-${i.tipo || ""}`);
+        const { data: existing } = await supabase
+          .from("fatture_acquisto")
+          .select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig, source_file")
+          .or(keys.map(k => { const [a, n] = k.split("-"); return `and(anno.eq.${a},numero.eq.${n})`; }).join(","));
+
+        const existingMap = new Map<string, any>();
+        (existing || []).forEach((r: any) => existingMap.set(`${r.anno}-${r.numero}-${r.tipo || ""}`, r));
+
+        const newOnly = parsed.filter((i) => !existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+        const colliding = parsed.filter((i) => existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+
+        if (colliding.length === 0) {
+          await seedPurchasesFromExcel(parsed, file.name);
+          toast.success(`Importate ${parsed.length} fatture acquisto da ${file.name}`);
+          invalidateInvoiceCache();
+          setTimeout(() => window.location.reload(), 800);
+        } else {
+          setExcelCollisions(colliding.map((item) => {
+            const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
+            const ex = existingMap.get(key)!;
+            const newHasMore = ((item.descrizione || "").length > (ex.descrizione || "").length) || (item.cig && !ex.cig);
+            return { key, anno: item.anno, numero: item.numero, tipo: item.tipo || "", existingDesc: `${ex.tipo} — ${(ex.descrizione || "").slice(0, 60)}`, newDesc: `${item.tipo || ""} — ${(item.descrizione || "").slice(0, 60)}`, selected: newHasMore || ex.source_file === file.name };
+          }));
+          setPendingExcelUpload({ fileName: file.name, newOnly, colliding });
+          setShowExcelCollisionDialog(true);
+        }
+      } catch (err) {
+        console.error("Excel upload error:", err);
+        toast.error(`Errore importazione ${file.name}`);
+      }
+    }
+
+    if (csvFiles.length === 0 && xlsFiles.length === 0) {
+      toast.error("Seleziona file CSV o Excel (.xlsx)");
+    }
+  }, []);
+
+  const handleExcelConfirmCollisions = useCallback(async () => {
+    if (!pendingExcelUpload) return;
+    setShowExcelCollisionDialog(false);
+    const selectedKeys = new Set(excelCollisions.filter(c => c.selected).map(c => c.key));
+    const overwrite = pendingExcelUpload.colliding.filter((i) => selectedKeys.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
+    const all = [...pendingExcelUpload.newOnly, ...overwrite];
+    if (all.length === 0) { toast.info("Nessun record importato"); return; }
+    await seedPurchasesFromExcel(all, pendingExcelUpload.fileName);
+    const skipped = excelCollisions.length - selectedKeys.size;
+    toast.success(`Importati ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""));
+    invalidateInvoiceCache();
+    setTimeout(() => window.location.reload(), 800);
+  }, [pendingExcelUpload, excelCollisions]);
+
+  const handleExcelCancelCollisions = useCallback(() => {
+    setShowExcelCollisionDialog(false);
+    setPendingExcelUpload(null);
+    setExcelCollisions([]);
+  }, []);
+
+  const handleCsvDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    csvDragCounter.current = 0;
+    setCsvDragging(false);
+    await processCsvFiles(Array.from(e.dataTransfer.files));
+  }, [processCsvFiles]);
+  const handleCsvFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processCsvFiles(Array.from(e.target.files || []));
+    if (csvInputRef.current) csvInputRef.current.value = "";
+  }, [processCsvFiles]);
 
   const handleAIClassify = useCallback(async () => {
     const hasCosto = centriCosto.length > 0;
