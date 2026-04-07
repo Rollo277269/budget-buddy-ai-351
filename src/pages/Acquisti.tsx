@@ -860,7 +860,7 @@ const AcquistiPage = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
                   <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
-                  {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px]">{xmlUnmatchedCount} non assoc.</Badge>}
+                  {xmlUnmatchedCount > 0 && <Badge variant={xmlFilterUnmatched ? "default" : "destructive"} className="text-[10px] cursor-pointer" onClick={() => setXmlFilterUnmatched(f => !f)}>{xmlUnmatchedCount} non assoc.{xmlFilterUnmatched ? " ✕" : ""}</Badge>}
                   {selectedXmlIds.size > 0 && (
                     <Badge variant="secondary" className="text-[10px] cursor-pointer" onClick={() => setSelectedXmlIds(new Set())}>
                       {selectedXmlIds.size} selezionati ✕
