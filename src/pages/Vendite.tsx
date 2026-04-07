@@ -538,15 +538,21 @@ const VenditePage = () => {
           const sign = isNotaCredito(r) ? -1 : 1;
           if (!filters.centroRicavo) return s + sign * Math.abs(r.totale);
           const headerKey = `${r.anno}-${r.numero}`;
-          if (ricavoMap.map[headerKey] === filters.centroRicavo) {
-            const hasRowAssignments = r.righe?.some((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`]);
-            if (!hasRowAssignments) return s + sign * Math.abs(r.totale);
+          const headerMatch = ricavoMap.map[headerKey] === filters.centroRicavo;
+          const righe = r.righe || [];
+          const matchingCount = righe.filter((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo).length;
+          const hasRowAssignments = righe.some((_: any, idx: number) => !!ricavoMap.map[`${headerKey}-${idx}`]);
+          if ((matchingCount === righe.length && righe.length > 0) || (headerMatch && !hasRowAssignments)) {
+            return s + sign * Math.abs(r.totale);
           }
-          let rowSum = 0;
-          r.righe?.forEach((riga: any, idx: number) => {
-            if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.totale;
-          });
-          return s + sign * Math.abs(rowSum || r.totale);
+          if (matchingCount > 0) {
+            let rowSum = 0;
+            righe.forEach((riga: any, idx: number) => {
+              if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.totale;
+            });
+            return s + sign * Math.abs(rowSum);
+          }
+          return s + sign * Math.abs(r.totale);
         }, 0);
         return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>;
       } },
