@@ -330,6 +330,24 @@ const AcquistiPage = () => {
     }
   }, [purchases, centri, centriCosto, centriRicavo, costoMap, ricavoMap]);
 
+  // ── XML selection for targeted operations ──
+  const [selectedXmlIds, setSelectedXmlIds] = useState<Set<string>>(new Set());
+  const toggleXmlSelection = useCallback((id: string) => {
+    setSelectedXmlIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleAllXml = useCallback((records: typeof xmlRecords) => {
+    setSelectedXmlIds(prev => {
+      const ids = records.map(r => r.id);
+      const allSelected = ids.every(id => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(ids);
+    });
+  }, []);
+
   // ── Enrich invoices from XML/PDF data ──
   const [enriching, setEnriching] = useState(false);
   const handleEnrichFromXml = useCallback(async () => {
