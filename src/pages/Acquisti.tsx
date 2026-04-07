@@ -124,14 +124,26 @@ const AcquistiPage = () => {
     })();
   }, [purchases]);
 
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allPurchases, "acquisto");
+  const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
+
+  const [xmlFilterUnmatched, setXmlFilterUnmatched] = useState(false);
+
   const displayedPurchases = useMemo(() => {
-    if (!filters.centroCosto) return purchases;
-    // Special case: show unclassified invoices (no centro assigned)
-    if (filters.centroCosto === "__unassigned__") {
-      return purchases.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`]);
+    let result = purchases;
+    if (filters.centroCosto) {
+      if (filters.centroCosto === "__unassigned__") {
+        result = result.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`]);
+      } else {
+        result = result.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
+      }
     }
-    return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
-  }, [purchases, filters.centroCosto, costoMap.map]);
+    if (xmlFilterUnmatched) {
+      result = result.filter((p) => !xmlMap.has(`${p.anno}-${p.numero}`));
+    }
+    return result;
+  }, [purchases, filters.centroCosto, costoMap.map, xmlFilterUnmatched, xmlMap]);
 
   // ── Invoice row selection for bulk operations ──
   const [selectedInvoiceKeys, setSelectedInvoiceKeys] = useState<Set<string>>(new Set());
@@ -150,10 +162,6 @@ const AcquistiPage = () => {
       return new Set(keys);
     });
   }, [displayedPurchases]);
-
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allPurchases, "acquisto");
-  const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
-  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
     const parsed = await fetchParsedData(record.id);
@@ -852,7 +860,7 @@ const AcquistiPage = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
                   <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
-                  {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px]">{xmlUnmatchedCount} non assoc.</Badge>}
+                  {xmlUnmatchedCount > 0 && <Badge variant={xmlFilterUnmatched ? "default" : "destructive"} className="text-[10px] cursor-pointer" onClick={() => setXmlFilterUnmatched(f => !f)}>{xmlUnmatchedCount} non assoc.{xmlFilterUnmatched ? " ✕" : ""}</Badge>}
                   {selectedXmlIds.size > 0 && (
                     <Badge variant="secondary" className="text-[10px] cursor-pointer" onClick={() => setSelectedXmlIds(new Set())}>
                       {selectedXmlIds.size} selezionati ✕
