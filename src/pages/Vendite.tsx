@@ -519,7 +519,7 @@ const VenditePage = () => {
                 {Array.from(codes).map((code) => {
                   const centro = centri.find((c) => c.codice === code && c.tipo === "ricavo");
                   return (
-                    <Badge key={code} variant="outline" className="text-[10px] font-mono px-1 py-0">
+                    <Badge key={code} variant="outline" className="px-1 py-0 font-thin text-xs font-sans">
                       {code}{centro ? ` - ${centro.descrizione.slice(0, 15)}` : ""}
                     </Badge>
                   );
