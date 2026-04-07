@@ -390,12 +390,50 @@ export function useInvoiceData() {
     });
   }, []);
 
+  const normalizedSales = useMemo(() => {
+    return sales.map((invoice) => {
+      const righe = Array.isArray(invoice.righe) ? invoice.righe : [];
+      if (righe.length === 0) return invoice;
+
+      const sumRowsImponibile = righe.reduce((sum, riga) => sum + parseNumber(riga.imponibile), 0);
+      const sumRowsTotale = righe.reduce((sum, riga) => sum + parseNumber(riga.totale), 0);
+      const hasLegacyRowAmounts =
+        Math.abs(sumRowsTotale - invoice.imponibile) < 0.05 &&
+        Math.abs(sumRowsImponibile - invoice.imponibile) > 0.05;
+
+      if (!hasLegacyRowAmounts) return invoice;
+
+      return {
+        ...invoice,
+        righe: righe.map((riga) => {
+          const imponibile = parseNumber(riga.imponibile);
+          const imposta = parseNumber(riga.imposta);
+          const totale = parseNumber(riga.totale);
+
+          if (imponibile <= 0 || totale <= 0) return riga;
+
+          const aliquota = imponibile > 0 ? imposta / imponibile : 0;
+          const nextImponibile = Math.round(totale * 100) / 100;
+          const nextImposta = Math.round(nextImponibile * aliquota * 100) / 100;
+          const nextTotale = Math.round((nextImponibile + nextImposta) * 100) / 100;
+
+          return {
+            ...riga,
+            imponibile: nextImponibile,
+            imposta: nextImposta,
+            totale: nextTotale,
+          };
+        }),
+      };
+    });
+  }, [sales]);
+
   const filterOptions = useMemo(() => {
     const years = new Set<number>();
     const clients = new Set<string>();
     const suppliers = new Set<string>();
     const cigs = new Set<string>();
-    sales.forEach((s) => { if (s.anno) years.add(s.anno); if (s.cliente) clients.add(s.cliente); if (s.cig) cigs.add(s.cig); });
+    normalizedSales.forEach((s) => { if (s.anno) years.add(s.anno); if (s.cliente) clients.add(s.cliente); if (s.cig) cigs.add(s.cig); });
     purchases.forEach((p) => { if (p.anno) years.add(p.anno); if (p.fornitore) suppliers.add(p.fornitore); if (p.cig) cigs.add(p.cig); });
     return {
       years: Array.from(years).filter(y => !isNaN(y)).sort((a, b) => b - a),
@@ -403,16 +441,16 @@ export function useInvoiceData() {
       suppliers: Array.from(suppliers).filter(Boolean).sort(),
       cigs: Array.from(cigs).filter(Boolean).sort(),
     };
-  }, [sales, purchases]);
+  }, [normalizedSales, purchases]);
 
   const filteredSales = useMemo(() => {
-    return sales.filter((s) => {
+    return normalizedSales.filter((s) => {
       if (filters.anno && s.anno !== parseInt(filters.anno)) return false;
       if (filters.cliente && s.cliente !== filters.cliente) return false;
       if (filters.cig && s.cig !== filters.cig) return false;
       return true;
     });
-  }, [sales, filters]);
+  }, [normalizedSales, filters]);
 
   const filteredPurchases = useMemo(() => {
     return purchases.filter((p) => {
@@ -426,7 +464,7 @@ export function useInvoiceData() {
   return {
     sales: filteredSales,
     purchases: filteredPurchases,
-    allSales: sales,
+    allSales: normalizedSales,
     allPurchases: purchases,
     loading,
     filters,
