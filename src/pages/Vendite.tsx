@@ -577,19 +577,22 @@ const VenditePage = () => {
         return;
       }
 
-      // If specific XMLs are selected, filter to only those
-      const targetXmls = selectedXmlIds.size > 0
-        ? (xmlRows as any[]).filter(x => selectedXmlIds.has(x.id))
-        : xmlRows as any[];
+      // Filter by selected invoices or selected XMLs
+      let targetXmls = xmlRows as any[];
+      if (selectedInvoiceKeys.size > 0) {
+        targetXmls = targetXmls.filter(x => x.anno && x.numero && selectedInvoiceKeys.has(`${x.anno}-${x.numero}`));
+      } else if (selectedXmlIds.size > 0) {
+        targetXmls = targetXmls.filter(x => selectedXmlIds.has(x.id));
+      }
 
-      const invoicesNeedingUpdate = selectedXmlIds.size > 0
+      const invoicesNeedingUpdate = (selectedInvoiceKeys.size > 0 || selectedXmlIds.size > 0)
         ? allSales
         : allSales.filter(s => !s.cig || !s.cup || !s.partitaIva || !s.scadenza);
       const needingSet = new Set(invoicesNeedingUpdate.map(s => `${s.anno}-${s.numero}`));
       const relevantXmls = targetXmls.filter(x => x.anno && x.numero && needingSet.has(`${x.anno}-${x.numero}`));
 
       if (relevantXmls.length === 0) {
-        toast.info(selectedXmlIds.size > 0 ? "Nessun XML selezionato associato trovato" : "Tutte le fatture sono già complete");
+        toast.info(selectedInvoiceKeys.size > 0 ? "Nessun XML associato alle fatture selezionate" : selectedXmlIds.size > 0 ? "Nessun XML selezionato associato trovato" : "Tutte le fatture sono già complete");
         setEnriching(false);
         return;
       }
