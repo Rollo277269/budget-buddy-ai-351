@@ -124,6 +124,10 @@ const AcquistiPage = () => {
     })();
   }, [purchases]);
 
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allPurchases, "acquisto");
+  const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
+  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
+
   const [xmlFilterUnmatched, setXmlFilterUnmatched] = useState(false);
 
   const displayedPurchases = useMemo(() => {
@@ -158,10 +162,6 @@ const AcquistiPage = () => {
       return new Set(keys);
     });
   }, [displayedPurchases]);
-
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allPurchases, "acquisto");
-  const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
-  const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
     const parsed = await fetchParsedData(record.id);
