@@ -348,14 +348,14 @@ export default function BilancioPage() {
         <StatCard
           title="Totale Ricavi"
           value={formatCurrency(globalKpis.ricavi)}
-          subtitle={`${globalKpis.numVendite} fatture`}
+          subtitle={`${globalKpis.numVendite} fatture${unclassifiedCounts.ricavo ? ` · ${unclassifiedCounts.ricavo} non classificate` : ""}`}
           icon={TrendingUp}
           variant="income" />
         
         <StatCard
           title="Totale Costi"
           value={formatCurrency(globalKpis.costi)}
-          subtitle={`${globalKpis.numAcquisti} fatture${globalKpis.numDocumenti ? ` + ${globalKpis.numDocumenti} doc` : ""}`}
+          subtitle={`${globalKpis.numAcquisti} fatture${globalKpis.numDocumenti ? ` + ${globalKpis.numDocumenti} doc` : ""}${unclassifiedCounts.costo ? ` · ${unclassifiedCounts.costo} non classificate` : ""}`}
           icon={TrendingDown}
           variant="expense" />
         
