@@ -487,26 +487,32 @@ const VenditePage = () => {
         key: "centroRicavo", label: "Centro Ricavo", filterable: true,
         filterValue: (r) => {
           const codes = new Set<string>();
-          const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
-          if (headerCode) codes.add(headerCode);
           if (r.righe && r.righe.length > 1) {
             r.righe.forEach((_: any, idx: number) => {
               const rowCode = ricavoMap.map[`${r.anno}-${r.numero}-${idx}`];
               if (rowCode) codes.add(rowCode);
             });
           }
+          // Only use header-level if no per-row assignments found
+          if (codes.size === 0) {
+            const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
+            if (headerCode) codes.add(headerCode);
+          }
           return Array.from(codes).join(", ") || "";
         },
         render: (r) => {
-          // Collect all distinct centri from header + per-row assignments
+          // Collect per-row assignments first
           const codes = new Set<string>();
-          const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
-          if (headerCode) codes.add(headerCode);
           if (r.righe && r.righe.length > 1) {
             r.righe.forEach((_: any, idx: number) => {
               const rowCode = ricavoMap.map[`${r.anno}-${r.numero}-${idx}`];
               if (rowCode) codes.add(rowCode);
             });
+          }
+          // Only fall back to header-level if no per-row assignments
+          if (codes.size === 0) {
+            const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
+            if (headerCode) codes.add(headerCode);
           }
           if (codes.size > 1) {
             // Multiple centri: show as badges
