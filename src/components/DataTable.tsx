@@ -407,7 +407,7 @@ export function DataTable<T extends Record<string, any>>({
                         style={useVirtual ? { height: ROW_HEIGHT } : undefined}
                       >
                         {expandable && (
-                          <TableCell className="w-8 px-1">
+                          <TableCell className="w-8 px-1 text-xs font-sans font-normal">
                             {isExpandable && (
                               <Button
                                 variant="ghost"
