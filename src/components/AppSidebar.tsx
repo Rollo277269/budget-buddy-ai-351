@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users, PanelLeftClose, PanelLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -60,7 +61,7 @@ function saveOrder(items: MenuItem[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map((i) => i.url)));
 }
 
-export function AppSidebar() {
+export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggleLock: () => void }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const [items, setItems] = useState<MenuItem[]>(loadOrder);
@@ -103,7 +104,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="flex items-center px-2 pt-3 pb-1" />
+      <SidebarHeader className="flex items-center px-2 pt-3 pb-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={onToggleLock}
+          title={locked ? "Sblocca menu laterale" : "Blocca menu laterale"}
+        >
+          {locked ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+        </Button>
+      </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
