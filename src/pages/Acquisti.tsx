@@ -751,6 +751,11 @@ const AcquistiPage = () => {
                   <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
                   <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
                   {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px]">{xmlUnmatchedCount} non assoc.</Badge>}
+                  {selectedXmlIds.size > 0 && (
+                    <Badge variant="secondary" className="text-[10px] cursor-pointer" onClick={() => setSelectedXmlIds(new Set())}>
+                      {selectedXmlIds.size} selezionati ✕
+                    </Badge>
+                  )}
                   <div className="ml-auto flex gap-1">
                     {xmlDuplicateCount > 0 && (
                       <AlertDialog>
