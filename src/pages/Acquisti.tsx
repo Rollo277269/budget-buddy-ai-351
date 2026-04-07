@@ -124,6 +124,24 @@ const AcquistiPage = () => {
     return purchases.filter((p) => costoMap.map[`${p.anno}-${p.numero}`] === filters.centroCosto);
   }, [purchases, filters.centroCosto, costoMap.map]);
 
+  // ── Invoice row selection for bulk operations ──
+  const [selectedInvoiceKeys, setSelectedInvoiceKeys] = useState<Set<string>>(new Set());
+  const toggleInvoiceSelection = useCallback((key: string) => {
+    setSelectedInvoiceKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
+  const toggleAllInvoices = useCallback(() => {
+    setSelectedInvoiceKeys(prev => {
+      const keys = displayedPurchases.map(r => `${r.anno}-${r.numero}`);
+      const allSelected = keys.length > 0 && keys.every(k => prev.has(k));
+      if (allSelected) return new Set();
+      return new Set(keys);
+    });
+  }, [displayedPurchases]);
+
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allPurchases, "acquisto");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
   const [xmlPickerInvoice, setXmlPickerInvoice] = useState<PurchaseInvoice | null>(null);
