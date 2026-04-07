@@ -133,6 +133,22 @@ const VenditePage = () => {
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
   const [xmlPickerInvoice, setXmlPickerInvoice] = useState<SaleInvoice | null>(null);
   const [enriching, setEnriching] = useState(false);
+  const [selectedXmlIds, setSelectedXmlIds] = useState<Set<string>>(new Set());
+  const toggleXmlSelection = useCallback((id: string) => {
+    setSelectedXmlIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleAllXml = useCallback((records: typeof xmlRecords) => {
+    setSelectedXmlIds(prev => {
+      const ids = records.map(r => r.id);
+      const allSelected = ids.every(id => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(ids);
+    });
+  }, []);
 
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
     const parsed = await fetchParsedData(record.id);
