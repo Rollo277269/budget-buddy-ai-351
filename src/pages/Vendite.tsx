@@ -507,25 +507,7 @@ const VenditePage = () => {
     return dupes;
   }, [xmlRecords]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  const hasCentri = centriRicavo.length > 0 || centriCosto.length > 0;
-  const unclassifiedCount = sales.filter((s) => {
-    const k = `${s.anno}-${s.numero}`;
-    return (centriRicavo.length > 0 && !ricavoMap.map[k]) || (centriCosto.length > 0 && !costoMap.map[k]);
-  }).length;
-
-  const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
-  const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
-
   // ── Enrich invoices from XML data ──
-  
   const handleEnrichFromXml = useCallback(async () => {
     setEnriching(true);
     let updated = 0;
@@ -616,6 +598,24 @@ const VenditePage = () => {
       setEnriching(false);
     }
   }, [allSales, refreshInvoices]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const hasCentri = centriRicavo.length > 0 || centriCosto.length > 0;
+  const unclassifiedCount = sales.filter((s) => {
+    const k = `${s.anno}-${s.numero}`;
+    return (centriRicavo.length > 0 && !ricavoMap.map[k]) || (centriCosto.length > 0 && !costoMap.map[k]);
+  }).length;
+
+  const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
+  const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
+
 
   return (
     <>
