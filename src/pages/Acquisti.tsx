@@ -317,7 +317,7 @@ const AcquistiPage = () => {
       const batchSize = 20;
 
       if (hasCosto) {
-        const unclassified = purchases.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`]);
+        const unclassified = purchases.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`] && (p.totale || 0) !== 0);
         for (let i = 0; i < unclassified.length; i += batchSize) {
           const batch = unclassified.slice(i, i + batchSize);
           const { data, error } = await supabase.functions.invoke("classify-centro-ricavo", {
@@ -331,7 +331,7 @@ const AcquistiPage = () => {
       }
 
       if (hasRicavo) {
-        const unclassified = purchases.filter((p) => !ricavoMap.map[`${p.anno}-${p.numero}`]);
+        const unclassified = purchases.filter((p) => !ricavoMap.map[`${p.anno}-${p.numero}`] && (p.totale || 0) !== 0);
         for (let i = 0; i < unclassified.length; i += batchSize) {
           const batch = unclassified.slice(i, i + batchSize);
           const { data, error } = await supabase.functions.invoke("classify-centro-ricavo", {

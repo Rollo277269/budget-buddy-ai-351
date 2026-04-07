@@ -359,13 +359,13 @@ const VenditePage = () => {
           if (s.righe && s.righe.length > 1) {
             s.righe.forEach((riga, idx) => {
               const key = `${s.anno}-${s.numero}-${idx}`;
-              if (!ricavoMap.map[key]) {
+              if (!ricavoMap.map[key] && (riga.totale || 0) !== 0) {
                 items.push({ id: key, invoice: { ...s, descrizione: riga.descrizione || s.descrizione, totale: riga.totale, cig: riga.cig || s.cig } });
               }
             });
           } else {
             const key = `${s.anno}-${s.numero}`;
-            if (!ricavoMap.map[key]) {
+            if (!ricavoMap.map[key] && (s.totale || 0) !== 0) {
               items.push({ id: key, invoice: s });
             }
           }
@@ -383,7 +383,7 @@ const VenditePage = () => {
         }
       }
       if (hasCosto) {
-        const unclassified = sales.filter((s) => !costoMap.map[`${s.anno}-${s.numero}`]);
+        const unclassified = sales.filter((s) => !costoMap.map[`${s.anno}-${s.numero}`] && (s.totale || 0) !== 0);
         for (let i = 0; i < unclassified.length; i += batchSize) {
           const batch = unclassified.slice(i, i + batchSize);
           const { data, error } = await supabase.functions.invoke("classify-centro-ricavo", {
