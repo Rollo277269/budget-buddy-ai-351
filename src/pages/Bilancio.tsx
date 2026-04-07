@@ -222,16 +222,53 @@ export default function BilancioPage() {
   }, [allPurchases, costoMapAcquisti, centriCosto, annoFilter, documenti]);
 
   const barData = useMemo(() => {
-    const data = annoFilter ?
-    yearSummaries.filter((y) => y.anno === annoFilter) :
-    yearSummaries;
-    return data.map((y) => ({
+    if (annoFilter) {
+      // Monthly breakdown for the selected year
+      const monthNames = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+      const months: { Ricavi: number; Costi: number; Saldo: number }[] = Array.from({ length: 12 }, () => ({ Ricavi: 0, Costi: 0, Saldo: 0 }));
+
+      const getMonth = (dateStr: string): number | null => {
+        const parts = dateStr.split("/");
+        if (parts.length === 3) return parseInt(parts[1], 10) - 1;
+        const serial = parseFloat(dateStr);
+        if (!isNaN(serial) && serial > 30000) {
+          return new Date((serial - 25569) * 86400 * 1000).getMonth();
+        }
+        return null;
+      };
+
+      allSales.filter(s => s.anno === annoFilter).forEach(s => {
+        const m = getMonth(s.data);
+        if (m !== null) months[m].Ricavi += s.imponibile;
+      });
+      allPurchases.filter(p => p.anno === annoFilter).forEach(p => {
+        const m = getMonth(p.data);
+        if (m !== null) months[m].Costi += p.imponibile;
+      });
+      documenti.filter(d => d.importo && parseYearFromDate(d.data_documento) === annoFilter).forEach(d => {
+        const dateStr = d.data_documento;
+        if (!dateStr) return;
+        const parts = dateStr.split("-");
+        if (parts.length >= 2) {
+          const m = parseInt(parts[1], 10) - 1;
+          if (m >= 0 && m < 12) months[m].Costi += d.importo || 0;
+        }
+      });
+
+      return months.map((m, i) => ({
+        name: monthNames[i],
+        Ricavi: Math.round(m.Ricavi),
+        Costi: Math.round(m.Costi),
+        Saldo: Math.round(m.Ricavi - m.Costi),
+      }));
+    }
+    return yearSummaries.map((y) => ({
       name: String(y.anno),
       Ricavi: y.ricavi,
       Costi: y.costi,
-      Saldo: y.saldo
+      Saldo: y.saldo,
     }));
-  }, [yearSummaries, annoFilter]);
+  }, [yearSummaries, annoFilter, allSales, allPurchases, documenti]);
 
   const handleExportPdf = useCallback(() => {
     document.body.classList.add("print-report");
@@ -312,12 +349,12 @@ export default function BilancioPage() {
         
       </div>
 
-      {/* Yearly comparison chart */}
+      {/* Yearly/Monthly comparison chart */}
       {barData.length > 1 &&
       <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            Confronto annuale
+            {annoFilter ? `Confronto mensile ${annoFilter}` : "Confronto annuale"}
           </h2>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={barData} barGap={4}>
