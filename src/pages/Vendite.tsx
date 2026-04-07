@@ -501,7 +501,6 @@ const VenditePage = () => {
           return Array.from(codes).join(", ") || "";
         },
         render: (r) => {
-          // Collect per-row assignments first
           const codes = new Set<string>();
           if (r.righe && r.righe.length > 1) {
             r.righe.forEach((_: any, idx: number) => {
@@ -509,13 +508,12 @@ const VenditePage = () => {
               if (rowCode) codes.add(rowCode);
             });
           }
-          // Only fall back to header-level if no per-row assignments
-          if (codes.size === 0) {
+          const hasRowAssignments = codes.size > 0;
+          if (!hasRowAssignments) {
             const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
             if (headerCode) codes.add(headerCode);
           }
-          if (codes.size > 1) {
-            // Multiple centri: show as badges
+          if (hasRowAssignments || codes.size > 1) {
             return (
               <div className="flex flex-wrap gap-0.5">
                 {Array.from(codes).map((code) => {
@@ -529,7 +527,6 @@ const VenditePage = () => {
               </div>
             );
           }
-          // Single or none: use standard CentroCell
           return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} onRemove={ricavoMap.remove} />;
         },
       },
