@@ -823,73 +823,6 @@ const AcquistiPage = () => {
                     )}
                   </div>
                 </div>
-                {xmlRecords.length > 0 && (
-                  <div className="max-h-[300px] overflow-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="text-[10px]">
-                          <TableHead className="h-7 w-8 px-1">
-                            <Checkbox
-                              checked={xmlRecords.length > 0 && xmlRecords.every(r => selectedXmlIds.has(r.id))}
-                              onCheckedChange={() => toggleAllXml(xmlRecords)}
-                              className="h-3.5 w-3.5"
-                            />
-                          </TableHead>
-                          <TableHead className="h-7 text-[10px]">File</TableHead>
-                          <TableHead className="h-7 text-[10px]">N° Doc</TableHead>
-                          <TableHead className="h-7 text-[10px]">Cedente</TableHead>
-                          <TableHead className="h-7 text-[10px] text-right">Importo</TableHead>
-                          <TableHead className="h-7 text-[10px]">Data</TableHead>
-                          <TableHead className="h-7 text-[10px]">Stato</TableHead>
-                          <TableHead className="h-7 text-[10px] w-[70px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {xmlRecords.map((r) => (
-                          <TableRow key={r.id} className={`cursor-pointer hover:bg-accent/50 ${selectedXmlIds.has(r.id) ? "bg-accent/30" : ""}`} onClick={() => openXmlSheet(r)}>
-                            <TableCell className="py-1 px-1" onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={selectedXmlIds.has(r.id)}
-                                onCheckedChange={() => toggleXmlSelection(r.id)}
-                                className="h-3.5 w-3.5"
-                              />
-                            </TableCell>
-                            <TableCell className="text-[11px] py-1 max-w-[180px] truncate">
-                              <FileText className="h-3 w-3 mr-1 inline text-muted-foreground" />
-                              {r.file_name}
-                            </TableCell>
-                            <TableCell className="text-[11px] py-1 font-mono">
-                              {r.numero_documento || `${r.numero || "?"}/${r.anno || "?"}`}
-                            </TableCell>
-                            <TableCell className="text-[11px] py-1 max-w-[160px] truncate">{r.cedente_denominazione || "—"}</TableCell>
-                            <TableCell className="text-[11px] py-1 font-mono text-right">{r.importo_totale != null ? formatCurrency(r.importo_totale) : "—"}</TableCell>
-                            <TableCell className="text-[11px] py-1">{r.data_fattura || "—"}</TableCell>
-                            <TableCell className="py-1">
-                              {r.matched
-                                ? <Badge className="text-[9px] h-4 px-1">Assoc.</Badge>
-                                : <Badge variant="destructive" className="text-[9px] h-4 px-1">Non assoc.</Badge>
-                              }
-                            </TableCell>
-                            <TableCell className="py-1">
-                              {!r.matched && (
-                                <Button size="sm" variant="outline" className="h-5 text-[10px] px-2" onClick={(e) => {
-                                  e.stopPropagation();
-                                  const fakePurchase = { anno: r.anno || 0, numero: r.numero || 0, fornitore: r.cedente_denominazione || "", totale: r.importo_totale || 0, imposta: 0, cig: "" } as PurchaseInvoice;
-                                  setXmlPickerInvoice(fakePurchase);
-                                }}>
-                                  <Link2 className="h-3 w-3 mr-1" />Associa
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-                {xmlRecords.length === 0 && (
-                  <p className="text-xs text-muted-foreground py-2">Nessuna fattura XML caricata. Usa il pulsante XML nell'header per caricare.</p>
-                )}
                 {/* Main invoices table */}
                 <div className="pt-2">
                   <DataTable<PurchaseInvoice>
@@ -902,9 +835,11 @@ const AcquistiPage = () => {
                     rowClassName={(r) => {
                       const nc = isNotaCredito(r);
                       const xml = hasXml(`${r.anno}-${r.numero}`);
+                      const selected = selectedInvoiceKeys.has(`${r.anno}-${r.numero}`);
                       return [
+                        selected ? "bg-accent/40" : "",
                         nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
-                        xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+                        xml && !nc && !selected ? "bg-green-50/50 dark:bg-green-950/20" : "",
                       ].filter(Boolean).join(" ");
                     }}
                   />
