@@ -169,7 +169,6 @@ const VenditePage = () => {
     return result;
   }, [sales, filters.anno, filters.centroRicavo, ricavoMap.map, xmlFilterUnmatched, xmlMap]);
 
-  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
   const [xmlPickerInvoice, setXmlPickerInvoice] = useState<SaleInvoice | null>(null);
   const [enriching, setEnriching] = useState(false);
