@@ -76,8 +76,25 @@ function formatDate(val: any): string {
 
 function extractCIG(desc: string): string {
   if (!desc) return "";
-  const match = desc.match(/CIG[:\s]*([A-Z0-9]+)/i);
+  const match = desc.match(/CIG[:\s]*([A-Z0-9]{10})/i);
   return match ? match[1] : "";
+}
+
+/** Search for CIG pattern across all columns in a row */
+function extractCIGFromRow(row: any[]): string {
+  for (let c = 0; c < row.length; c++) {
+    const val = String(row[c] || "");
+    const match = val.match(/CIG[:\s]*([A-Z0-9]{10})/i);
+    if (match) return match[1];
+  }
+  // Second pass: look for standalone 10-char alphanumeric codes that look like CIG
+  for (let c = 0; c < row.length; c++) {
+    const val = String(row[c] || "").trim();
+    if (/^[A-Z0-9]{10}$/i.test(val) && /[A-Z]/i.test(val) && /\d/.test(val)) {
+      return val.toUpperCase();
+    }
+  }
+  return "";
 }
 
 function extractCUP(desc: string): string {
@@ -134,7 +151,7 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
         cliente: String(r[6] || ""), partitaIva: String(r[8] || ""),
         totale: parseNumber(r[21]), imponibile: parseNumber(r[22]),
         imposta: parseNumber(r[23]), descrizione: desc,
-        cig: extractCIG(desc), cup: extractCUP(desc),
+        cig: extractCIG(desc) || extractCIGFromRow(r), cup: extractCUP(desc),
         stato: String(r[44] || ""), scadenza: String(r[9] || ""),
         pagamento: String(r[10] || ""), righe: [riga],
       });
@@ -169,7 +186,7 @@ export function parseExcelPurchases(rows: any[]): PurchaseInvoice[] {
       cassa: parseNumber(r[28]),
       ritenute: parseNumber(r[31]),
       descrizione: desc,
-      cig: extractCIG(desc), cup: extractCUP(desc),
+      cig: extractCIG(desc) || extractCIGFromRow(r), cup: extractCUP(desc),
       stato: String(r[46] || ""), scadenza: String(r[11] || ""),
       pagamento: String(r[12] || ""),
     });

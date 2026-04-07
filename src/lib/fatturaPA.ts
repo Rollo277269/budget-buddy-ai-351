@@ -25,6 +25,8 @@ export interface FatturaPAAllegato {
 }
 
 export interface FatturaPAData {
+  // CIG
+  cig: string;
   // Cedente/Prestatore (seller)
   cedente: {
     denominazione: string;
@@ -175,6 +177,25 @@ export function parseFatturaPA(xmlString: string): FatturaPAData {
   const causaleEls = findAllElements(doc, "Causale");
   const causale = causaleEls.map((c) => c.textContent?.trim() || "");
 
+  // Extract CIG from DatiOrdineAcquisto, DatiContratto, DatiConvenzione, DatiRicezione, DatiFattureCollegate
+  let cig = "";
+  const cigSources = ["DatiOrdineAcquisto", "DatiContratto", "DatiConvenzione", "DatiRicezione", "DatiFattureCollegate"];
+  for (const source of cigSources) {
+    if (cig) break;
+    const els = findAllElements(doc, source);
+    for (const el of els) {
+      const found = getText(el, "CodiceCIG");
+      if (found) { cig = found; break; }
+    }
+  }
+  // Fallback: search in Causale text
+  if (!cig) {
+    for (const c of causale) {
+      const match = c.match(/CIG[:\s]*([A-Z0-9]{10})/i);
+      if (match) { cig = match[1]; break; }
+    }
+  }
+
   return {
     cedente: parseAnagrafica(cedentePrestatore),
     cessionario: parseAnagrafica(cessionarioCommittente),
@@ -187,6 +208,7 @@ export function parseFatturaPA(xmlString: string): FatturaPAData {
     riepilogoIVA,
     pagamenti,
     allegati,
+    cig,
     causale,
     rawXml: xmlString,
   };
