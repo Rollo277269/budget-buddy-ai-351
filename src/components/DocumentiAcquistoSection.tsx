@@ -37,7 +37,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
 }
 
 /* ── Column definitions ── */
-type ColumnKey = "descrizione" | "file_name" | "fornitore" | "data" | "importo" | "cig" | "centro_costo";
+type ColumnKey = "descrizione" | "file_name" | "fornitore" | "data" | "importo" | "cig" | "centro_costo" | "created_at";
 
 interface ColumnDef {
   key: ColumnKey;
@@ -54,6 +54,7 @@ function buildColumns(tipo: "acquisto" | "vendita"): ColumnDef[] {
     { key: "importo", label: "Importo", defaultVisible: true },
     { key: "cig", label: "CIG", defaultVisible: true },
     { key: "centro_costo", label: tipo === "vendita" ? "Centro Ricavo" : "Centro Costo", defaultVisible: true },
+    { key: "created_at", label: "Data caricamento", defaultVisible: true },
   ];
 }
 
@@ -127,6 +128,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
       case "importo": return doc.importo || 0;
       case "cig": return (doc.cig || "").toLowerCase();
       case "centro_costo": return (doc.centro_costo || "").toLowerCase();
+      case "created_at": return doc.created_at || "";
     }
   };
 
