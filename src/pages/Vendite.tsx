@@ -89,11 +89,13 @@ const VenditePage = () => {
   // ── Reconciliation data for payment columns ──
   const [reconMap, setReconMap] = useState<Record<string, { paid: number; lastDate: string }>>({});
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const { data: recons } = await supabase
         .from("bank_reconciliations")
         .select("movement_id, invoice_anno, invoice_numero, invoice_type")
         .eq("invoice_type", "vendita");
+      if (cancelled) return;
       if (!recons || recons.length === 0) { setReconMap({}); return; }
 
       const movementIds = [...new Set(recons.map((r: any) => r.movement_id))];
@@ -104,6 +106,7 @@ const VenditePage = () => {
           .from("bank_movements")
           .select("id, importo, data")
           .in("id", batch);
+        if (cancelled) return;
         if (movs) movs.forEach((m: any) => { movements[m.id] = { importo: Math.abs(Number(m.importo)), data: m.data }; });
       }
 
@@ -119,8 +122,9 @@ const VenditePage = () => {
           if (mov.data > map[key].lastDate) map[key].lastDate = mov.data;
         }
       }
-      setReconMap(map);
+      if (!cancelled) setReconMap(map);
     })();
+    return () => { cancelled = true; };
   }, [sales]);
   const displayedSales = useMemo(() => {
     const selectedYear = filters.anno.trim();
