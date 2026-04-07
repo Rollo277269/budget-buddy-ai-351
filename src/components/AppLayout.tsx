@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { FileText, Maximize, Minimize, Moon, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
+import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
@@ -102,7 +102,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
     <SidebarProvider defaultOpen={sidebarLocked}>
       <div className="min-h-screen flex w-full">
         <SidebarHoverWrapper locked={sidebarLocked}>
-          <AppSidebar />
+          <AppSidebar locked={sidebarLocked} onToggleLock={toggleLock} />
         </SidebarHoverWrapper>
         <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-30 border-b bg-card h-14 flex items-center px-4 gap-3 shrink-0">
@@ -113,9 +113,6 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               <h1 className="font-bold tracking-tight text-3xl">{title}</h1>
             </div>
             <div className="ml-auto flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleLock} title={sidebarLocked ? "Sblocca menu laterale" : "Blocca menu laterale"}>
-                {sidebarLocked ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleDark} title={dark ? "Modalità chiara" : "Modalità notte"}>
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
