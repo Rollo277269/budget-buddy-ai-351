@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, AlertTriangle, RefreshCcw } from "lucide-react";
+import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, RefreshCw, Trash2, FileSpreadsheet, AlertTriangle, RefreshCcw, Pencil, Check, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +85,8 @@ const VenditePage = () => {
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
   const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: SaleInvoice[]; colliding: SaleInvoice[] } | null>(null);
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
+  const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
+  const [editingCigValue, setEditingCigValue] = useState("");
 
   // ── Reconciliation data for payment columns ──
   const [reconMap, setReconMap] = useState<Record<string, { paid: number; lastDate: string }>>({});
@@ -450,12 +452,47 @@ const VenditePage = () => {
       { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}{r.suffisso ? `/${r.suffisso}` : ""}</span>, sortable: true, summaryRender: (rows) => <span className="text-[11px] font-semibold text-muted-foreground">{rows.length} righe</span> },
       { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
       { key: "cliente", label: "Cliente", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedCliente(r.cliente); }}>{r.cliente}</span>, sortable: true, filterable: true },
-      { key: "cig", label: "CIG", render: (r) => r.cig ? (
-        <span
-          className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
-          onClick={(e) => { e.stopPropagation(); navigate(`/?cig=${encodeURIComponent(r.cig)}`); }}
-        >{r.cig}</span>
-      ) : <span className="font-mono text-[11px]">—</span>, sortable: true, filterable: true },
+      { key: "cig", label: "CIG", render: (r) => {
+        const k = `${r.anno}-${r.numero}`;
+        if (editingCigKey === k) {
+          return (
+            <span className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <input
+                autoFocus
+                value={editingCigValue}
+                onChange={(e) => setEditingCigValue(e.target.value.toUpperCase())}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    await supabase.from("fatture_vendita").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero);
+                    toast.success("CIG salvato");
+                    setEditingCigKey(null);
+                    refreshInvoices();
+                  } else if (e.key === "Escape") setEditingCigKey(null);
+                }}
+                className="h-6 w-[110px] px-1 text-[11px] font-mono border rounded bg-background"
+              />
+              <button className="p-0.5 text-primary hover:text-primary/80" onClick={async () => {
+                await supabase.from("fatture_vendita").update({ cig: editingCigValue }).eq("anno", r.anno).eq("numero", r.numero);
+                toast.success("CIG salvato");
+                setEditingCigKey(null);
+                refreshInvoices();
+              }}><Check className="h-3 w-3" /></button>
+              <button className="p-0.5 text-muted-foreground hover:text-foreground" onClick={() => setEditingCigKey(null)}><X className="h-3 w-3" /></button>
+            </span>
+          );
+        }
+        return r.cig ?
+          <span
+            className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+            onClick={(e) => { e.stopPropagation(); navigate(`/?cig=${encodeURIComponent(r.cig)}`); }}
+          >{r.cig}
+            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 inline ml-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setEditingCigKey(k); setEditingCigValue(r.cig); }} />
+          </span> :
+          <span className="font-mono text-[11px] text-muted-foreground cursor-pointer hover:text-primary flex items-center gap-0.5" onClick={(e) => { e.stopPropagation(); setEditingCigKey(k); setEditingCigValue(""); }}>
+            — <Pencil className="h-3 w-3 opacity-50" />
+          </span>;
+      }, sortable: true, filterable: true },
       { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
       { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
         const sum = rows.reduce((s, r) => {
