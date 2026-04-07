@@ -136,10 +136,10 @@ const AcquistiPage = () => {
       }
     }
     if (xmlFilterUnmatched) {
-      result = result.filter((p) => !hasXml(`${p.anno}-${p.numero}`));
+      result = result.filter((p) => !xmlMap.has(`${p.anno}-${p.numero}`));
     }
     return result;
-  }, [purchases, filters.centroCosto, costoMap.map, xmlFilterUnmatched, hasXml]);
+  }, [purchases, filters.centroCosto, costoMap.map, xmlFilterUnmatched, xmlMap]);
 
   // ── Invoice row selection for bulk operations ──
   const [selectedInvoiceKeys, setSelectedInvoiceKeys] = useState<Set<string>>(new Set());
