@@ -84,11 +84,20 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const title = pageTitles[location.pathname] || "Cruscotto";
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
+  const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
+
+  const toggleLock = useCallback(() => {
+    setSidebarLocked(prev => {
+      const next = !prev;
+      localStorage.setItem("sidebar-locked", String(next));
+      return next;
+    });
+  }, []);
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={sidebarLocked}>
       <div className="min-h-screen flex w-full">
-        <SidebarHoverWrapper>
+        <SidebarHoverWrapper locked={sidebarLocked}>
           <AppSidebar />
         </SidebarHoverWrapper>
         <div className="flex-1 flex flex-col min-w-0">
@@ -100,6 +109,9 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               <h1 className="font-bold tracking-tight text-3xl">{title}</h1>
             </div>
             <div className="ml-auto flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleLock} title={sidebarLocked ? "Sblocca menu laterale" : "Blocca menu laterale"}>
+                {sidebarLocked ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleDark} title={dark ? "Modalità chiara" : "Modalità notte"}>
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
