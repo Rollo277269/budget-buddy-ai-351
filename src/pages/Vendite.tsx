@@ -150,6 +150,24 @@ const VenditePage = () => {
     });
   }, []);
 
+  // ── Invoice row selection for bulk operations ──
+  const [selectedInvoiceKeys, setSelectedInvoiceKeys] = useState<Set<string>>(new Set());
+  const toggleInvoiceSelection = useCallback((key: string) => {
+    setSelectedInvoiceKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
+  const toggleAllInvoices = useCallback(() => {
+    setSelectedInvoiceKeys(prev => {
+      const keys = displayedSales.map(r => `${r.anno}-${r.numero}`);
+      const allSelected = keys.length > 0 && keys.every(k => prev.has(k));
+      if (allSelected) return new Set();
+      return new Set(keys);
+    });
+  }, [displayedSales]);
+
   const openXmlSheet = useCallback(async (record: (typeof xmlRecords)[0]) => {
     const parsed = await fetchParsedData(record.id);
     setSelectedXml({ ...record, parsed_data: parsed });
@@ -370,6 +388,26 @@ const VenditePage = () => {
 
   const columns: ColumnDef<SaleInvoice>[] = useMemo(
     () => [
+      {
+        key: "select", label: "", sortable: false,
+        headerRender: () => (
+          <Checkbox
+            checked={displayedSales.length > 0 && displayedSales.every(r => selectedInvoiceKeys.has(`${r.anno}-${r.numero}`))}
+            onCheckedChange={toggleAllInvoices}
+            className="h-3.5 w-3.5"
+          />
+        ),
+        render: (r) => (
+          <span onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={selectedInvoiceKeys.has(`${r.anno}-${r.numero}`)}
+              onCheckedChange={() => toggleInvoiceSelection(`${r.anno}-${r.numero}`)}
+              className="h-3.5 w-3.5"
+            />
+          </span>
+        ),
+        minWidth: 36, defaultWidth: 36,
+      },
       { key: "numero", label: "N°", render: (r) => <span className="font-mono text-xs">{r.numero}{r.suffisso ? `/${r.suffisso}` : ""}</span>, sortable: true, summaryRender: (rows) => <span className="text-[11px] font-semibold text-muted-foreground">{rows.length} righe</span> },
       { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
       { key: "cliente", label: "Cliente", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedCliente(r.cliente); }}>{r.cliente}</span>, sortable: true, filterable: true },
@@ -509,7 +547,7 @@ const VenditePage = () => {
       { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span>, defaultHidden: true },
       { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true },
     ],
-    [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap]
+    [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap, displayedSales, selectedInvoiceKeys, toggleAllInvoices, toggleInvoiceSelection]
   );
 
   // Count duplicates by file_name (must be before early return to preserve hooks order)
@@ -539,19 +577,22 @@ const VenditePage = () => {
         return;
       }
 
-      // If specific XMLs are selected, filter to only those
-      const targetXmls = selectedXmlIds.size > 0
-        ? (xmlRows as any[]).filter(x => selectedXmlIds.has(x.id))
-        : xmlRows as any[];
+      // Filter by selected invoices or selected XMLs
+      let targetXmls = xmlRows as any[];
+      if (selectedInvoiceKeys.size > 0) {
+        targetXmls = targetXmls.filter(x => x.anno && x.numero && selectedInvoiceKeys.has(`${x.anno}-${x.numero}`));
+      } else if (selectedXmlIds.size > 0) {
+        targetXmls = targetXmls.filter(x => selectedXmlIds.has(x.id));
+      }
 
-      const invoicesNeedingUpdate = selectedXmlIds.size > 0
+      const invoicesNeedingUpdate = (selectedInvoiceKeys.size > 0 || selectedXmlIds.size > 0)
         ? allSales
         : allSales.filter(s => !s.cig || !s.cup || !s.partitaIva || !s.scadenza);
       const needingSet = new Set(invoicesNeedingUpdate.map(s => `${s.anno}-${s.numero}`));
       const relevantXmls = targetXmls.filter(x => x.anno && x.numero && needingSet.has(`${x.anno}-${x.numero}`));
 
       if (relevantXmls.length === 0) {
-        toast.info(selectedXmlIds.size > 0 ? "Nessun XML selezionato associato trovato" : "Tutte le fatture sono già complete");
+        toast.info(selectedInvoiceKeys.size > 0 ? "Nessun XML associato alle fatture selezionate" : selectedXmlIds.size > 0 ? "Nessun XML selezionato associato trovato" : "Tutte le fatture sono già complete");
         setEnriching(false);
         return;
       }
@@ -621,7 +662,7 @@ const VenditePage = () => {
     } finally {
       setEnriching(false);
     }
-  }, [allSales, refreshInvoices, selectedXmlIds]);
+  }, [allSales, refreshInvoices, selectedXmlIds, selectedInvoiceKeys]);
 
   if (loading) {
     return (
@@ -776,7 +817,7 @@ const VenditePage = () => {
                     )}
                     <Button size="sm" variant="outline" className="h-6 text-[10px]" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
                       {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
-                      {enriching ? "Aggiornamento..." : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
+                      {enriching ? "Aggiornamento..." : selectedInvoiceKeys.size > 0 ? `Aggiorna da XML (${selectedInvoiceKeys.size})` : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
                     </Button>
                   </div>
                 </div>
@@ -853,9 +894,11 @@ const VenditePage = () => {
                     rowClassName={(r) => {
                       const nc = isNotaCredito(r);
                       const xml = hasXml(buildSalesXmlKey(r.anno, r.numero, r.suffisso));
+                      const selected = selectedInvoiceKeys.has(`${r.anno}-${r.numero}`);
                       return [
+                        selected ? "bg-accent/40" : "",
                         nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
-                        xml && !nc ? "bg-green-50/50 dark:bg-green-950/20" : "",
+                        xml && !nc && !selected ? "bg-green-50/50 dark:bg-green-950/20" : "",
                       ].filter(Boolean).join(" ");
                     }}
                     expandable={(r) => r.righe.length > 1}
