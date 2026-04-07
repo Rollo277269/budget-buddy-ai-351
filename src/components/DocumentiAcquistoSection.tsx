@@ -330,6 +330,11 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 <span className="flex items-center gap-1">{ALL_COLUMNS.find(c => c.key === "centro_costo")?.label} <SortIcon col="centro_costo" /></span>
               </TableHead>
             )}
+            {visibleCols.has("created_at") && (
+              <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("created_at")}>
+                <span className="flex items-center gap-1">Data caricamento <SortIcon col="created_at" /></span>
+              </TableHead>
+            )}
             <TableHead className="text-[11px] h-8 w-[100px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -431,6 +436,11 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
+                </TableCell>
+              )}
+              {visibleCols.has("created_at") && (
+                <TableCell className="text-xs py-1.5 text-muted-foreground whitespace-nowrap">
+                  {doc.created_at ? new Date(doc.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                 </TableCell>
               )}
               <TableCell className="py-1.5">
