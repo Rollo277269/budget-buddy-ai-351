@@ -984,7 +984,7 @@ const VenditePage = () => {
                     }}
                     expandable={(r) => r.righe.length > 1}
                     renderExpandedContent={(r) => (
-                      <div className="px-4 py-2 overflow-hidden w-full">
+                      <div className="px-4 py-2 overflow-hidden" style={{ maxWidth: "calc(100vw - 120px)" }}>
                         <Table style={{ tableLayout: "fixed", width: "100%" }}>
                           <colgroup>
                             <col style={{ width: "40px" }} />
