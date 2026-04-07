@@ -679,7 +679,7 @@ const VenditePage = () => {
               </div>
             );
           }
-          return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} onRemove={ricavoMap.remove} />;
+          return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} onRemove={ricavoMap.remove} importo={r.totale} />;
         },
       },
       { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
@@ -1039,6 +1039,7 @@ const VenditePage = () => {
                                       centroMap={ricavoMap.map}
                                       onAssign={ricavoMap.assign}
                                       onRemove={ricavoMap.remove}
+                                      importo={riga.totale}
                                     />
                                   </TableCell>
                                 </TableRow>
