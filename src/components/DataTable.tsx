@@ -16,7 +16,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search, GripVertical, RotateCcw, X, ChevronRight, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search, GripVertical, RotateCcw, X, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 
 export interface ColumnDef<T> {
   key: string;
