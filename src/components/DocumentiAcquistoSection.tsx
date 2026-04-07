@@ -452,7 +452,10 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   );
 
   const mainPanel = (isTableOnly: boolean) => (
-    <div className={`bg-muted/30 border border-border rounded-lg p-4 space-y-3 ${pdfBase64 ? "h-full flex flex-col" : ""}`}>
+    <div
+      className={`bg-muted/30 border border-border rounded-lg p-4 space-y-3 ${pdfBase64 ? "h-full flex flex-col" : ""} ${pdfDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""} transition-colors`}
+      onDragEnter={handlePdfDragEnter} onDragLeave={handlePdfDragLeave} onDragOver={handlePdfDragOver} onDrop={handlePdfDrop}
+    >
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-muted-foreground" />
