@@ -55,6 +55,10 @@ function SidebarHoverWrapper({ children, locked }: { children: React.ReactNode; 
   const { setOpen } = useSidebar();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    setOpen(locked);
+  }, [locked, setOpen]);
+
   const handleMouseEnter = useCallback(() => {
     if (locked) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
