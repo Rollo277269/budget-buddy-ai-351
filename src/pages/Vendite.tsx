@@ -420,6 +420,59 @@ const VenditePage = () => {
       { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
       { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imponibile) : r.imponibile), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
       { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imposta) : r.imposta), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
+      { key: "percIva", label: "% IVA", sortable: true, filterable: true, defaultHidden: false, align: "right",
+        render: (r) => {
+          if (!r.imponibile || r.imponibile === 0) return <span className="text-xs text-muted-foreground">—</span>;
+          const pct = Math.round((r.imposta / r.imponibile) * 100);
+          return <span className="text-xs font-mono text-right block">{pct}%</span>;
+        },
+        filterValue: (r) => {
+          if (!r.imponibile || r.imponibile === 0) return "0%";
+          return `${Math.round((r.imposta / r.imponibile) * 100)}%`;
+        },
+      },
+      { key: "articoloIva", label: "Articolo IVA", sortable: true, filterable: true, defaultHidden: false,
+        render: (r) => {
+          const desc = (r.descrizione || "").toLowerCase();
+          const pag = (r.pagamento || "").toLowerCase();
+          const tipo = (r.tipo || "").toLowerCase();
+          let art = "";
+          if (pag.includes("split") || desc.includes("split payment") || desc.includes("scissione") || tipo.includes("split")) {
+            art = "Split Payment";
+          } else if (desc.includes("art. 17") || desc.includes("art.17") || desc.includes("reverse charge") || desc.includes("inversione contabile")) {
+            art = "Art. 17";
+          } else if (desc.includes("art. 74") || desc.includes("art.74")) {
+            art = "Art. 74";
+          } else if (r.imposta === 0 && r.imponibile > 0) {
+            if (desc.includes("esente") || desc.includes("art. 10") || desc.includes("art.10")) {
+              art = "Esente Art. 10";
+            } else if (desc.includes("esclus") || desc.includes("art. 15") || desc.includes("art.15")) {
+              art = "Esclusa Art. 15";
+            } else if (desc.includes("non imponibile") || desc.includes("art. 8") || desc.includes("art.8")) {
+              art = "N.I. Art. 8";
+            } else {
+              art = "Esente/N.I.";
+            }
+          }
+          if (!art) return <span className="text-xs text-muted-foreground">—</span>;
+          return <span className="text-xs">{art}</span>;
+        },
+        filterValue: (r) => {
+          const desc = (r.descrizione || "").toLowerCase();
+          const pag = (r.pagamento || "").toLowerCase();
+          const tipo = (r.tipo || "").toLowerCase();
+          if (pag.includes("split") || desc.includes("split payment") || desc.includes("scissione") || tipo.includes("split")) return "Split Payment";
+          if (desc.includes("art. 17") || desc.includes("art.17") || desc.includes("reverse charge") || desc.includes("inversione contabile")) return "Art. 17";
+          if (desc.includes("art. 74") || desc.includes("art.74")) return "Art. 74";
+          if (r.imposta === 0 && r.imponibile > 0) {
+            if (desc.includes("esente") || desc.includes("art. 10") || desc.includes("art.10")) return "Esente Art. 10";
+            if (desc.includes("esclus") || desc.includes("art. 15") || desc.includes("art.15")) return "Esclusa Art. 15";
+            if (desc.includes("non imponibile") || desc.includes("art. 8") || desc.includes("art.8")) return "N.I. Art. 8";
+            return "Esente/N.I.";
+          }
+          return "";
+        },
+      },
       { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.totale) : r.totale), 0); return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>; } },
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       { key: "importoPagato", label: "Importo Pagato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
