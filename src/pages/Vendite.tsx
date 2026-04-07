@@ -133,11 +133,24 @@ const VenditePage = () => {
       : sales;
 
     if (!filters.centroRicavo) return yearFilteredSales;
+
+    // Special case: show unclassified invoices (no centro assigned)
+    if (filters.centroRicavo === "__unassigned__") {
+      return yearFilteredSales.filter((s) => {
+        const headerKey = `${s.anno}-${s.numero}`;
+        if (ricavoMap.map[headerKey]) return false;
+        if (s.righe && s.righe.length > 0) {
+          for (let idx = 0; idx < s.righe.length; idx++) {
+            if (ricavoMap.map[`${headerKey}-${idx}`]) return false;
+          }
+        }
+        return true;
+      });
+    }
+
     return yearFilteredSales.filter((s) => {
       const headerKey = `${s.anno}-${s.numero}`;
-      // Check header-level assignment
       if (ricavoMap.map[headerKey] === filters.centroRicavo) return true;
-      // Check row-level assignments
       if (s.righe && s.righe.length > 0) {
         for (let idx = 0; idx < s.righe.length; idx++) {
           if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) return true;

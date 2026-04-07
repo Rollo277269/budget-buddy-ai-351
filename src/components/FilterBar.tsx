@@ -94,7 +94,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           <Combobox
             value={filters.centroCosto}
             onValueChange={(v) => update("centroCosto", v)}
-            options={[{ value: "", label: "Tutti i centri" }, ...options.centriCosto]}
+            options={[{ value: "", label: "Tutti i centri" }, { value: "__unassigned__", label: "⚠ Non classificate" }, ...options.centriCosto]}
             placeholder="C. Costo"
             searchPlaceholder="Cerca centro..."
             className="w-[180px]"
@@ -105,7 +105,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           <Combobox
             value={filters.centroRicavo}
             onValueChange={(v) => update("centroRicavo", v)}
-            options={[{ value: "", label: "Tutti i centri" }, ...options.centriRicavo]}
+            options={[{ value: "", label: "Tutti i centri" }, { value: "__unassigned__", label: "⚠ Non classificate" }, ...options.centriRicavo]}
             placeholder="C. Ricavo"
             searchPlaceholder="Cerca centro..."
             className="w-[180px]"
@@ -183,7 +183,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           <Combobox
             value={filters.centroCosto}
             onValueChange={(v) => update("centroCosto", v)}
-            options={[{ value: "", label: "Tutti i centri" }, ...options.centriCosto]}
+            options={[{ value: "", label: "Tutti i centri" }, { value: "__unassigned__", label: "⚠ Non classificate" }, ...options.centriCosto]}
             placeholder="Tutti i centri"
             searchPlaceholder="Cerca centro..."
           />
@@ -196,7 +196,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           <Combobox
             value={filters.centroRicavo}
             onValueChange={(v) => update("centroRicavo", v)}
-            options={[{ value: "", label: "Tutti i centri" }, ...options.centriRicavo]}
+            options={[{ value: "", label: "Tutti i centri" }, { value: "__unassigned__", label: "⚠ Non classificate" }, ...options.centriRicavo]}
             placeholder="Tutti i centri"
             searchPlaceholder="Cerca centro..."
           />
