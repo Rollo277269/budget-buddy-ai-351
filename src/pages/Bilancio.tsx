@@ -189,6 +189,32 @@ export default function BilancioPage() {
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
 
+  // Count unclassified invoices (totale != 0, no centro assigned at header or row level)
+  const unclassifiedCounts = useMemo(() => {
+    const salesFiltered = annoFilter ? allSales.filter(s => s.anno === annoFilter) : allSales;
+    const purchasesFiltered = annoFilter ? allPurchases.filter(p => p.anno === annoFilter) : allPurchases;
+
+    let unclassifiedRicavo = 0;
+    salesFiltered.forEach(s => {
+      if ((s.totale || 0) === 0) return;
+      const hk = `${s.anno}-${s.numero}`;
+      if (ricavoMapVendite[hk]) return;
+      const righe = Array.isArray(s.righe) ? s.righe : [];
+      if (righe.length > 0 && righe.some((_: any, idx: number) => ricavoMapVendite[`${hk}-${idx}`])) return;
+      unclassifiedRicavo++;
+    });
+
+    let unclassifiedCosto = 0;
+    purchasesFiltered.forEach(p => {
+      if ((p.totale || 0) === 0) return;
+      const hk = `${p.anno}-${p.numero}`;
+      if (costoMapAcquisti[hk]) return;
+      unclassifiedCosto++;
+    });
+
+    return { ricavo: unclassifiedRicavo, costo: unclassifiedCosto };
+  }, [allSales, allPurchases, ricavoMapVendite, costoMapAcquisti, annoFilter]);
+
   const ricavoBreakdown = useMemo(
     () => aggregateByCentro(allSales, ricavoMapVendite, centriRicavo, annoFilter),
     [allSales, ricavoMapVendite, centriRicavo, annoFilter]
@@ -322,14 +348,14 @@ export default function BilancioPage() {
         <StatCard
           title="Totale Ricavi"
           value={formatCurrency(globalKpis.ricavi)}
-          subtitle={`${globalKpis.numVendite} fatture`}
+          subtitle={`${globalKpis.numVendite} fatture${unclassifiedCounts.ricavo ? ` · ${unclassifiedCounts.ricavo} non classificate` : ""}`}
           icon={TrendingUp}
           variant="income" />
         
         <StatCard
           title="Totale Costi"
           value={formatCurrency(globalKpis.costi)}
-          subtitle={`${globalKpis.numAcquisti} fatture${globalKpis.numDocumenti ? ` + ${globalKpis.numDocumenti} doc` : ""}`}
+          subtitle={`${globalKpis.numAcquisti} fatture${globalKpis.numDocumenti ? ` + ${globalKpis.numDocumenti} doc` : ""}${unclassifiedCounts.costo ? ` · ${unclassifiedCounts.costo} non classificate` : ""}`}
           icon={TrendingDown}
           variant="expense" />
         
