@@ -330,6 +330,24 @@ const AcquistiPage = () => {
     }
   }, [purchases, centri, centriCosto, centriRicavo, costoMap, ricavoMap]);
 
+  // ── XML selection for targeted operations ──
+  const [selectedXmlIds, setSelectedXmlIds] = useState<Set<string>>(new Set());
+  const toggleXmlSelection = useCallback((id: string) => {
+    setSelectedXmlIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleAllXml = useCallback((records: typeof xmlRecords) => {
+    setSelectedXmlIds(prev => {
+      const ids = records.map(r => r.id);
+      const allSelected = ids.every(id => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(ids);
+    });
+  }, []);
+
   // ── Enrich invoices from XML/PDF data ──
   const [enriching, setEnriching] = useState(false);
   const handleEnrichFromXml = useCallback(async () => {
@@ -348,15 +366,22 @@ const AcquistiPage = () => {
         return;
       }
 
-      // Only process invoices that have missing fields
-      const invoicesNeedingUpdate = allPurchases.filter(p => !p.cig || !p.cup || !p.partitaIva || !p.scadenza);
+      // If specific XMLs are selected, filter to only those
+      const targetXmls = selectedXmlIds.size > 0
+        ? (xmlRows as any[]).filter(x => selectedXmlIds.has(x.id))
+        : xmlRows as any[];
+
+      // Only process invoices that have missing fields (skip filter if specific selection)
+      const invoicesNeedingUpdate = selectedXmlIds.size > 0
+        ? allPurchases
+        : allPurchases.filter(p => !p.cig || !p.cup || !p.partitaIva || !p.scadenza);
       const needingCigSet = new Set(invoicesNeedingUpdate.map(p => `${p.anno}-${p.numero}`));
 
       // Filter XML rows to only those whose invoice needs updating
-      const relevantXmls = (xmlRows as any[]).filter(x => x.anno && x.numero && needingCigSet.has(`${x.anno}-${x.numero}`));
+      const relevantXmls = targetXmls.filter(x => x.anno && x.numero && needingCigSet.has(`${x.anno}-${x.numero}`));
       
       if (relevantXmls.length === 0) {
-        toast.info("Tutte le fatture sono già complete");
+        toast.info(selectedXmlIds.size > 0 ? "Nessun XML selezionato associato trovato" : "Tutte le fatture sono già complete");
         setEnriching(false);
         return;
       }
@@ -432,6 +457,7 @@ const AcquistiPage = () => {
         toast.success(`${updated} fatture aggiornate da XML`);
         invalidateInvoiceCache();
         refreshInvoices();
+        setSelectedXmlIds(new Set());
       } else {
         toast.info("Tutte le fatture sono già complete");
       }
@@ -441,7 +467,7 @@ const AcquistiPage = () => {
     } finally {
       setEnriching(false);
     }
-  }, [allPurchases, refreshInvoices]);
+  }, [allPurchases, refreshInvoices, selectedXmlIds]);
 
   const columns: ColumnDef<PurchaseInvoice>[] = useMemo(
     () => [
@@ -675,7 +701,7 @@ const AcquistiPage = () => {
 
               <Button size="sm" variant="outline" className="h-7 text-xs" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
                 {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
-                {enriching ? "Aggiornamento..." : "Aggiorna da XML"}
+                {enriching ? "Aggiornamento..." : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
               </Button>
             </div>
           </div>
@@ -725,6 +751,11 @@ const AcquistiPage = () => {
                   <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
                   <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
                   {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px]">{xmlUnmatchedCount} non assoc.</Badge>}
+                  {selectedXmlIds.size > 0 && (
+                    <Badge variant="secondary" className="text-[10px] cursor-pointer" onClick={() => setSelectedXmlIds(new Set())}>
+                      {selectedXmlIds.size} selezionati ✕
+                    </Badge>
+                  )}
                   <div className="ml-auto flex gap-1">
                     {xmlDuplicateCount > 0 && (
                       <AlertDialog>
@@ -757,6 +788,13 @@ const AcquistiPage = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="text-[10px]">
+                          <TableHead className="h-7 w-8 px-1">
+                            <Checkbox
+                              checked={xmlRecords.filter(r => !r.matched).length > 0 && xmlRecords.filter(r => !r.matched).every(r => selectedXmlIds.has(r.id))}
+                              onCheckedChange={() => toggleAllXml(xmlRecords.filter(r => !r.matched))}
+                              className="h-3.5 w-3.5"
+                            />
+                          </TableHead>
                           <TableHead className="h-7 text-[10px]">File</TableHead>
                           <TableHead className="h-7 text-[10px]">N° Doc</TableHead>
                           <TableHead className="h-7 text-[10px]">Cedente</TableHead>
@@ -767,7 +805,14 @@ const AcquistiPage = () => {
                       </TableHeader>
                       <TableBody>
                         {xmlRecords.filter((r) => !r.matched).map((r) => (
-                          <TableRow key={r.id} className="cursor-pointer hover:bg-accent/50" onClick={() => openXmlSheet(r)}>
+                          <TableRow key={r.id} className={`cursor-pointer hover:bg-accent/50 ${selectedXmlIds.has(r.id) ? "bg-accent/30" : ""}`} onClick={() => openXmlSheet(r)}>
+                            <TableCell className="py-1 px-1" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedXmlIds.has(r.id)}
+                                onCheckedChange={() => toggleXmlSelection(r.id)}
+                                className="h-3.5 w-3.5"
+                              />
+                            </TableCell>
                             <TableCell className="text-[11px] py-1 max-w-[180px] truncate">
                               <FileText className="h-3 w-3 mr-1 inline text-muted-foreground" />
                               {r.file_name}
