@@ -432,8 +432,42 @@ const VenditePage = () => {
         >{r.cig}</span>
       ) : <span className="font-mono text-[11px]">—</span>, sortable: true, filterable: true },
       { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
-      { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imponibile) : r.imponibile), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
-      { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imposta) : r.imposta), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
+      { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
+        const sum = rows.reduce((s, r) => {
+          const sign = isNotaCredito(r) ? -1 : 1;
+          if (!filters.centroRicavo) return s + sign * Math.abs(r.imponibile);
+          const headerKey = `${r.anno}-${r.numero}`;
+          // If header matches and no row-level assignments, use full amount
+          if (ricavoMap.map[headerKey] === filters.centroRicavo) {
+            const hasRowAssignments = r.righe?.some((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`]);
+            if (!hasRowAssignments) return s + sign * Math.abs(r.imponibile);
+          }
+          // Sum only matching row-level amounts
+          let rowSum = 0;
+          r.righe?.forEach((riga: any, idx: number) => {
+            if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.imponibile;
+          });
+          return s + sign * Math.abs(rowSum || r.imponibile);
+        }, 0);
+        return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>;
+      } },
+      { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
+        const sum = rows.reduce((s, r) => {
+          const sign = isNotaCredito(r) ? -1 : 1;
+          if (!filters.centroRicavo) return s + sign * Math.abs(r.imposta);
+          const headerKey = `${r.anno}-${r.numero}`;
+          if (ricavoMap.map[headerKey] === filters.centroRicavo) {
+            const hasRowAssignments = r.righe?.some((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`]);
+            if (!hasRowAssignments) return s + sign * Math.abs(r.imposta);
+          }
+          let rowSum = 0;
+          r.righe?.forEach((riga: any, idx: number) => {
+            if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.imposta;
+          });
+          return s + sign * Math.abs(rowSum || r.imposta);
+        }, 0);
+        return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>;
+      } },
       { key: "percIva", label: "% IVA", sortable: true, filterable: true, defaultHidden: false, align: "right",
         render: (r) => {
           if (!r.imponibile || r.imponibile === 0) return <span className="text-xs text-muted-foreground">—</span>;
