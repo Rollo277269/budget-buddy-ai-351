@@ -821,67 +821,6 @@ const VenditePage = () => {
                     </Button>
                   </div>
                 </div>
-                {xmlRecords.length > 0 && (
-                  <div className="max-h-[300px] overflow-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="text-[10px]">
-                          <TableHead className="h-7 w-8 px-1">
-                            <Checkbox
-                              checked={xmlRecords.length > 0 && xmlRecords.every(r => selectedXmlIds.has(r.id))}
-                              onCheckedChange={() => toggleAllXml(xmlRecords)}
-                              className="h-3.5 w-3.5"
-                            />
-                          </TableHead>
-                          <TableHead className="h-7 text-[10px]">File</TableHead>
-                          <TableHead className="h-7 text-[10px]">N° Doc</TableHead>
-                          <TableHead className="h-7 text-[10px]">Cessionario</TableHead>
-                          <TableHead className="h-7 text-[10px] text-right">Importo</TableHead>
-                          <TableHead className="h-7 text-[10px]">Data</TableHead>
-                          <TableHead className="h-7 text-[10px]">Stato</TableHead>
-                          <TableHead className="h-7 text-[10px] w-[80px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {xmlRecords.map((r) => (
-                          <TableRow key={r.id} className={`cursor-pointer hover:bg-accent/50 ${selectedXmlIds.has(r.id) ? "bg-accent/30" : ""}`} onClick={() => openXmlSheet(r)}>
-                            <TableCell className="py-1 px-1" onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={selectedXmlIds.has(r.id)}
-                                onCheckedChange={() => toggleXmlSelection(r.id)}
-                                className="h-3.5 w-3.5"
-                              />
-                            </TableCell>
-                            <TableCell className="text-[11px] py-1 max-w-[180px] truncate">
-                              <FileText className="h-3 w-3 mr-1 inline text-muted-foreground" />
-                              {r.file_name}
-                            </TableCell>
-                            <TableCell className="text-[11px] py-1 font-mono">{r.numero_documento || `${r.numero}/${r.anno}`}</TableCell>
-                            <TableCell className="text-[11px] py-1 max-w-[200px] truncate">{r.cessionario_denominazione || "—"}</TableCell>
-                            <TableCell className="text-[11px] py-1 font-mono text-right">{r.importo_totale ? formatCurrency(r.importo_totale) : "—"}</TableCell>
-                            <TableCell className="text-[11px] py-1">{r.data_fattura || "—"}</TableCell>
-                            <TableCell className="py-1">
-                              {r.matched
-                                ? <Badge className="text-[9px] h-4 px-1">Assoc.</Badge>
-                                : <Badge variant="destructive" className="text-[9px] h-4 px-1">Non assoc.</Badge>
-                              }
-                            </TableCell>
-                            <TableCell className="py-1">
-                              {!r.matched && (
-                                <Button size="sm" variant="outline" className="h-5 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); openXmlSheet(r); }}>
-                                  <Link2 className="h-3 w-3 mr-1" />Associa
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-                {xmlRecords.length === 0 && (
-                  <p className="text-xs text-muted-foreground py-2">Nessuna fattura XML caricata. Usa il pulsante XML nell'header per caricare.</p>
-                )}
                 {/* Main invoices table */}
                 <div className="pt-2">
                   <DataTable<SaleInvoice>
