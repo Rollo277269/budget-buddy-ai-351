@@ -336,10 +336,10 @@ const AcquistiPage = () => {
     setEnriching(true);
     let updated = 0;
     try {
-      // Load all matched XML records with parsed_data and storage_path
+      // Load all matched XML records (without heavy parsed_data)
       const { data: xmlRows } = await supabase
         .from("fatture_xml")
-        .select("id, anno, numero, parsed_data, matched, storage_path")
+        .select("id, anno, numero, matched, storage_path")
         .eq("tipo", "acquisto")
         .eq("matched", true);
       if (!xmlRows || xmlRows.length === 0) {
