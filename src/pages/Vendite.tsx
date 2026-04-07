@@ -437,17 +437,23 @@ const VenditePage = () => {
           const sign = isNotaCredito(r) ? -1 : 1;
           if (!filters.centroRicavo) return s + sign * Math.abs(r.imponibile);
           const headerKey = `${r.anno}-${r.numero}`;
-          // If header matches and no row-level assignments, use full amount
-          if (ricavoMap.map[headerKey] === filters.centroRicavo) {
-            const hasRowAssignments = r.righe?.some((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`]);
-            if (!hasRowAssignments) return s + sign * Math.abs(r.imponibile);
+          const headerMatch = ricavoMap.map[headerKey] === filters.centroRicavo;
+          const righe = r.righe || [];
+          const matchingCount = righe.filter((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo).length;
+          const hasRowAssignments = righe.some((_: any, idx: number) => !!ricavoMap.map[`${headerKey}-${idx}`]);
+          // All rows assigned to this centro OR header match with no row assignments → full amount
+          if ((matchingCount === righe.length && righe.length > 0) || (headerMatch && !hasRowAssignments)) {
+            return s + sign * Math.abs(r.imponibile);
           }
-          // Sum only matching row-level amounts
-          let rowSum = 0;
-          r.righe?.forEach((riga: any, idx: number) => {
-            if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.imponibile;
-          });
-          return s + sign * Math.abs(rowSum || r.imponibile);
+          // Partial row assignments → sum only matching rows
+          if (matchingCount > 0) {
+            let rowSum = 0;
+            righe.forEach((riga: any, idx: number) => {
+              if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.imponibile;
+            });
+            return s + sign * Math.abs(rowSum);
+          }
+          return s + sign * Math.abs(r.imponibile);
         }, 0);
         return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>;
       } },
@@ -456,15 +462,21 @@ const VenditePage = () => {
           const sign = isNotaCredito(r) ? -1 : 1;
           if (!filters.centroRicavo) return s + sign * Math.abs(r.imposta);
           const headerKey = `${r.anno}-${r.numero}`;
-          if (ricavoMap.map[headerKey] === filters.centroRicavo) {
-            const hasRowAssignments = r.righe?.some((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`]);
-            if (!hasRowAssignments) return s + sign * Math.abs(r.imposta);
+          const headerMatch = ricavoMap.map[headerKey] === filters.centroRicavo;
+          const righe = r.righe || [];
+          const matchingCount = righe.filter((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo).length;
+          const hasRowAssignments = righe.some((_: any, idx: number) => !!ricavoMap.map[`${headerKey}-${idx}`]);
+          if ((matchingCount === righe.length && righe.length > 0) || (headerMatch && !hasRowAssignments)) {
+            return s + sign * Math.abs(r.imposta);
           }
-          let rowSum = 0;
-          r.righe?.forEach((riga: any, idx: number) => {
-            if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.imposta;
-          });
-          return s + sign * Math.abs(rowSum || r.imposta);
+          if (matchingCount > 0) {
+            let rowSum = 0;
+            righe.forEach((riga: any, idx: number) => {
+              if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.imposta;
+            });
+            return s + sign * Math.abs(rowSum);
+          }
+          return s + sign * Math.abs(r.imposta);
         }, 0);
         return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>;
       } },
