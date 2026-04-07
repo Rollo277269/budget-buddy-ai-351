@@ -16,7 +16,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search, GripVertical, RotateCcw, X, ChevronRight, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Columns3, Search, GripVertical, RotateCcw, X, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 
 export interface ColumnDef<T> {
   key: string;
@@ -291,6 +291,31 @@ export function DataTable<T extends Record<string, any>>({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      {expandable && (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            title="Espandi tutto"
+            onClick={() => {
+              const allKeys = new Set(sorted.filter((r) => expandable(r)).map((r) => rowKey(r)));
+              setExpandedRows(allKeys);
+            }}
+          >
+            <ChevronsUpDown className="h-3.5 w-3.5 mr-1.5" /> Espandi
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            title="Comprimi tutto"
+            onClick={() => setExpandedRows(new Set())}
+          >
+            <ChevronsDownUp className="h-3.5 w-3.5 mr-1.5" /> Comprimi
+          </Button>
+        </>
+      )}
     </div>
   );
 
