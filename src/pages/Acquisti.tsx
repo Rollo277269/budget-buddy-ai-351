@@ -536,6 +536,20 @@ const AcquistiPage = () => {
                 <span className="text-[11px] font-medium">XML</span>
               </div>
 
+              <input ref={csvInputRef} type="file" accept=".csv,.xlsx,.xls" multiple className="hidden" onChange={handleCsvFileInput} />
+              <div
+                className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                title="Importa fatture acquisto da file CSV o Excel (.xlsx)"
+                onDragEnter={handleCsvDragEnter}
+                onDragLeave={handleCsvDragLeave}
+                onDragOver={handleCsvDragOver}
+                onDrop={handleCsvDrop}
+                onClick={() => csvInputRef.current?.click()}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                <span className="text-[11px] font-medium">CSV / Excel</span>
+              </div>
+
               <DocumentiAcquistoSection dropZoneOnly compact />
 
               {hasCentri && (
