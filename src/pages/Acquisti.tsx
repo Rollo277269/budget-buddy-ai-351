@@ -366,15 +366,22 @@ const AcquistiPage = () => {
         return;
       }
 
-      // Only process invoices that have missing fields
-      const invoicesNeedingUpdate = allPurchases.filter(p => !p.cig || !p.cup || !p.partitaIva || !p.scadenza);
+      // If specific XMLs are selected, filter to only those
+      const targetXmls = selectedXmlIds.size > 0
+        ? (xmlRows as any[]).filter(x => selectedXmlIds.has(x.id))
+        : xmlRows as any[];
+
+      // Only process invoices that have missing fields (skip filter if specific selection)
+      const invoicesNeedingUpdate = selectedXmlIds.size > 0
+        ? allPurchases
+        : allPurchases.filter(p => !p.cig || !p.cup || !p.partitaIva || !p.scadenza);
       const needingCigSet = new Set(invoicesNeedingUpdate.map(p => `${p.anno}-${p.numero}`));
 
       // Filter XML rows to only those whose invoice needs updating
-      const relevantXmls = (xmlRows as any[]).filter(x => x.anno && x.numero && needingCigSet.has(`${x.anno}-${x.numero}`));
+      const relevantXmls = targetXmls.filter(x => x.anno && x.numero && needingCigSet.has(`${x.anno}-${x.numero}`));
       
       if (relevantXmls.length === 0) {
-        toast.info("Tutte le fatture sono già complete");
+        toast.info(selectedXmlIds.size > 0 ? "Nessun XML selezionato associato trovato" : "Tutte le fatture sono già complete");
         setEnriching(false);
         return;
       }
