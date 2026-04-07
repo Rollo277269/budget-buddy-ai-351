@@ -277,6 +277,7 @@ export function DataTable<T extends Record<string, any>>({
             <DropdownMenuCheckboxItem
               key={col.key}
               checked={visibleColumns.has(col.key)}
+              onSelect={(e) => e.preventDefault()}
               onCheckedChange={(checked) => {
                 setVisibleColumns((prev) => {
                   const next = new Set(prev);
