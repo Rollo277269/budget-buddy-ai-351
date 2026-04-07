@@ -384,13 +384,16 @@ const AcquistiPage = () => {
         return;
       }
 
-      // If specific XMLs are selected, filter to only those
-      const targetXmls = selectedXmlIds.size > 0
-        ? (xmlRows as any[]).filter(x => selectedXmlIds.has(x.id))
-        : xmlRows as any[];
+      // If specific invoices are selected, filter to only those; otherwise if specific XMLs selected, filter by XML id
+      const hasInvoiceSelection = selectedInvoiceKeys.size > 0;
+      const targetXmls = hasInvoiceSelection
+        ? (xmlRows as any[]).filter(x => x.anno && x.numero && selectedInvoiceKeys.has(`${x.anno}-${x.numero}`))
+        : selectedXmlIds.size > 0
+          ? (xmlRows as any[]).filter(x => selectedXmlIds.has(x.id))
+          : xmlRows as any[];
 
       // Only process invoices that have missing fields (skip filter if specific selection)
-      const invoicesNeedingUpdate = selectedXmlIds.size > 0
+      const invoicesNeedingUpdate = (hasInvoiceSelection || selectedXmlIds.size > 0)
         ? allPurchases
         : allPurchases.filter(p => !p.cig || !p.cup || !p.partitaIva || !p.scadenza);
       const needingCigSet = new Set(invoicesNeedingUpdate.map(p => `${p.anno}-${p.numero}`));
@@ -485,10 +488,29 @@ const AcquistiPage = () => {
     } finally {
       setEnriching(false);
     }
-  }, [allPurchases, refreshInvoices, selectedXmlIds]);
+  }, [allPurchases, refreshInvoices, selectedXmlIds, selectedInvoiceKeys]);
 
   const columns: ColumnDef<PurchaseInvoice>[] = useMemo(
     () => [
+    {
+      key: "select", label: "", sortable: false,
+      headerRender: () => (
+        <Checkbox
+          checked={displayedPurchases.length > 0 && displayedPurchases.every(r => selectedInvoiceKeys.has(`${r.anno}-${r.numero}`))}
+          onCheckedChange={toggleAllInvoices}
+          className="h-3.5 w-3.5"
+        />
+      ),
+      render: (r: PurchaseInvoice) => (
+        <span onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={selectedInvoiceKeys.has(`${r.anno}-${r.numero}`)}
+            onCheckedChange={() => toggleInvoiceSelection(`${r.anno}-${r.numero}`)}
+            className="h-3.5 w-3.5"
+          />
+        </span>
+      ),
+    },
     { key: "numero", label: "N° Reg.", render: (r) => <span className="font-mono text-xs">{r.numero}/{r.anno}</span>, sortable: true, summaryRender: (rows) => <span className="text-[11px] font-semibold text-muted-foreground">{rows.length} righe</span> },
     { key: "numeroFornitore", label: "N° Forn.", render: (r) => {
       const xml = findXml(`${r.anno}-${r.numero}`, r.fornitore);
@@ -631,7 +653,7 @@ const AcquistiPage = () => {
     { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span>, defaultHidden: true },
     { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true }],
 
-    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap]
+    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap, displayedPurchases, selectedInvoiceKeys, toggleAllInvoices, toggleInvoiceSelection]
   );
 
   const xmlDuplicateCount = useMemo(() => {
@@ -719,7 +741,7 @@ const AcquistiPage = () => {
 
               <Button size="sm" variant="outline" className="h-7 text-xs" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
                 {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
-                {enriching ? "Aggiornamento..." : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
+                {enriching ? "Aggiornamento..." : selectedInvoiceKeys.size > 0 ? `Aggiorna da XML (${selectedInvoiceKeys.size})` : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
               </Button>
             </div>
           </div>
