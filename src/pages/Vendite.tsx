@@ -129,9 +129,18 @@ const VenditePage = () => {
       : sales;
 
     if (!filters.centroRicavo) return yearFilteredSales;
-    return yearFilteredSales.filter(
-      (s) => ricavoMap.map[`${s.anno}-${s.numero}`] === filters.centroRicavo
-    );
+    return yearFilteredSales.filter((s) => {
+      const headerKey = `${s.anno}-${s.numero}`;
+      // Check header-level assignment
+      if (ricavoMap.map[headerKey] === filters.centroRicavo) return true;
+      // Check row-level assignments
+      if (s.righe && s.righe.length > 0) {
+        for (let idx = 0; idx < s.righe.length; idx++) {
+          if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) return true;
+        }
+      }
+      return false;
+    });
   }, [sales, filters.anno, filters.centroRicavo, ricavoMap.map]);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
