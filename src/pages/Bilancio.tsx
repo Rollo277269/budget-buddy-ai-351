@@ -384,8 +384,9 @@ export default function BilancioPage() {
         categorie={categorie}
         onRowClick={(codice, tipo) => {
           if (codice === "__unassigned__") return;
-          if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}`);else
-          navigate(`/acquisti?centroCosto=${encodeURIComponent(codice)}`);
+          const yearParam = annoFilter ? `&anno=${annoFilter}` : "";
+          if (tipo === "ricavo") navigate(`/vendite?centroRicavo=${encodeURIComponent(codice)}${yearParam}`);
+          else navigate(`/acquisti?centroCosto=${encodeURIComponent(codice)}${yearParam}`);
         }} />
       
 
