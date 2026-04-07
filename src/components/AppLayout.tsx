@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
+import { FileText, Maximize, Minimize, Moon, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
