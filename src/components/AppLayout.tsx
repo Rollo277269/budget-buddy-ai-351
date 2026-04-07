@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
+import { FileText, Maximize, Minimize, Moon, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
@@ -51,20 +51,22 @@ function useFullscreen() {
   return { isFs, toggle };
 }
 
-function SidebarHoverWrapper({ children }: { children: React.ReactNode }) {
+function SidebarHoverWrapper({ children, locked }: { children: React.ReactNode; locked: boolean }) {
   const { setOpen } = useSidebar();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = useCallback(() => {
+    if (locked) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setOpen(true);
-  }, [setOpen]);
+  }, [setOpen, locked]);
 
   const handleMouseLeave = useCallback(() => {
+    if (locked) return;
     timeoutRef.current = setTimeout(() => {
       setOpen(false);
     }, 300);
-  }, [setOpen]);
+  }, [setOpen, locked]);
 
   return (
     <div
@@ -82,11 +84,20 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const title = pageTitles[location.pathname] || "Cruscotto";
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
+  const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
+
+  const toggleLock = useCallback(() => {
+    setSidebarLocked(prev => {
+      const next = !prev;
+      localStorage.setItem("sidebar-locked", String(next));
+      return next;
+    });
+  }, []);
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={sidebarLocked}>
       <div className="min-h-screen flex w-full">
-        <SidebarHoverWrapper>
+        <SidebarHoverWrapper locked={sidebarLocked}>
           <AppSidebar />
         </SidebarHoverWrapper>
         <div className="flex-1 flex flex-col min-w-0">
@@ -98,6 +109,9 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               <h1 className="font-bold tracking-tight text-3xl">{title}</h1>
             </div>
             <div className="ml-auto flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleLock} title={sidebarLocked ? "Sblocca menu laterale" : "Blocca menu laterale"}>
+                {sidebarLocked ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleDark} title={dark ? "Modalità chiara" : "Modalità notte"}>
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
