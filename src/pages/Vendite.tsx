@@ -126,39 +126,48 @@ const VenditePage = () => {
     })();
     return () => { cancelled = true; };
   }, [sales]);
+  const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
+
+  const [xmlFilterUnmatched, setXmlFilterUnmatched] = useState(false);
+
   const displayedSales = useMemo(() => {
     const selectedYear = filters.anno.trim();
-    const yearFilteredSales = selectedYear
+    let result = selectedYear
       ? sales.filter((s) => String(s.anno) === selectedYear)
       : sales;
 
-    if (!filters.centroRicavo) return yearFilteredSales;
-
-    // Special case: show unclassified invoices (no centro assigned)
-    if (filters.centroRicavo === "__unassigned__") {
-      return yearFilteredSales.filter((s) => {
-        const headerKey = `${s.anno}-${s.numero}`;
-        if (ricavoMap.map[headerKey]) return false;
-        if (s.righe && s.righe.length > 0) {
-          for (let idx = 0; idx < s.righe.length; idx++) {
-            if (ricavoMap.map[`${headerKey}-${idx}`]) return false;
+    if (filters.centroRicavo) {
+      if (filters.centroRicavo === "__unassigned__") {
+        result = result.filter((s) => {
+          const headerKey = `${s.anno}-${s.numero}`;
+          if (ricavoMap.map[headerKey]) return false;
+          if (s.righe && s.righe.length > 0) {
+            for (let idx = 0; idx < s.righe.length; idx++) {
+              if (ricavoMap.map[`${headerKey}-${idx}`]) return false;
+            }
           }
-        }
-        return true;
-      });
+          return true;
+        });
+      } else {
+        result = result.filter((s) => {
+          const headerKey = `${s.anno}-${s.numero}`;
+          if (ricavoMap.map[headerKey] === filters.centroRicavo) return true;
+          if (s.righe && s.righe.length > 0) {
+            for (let idx = 0; idx < s.righe.length; idx++) {
+              if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) return true;
+            }
+          }
+          return false;
+        });
+      }
     }
 
-    return yearFilteredSales.filter((s) => {
-      const headerKey = `${s.anno}-${s.numero}`;
-      if (ricavoMap.map[headerKey] === filters.centroRicavo) return true;
-      if (s.righe && s.righe.length > 0) {
-        for (let idx = 0; idx < s.righe.length; idx++) {
-          if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) return true;
-        }
-      }
-      return false;
-    });
-  }, [sales, filters.anno, filters.centroRicavo, ricavoMap.map]);
+    if (xmlFilterUnmatched) {
+      result = result.filter((s) => !xmlMap.has(buildSalesXmlKey(s.anno, s.numero, s.suffisso)));
+    }
+
+    return result;
+  }, [sales, filters.anno, filters.centroRicavo, ricavoMap.map, xmlFilterUnmatched, xmlMap]);
 
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
   const [selectedXml, setSelectedXml] = useState<(typeof xmlRecords)[0] | null>(null);
