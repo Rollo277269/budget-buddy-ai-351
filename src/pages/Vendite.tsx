@@ -1013,7 +1013,7 @@ const VenditePage = () => {
                               return (
                                 <TableRow key={idx} className="border-b border-border/30">
                                   <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
-                                  <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5 overflow-hidden">{riga.descrizione || "—"}</TableCell>
+                                  <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5 overflow-hidden" style={{ overflowWrap: "anywhere" }}>{riga.descrizione || "—"}</TableCell>
                                   <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
                                   <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imposta, nc)}</TableCell>
                                   <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.totale, nc)}</TableCell>
