@@ -523,6 +523,98 @@ const VenditePage = () => {
   const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
+  // ── Enrich invoices from XML data ──
+  const [enriching, setEnriching] = useState(false);
+  const handleEnrichFromXml = useCallback(async () => {
+    setEnriching(true);
+    let updated = 0;
+    try {
+      const { data: xmlRows } = await supabase
+        .from("fatture_xml")
+        .select("id, anno, numero, matched, storage_path")
+        .eq("tipo", "vendita")
+        .eq("matched", true);
+      if (!xmlRows || xmlRows.length === 0) {
+        toast.info("Nessun XML associato trovato");
+        setEnriching(false);
+        return;
+      }
+
+      const invoicesNeedingUpdate = allSales.filter(s => !s.cig || !s.cup || !s.partitaIva || !s.scadenza);
+      const needingSet = new Set(invoicesNeedingUpdate.map(s => `${s.anno}-${s.numero}`));
+      const relevantXmls = (xmlRows as any[]).filter(x => x.anno && x.numero && needingSet.has(`${x.anno}-${x.numero}`));
+
+      if (relevantXmls.length === 0) {
+        toast.info("Tutte le fatture sono già complete");
+        setEnriching(false);
+        return;
+      }
+
+      toast.info(`Analisi di ${relevantXmls.length} XML in corso...`);
+
+      for (const xml of relevantXmls) {
+        const inv = allSales.find(s => s.anno === xml.anno && s.numero === xml.numero);
+        if (!inv) continue;
+
+        if (xml.storage_path) {
+          try {
+            const { data: fileData } = await supabase.storage.from("fatture-xml").download(xml.storage_path);
+            if (!fileData) continue;
+            const rawText = await fileData.text();
+            const reParsed = parseFatturaPA(rawText);
+
+            const xmlCig = reParsed.cig || "";
+            let xmlCup = "";
+            for (const c of reParsed.causale || []) {
+              const match = (c || "").match(/CUP[:\s]*([A-Z0-9]+)/i);
+              if (match) { xmlCup = match[1]; break; }
+            }
+
+            if (xmlCig) {
+              const { data: currentRow } = await supabase.from("fatture_xml").select("parsed_data").eq("id", xml.id).single();
+              if (currentRow) {
+                const updatedPd = { ...(currentRow as any).parsed_data, cig: xmlCig };
+                await supabase.from("fatture_xml" as any).update({ parsed_data: updatedPd } as any).eq("id", xml.id);
+              }
+            }
+
+            const updates: Record<string, any> = {};
+            if (!inv.cig && xmlCig) updates.cig = xmlCig.toUpperCase();
+            if (!inv.cup && xmlCup) updates.cup = xmlCup.toUpperCase();
+            if (!inv.partitaIva && reParsed.cessionario?.partitaIva) updates.partita_iva = reParsed.cessionario.partitaIva;
+            if ((!inv.scadenza || inv.scadenza === "") && reParsed.pagamenti?.length > 0) {
+              const scad = reParsed.pagamenti[0].dataScadenza;
+              if (scad) updates.scadenza = scad;
+            }
+
+            if (Object.keys(updates).length > 0) {
+              const { error } = await supabase
+                .from("fatture_vendita")
+                .update(updates)
+                .eq("anno", xml.anno)
+                .eq("numero", xml.numero);
+              if (!error) updated++;
+            }
+          } catch (e) {
+            console.warn("Could not re-parse XML:", xml.storage_path, e);
+          }
+        }
+      }
+
+      if (updated > 0) {
+        toast.success(`${updated} fatture aggiornate da XML`);
+        invalidateInvoiceCache();
+        refreshInvoices();
+      } else {
+        toast.info("Tutte le fatture sono già complete");
+      }
+    } catch (e) {
+      console.error("Enrich error:", e);
+      toast.error("Errore durante l'aggiornamento");
+    } finally {
+      setEnriching(false);
+    }
+  }, [allSales, refreshInvoices]);
 
   return (
     <>
