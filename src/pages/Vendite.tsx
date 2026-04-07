@@ -662,7 +662,7 @@ const VenditePage = () => {
     } finally {
       setEnriching(false);
     }
-  }, [allSales, refreshInvoices, selectedXmlIds]);
+  }, [allSales, refreshInvoices, selectedXmlIds, selectedInvoiceKeys]);
 
   if (loading) {
     return (
