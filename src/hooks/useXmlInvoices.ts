@@ -294,7 +294,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             parsed.importoTotale,
             xmlAnno || null,
             parsed.numero || null,
-            null, // no CIG from raw XML parse
+            parsed.cig || null,
             invoices,
             alreadyMatchedKeys
           );
