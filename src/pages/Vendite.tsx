@@ -521,7 +521,23 @@ const VenditePage = () => {
           return "";
         },
       },
-      { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.totale) : r.totale), 0); return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>; } },
+      { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
+        const sum = rows.reduce((s, r) => {
+          const sign = isNotaCredito(r) ? -1 : 1;
+          if (!filters.centroRicavo) return s + sign * Math.abs(r.totale);
+          const headerKey = `${r.anno}-${r.numero}`;
+          if (ricavoMap.map[headerKey] === filters.centroRicavo) {
+            const hasRowAssignments = r.righe?.some((_: any, idx: number) => ricavoMap.map[`${headerKey}-${idx}`]);
+            if (!hasRowAssignments) return s + sign * Math.abs(r.totale);
+          }
+          let rowSum = 0;
+          r.righe?.forEach((riga: any, idx: number) => {
+            if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.totale;
+          });
+          return s + sign * Math.abs(rowSum || r.totale);
+        }, 0);
+        return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>;
+      } },
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
       { key: "importoPagato", label: "Importo Pagato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
         const rec = reconMap[`${r.anno}-${r.numero}`];
