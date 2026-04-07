@@ -466,7 +466,7 @@ const AcquistiPage = () => {
     } finally {
       setEnriching(false);
     }
-  }, [allPurchases, refreshInvoices]);
+  }, [allPurchases, refreshInvoices, selectedXmlIds]);
 
   const columns: ColumnDef<PurchaseInvoice>[] = useMemo(
     () => [
