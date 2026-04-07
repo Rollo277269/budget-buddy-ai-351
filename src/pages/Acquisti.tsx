@@ -639,6 +639,11 @@ const AcquistiPage = () => {
                   {classifying ? "AI..." : `AI (${unclassifiedCount})`}
                 </Button>
               )}
+
+              <Button size="sm" variant="outline" className="h-7 text-xs" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
+                {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
+                {enriching ? "Aggiornamento..." : "Aggiorna da XML"}
+              </Button>
             </div>
           </div>
 
