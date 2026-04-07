@@ -985,7 +985,16 @@ const VenditePage = () => {
                     expandable={(r) => r.righe.length > 1}
                     renderExpandedContent={(r) => (
                       <div className="px-4 py-2">
-                        <Table>
+                        <Table style={{ tableLayout: "fixed" }}>
+                          <colgroup>
+                            <col style={{ width: "40px" }} />
+                            <col />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "80px" }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "140px" }} />
+                          </colgroup>
                           <TableHeader>
                             <TableRow className="border-b border-border/50">
                               <TableHead className="text-[10px] font-semibold text-muted-foreground">Riga</TableHead>
@@ -1004,7 +1013,7 @@ const VenditePage = () => {
                               return (
                                 <TableRow key={idx} className="border-b border-border/30">
                                   <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{idx + 1}</TableCell>
-                                  <TableCell className="text-[11px] max-w-[300px] whitespace-normal break-words leading-snug py-1.5">{riga.descrizione || "—"}</TableCell>
+                                  <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5 overflow-hidden">{riga.descrizione || "—"}</TableCell>
                                   <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
                                   <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imposta, nc)}</TableCell>
                                   <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.totale, nc)}</TableCell>
