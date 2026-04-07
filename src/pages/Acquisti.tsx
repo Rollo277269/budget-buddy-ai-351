@@ -783,15 +783,15 @@ const AcquistiPage = () => {
                     )}
                   </div>
                 </div>
-                {xmlUnmatchedCount > 0 && (
+                {xmlRecords.length > 0 && (
                   <div className="max-h-[300px] overflow-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="text-[10px]">
                           <TableHead className="h-7 w-8 px-1">
                             <Checkbox
-                              checked={xmlRecords.filter(r => !r.matched).length > 0 && xmlRecords.filter(r => !r.matched).every(r => selectedXmlIds.has(r.id))}
-                              onCheckedChange={() => toggleAllXml(xmlRecords.filter(r => !r.matched))}
+                              checked={xmlRecords.length > 0 && xmlRecords.every(r => selectedXmlIds.has(r.id))}
+                              onCheckedChange={() => toggleAllXml(xmlRecords)}
                               className="h-3.5 w-3.5"
                             />
                           </TableHead>
@@ -800,11 +800,12 @@ const AcquistiPage = () => {
                           <TableHead className="h-7 text-[10px]">Cedente</TableHead>
                           <TableHead className="h-7 text-[10px] text-right">Importo</TableHead>
                           <TableHead className="h-7 text-[10px]">Data</TableHead>
+                          <TableHead className="h-7 text-[10px]">Stato</TableHead>
                           <TableHead className="h-7 text-[10px] w-[70px]"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {xmlRecords.filter((r) => !r.matched).map((r) => (
+                        {xmlRecords.map((r) => (
                           <TableRow key={r.id} className={`cursor-pointer hover:bg-accent/50 ${selectedXmlIds.has(r.id) ? "bg-accent/30" : ""}`} onClick={() => openXmlSheet(r)}>
                             <TableCell className="py-1 px-1" onClick={(e) => e.stopPropagation()}>
                               <Checkbox
@@ -824,22 +825,27 @@ const AcquistiPage = () => {
                             <TableCell className="text-[11px] py-1 font-mono text-right">{r.importo_totale != null ? formatCurrency(r.importo_totale) : "—"}</TableCell>
                             <TableCell className="text-[11px] py-1">{r.data_fattura || "—"}</TableCell>
                             <TableCell className="py-1">
-                              <Button size="sm" variant="outline" className="h-5 text-[10px] px-2" onClick={(e) => {
-                                e.stopPropagation();
-                                const fakePurchase = { anno: r.anno || 0, numero: r.numero || 0, fornitore: r.cedente_denominazione || "", totale: r.importo_totale || 0, imposta: 0, cig: "" } as PurchaseInvoice;
-                                setXmlPickerInvoice(fakePurchase);
-                              }}>
-                                <Link2 className="h-3 w-3 mr-1" />Associa
-                              </Button>
+                              {r.matched
+                                ? <Badge className="text-[9px] h-4 px-1">Assoc.</Badge>
+                                : <Badge variant="destructive" className="text-[9px] h-4 px-1">Non assoc.</Badge>
+                              }
+                            </TableCell>
+                            <TableCell className="py-1">
+                              {!r.matched && (
+                                <Button size="sm" variant="outline" className="h-5 text-[10px] px-2" onClick={(e) => {
+                                  e.stopPropagation();
+                                  const fakePurchase = { anno: r.anno || 0, numero: r.numero || 0, fornitore: r.cedente_denominazione || "", totale: r.importo_totale || 0, imposta: 0, cig: "" } as PurchaseInvoice;
+                                  setXmlPickerInvoice(fakePurchase);
+                                }}>
+                                  <Link2 className="h-3 w-3 mr-1" />Associa
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                )}
-                {xmlUnmatchedCount === 0 && xmlRecords.length > 0 && (
-                  <p className="text-xs text-muted-foreground py-2">Tutte le fatture XML sono associate. ✓</p>
                 )}
                 {xmlRecords.length === 0 && (
                   <p className="text-xs text-muted-foreground py-2">Nessuna fattura XML caricata. Usa il pulsante XML nell'header per caricare.</p>
