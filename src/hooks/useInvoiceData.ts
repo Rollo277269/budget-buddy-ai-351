@@ -133,14 +133,14 @@ export function parseExcelSales(rows: any[]): SaleInvoice[] {
     const desc = String(r[13] || "");
     const prezzoTotRiga = parseNumber(r[18]);
     const aliquotaStr = String(r[19] || "");
-    // Calcola imponibile e imposta per riga dal prezzo totale e aliquota
+    // Il "Prezzo Tot." è l'imponibile di riga; l'imposta si calcola applicando l'aliquota
     const aliquotaMatch = aliquotaStr.match(/(\d+)/);
     const aliquotaPct = aliquotaMatch ? parseInt(aliquotaMatch[1]) : 0;
-    const rigaImponibile = aliquotaPct > 0 ? prezzoTotRiga / (1 + aliquotaPct / 100) : prezzoTotRiga;
-    const rigaImposta = prezzoTotRiga - rigaImponibile;
+    const rigaImponibile = prezzoTotRiga;
+    const rigaImposta = aliquotaPct > 0 ? prezzoTotRiga * (aliquotaPct / 100) : 0;
     const riga: SaleInvoiceRiga = {
       descrizione: desc, imponibile: Math.round(rigaImponibile * 100) / 100,
-      imposta: Math.round(rigaImposta * 100) / 100, totale: prezzoTotRiga,
+      imposta: Math.round(rigaImposta * 100) / 100, totale: Math.round((rigaImponibile + rigaImposta) * 100) / 100,
       cig: extractCIG(desc), cup: extractCUP(desc),
     };
     if (invoiceMap.has(key)) {
