@@ -504,7 +504,7 @@ const AcquistiPage = () => {
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
 
 
-  return (
+  return (<>
     <div className="flex h-full">
       <div className={`flex flex-col overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Sticky header area */}
