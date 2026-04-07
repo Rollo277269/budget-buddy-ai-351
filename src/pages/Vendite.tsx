@@ -57,7 +57,12 @@ const VenditePage = () => {
   // Read centroRicavo from URL on mount
   useEffect(() => {
     const cr = searchParams.get("centroRicavo");
-    if (cr) setFilters((f) => ({ ...f, centroRicavo: cr }));
+    const anno = searchParams.get("anno");
+    setFilters((f) => ({
+      ...f,
+      ...(cr ? { centroRicavo: cr } : {}),
+      ...(anno ? { anno } : {}),
+    }));
   }, [searchParams, setFilters]);
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
   const [selectedCliente, setSelectedCliente] = useState<string | null>(null);
