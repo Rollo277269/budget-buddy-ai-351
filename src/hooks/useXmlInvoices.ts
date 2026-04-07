@@ -335,6 +335,17 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
 
         uploaded++;
         if (isMatched) matched++;
+
+        // If XML has CIG, update the matched invoice's CIG if it's empty
+        if (parsed.cig && isMatched && matchedAnno && matchedNumero) {
+          const table = tipo === "vendita" ? "fatture_vendita" : "fatture_acquisto";
+          await supabase
+            .from(table as any)
+            .update({ cig: parsed.cig } as any)
+            .eq("anno", matchedAnno)
+            .eq("numero", matchedNumero)
+            .or("cig.is.null,cig.eq.");
+        }
       } catch (e) {
         console.error(`Error processing ${file.name}:`, e);
         toast.error(`Errore elaborazione ${file.name}`);
