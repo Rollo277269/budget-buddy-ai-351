@@ -457,6 +457,7 @@ const AcquistiPage = () => {
         toast.success(`${updated} fatture aggiornate da XML`);
         invalidateInvoiceCache();
         refreshInvoices();
+        setSelectedXmlIds(new Set());
       } else {
         toast.info("Tutte le fatture sono già complete");
       }
