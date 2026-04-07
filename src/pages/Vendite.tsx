@@ -744,6 +744,11 @@ const VenditePage = () => {
                   <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
                   <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
                   {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px]">{xmlUnmatchedCount} non assoc.</Badge>}
+                  {selectedXmlIds.size > 0 && (
+                    <Badge variant="secondary" className="text-[10px] cursor-pointer" onClick={() => setSelectedXmlIds(new Set())}>
+                      {selectedXmlIds.size} selezionati ✕
+                    </Badge>
+                  )}
                   <div className="ml-auto flex gap-1">
                     {xmlDuplicateCount > 0 && (
                       <AlertDialog>
@@ -771,7 +776,7 @@ const VenditePage = () => {
                     )}
                     <Button size="sm" variant="outline" className="h-6 text-[10px]" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
                       {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
-                      {enriching ? "Aggiornamento..." : "Aggiorna da XML"}
+                      {enriching ? "Aggiornamento..." : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
                     </Button>
                   </div>
                 </div>
@@ -780,6 +785,13 @@ const VenditePage = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="text-[10px]">
+                          <TableHead className="h-7 w-8 px-1">
+                            <Checkbox
+                              checked={xmlRecords.filter(r => !r.matched).length > 0 && xmlRecords.filter(r => !r.matched).every(r => selectedXmlIds.has(r.id))}
+                              onCheckedChange={() => toggleAllXml(xmlRecords.filter(r => !r.matched))}
+                              className="h-3.5 w-3.5"
+                            />
+                          </TableHead>
                           <TableHead className="h-7 text-[10px]">File</TableHead>
                           <TableHead className="h-7 text-[10px]">N° Doc</TableHead>
                           <TableHead className="h-7 text-[10px]">Cessionario</TableHead>
@@ -790,7 +802,14 @@ const VenditePage = () => {
                       </TableHeader>
                       <TableBody>
                         {xmlRecords.filter((r) => !r.matched).map((r) => (
-                          <TableRow key={r.id} className="cursor-pointer hover:bg-accent/50" onClick={() => openXmlSheet(r)}>
+                          <TableRow key={r.id} className={`cursor-pointer hover:bg-accent/50 ${selectedXmlIds.has(r.id) ? "bg-accent/30" : ""}`} onClick={() => openXmlSheet(r)}>
+                            <TableCell className="py-1 px-1" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedXmlIds.has(r.id)}
+                                onCheckedChange={() => toggleXmlSelection(r.id)}
+                                className="h-3.5 w-3.5"
+                              />
+                            </TableCell>
                             <TableCell className="text-[11px] py-1 max-w-[180px] truncate">
                               <FileText className="h-3 w-3 mr-1 inline text-muted-foreground" />
                               {r.file_name}
