@@ -72,6 +72,7 @@ export function DataTable<T extends Record<string, any>>({
   renderExpandedContent,
   defaultSort,
   toolbarPortalRef,
+  tableId,
 }: DataTableProps<T>) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
@@ -80,6 +81,12 @@ export function DataTable<T extends Record<string, any>>({
   const globalSearch = useDebouncedValue(globalSearchInput, 200);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+    if (tableId) {
+      try {
+        const saved = localStorage.getItem(`dt-cols-${tableId}`);
+        if (saved) return new Set(JSON.parse(saved) as string[]);
+      } catch { /* ignore */ }
+    }
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
   });
   const [filterOpen, setFilterOpen] = useState<string | null>(null);
