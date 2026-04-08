@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect, DragEvent } from "react";
-import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, CreditCard, Settings, RefreshCw, ChevronDown, Banknote } from "lucide-react";
+import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, CreditCard, Settings, RefreshCw, ChevronDown, Banknote, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, MatchedInvoice, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
@@ -572,10 +572,11 @@ const BanchePage = () => {
     }
     return (
       <span
-        className="text-xs font-mono cursor-pointer hover:text-primary transition-colors"
+        className="inline-flex items-center gap-1 text-xs font-mono cursor-pointer hover:text-primary transition-colors group"
         title="Clicca per modificare il CIG"
         onClick={(e) => { e.stopPropagation(); setEditingCigId(r.id); setEditingCigValue(r.cig || ""); }}>
         {r.cig || <span className="text-muted-foreground">—</span>}
+        <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </span>
     );
   }},
