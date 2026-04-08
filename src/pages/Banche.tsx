@@ -385,7 +385,7 @@ const BanchePage = () => {
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
-    deduplicateExisting,
+    deduplicateExisting, bulkUpdateCIG,
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
