@@ -59,7 +59,7 @@ function useDebouncedValue(value: string, delay: number) {
   return debounced;
 }
 
-const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 32;
 const OVERSCAN = 8;
 
 export function DataTable<T extends Record<string, any>>({
