@@ -43,14 +43,19 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[50vw] overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-[50vw] overflow-y-auto z-[60]">
         <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2">
-            <div className="rounded-lg bg-primary p-1.5">
-              <FileText className="h-4 w-4 text-primary-foreground" />
-            </div>
-            Fattura {invoice.numero}/{invoice.anno}
-          </SheetTitle>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onOpenChange(false)} title="Torna indietro">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <SheetTitle className="flex items-center gap-2">
+              <div className="rounded-lg bg-primary p-1.5">
+                <FileText className="h-4 w-4 text-primary-foreground" />
+              </div>
+              Fattura {invoice.numero}/{invoice.anno}
+            </SheetTitle>
+          </div>
           <SheetDescription>
             {type === "vendita" ? "Fattura di vendita" : "Fattura di acquisto"}
           </SheetDescription>
