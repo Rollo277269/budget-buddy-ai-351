@@ -90,6 +90,14 @@ export function DataTable<T extends Record<string, any>>({
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
   });
   const [filterOpen, setFilterOpen] = useState<string | null>(null);
+
+  // Persist visible columns to localStorage
+  useEffect(() => {
+    if (tableId) {
+      localStorage.setItem(`dt-cols-${tableId}`, JSON.stringify([...visibleColumns]));
+    }
+  }, [visibleColumns, tableId]);
+
   const [columnOrder, setColumnOrder] = useState<string[]>(() => columns.map((c) => c.key));
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     const w: Record<string, number> = {};
