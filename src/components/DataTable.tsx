@@ -44,6 +44,7 @@ interface DataTableProps<T> {
   renderExpandedContent?: (row: T) => ReactNode;
   defaultSort?: { key: string; dir: SortDir };
   toolbarPortalRef?: React.RefObject<HTMLDivElement | null>;
+  tableId?: string;
 }
 
 type SortDir = "asc" | "desc" | null;
@@ -71,6 +72,7 @@ export function DataTable<T extends Record<string, any>>({
   renderExpandedContent,
   defaultSort,
   toolbarPortalRef,
+  tableId,
 }: DataTableProps<T>) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
@@ -79,9 +81,23 @@ export function DataTable<T extends Record<string, any>>({
   const globalSearch = useDebouncedValue(globalSearchInput, 200);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+    if (tableId) {
+      try {
+        const saved = localStorage.getItem(`dt-cols-${tableId}`);
+        if (saved) return new Set(JSON.parse(saved) as string[]);
+      } catch { /* ignore */ }
+    }
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
   });
   const [filterOpen, setFilterOpen] = useState<string | null>(null);
+
+  // Persist visible columns to localStorage
+  useEffect(() => {
+    if (tableId) {
+      localStorage.setItem(`dt-cols-${tableId}`, JSON.stringify([...visibleColumns]));
+    }
+  }, [visibleColumns, tableId]);
+
   const [columnOrder, setColumnOrder] = useState<string[]>(() => columns.map((c) => c.key));
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     const w: Record<string, number> = {};
