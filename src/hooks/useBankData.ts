@@ -908,11 +908,17 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     return updated;
   }, [rawMovements]);
 
+  const updateMovementCig = useCallback(async (movementId: string, cig: string) => {
+    const trimmed = cig.trim().toUpperCase();
+    await supabase.from("bank_movements" as any).update({ cig: trimmed }).eq("id", movementId);
+    setRawMovements(prev => prev.map(m => m.id === movementId ? { ...m, cig: trimmed } : m));
+  }, []);
+
   return {
     movements, allMovements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
-    deduplicateExisting, bulkUpdateCIG,
+    deduplicateExisting, bulkUpdateCIG, updateMovementCig,
   };
 }
