@@ -898,6 +898,7 @@ const AcquistiPage = () => {
                 {/* Main invoices table */}
                 <div className="pt-2">
                   <DataTable<PurchaseInvoice>
+                    tableId="acquisti"
                     toolbarPortalRef={toolbarPortalRef}
                     columns={columns}
                     data={displayedPurchases}

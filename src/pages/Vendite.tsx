@@ -1024,6 +1024,7 @@ const VenditePage = () => {
                 {/* Main invoices table */}
                 <div className="pt-2">
                   <DataTable<SaleInvoice>
+                    tableId="vendite"
                     toolbarPortalRef={toolbarPortalRef}
                     columns={columns}
                     data={displayedSales}
