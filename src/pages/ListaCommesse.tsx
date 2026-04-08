@@ -27,6 +27,7 @@ export interface Commessa {
   committente: string;
   assegnataria: string;
   cig: string;
+  cigDerivato?: string;
   cssrStato: string;
   fattureVendita: number;
   fattureAcquisto: number;
@@ -149,6 +150,7 @@ const ListaCommessePage = () => {
         committente: c.committente || "—",
         assegnataria: c.impresa_assegnataria || "—",
         cig,
+        cigDerivato: c.cig_derivato || undefined,
         cssrStato: c.stato || "",
         fattureVendita: counts.fv + countsDeriv.fv,
         fattureAcquisto: counts.fa + countsDeriv.fa,
