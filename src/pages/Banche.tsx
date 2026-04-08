@@ -35,6 +35,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox as CheckboxUI } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 
+
 function ReconciliationBadge({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "auto") {
     return (
@@ -446,7 +447,7 @@ const BanchePage = () => {
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
-    deduplicateExisting, bulkUpdateCIG,
+    deduplicateExisting, bulkUpdateCIG, updateMovementCig,
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
@@ -458,6 +459,9 @@ const BanchePage = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [filterYear, setFilterYear] = useState<string>("");
+  const [editingCigId, setEditingCigId] = useState<string | null>(null);
+  const [editingCigValue, setEditingCigValue] = useState("");
+
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some((c) => c.id === activeAccountId);
 
@@ -550,7 +554,31 @@ const BanchePage = () => {
 
   },
   { key: "saldo", label: "Saldo", sortable: true, align: "right" as const, defaultHidden: true, render: (r) => <span className="text-xs font-mono">{formatCurrency(r.saldo)}</span> },
-  { key: "cig", label: "CIG", render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span>, filterable: true },
+  { key: "cig", label: "CIG", filterable: true, render: (r) => {
+    if (editingCigId === r.id) {
+      return (
+        <form className="flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); updateMovementCig(r.id, editingCigValue); setEditingCigId(null); }}>
+          <Input
+            autoFocus
+            className="h-6 w-28 text-xs font-mono px-1"
+            value={editingCigValue}
+            onChange={(e) => setEditingCigValue(e.target.value)}
+            onBlur={() => { updateMovementCig(r.id, editingCigValue); setEditingCigId(null); }}
+            onKeyDown={(e) => { if (e.key === "Escape") setEditingCigId(null); }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </form>
+      );
+    }
+    return (
+      <span
+        className="text-xs font-mono cursor-pointer hover:text-primary transition-colors"
+        title="Clicca per modificare il CIG"
+        onClick={(e) => { e.stopPropagation(); setEditingCigId(r.id); setEditingCigValue(r.cig || ""); }}>
+        {r.cig || <span className="text-muted-foreground">—</span>}
+      </span>
+    );
+  }},
   {
     key: "matchConfidence", label: "Stato", sortable: true, filterable: true,
     render: (r) => <ReconciliationBadge m={r} />
