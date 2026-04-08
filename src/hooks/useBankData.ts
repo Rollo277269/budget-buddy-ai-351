@@ -890,11 +890,29 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     return { total, matched, unmatched: total - matched, entrate, uscite };
   }, [movements]);
 
+  const bulkUpdateCIG = useCallback(async () => {
+    const noCig = rawMovements.filter(m => !m.cig);
+    let updated = 0;
+    const updatedMovements = [...rawMovements];
+    for (const m of noCig) {
+      const fullText = `${m.causale} ${m.descrizione}`.trim();
+      const cig = extractCIG(fullText);
+      if (cig) {
+        await supabase.from("bank_movements" as any).update({ cig }).eq("id", m.id);
+        const idx = updatedMovements.findIndex(rm => rm.id === m.id);
+        if (idx >= 0) updatedMovements[idx] = { ...updatedMovements[idx], cig };
+        updated++;
+      }
+    }
+    if (updated > 0) setRawMovements(updatedMovements);
+    return updated;
+  }, [rawMovements]);
+
   return {
     movements, allMovements, rawMovements, loading, fileNames, handleFileUpload,
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
-    deduplicateExisting,
+    deduplicateExisting, bulkUpdateCIG,
   };
 }
