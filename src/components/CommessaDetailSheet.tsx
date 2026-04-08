@@ -1748,10 +1748,16 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           </>
         );
       })()}
+
+      <InvoiceDetailSheet
+        invoice={selectedInvoice?.invoice || null}
+        open={!!selectedInvoice}
+        onOpenChange={(o) => { if (!o) setSelectedInvoice(null); }}
+        type={selectedInvoice?.type || "vendita"}
+      />
     </div>
   );
 }
-
 /* ── Stato badge with colors ── */
 function StatoBadge({ stato }: { stato?: string }) {
   const s = (stato || "").toLowerCase();
