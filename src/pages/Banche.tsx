@@ -93,6 +93,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"vendita" | "acquisto" | "documento">("vendita");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<"score" | "data">("score");
 
   const effectiveTab = movement ?
   movement.importo < 0 ? "acquisto" : "vendita" :
@@ -112,6 +113,20 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
     }
   }, [movement?.id]);
 
+  // Parse date helper for sorting
+  const parseDateForSort = (d: string): number => {
+    if (!d) return 0;
+    const parts = d.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    if (!parts) return 0;
+    const year = parts[3].length === 2 ? 2000 + Number(parts[3]) : Number(parts[3]);
+    return year * 10000 + Number(parts[2]) * 100 + Number(parts[1]);
+  };
+
+  // Broad search helper
+  const matchesSearch = (q: string, ...fields: string[]): boolean => {
+    return fields.some(f => (f || "").toLowerCase().includes(q));
+  };
+
   // Scored items for invoice tabs
   const scoredItems = useMemo(() => {
     if (!movement || currentTab === "documento") return [];
@@ -120,26 +135,30 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
     const scored = list.map((inv) => {
       const name = isVendita ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
       const sc = scoreMatch(movement, inv, name);
-      return { inv, score: sc, name };
-    });
-                    const filtered = search ?
-    scored.filter(({ inv, name }) => {
-      const q = search.toLowerCase();
-      // Also search by XML supplier number for purchases
       let xmlNumDoc = "";
       if (!isVendita && findXml) {
         const xml = findXml(`${inv.anno}-${inv.numero}`, (inv as PurchaseInvoice).fornitore);
-        xmlNumDoc = (xml?.numero_documento || "").toLowerCase();
+        xmlNumDoc = xml?.numero_documento || "";
       }
-      return name.toLowerCase().includes(q) ||
-      String(inv.numero).includes(q) ||
-      inv.cig.toLowerCase().includes(q) ||
-      inv.descrizione.toLowerCase().includes(q) ||
-      xmlNumDoc.includes(q);
-    }) :
-    scored;
+      return { inv, score: sc, name, xmlNumDoc };
+    });
+    const filtered = search ?
+      scored.filter(({ inv, name, xmlNumDoc }) => {
+        const q = search.toLowerCase();
+        return matchesSearch(q,
+          name, String(inv.numero), String(inv.anno),
+          inv.cig, inv.descrizione, inv.data,
+          inv.scadenza, inv.pagamento,
+          String(inv.totale), String(inv.imponibile),
+          inv.partitaIva, xmlNumDoc,
+          (inv as any).suffisso || ""
+        );
+      }) : scored;
+    if (sortBy === "data") {
+      return filtered.sort((a, b) => parseDateForSort(b.inv.data) - parseDateForSort(a.inv.data));
+    }
     return filtered.sort((a, b) => b.score - a.score);
-  }, [movement, currentTab, sales, purchases, search]);
+  }, [movement, currentTab, sales, purchases, search, sortBy]);
 
   // Scored documenti for documento tab
   const scoredDocumenti = useMemo(() => {
@@ -153,9 +172,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
       else if (diff < 1) score += 25;
       else if (absImporto > 0 && diff < absImporto * 0.01) score += 20;
       else if (absImporto > 0 && diff < absImporto * 0.05) score += 10;
-      // CIG match
       if (movement.cig && doc.cig && movement.cig.toLowerCase() === doc.cig.toLowerCase()) score += 40;
-      // Name similarity
       const docName = doc.fornitore || doc.descrizione || doc.file_name;
       const descLower = (movement.descrizione || "").toLowerCase();
       const nameLower = (docName || "").toLowerCase();
@@ -170,13 +187,18 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
     const filtered = search ?
       scored.filter(({ doc, name }) => {
         const q = search.toLowerCase();
-        return (name || "").toLowerCase().includes(q) ||
-          (doc.file_name || "").toLowerCase().includes(q) ||
-          (doc.cig || "").toLowerCase().includes(q) ||
-          (doc.descrizione || "").toLowerCase().includes(q);
+        return matchesSearch(q,
+          name, doc.file_name, doc.cig,
+          doc.descrizione || "", doc.data_documento || "",
+          doc.fornitore || "", String(doc.importo || ""),
+          doc.centro_costo || ""
+        );
       }) : scored;
+    if (sortBy === "data") {
+      return filtered.sort((a, b) => parseDateForSort(b.doc.data_documento || "") - parseDateForSort(a.doc.data_documento || ""));
+    }
     return filtered.sort((a, b) => b.score - a.score);
-  }, [movement, currentTab, documenti, search]);
+  }, [movement, currentTab, documenti, search, sortBy]);
 
   const selectedTotal = useMemo(() => {
     if (!movement) return 0;
@@ -195,6 +217,17 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
     }
     return total;
   }, [selected, sales, purchases, documenti, movement]);
+
+  // Count selected per tab for badges
+  const selectedCounts = useMemo(() => {
+    let vendita = 0, acquisto = 0, documento = 0;
+    for (const key of selected) {
+      if (key.startsWith("documento-")) documento++;
+      else if (key.startsWith("vendita-")) vendita++;
+      else if (key.startsWith("acquisto-")) acquisto++;
+    }
+    return { vendita, acquisto, documento };
+  }, [selected]);
 
   if (!movement) return null;
   const isMatched = movement.matchConfidence !== "none";
@@ -232,6 +265,20 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
     onOpenChange(false);
   };
 
+  const tabButton = (tabId: "vendita" | "acquisto" | "documento", label: string, icon?: React.ReactNode) => {
+    const count = selectedCounts[tabId];
+    return (
+      <Button variant={currentTab === tabId ? "default" : "outline"} size="sm" className="text-xs flex-1 relative" onClick={() => setTab(tabId)}>
+        {icon}{label}
+        {count > 0 && (
+          <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary-foreground text-primary text-[9px] h-4 min-w-[16px] px-1">
+            {count}
+          </span>
+        )}
+      </Button>
+    );
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg">
@@ -241,9 +288,10 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
             {movement.data} — {formatCurrency(movement.importo)}
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-3">
           <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
             <p className="text-xs font-medium whitespace-pre-wrap break-words">{movement.descrizione || "Nessuna descrizione"}</p>
+            {movement.cig && <span className="text-[10px] font-mono text-muted-foreground">CIG: {movement.cig}</span>}
             <div className="flex items-center gap-2">
               <ReconciliationBadge m={movement} />
               {isMatched && <MatchedInvoiceLabel m={movement} />}
@@ -267,44 +315,53 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
               </Button>
             </div>
           }
-          <div className="flex gap-1">
-            <Button variant={currentTab === "vendita" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("vendita")}>Vendita</Button>
-            <Button variant={currentTab === "acquisto" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("acquisto")}>Acquisto</Button>
-            <Button variant={currentTab === "documento" ? "default" : "outline"} size="sm" className="text-xs flex-1" onClick={() => setTab("documento")}>
-              <FileText className="h-3 w-3 mr-1" />Documenti
-            </Button>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder={currentTab === "documento" ? "Cerca documento..." : "Cerca fattura..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
-          </div>
+          {/* Selection summary — always visible when items selected */}
           {selected.size > 0 &&
-          <div className="flex items-center justify-between rounded-lg border bg-primary/5 border-primary/30 p-2">
-              <div className="text-xs">
-                <span className="font-medium">{selected.size} element{selected.size === 1 ? "o" : "i"}</span>
-                <span className="text-muted-foreground ml-2">Totale: {formatCurrency(selectedTotal)}</span>
-                <span className={`ml-2 font-medium ${Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--warning))]"}`}>
-                  {Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "✓ Quadra" : `Δ ${formatCurrency(selectedTotal - Math.abs(movement.importo))}`}
-                </span>
+          <div className="rounded-lg border bg-primary/5 border-primary/30 p-2 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="text-xs">
+                  <span className="font-medium">{selected.size} element{selected.size === 1 ? "o" : "i"}</span>
+                  <span className="text-muted-foreground ml-2">Totale: {formatCurrency(selectedTotal)}</span>
+                  <span className={`ml-2 font-medium ${Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--warning))]"}`}>
+                    {Math.abs(selectedTotal - Math.abs(movement.importo)) < 0.01 ? "✓ Quadra" : `Δ ${formatCurrency(selectedTotal - Math.abs(movement.importo))}`}
+                  </span>
+                </div>
+                <Button size="sm" className="text-xs h-7" onClick={handleConfirm}>
+                  Conferma
+                </Button>
               </div>
-              <Button size="sm" className="text-xs h-7" onClick={handleConfirm}>
-                Conferma
-              </Button>
+              {selected.size > 1 && (
+                <p className="text-[10px] text-muted-foreground">Riconciliazione parziale: {selected.size} documenti associati a 1 movimento</p>
+              )}
             </div>
           }
+          <div className="flex gap-1">
+            {tabButton("vendita", "Vendita")}
+            {tabButton("acquisto", "Acquisto")}
+            {tabButton("documento", "Documenti", <FileText className="h-3 w-3 mr-1" />)}
+          </div>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input placeholder="Cerca in tutti i campi..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-xs" />
+            </div>
+            <Button variant="outline" size="sm" className="h-9 text-[10px] px-2 shrink-0" onClick={() => setSortBy(sortBy === "score" ? "data" : "score")} title={sortBy === "score" ? "Ordina per data" : "Ordina per rilevanza"}>
+              {sortBy === "score" ? "📊 Rilevanza" : "📅 Data"}
+            </Button>
+          </div>
           <ScrollArea className="h-[350px]">
             <div className="space-y-1 pr-3">
               {currentTab !== "documento" && (
                 <>
                   {scoredItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Nessuna fattura trovata</p>}
-                  {scoredItems.map(({ inv, score, name }) => {
+                  {scoredItems.map(({ inv, score, name, xmlNumDoc }) => {
                     const invKey = `${currentTab}-${inv.anno}-${inv.numero}`;
                     const isSelected = selected.has(invKey);
                     const isVendita = currentTab === "vendita";
                     return (
                       <button
                         key={invKey}
-                        className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                        className={`w-full text-left rounded-lg border p-2 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
                         onClick={() => toggleInvoice(currentTab as "vendita" | "acquisto", inv.anno, inv.numero)}>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -313,17 +370,19 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                             {isVendita && (inv as SaleInvoice).suffisso && (
                               <span className="text-[10px] font-mono text-muted-foreground">({(inv as SaleInvoice).suffisso})</span>
                             )}
-                            {!isVendita && findXml && (() => {
-                              const xml = findXml(`${inv.anno}-${inv.numero}`, (inv as PurchaseInvoice).fornitore);
-                              return xml?.numero_documento ? <span className="text-[10px] font-mono text-muted-foreground">N° forn: {xml.numero_documento}</span> : null;
-                            })()}
+                            {!isVendita && xmlNumDoc && (
+                              <span className="text-[10px] font-mono text-muted-foreground">N° forn: {xmlNumDoc}</span>
+                            )}
                             {score >= 35 &&
-                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}%</Badge>
                             }
                           </div>
                           <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate ml-6">{name}</p>
+                        <div className="flex items-center gap-3 ml-6">
+                          <span className="text-[10px] text-muted-foreground">{inv.data}</span>
+                          <p className="text-[11px] text-muted-foreground truncate flex-1">{name}</p>
+                        </div>
                         {inv.cig && <span className="text-[10px] font-mono text-muted-foreground ml-6">CIG: {inv.cig}</span>}
                       </button>);
                   })}
@@ -338,7 +397,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                     return (
                       <button
                         key={docKey}
-                        className={`w-full text-left rounded-lg border p-2.5 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
+                        className={`w-full text-left rounded-lg border p-2 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
                         onClick={() => toggleDocumento(doc.id)}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -346,14 +405,16 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                             <FileText className="h-3 w-3 text-muted-foreground" />
                             <span className="text-xs font-medium truncate max-w-[200px]">{name}</span>
                             {score >= 35 &&
-                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}% match</Badge>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}%</Badge>
                             }
                           </div>
                           <span className="text-xs font-mono font-medium text-expense">{formatCurrency(Math.abs(doc.importo || 0))}</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate ml-8">{doc.file_name}</p>
-                        {doc.data_documento && <span className="text-[10px] text-muted-foreground ml-8">{doc.data_documento}</span>}
-                        {doc.cig && <span className="text-[10px] font-mono text-muted-foreground ml-8"> CIG: {doc.cig}</span>}
+                        <div className="flex items-center gap-3 ml-8">
+                          {doc.data_documento && <span className="text-[10px] text-muted-foreground">{doc.data_documento}</span>}
+                          <p className="text-[11px] text-muted-foreground truncate flex-1">{doc.file_name}</p>
+                        </div>
+                        {doc.cig && <span className="text-[10px] font-mono text-muted-foreground ml-8">CIG: {doc.cig}</span>}
                       </button>);
                   })}
                 </>
