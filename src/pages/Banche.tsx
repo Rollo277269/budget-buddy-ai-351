@@ -653,8 +653,14 @@ const BanchePage = () => {
             }}>
               <Trash2 className="h-4 w-4 mr-1" />Rimuovi doppioni
             </Button>
+          <Button variant="outline" size="sm" title="Estrai CIG dalla descrizione dei movimenti senza CIG" onClick={async () => {
+              const count = await bulkUpdateCIG();
+              if (count > 0) toast.success(`CIG aggiornato su ${count} movimenti`);
+              else toast.info("Nessun nuovo CIG trovato nelle descrizioni");
+            }}>
+              <RefreshCw className="h-4 w-4 mr-1" />Aggiorna CIG
+            </Button>
           </>
-          }
           <Button onClick={() => {
             if (!hasValidAccount) {toast.error("Seleziona prima un conto corrente o una carta");return;}
             fileInputRef.current?.click();
