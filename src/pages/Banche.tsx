@@ -385,7 +385,7 @@ const BanchePage = () => {
     addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
-    deduplicateExisting,
+    deduplicateExisting, bulkUpdateCIG,
   } = useBankData(allSales, allPurchases);
   const { conti } = useContiCorrenti();
   const { documenti } = useDocumentiAcquisto();
@@ -652,6 +652,13 @@ const BanchePage = () => {
               else toast.info("Nessun duplicato trovato");
             }}>
               <Trash2 className="h-4 w-4 mr-1" />Rimuovi doppioni
+            </Button>
+          <Button variant="outline" size="sm" title="Estrai CIG dalla descrizione dei movimenti senza CIG" onClick={async () => {
+              const count = await bulkUpdateCIG();
+              if (count > 0) toast.success(`CIG aggiornato su ${count} movimenti`);
+              else toast.info("Nessun nuovo CIG trovato nelle descrizioni");
+            }}>
+              <RefreshCw className="h-4 w-4 mr-1" />Aggiorna CIG
             </Button>
           </>
           }
