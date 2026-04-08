@@ -59,6 +59,7 @@ interface Commessa {
   committente: string;
   assegnataria: string;
   cig: string;
+  cigDerivato?: string;
   cssrData?: CssrCommessa;
 }
 
@@ -209,15 +210,23 @@ export function CommessaDetailSheet({
   const data = useMemo(() => {
     if (!commessa) return null;
 
-    const cigLinks = manualLinks.filter((l) => l.cig === commessa.cig);
+    // Build a set of all CIGs that belong to this commessa (main + derivato)
+    const commessaCigs = new Set<string>();
+    if (commessa.cig) commessaCigs.add(commessa.cig);
+    if (commessa.cigDerivato) commessaCigs.add(commessa.cigDerivato);
+    // Also check cssrData for cig_derivato
+    if (commessa.cssrData?.cig_derivato) commessaCigs.add(commessa.cssrData.cig_derivato);
+    if (commessa.cssrData?.cig) commessaCigs.add(commessa.cssrData.cig);
+
+    const cigLinks = manualLinks.filter((l) => commessaCigs.has(l.cig));
     const manualSaleKeys = new Set(cigLinks.filter((l) => l.invoiceType === "vendita").map((l) => l.invoiceKey));
     const manualPurchaseKeys = new Set(cigLinks.filter((l) => l.invoiceType === "acquisto").map((l) => l.invoiceKey));
 
-    const autoSales = allSales.filter((s) => s.cig === commessa.cig);
-    const autoPurchases = allPurchases.filter((p) => p.cig === commessa.cig);
+    const autoSales = allSales.filter((s) => s.cig && commessaCigs.has(s.cig));
+    const autoPurchases = allPurchases.filter((p) => p.cig && commessaCigs.has(p.cig));
 
-    const manualSales = allSales.filter((s) => manualSaleKeys.has(invoiceKey(s.anno, s.numero)) && s.cig !== commessa.cig);
-    const manualPurchases = allPurchases.filter((p) => manualPurchaseKeys.has(invoiceKey(p.anno, p.numero)) && p.cig !== commessa.cig);
+    const manualSales = allSales.filter((s) => manualSaleKeys.has(invoiceKey(s.anno, s.numero)) && !(s.cig && commessaCigs.has(s.cig)));
+    const manualPurchases = allPurchases.filter((p) => manualPurchaseKeys.has(invoiceKey(p.anno, p.numero)) && !(p.cig && commessaCigs.has(p.cig)));
 
     const linkedSales = [...autoSales, ...manualSales];
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
