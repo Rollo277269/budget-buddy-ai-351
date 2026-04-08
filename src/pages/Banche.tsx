@@ -122,13 +122,20 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
       const sc = scoreMatch(movement, inv, name);
       return { inv, score: sc, name };
     });
-    const filtered = search ?
+                    const filtered = search ?
     scored.filter(({ inv, name }) => {
       const q = search.toLowerCase();
+      // Also search by XML supplier number for purchases
+      let xmlNumDoc = "";
+      if (!isVendita && findXml) {
+        const xml = findXml(`${inv.anno}-${inv.numero}`, (inv as PurchaseInvoice).fornitore);
+        xmlNumDoc = (xml?.numero_documento || "").toLowerCase();
+      }
       return name.toLowerCase().includes(q) ||
       String(inv.numero).includes(q) ||
       inv.cig.toLowerCase().includes(q) ||
-      inv.descrizione.toLowerCase().includes(q);
+      inv.descrizione.toLowerCase().includes(q) ||
+      xmlNumDoc.includes(q);
     }) :
     scored;
     return filtered.sort((a, b) => b.score - a.score);
