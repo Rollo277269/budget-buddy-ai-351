@@ -28,6 +28,7 @@ import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
 import { CommessaExpenseUpload } from "@/components/CommessaExpenseUpload";
 import { EditExpenseDialog } from "@/components/EditExpenseDialog";
+import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { useNamingRules } from "@/hooks/useNamingRules";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
