@@ -1,8 +1,9 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-import { FileText } from "lucide-react";
+import { FileText, ArrowLeft } from "lucide-react";
 
 type Invoice = SaleInvoice | PurchaseInvoice;
 
