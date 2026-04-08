@@ -487,7 +487,7 @@ const VenditePage = () => {
             className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
             onClick={(e) => { e.stopPropagation(); navigate(`/?cig=${encodeURIComponent(r.cig)}`); }}
           >{r.cig}
-            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 inline ml-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setEditingCigKey(k); setEditingCigValue(r.cig); }} />
+            <Pencil className="h-3 w-3 opacity-30 hover:opacity-80 inline ml-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setEditingCigKey(k); setEditingCigValue(r.cig); }} />
           </span> :
           <span className="font-mono text-[11px] text-muted-foreground cursor-pointer hover:text-primary flex items-center gap-0.5" onClick={(e) => { e.stopPropagation(); setEditingCigKey(k); setEditingCigValue(""); }}>
             — <Pencil className="h-3 w-3 opacity-50" />
