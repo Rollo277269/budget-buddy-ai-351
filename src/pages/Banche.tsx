@@ -598,7 +598,7 @@ const BanchePage = () => {
         </button>
 
   }],
-  [selectedRows, deleteMovements, allIds, allSelected, someSelected]);
+  [selectedRows, deleteMovements, allIds, allSelected, someSelected, editingCigId, editingCigValue, updateMovementCig]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!hasValidAccount) {
