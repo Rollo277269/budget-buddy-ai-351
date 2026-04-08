@@ -34,6 +34,7 @@ import { useRateFinanziamento, RataFinanziamento } from "@/hooks/useRateFinanzia
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox as CheckboxUI } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
 
 function ReconciliationBadge({ m }: {m: BankMovement;}) {
   if (m.matchConfidence === "auto") {
