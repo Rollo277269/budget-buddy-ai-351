@@ -361,7 +361,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                     const isVendita = currentTab === "vendita";
                     return (
                       <button
-                        key={invKey}
+                        key={inv.id}
                         className={`w-full text-left rounded-lg border p-2 hover:bg-accent/50 transition-colors ${isSelected ? "border-primary bg-primary/10" : score >= 35 ? "border-primary/40 bg-primary/5" : ""}`}
                         onClick={() => toggleInvoice(currentTab as "vendita" | "acquisto", inv.anno, inv.numero)}>
                         <div className="flex items-center justify-between">
