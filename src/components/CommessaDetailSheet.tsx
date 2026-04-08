@@ -1424,6 +1424,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   onAssignCosto: (key: string, codice: string) => void;
 }) {
   const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
+  const [selectedInvoice, setSelectedInvoice] = useState<{ invoice: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
   const [expandedRicavo, setExpandedRicavo] = useState<string | null>(null);
   const [expandedCosto, setExpandedCosto] = useState<string | null>(null);
   const [ricavoOrder, setRicavoOrder] = useState<string[] | null>(() => {
