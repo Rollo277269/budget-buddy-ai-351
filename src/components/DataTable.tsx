@@ -44,6 +44,7 @@ interface DataTableProps<T> {
   renderExpandedContent?: (row: T) => ReactNode;
   defaultSort?: { key: string; dir: SortDir };
   toolbarPortalRef?: React.RefObject<HTMLDivElement | null>;
+  tableId?: string;
 }
 
 type SortDir = "asc" | "desc" | null;
