@@ -661,6 +661,7 @@ const BanchePage = () => {
               <RefreshCw className="h-4 w-4 mr-1" />Aggiorna CIG
             </Button>
           </>
+          }
           <Button onClick={() => {
             if (!hasValidAccount) {toast.error("Seleziona prima un conto corrente o una carta");return;}
             fileInputRef.current?.click();
