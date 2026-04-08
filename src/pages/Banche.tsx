@@ -461,6 +461,13 @@ const BanchePage = () => {
   const [editingCigId, setEditingCigId] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
 
+  const saveCig = useCallback(async (movementId: string, cig: string) => {
+    const trimmed = cig.trim().toUpperCase();
+    await supabase.from("bank_movements" as any).update({ cig: trimmed }).eq("id", movementId);
+    // Update local state in rawMovements via re-fetch approach — but simpler to just refresh
+    window.location.reload();
+  }, []);
+
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some((c) => c.id === activeAccountId);
 
   const accountStats = useMemo(() => {
