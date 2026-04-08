@@ -1654,23 +1654,31 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                         const key = `${inv.anno}-${inv.numero}`;
                         const counterpart = "cliente" in inv ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
                         return (
-                          <TableRow key={`detail-${key}`} className="bg-muted/10">
-                            <TableCell></TableCell>
-                            <TableCell className="text-[11px]">
-                              <span className="font-mono">{inv.numero}/{inv.anno}</span>
-                              <span className="text-muted-foreground ml-2">{counterpart}</span>
-                            </TableCell>
-                            <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : inv.totale)}</TableCell>
-                            <TableCell colSpan={2}>
-                              <CentroCell
-                                invoiceKey={key}
-                                tipo={tipo}
-                                centri={centri}
-                                centroMap={centroMapObj}
-                                onAssign={onAssign}
-                              />
-                            </TableCell>
-                          </TableRow>
+                          <TableRow
+                            key={`detail-${key}`}
+                            className="bg-muted/10 cursor-pointer hover:bg-muted/30 transition-colors"
+                            onClick={() => setSelectedInvoice({
+                              invoice: inv,
+                              type: tipo === "ricavo" ? "vendita" : "acquisto"
+                            })}
+                          >
+                             <TableCell></TableCell>
+                             <TableCell className="text-[11px]">
+                               <span className="font-mono">{inv.numero}/{inv.anno}</span>
+                               <span className="text-muted-foreground ml-2">{counterpart}</span>
+                               <Eye className="h-3 w-3 inline ml-1.5 text-muted-foreground/50" />
+                             </TableCell>
+                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : inv.totale)}</TableCell>
+                             <TableCell colSpan={2} onClick={(e) => e.stopPropagation()}>
+                               <CentroCell
+                                 invoiceKey={key}
+                                 tipo={tipo}
+                                 centri={centri}
+                                 centroMap={centroMapObj}
+                                 onAssign={onAssign}
+                               />
+                             </TableCell>
+                           </TableRow>
                         );
                       })}
                     </>
