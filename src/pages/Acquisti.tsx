@@ -108,16 +108,44 @@ const AcquistiPage = () => {
         if (movs) movs.forEach((m: any) => { movements[m.id] = { importo: Math.abs(Number(m.importo)), data: m.data }; });
       }
 
-      const map: Record<string, { paid: number; lastDate: string }> = {};
+      // Group reconciliations by movement_id for FIFO allocation
+      const movGroups: Record<string, any[]> = {};
       for (const r of recons as any[]) {
-        const key = `${r.invoice_anno}-${r.invoice_numero}`;
-        const mov = movements[r.movement_id];
+        if (!r.invoice_anno || !r.invoice_numero) continue;
+        if (!movGroups[r.movement_id]) movGroups[r.movement_id] = [];
+        movGroups[r.movement_id].push(r);
+      }
+
+      const map: Record<string, { paid: number; lastDate: string }> = {};
+      for (const [movId, recs] of Object.entries(movGroups)) {
+        const mov = movements[movId];
         if (!mov) continue;
-        if (!map[key]) {
-          map[key] = { paid: mov.importo, lastDate: mov.data };
-        } else {
-          map[key].paid += mov.importo;
-          if (mov.data > map[key].lastDate) map[key].lastDate = mov.data;
+        let remaining = mov.importo;
+
+        // Sort linked invoices oldest-first (FIFO)
+        const sorted = recs
+          .map((r: any) => {
+            const invoice = purchases.find((p) => p.anno === r.invoice_anno && p.numero === r.invoice_numero);
+            let ds = 0;
+            if (invoice) {
+              const parts = invoice.data.split("/");
+              if (parts.length === 3) ds = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).getTime();
+            }
+            return { rec: r, totale: invoice ? Math.abs(invoice.totale) : 0, dataSort: ds };
+          })
+          .sort((a, b) => a.dataSort - b.dataSort);
+
+        for (const { rec, totale } of sorted) {
+          if (remaining <= 0) break;
+          const allocated = Math.min(remaining, totale);
+          remaining -= allocated;
+          const key = `${rec.invoice_anno}-${rec.invoice_numero}`;
+          if (!map[key]) {
+            map[key] = { paid: allocated, lastDate: mov.data };
+          } else {
+            map[key].paid += allocated;
+            if (mov.data > map[key].lastDate) map[key].lastDate = mov.data;
+          }
         }
       }
       setReconMap(map);

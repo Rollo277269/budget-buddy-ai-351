@@ -383,14 +383,40 @@ function SchedaDetail({
         movGroups.set(rec.movement_id, list);
       }
 
+      // Resolve invoice totals for FIFO allocation
+      const invoiceTotals = new Map<string, { totale: number; dataSort: number }>();
+      for (const s of allSales) {
+        invoiceTotals.set(`vendita-${s.anno}-${s.numero}`, {
+          totale: Math.abs(s.totale),
+          dataSort: parseDate(s.data)?.getTime() || 0,
+        });
+      }
+      for (const p of allPurchases) {
+        invoiceTotals.set(`acquisto-${p.anno}-${p.numero}`, {
+          totale: Math.abs(p.totale),
+          dataSort: parseDate(p.data)?.getTime() || 0,
+        });
+      }
+
       for (const [movId, recs] of movGroups) {
         const mov = movMap.get(movId);
         if (!mov) continue;
-        const absImporto = Math.abs(mov.importo);
-        const share = absImporto / recs.length; // equal split among linked invoices
+        let remaining = Math.abs(mov.importo);
 
-        for (const rec of recs) {
-          const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
+        // Sort linked invoices oldest-first (FIFO)
+        const sorted = recs
+          .map((rec: any) => {
+            const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
+            const inv = invoiceTotals.get(key);
+            return { rec, key, totale: inv?.totale || 0, dataSort: inv?.dataSort || 0 };
+          })
+          .sort((a: any, b: any) => a.dataSort - b.dataSort);
+
+        for (const { rec, key, totale } of sorted) {
+          if (remaining <= 0) break;
+          const allocated = Math.min(remaining, totale);
+          remaining -= allocated;
+
           // Date: keep latest
           const existing = dateMap.get(key);
           if (!existing) {
@@ -402,15 +428,15 @@ function SchedaDetail({
               dateMap.set(key, mov.data);
             }
           }
-          // Amount: add proportional share
-          amountMap.set(key, (amountMap.get(key) || 0) + share);
+          // Amount: add FIFO-allocated share
+          amountMap.set(key, (amountMap.get(key) || 0) + allocated);
         }
       }
       setPaymentDatesMap(dateMap);
       setReconAmountsMap(amountMap);
     }
     loadReconData();
-  }, [tipo, nome]);
+  }, [tipo, nome, allSales, allPurchases]);
 
   const { rows, stats } = useMemo(
     () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap, reconAmountsMap),
