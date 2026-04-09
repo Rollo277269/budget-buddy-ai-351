@@ -112,16 +112,39 @@ const VenditePage = () => {
         if (movs) movs.forEach((m: any) => { movements[m.id] = { importo: Math.abs(Number(m.importo)), data: m.data }; });
       }
 
-      const map: Record<string, { paid: number; lastDate: string }> = {};
+      // Group reconciliations by movement_id for FIFO allocation
+      const movGroups: Record<string, any[]> = {};
       for (const r of recons as any[]) {
-        const key = `${r.invoice_anno}-${r.invoice_numero}`;
-        const mov = movements[r.movement_id];
+        if (!r.invoice_anno || !r.invoice_numero) continue;
+        if (!movGroups[r.movement_id]) movGroups[r.movement_id] = [];
+        movGroups[r.movement_id].push(r);
+      }
+
+      const map: Record<string, { paid: number; lastDate: string }> = {};
+      for (const [movId, recs] of Object.entries(movGroups)) {
+        const mov = movements[movId];
         if (!mov) continue;
-        if (!map[key]) {
-          map[key] = { paid: mov.importo, lastDate: mov.data };
-        } else {
-          map[key].paid += mov.importo;
-          if (mov.data > map[key].lastDate) map[key].lastDate = mov.data;
+        let remaining = mov.importo;
+
+        // Sort linked invoices by date (oldest first) for FIFO allocation
+        const sorted = recs
+          .map((r: any) => {
+            const invoice = sales.find((s) => s.anno === r.invoice_anno && s.numero === r.invoice_numero);
+            return { rec: r, totale: invoice ? Math.abs(invoice.totale) : 0, dataSort: invoice ? (parseInvDate(invoice.data) || 0) : 0 };
+          })
+          .sort((a, b) => a.dataSort - b.dataSort);
+
+        for (const { rec, totale } of sorted) {
+          if (remaining <= 0) break;
+          const allocated = Math.min(remaining, totale);
+          remaining -= allocated;
+          const key = `${rec.invoice_anno}-${rec.invoice_numero}`;
+          if (!map[key]) {
+            map[key] = { paid: allocated, lastDate: mov.data };
+          } else {
+            map[key].paid += allocated;
+            if (mov.data > map[key].lastDate) map[key].lastDate = mov.data;
+          }
         }
       }
       if (!cancelled) setReconMap(map);
