@@ -436,7 +436,7 @@ function SchedaDetail({
       setReconAmountsMap(amountMap);
     }
     loadReconData();
-  }, [tipo, nome]);
+  }, [tipo, nome, allSales, allPurchases]);
 
   const { rows, stats } = useMemo(
     () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap, reconAmountsMap),
