@@ -368,9 +368,23 @@ function SchedaDetail({
 
       const dateMap = new Map<string, string>();
       const amountMap = new Map<string, number>();
+
+      // Group reconciliations by movement_id to handle many-to-one splits
+      const movGroups = new Map<string, any[]>();
       for (const rec of data as any[]) {
-        const mov = movMap.get(rec.movement_id);
-        if (mov && rec.invoice_anno && rec.invoice_numero && rec.invoice_type) {
+        if (!rec.invoice_anno || !rec.invoice_numero || !rec.invoice_type) continue;
+        const list = movGroups.get(rec.movement_id) || [];
+        list.push(rec);
+        movGroups.set(rec.movement_id, list);
+      }
+
+      for (const [movId, recs] of movGroups) {
+        const mov = movMap.get(movId);
+        if (!mov) continue;
+        const absImporto = Math.abs(mov.importo);
+        const share = absImporto / recs.length; // equal split among linked invoices
+
+        for (const rec of recs) {
           const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
           // Date: keep latest
           const existing = dateMap.get(key);
@@ -383,8 +397,8 @@ function SchedaDetail({
               dateMap.set(key, mov.data);
             }
           }
-          // Amount: sum absolute values
-          amountMap.set(key, (amountMap.get(key) || 0) + Math.abs(mov.importo));
+          // Amount: add proportional share
+          amountMap.set(key, (amountMap.get(key) || 0) + share);
         }
       }
       setPaymentDatesMap(dateMap);
