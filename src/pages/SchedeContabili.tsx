@@ -116,9 +116,12 @@ function buildRows(
     allSales.filter((s) => s.cliente === nome).forEach((s) => {
       const d = parseDate(s.data);
       const reconKey = `vendita-${s.anno}-${s.numero}`;
-      const isReconciled = paymentDatesMap.has(reconKey);
-      const stato = isReconciled ? "Incassata" : s.stato;
       const incassato = reconAmountsMap.get(reconKey) || 0;
+      const stato = incassato >= Math.abs(s.totale) - 0.01
+        ? "Incassata"
+        : incassato > 0
+          ? "Parzialmente incassata"
+          : s.stato;
       entries.push({
         data: s.data, dataSort: d ? d.getTime() : 0,
         numero: `${s.numero}/${s.anno}`, descrizione: s.descrizione || s.cliente,
@@ -131,9 +134,12 @@ function buildRows(
     allPurchases.filter((p) => p.fornitore === nome).forEach((p) => {
       const d = parseDate(p.data);
       const reconKey = `acquisto-${p.anno}-${p.numero}`;
-      const isReconciled = paymentDatesMap.has(reconKey);
-      const stato = isReconciled ? "Pagata" : p.stato;
       const incassato = reconAmountsMap.get(reconKey) || 0;
+      const stato = incassato >= Math.abs(p.totale) - 0.01
+        ? "Pagata"
+        : incassato > 0
+          ? "Parzialmente pagata"
+          : p.stato;
       entries.push({
         data: p.data, dataSort: d ? d.getTime() : 0,
         numero: `${p.numero}/${p.anno}`, descrizione: p.descrizione || p.fornitore,
@@ -146,11 +152,10 @@ function buildRows(
 
   entries.sort((a, b) => b.dataSort - a.dataSort);
 
-  let saldo = 0;
-  const rows: PrimaNotaRow[] = entries.map((e) => {
-    saldo += e.dare - e.avere;
-    return { ...e, saldo };
-  });
+  const rows: PrimaNotaRow[] = entries.map((e) => ({
+    ...e,
+    saldo: (e.dare || e.avere) - e.incassato,
+  }));
 
   const totaleFatturato = tipo === "cliente"
     ? entries.reduce((a, e) => a + e.dare, 0)
