@@ -342,54 +342,59 @@ function SchedaDetail({
 }) {
   // Load payment dates from bank reconciliations
   const [paymentDatesMap, setPaymentDatesMap] = useState<Map<string, string>>(new Map());
+  const [reconAmountsMap, setReconAmountsMap] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
-    async function loadPaymentDates() {
-      // Fetch ALL reconciliations (both vendita and acquisto) so we cover all invoices
+    async function loadReconData() {
       const { data, error } = await supabase
         .from("bank_reconciliations")
         .select("invoice_type, invoice_anno, invoice_numero, movement_id");
       if (error || !data || data.length === 0) return;
 
       const movementIds = [...new Set(data.map((r: any) => r.movement_id))];
-      const movDateMap = new Map<string, string>();
+      const movMap = new Map<string, { data: string; importo: number }>();
 
       for (let i = 0; i < movementIds.length; i += 500) {
         const batch = movementIds.slice(i, i + 500);
         const { data: movements } = await supabase
           .from("bank_movements")
-          .select("id, data")
+          .select("id, data, importo")
           .in("id", batch);
         if (movements) {
-          movements.forEach((m: any) => movDateMap.set(m.id, m.data));
+          movements.forEach((m: any) => movMap.set(m.id, { data: m.data, importo: m.importo }));
         }
       }
 
-      const map = new Map<string, string>();
+      const dateMap = new Map<string, string>();
+      const amountMap = new Map<string, number>();
       for (const rec of data as any[]) {
-        const movDate = movDateMap.get(rec.movement_id);
-        if (movDate && rec.invoice_anno && rec.invoice_numero && rec.invoice_type) {
+        const mov = movMap.get(rec.movement_id);
+        if (mov && rec.invoice_anno && rec.invoice_numero && rec.invoice_type) {
           const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
-          const existing = map.get(key);
+          // Date: keep latest
+          const existing = dateMap.get(key);
           if (!existing) {
-            map.set(key, movDate);
+            dateMap.set(key, mov.data);
           } else {
             const existDate = parseDate(existing);
-            const newDate = parseDate(movDate);
+            const newDate = parseDate(mov.data);
             if (existDate && newDate && newDate > existDate) {
-              map.set(key, movDate);
+              dateMap.set(key, mov.data);
             }
           }
+          // Amount: sum absolute values
+          amountMap.set(key, (amountMap.get(key) || 0) + Math.abs(mov.importo));
         }
       }
-      setPaymentDatesMap(map);
+      setPaymentDatesMap(dateMap);
+      setReconAmountsMap(amountMap);
     }
-    loadPaymentDates();
+    loadReconData();
   }, [tipo, nome]);
 
   const { rows, stats } = useMemo(
-    () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap),
-    [allSales, allPurchases, tipo, nome, paymentDatesMap]
+    () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap, reconAmountsMap),
+    [allSales, allPurchases, tipo, nome, paymentDatesMap, reconAmountsMap]
   );
 
   const [selectedCig, setSelectedCig] = useState<string | null>(null);
