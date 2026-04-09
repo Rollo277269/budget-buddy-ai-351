@@ -106,7 +106,8 @@ function buildRows(
   allPurchases: PurchaseInvoice[],
   tipo: "cliente" | "fornitore",
   nome: string,
-  paymentDatesMap: Map<string, string> // key: "tipo-anno-numero" → payment date string
+  paymentDatesMap: Map<string, string>,
+  reconAmountsMap: Map<string, number>
 ) {
   const entries: Omit<PrimaNotaRow, "saldo">[] = [];
 
@@ -116,11 +117,13 @@ function buildRows(
       const reconKey = `vendita-${s.anno}-${s.numero}`;
       const isReconciled = paymentDatesMap.has(reconKey);
       const stato = isReconciled ? "Incassata" : s.stato;
+      const incassato = reconAmountsMap.get(reconKey) || 0;
       entries.push({
         data: s.data, dataSort: d ? d.getTime() : 0,
         numero: `${s.numero}/${s.anno}`, descrizione: s.descrizione || s.cliente,
         tipo: "vendita", dare: s.totale, avere: 0, stato,
         cig: s.cig, scadenza: s.scadenza, imponibile: s.imponibile, imposta: s.imposta,
+        incassato,
       });
     });
   } else {
@@ -129,11 +132,13 @@ function buildRows(
       const reconKey = `acquisto-${p.anno}-${p.numero}`;
       const isReconciled = paymentDatesMap.has(reconKey);
       const stato = isReconciled ? "Pagata" : p.stato;
+      const incassato = reconAmountsMap.get(reconKey) || 0;
       entries.push({
         data: p.data, dataSort: d ? d.getTime() : 0,
         numero: `${p.numero}/${p.anno}`, descrizione: p.descrizione || p.fornitore,
         tipo: "acquisto", dare: 0, avere: p.totale, stato,
         cig: p.cig, scadenza: p.scadenza, imponibile: p.imponibile, imposta: p.imposta,
+        incassato,
       });
     });
   }
@@ -146,13 +151,15 @@ function buildRows(
     return { ...e, saldo };
   });
 
+  const totaleFatturato = tipo === "cliente"
+    ? entries.reduce((a, e) => a + e.dare, 0)
+    : entries.reduce((a, e) => a + e.avere, 0);
+  const totaleIncassato = entries.reduce((a, e) => a + e.incassato, 0);
   const totaleDare = entries.reduce((a, e) => a + e.dare, 0);
   const totaleAvere = entries.reduce((a, e) => a + e.avere, 0);
 
-  // Compute payment timing: delay between actual payment date and calculated due date
   const paymentDelays: number[] = [];
   for (const e of entries) {
-    // Extract anno and numero from "numero/anno" format
     const parts = e.numero.split("/");
     if (parts.length !== 2) continue;
     const numero = parts[0];
@@ -166,7 +173,6 @@ function buildRows(
     const actualPaymentDate = parseDate(actualPaymentDateStr);
     if (!actualPaymentDate) continue;
 
-    // Default empty scadenza to "Vista fattura" (due date = invoice date)
     const scadenza = e.scadenza?.trim() ? e.scadenza : "Vista fattura";
     const parsed = parsePaymentTerms(scadenza, e.data);
     if (parsed) {
@@ -189,9 +195,12 @@ function buildRows(
     stats: {
       totaleDare,
       totaleAvere,
+      totaleFatturato,
+      totaleIncassato,
+      saldoCredito: totaleFatturato - totaleIncassato,
       saldo: totaleDare - totaleAvere,
       numFatture: entries.length,
-      mediaImporto: entries.length > 0 ? (totaleDare + totaleAvere) / entries.length : 0,
+      mediaImporto: entries.length > 0 ? totaleFatturato / entries.length : 0,
       totaleImponibile: entries.reduce((a, e) => a + e.imponibile, 0),
       totaleImposta: entries.reduce((a, e) => a + e.imposta, 0),
       paymentTiming,
