@@ -475,9 +475,9 @@ function SchedaDetail({
               <table className="w-full text-sm">
                 <tbody>
                   {[
-                    { label: tipo === "cliente" ? "Fatturato" : "Dare", value: stats.totaleDare, cls: "text-[hsl(var(--success))]" },
-                    { label: tipo === "fornitore" ? "Totale Acquisti" : "Avere", value: stats.totaleAvere, cls: "text-destructive" },
-                    { label: "Saldo", value: stats.saldo, cls: stats.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive" },
+                    { label: tipo === "cliente" ? "Fatturato" : "Totale Acquisti", value: stats.totaleFatturato, cls: "text-[hsl(var(--success))]" },
+                    { label: tipo === "cliente" ? "Incassato" : "Pagato", value: stats.totaleIncassato, cls: "text-primary" },
+                    { label: "Saldo (da incassare)", value: stats.saldoCredito, cls: stats.saldoCredito >= 0 ? "text-[hsl(var(--warning))]" : "text-[hsl(var(--success))]" },
                     { label: "Totale Imponibile", value: stats.totaleImponibile, cls: "" },
                     { label: "Totale IVA", value: stats.totaleImposta, cls: "" },
                   ].map((row, i) => (
@@ -703,14 +703,14 @@ function SchedaDetail({
             <div className="rounded-md border overflow-auto max-h-[calc(100vh-380px)]">
               <Table>
                 <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
-                  <TableRow className="bg-muted/50 font-semibold border-b-2">
+                   <TableRow className="bg-muted/50 font-semibold border-b-2">
                     <TableHead colSpan={6} className="text-[11px] py-2.5">TOTALE</TableHead>
                     <TableHead className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImponibile)}</TableHead>
                     <TableHead className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImposta)}</TableHead>
-                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-[hsl(var(--success))]">{formatCurrency(stats.totaleDare)}</TableHead>
-                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-destructive">{formatCurrency(stats.totaleAvere)}</TableHead>
-                    <TableHead className={`text-right font-mono text-[11px] py-2.5 font-bold ${stats.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
-                      {formatCurrency(stats.saldo)}
+                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-[hsl(var(--success))]">{formatCurrency(stats.totaleFatturato)}</TableHead>
+                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-primary">{formatCurrency(stats.totaleIncassato)}</TableHead>
+                    <TableHead className={`text-right font-mono text-[11px] py-2.5 font-bold ${stats.saldoCredito >= 0 ? "text-[hsl(var(--warning))]" : "text-[hsl(var(--success))]"}`}>
+                      {formatCurrency(stats.saldoCredito)}
                     </TableHead>
                   </TableRow>
                   <TableRow>
@@ -723,8 +723,8 @@ function SchedaDetail({
                       { key: "stato" as SortKey, label: "Stato", w: "w-[70px]", align: "" },
                       { key: "imponibile" as SortKey, label: "Imponibile", w: "w-[100px]", align: "text-right" },
                       { key: "imposta" as SortKey, label: "IVA", w: "w-[80px]", align: "text-right" },
-                      { key: "dare" as SortKey, label: "Dare", w: "w-[110px]", align: "text-right" },
-                      { key: "avere" as SortKey, label: "Avere", w: "w-[110px]", align: "text-right" },
+                      { key: "dare" as SortKey, label: tipo === "cliente" ? "Fatturato" : "Acquistato", w: "w-[110px]", align: "text-right" },
+                      { key: "incassato" as SortKey, label: tipo === "cliente" ? "Incassato" : "Pagato", w: "w-[110px]", align: "text-right" },
                       { key: "saldo" as SortKey, label: "Saldo", w: "w-[110px]", align: "text-right" },
                     ]).map((col) => (
                       <TableHead
