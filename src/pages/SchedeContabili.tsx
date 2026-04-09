@@ -451,7 +451,7 @@ function SchedaDetail({
   return (
       <>
         {/* Screen content */}
-        <div className="space-y-5 scheda-screen-content">
+        <div className="space-y-3 scheda-screen-content">
           {/* KPI table + Affidabilità + Centro chart */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left: KPI summary table */}
@@ -466,15 +466,15 @@ function SchedaDetail({
                     { label: "Totale IVA", value: stats.totaleImposta, cls: "" },
                   ].map((row, i) => (
                     <tr key={i} className={i % 2 === 0 ? "bg-muted/30" : ""}>
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground font-medium">{row.label}</td>
-                      <td className={`px-4 py-2.5 text-right font-mono text-sm font-semibold ${row.cls}`}>
+                      <td className="px-3 py-1 text-xs text-muted-foreground font-medium">{row.label}</td>
+                      <td className={`px-3 py-1 text-right font-mono text-xs font-semibold ${row.cls}`}>
                         {formatCurrency(row.value)}
                       </td>
                     </tr>
                   ))}
                   <tr className="border-t">
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground font-medium">Documenti</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-sm">
+                    <td className="px-3 py-1 text-xs text-muted-foreground font-medium">Documenti</td>
+                    <td className="px-3 py-1 text-right font-semibold text-xs">
                       {stats.numFatture}
                       <span className="text-[10px] text-muted-foreground ml-2">media {formatCurrency(stats.mediaImporto)}</span>
                     </td>
@@ -484,58 +484,55 @@ function SchedaDetail({
             </div>
 
             {/* Center: Affidabilità / Tempi */}
-            <div className="rounded-lg border bg-card p-4">
-              <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+            <div className="rounded-lg border bg-card p-3">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
                 {tipo === "cliente" ? "Tempi di Incasso" : "Tempi di Pagamento"}
               </h3>
               {stats.paymentTiming ? (
-                <div className="space-y-3">
-                  {/* Star rating based on delay (actual payment - due date) */}
+              <div className="space-y-2">
                   {(() => {
                     const avg = stats.paymentTiming!.avg;
-                    // avg is delay in days: negative = early, 0 = on time, positive = late
-                    // ≤-15 (very early) = 5★, ≤0 (on time) = 5★, ≤15 = 4★, ≤30 = 3★, ≤60 = 2★, >60 = 1★
                     const stars = avg <= 0 ? 5 : avg <= 15 ? 4 : avg <= 30 ? 3 : avg <= 60 ? 2 : 1;
                     const ratingLabels = ["", "Critica", "Scarsa", "Sufficiente", "Buona", "Eccellente"];
                     const ratingColors = ["", "text-destructive", "text-destructive", "text-[hsl(var(--warning))]", "text-primary", "text-[hsl(var(--success))]"];
                     return (
-                      <div className="flex flex-col items-center gap-1 py-1">
+                      <div className="flex flex-col items-center gap-0.5 py-0.5">
                         <div className="flex gap-0.5">
                           {[1, 2, 3, 4, 5].map((i) => (
                             <Star
                               key={i}
-                              className={`h-5 w-5 ${i <= stars ? ratingColors[stars] : "text-muted"}`}
+                              className={`h-4 w-4 ${i <= stars ? ratingColors[stars] : "text-muted"}`}
                               fill={i <= stars ? "currentColor" : "none"}
                             />
                           ))}
                         </div>
-                        <p className={`text-xs font-semibold ${ratingColors[stars]}`}>
+                        <p className={`text-[10px] font-semibold ${ratingColors[stars]}`}>
                           {ratingLabels[stars]}
                         </p>
                       </div>
                     );
                   })()}
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-md bg-muted/40 p-3">
-                      <p className="text-[10px] text-muted-foreground uppercase">Min</p>
-                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.min <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                    <div className="rounded-md bg-muted/40 p-2">
+                      <p className="text-[9px] text-muted-foreground uppercase">Min</p>
+                      <p className={`text-base font-bold font-mono ${stats.paymentTiming.min <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
                         {stats.paymentTiming.min > 0 ? "+" : ""}{stats.paymentTiming.min}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">giorni</p>
+                      <p className="text-[9px] text-muted-foreground">giorni</p>
                     </div>
-                    <div className="rounded-md bg-muted/40 p-3">
-                      <p className="text-[10px] text-muted-foreground uppercase">Media</p>
-                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.avg <= 0 ? "text-[hsl(var(--success))]" : stats.paymentTiming.avg <= 15 ? "text-primary" : "text-destructive"}`}>
+                    <div className="rounded-md bg-muted/40 p-2">
+                      <p className="text-[9px] text-muted-foreground uppercase">Media</p>
+                      <p className={`text-base font-bold font-mono ${stats.paymentTiming.avg <= 0 ? "text-[hsl(var(--success))]" : stats.paymentTiming.avg <= 15 ? "text-primary" : "text-destructive"}`}>
                         {stats.paymentTiming.avg > 0 ? "+" : ""}{stats.paymentTiming.avg}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">giorni</p>
+                      <p className="text-[9px] text-muted-foreground">giorni</p>
                     </div>
-                    <div className="rounded-md bg-muted/40 p-3">
-                      <p className="text-[10px] text-muted-foreground uppercase">Max</p>
-                      <p className={`text-xl font-bold font-mono ${stats.paymentTiming.max <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                    <div className="rounded-md bg-muted/40 p-2">
+                      <p className="text-[9px] text-muted-foreground uppercase">Max</p>
+                      <p className={`text-base font-bold font-mono ${stats.paymentTiming.max <= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
                         {stats.paymentTiming.max > 0 ? "+" : ""}{stats.paymentTiming.max}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">giorni</p>
+                      <p className="text-[9px] text-muted-foreground">giorni</p>
                     </div>
                   </div>
                   <div className="text-center">
@@ -586,14 +583,14 @@ function SchedaDetail({
               )}
             </div>
             {/* Right: Centro chart */}
-            <div className="rounded-lg border bg-card p-4">
-              <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+            <div className="rounded-lg border bg-card p-3">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
                 {tipo === "cliente" ? "Fatturato per Centro di Ricavo" : "Acquisti per Centro di Costo"}
               </h3>
               {centroChartData.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-8">Nessun centro assegnato</p>
               ) : (
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={centroChartData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                     <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                     <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
@@ -630,11 +627,11 @@ function SchedaDetail({
             });
 
           return (
-            <div className="rounded-xl border bg-card p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+            <div className="rounded-xl border bg-card p-3">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
                 Andamento Saldo Progressivo
               </h3>
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer width="100%" height={160}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
                   <XAxis dataKey="anno" tick={{ fontSize: 10 }} interval={0} />
                   <YAxis
