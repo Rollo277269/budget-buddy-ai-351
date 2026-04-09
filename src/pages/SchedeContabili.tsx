@@ -39,7 +39,7 @@ import { useCentroMap, useCentriData } from "@/hooks/useCentri";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-type SortKey = "data" | "numero" | "descrizione" | "cig" | "scadenza" | "stato" | "imponibile" | "imposta" | "dare" | "avere" | "saldo";
+type SortKey = "data" | "numero" | "descrizione" | "cig" | "scadenza" | "stato" | "imponibile" | "imposta" | "dare" | "avere" | "saldo" | "incassato";
 type SortDir = "asc" | "desc";
 
 function sortRows(rows: PrimaNotaRow[], key: SortKey, dir: SortDir): PrimaNotaRow[] {
@@ -57,6 +57,7 @@ function sortRows(rows: PrimaNotaRow[], key: SortKey, dir: SortDir): PrimaNotaRo
       case "dare": cmp = a.dare - b.dare; break;
       case "avere": cmp = a.avere - b.avere; break;
       case "saldo": cmp = a.saldo - b.saldo; break;
+      case "incassato": cmp = a.incassato - b.incassato; break;
     }
     return dir === "asc" ? cmp : -cmp;
   });
