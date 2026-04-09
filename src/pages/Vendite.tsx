@@ -619,7 +619,7 @@ const VenditePage = () => {
         return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>;
       } },
       { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
-      { key: "importoPagato", label: "Importo Pagato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
+      { key: "importoPagato", label: "Importo Incassato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
         const rec = reconMap[`${r.anno}-${r.numero}`];
         if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
         return <span className="text-xs font-mono text-right block">{formatCurrency(rec.paid)}</span>;
