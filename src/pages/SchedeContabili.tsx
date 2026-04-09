@@ -39,7 +39,7 @@ import { useCentroMap, useCentriData } from "@/hooks/useCentri";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-type SortKey = "data" | "numero" | "descrizione" | "cig" | "scadenza" | "stato" | "imponibile" | "imposta" | "dare" | "avere" | "saldo";
+type SortKey = "data" | "numero" | "descrizione" | "cig" | "scadenza" | "stato" | "imponibile" | "imposta" | "dare" | "avere" | "saldo" | "incassato";
 type SortDir = "asc" | "desc";
 
 function sortRows(rows: PrimaNotaRow[], key: SortKey, dir: SortDir): PrimaNotaRow[] {
@@ -57,6 +57,7 @@ function sortRows(rows: PrimaNotaRow[], key: SortKey, dir: SortDir): PrimaNotaRo
       case "dare": cmp = a.dare - b.dare; break;
       case "avere": cmp = a.avere - b.avere; break;
       case "saldo": cmp = a.saldo - b.saldo; break;
+      case "incassato": cmp = a.incassato - b.incassato; break;
     }
     return dir === "asc" ? cmp : -cmp;
   });
@@ -87,6 +88,7 @@ interface PrimaNotaRow {
   scadenza: string;
   imponibile: number;
   imposta: number;
+  incassato: number;
 }
 
 function StatusBadge({ stato }: { stato: string }) {
@@ -105,7 +107,8 @@ function buildRows(
   allPurchases: PurchaseInvoice[],
   tipo: "cliente" | "fornitore",
   nome: string,
-  paymentDatesMap: Map<string, string> // key: "tipo-anno-numero" → payment date string
+  paymentDatesMap: Map<string, string>,
+  reconAmountsMap: Map<string, number>
 ) {
   const entries: Omit<PrimaNotaRow, "saldo">[] = [];
 
@@ -115,11 +118,13 @@ function buildRows(
       const reconKey = `vendita-${s.anno}-${s.numero}`;
       const isReconciled = paymentDatesMap.has(reconKey);
       const stato = isReconciled ? "Incassata" : s.stato;
+      const incassato = reconAmountsMap.get(reconKey) || 0;
       entries.push({
         data: s.data, dataSort: d ? d.getTime() : 0,
         numero: `${s.numero}/${s.anno}`, descrizione: s.descrizione || s.cliente,
         tipo: "vendita", dare: s.totale, avere: 0, stato,
         cig: s.cig, scadenza: s.scadenza, imponibile: s.imponibile, imposta: s.imposta,
+        incassato,
       });
     });
   } else {
@@ -128,11 +133,13 @@ function buildRows(
       const reconKey = `acquisto-${p.anno}-${p.numero}`;
       const isReconciled = paymentDatesMap.has(reconKey);
       const stato = isReconciled ? "Pagata" : p.stato;
+      const incassato = reconAmountsMap.get(reconKey) || 0;
       entries.push({
         data: p.data, dataSort: d ? d.getTime() : 0,
         numero: `${p.numero}/${p.anno}`, descrizione: p.descrizione || p.fornitore,
         tipo: "acquisto", dare: 0, avere: p.totale, stato,
         cig: p.cig, scadenza: p.scadenza, imponibile: p.imponibile, imposta: p.imposta,
+        incassato,
       });
     });
   }
@@ -145,13 +152,15 @@ function buildRows(
     return { ...e, saldo };
   });
 
+  const totaleFatturato = tipo === "cliente"
+    ? entries.reduce((a, e) => a + e.dare, 0)
+    : entries.reduce((a, e) => a + e.avere, 0);
+  const totaleIncassato = entries.reduce((a, e) => a + e.incassato, 0);
   const totaleDare = entries.reduce((a, e) => a + e.dare, 0);
   const totaleAvere = entries.reduce((a, e) => a + e.avere, 0);
 
-  // Compute payment timing: delay between actual payment date and calculated due date
   const paymentDelays: number[] = [];
   for (const e of entries) {
-    // Extract anno and numero from "numero/anno" format
     const parts = e.numero.split("/");
     if (parts.length !== 2) continue;
     const numero = parts[0];
@@ -165,7 +174,6 @@ function buildRows(
     const actualPaymentDate = parseDate(actualPaymentDateStr);
     if (!actualPaymentDate) continue;
 
-    // Default empty scadenza to "Vista fattura" (due date = invoice date)
     const scadenza = e.scadenza?.trim() ? e.scadenza : "Vista fattura";
     const parsed = parsePaymentTerms(scadenza, e.data);
     if (parsed) {
@@ -188,9 +196,12 @@ function buildRows(
     stats: {
       totaleDare,
       totaleAvere,
+      totaleFatturato,
+      totaleIncassato,
+      saldoCredito: totaleFatturato - totaleIncassato,
       saldo: totaleDare - totaleAvere,
       numFatture: entries.length,
-      mediaImporto: entries.length > 0 ? (totaleDare + totaleAvere) / entries.length : 0,
+      mediaImporto: entries.length > 0 ? totaleFatturato / entries.length : 0,
       totaleImponibile: entries.reduce((a, e) => a + e.imponibile, 0),
       totaleImposta: entries.reduce((a, e) => a + e.imposta, 0),
       paymentTiming,
@@ -332,54 +343,59 @@ function SchedaDetail({
 }) {
   // Load payment dates from bank reconciliations
   const [paymentDatesMap, setPaymentDatesMap] = useState<Map<string, string>>(new Map());
+  const [reconAmountsMap, setReconAmountsMap] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
-    async function loadPaymentDates() {
-      // Fetch ALL reconciliations (both vendita and acquisto) so we cover all invoices
+    async function loadReconData() {
       const { data, error } = await supabase
         .from("bank_reconciliations")
         .select("invoice_type, invoice_anno, invoice_numero, movement_id");
       if (error || !data || data.length === 0) return;
 
       const movementIds = [...new Set(data.map((r: any) => r.movement_id))];
-      const movDateMap = new Map<string, string>();
+      const movMap = new Map<string, { data: string; importo: number }>();
 
       for (let i = 0; i < movementIds.length; i += 500) {
         const batch = movementIds.slice(i, i + 500);
         const { data: movements } = await supabase
           .from("bank_movements")
-          .select("id, data")
+          .select("id, data, importo")
           .in("id", batch);
         if (movements) {
-          movements.forEach((m: any) => movDateMap.set(m.id, m.data));
+          movements.forEach((m: any) => movMap.set(m.id, { data: m.data, importo: m.importo }));
         }
       }
 
-      const map = new Map<string, string>();
+      const dateMap = new Map<string, string>();
+      const amountMap = new Map<string, number>();
       for (const rec of data as any[]) {
-        const movDate = movDateMap.get(rec.movement_id);
-        if (movDate && rec.invoice_anno && rec.invoice_numero && rec.invoice_type) {
+        const mov = movMap.get(rec.movement_id);
+        if (mov && rec.invoice_anno && rec.invoice_numero && rec.invoice_type) {
           const key = `${rec.invoice_type}-${rec.invoice_anno}-${rec.invoice_numero}`;
-          const existing = map.get(key);
+          // Date: keep latest
+          const existing = dateMap.get(key);
           if (!existing) {
-            map.set(key, movDate);
+            dateMap.set(key, mov.data);
           } else {
             const existDate = parseDate(existing);
-            const newDate = parseDate(movDate);
+            const newDate = parseDate(mov.data);
             if (existDate && newDate && newDate > existDate) {
-              map.set(key, movDate);
+              dateMap.set(key, mov.data);
             }
           }
+          // Amount: sum absolute values
+          amountMap.set(key, (amountMap.get(key) || 0) + Math.abs(mov.importo));
         }
       }
-      setPaymentDatesMap(map);
+      setPaymentDatesMap(dateMap);
+      setReconAmountsMap(amountMap);
     }
-    loadPaymentDates();
+    loadReconData();
   }, [tipo, nome]);
 
   const { rows, stats } = useMemo(
-    () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap),
-    [allSales, allPurchases, tipo, nome, paymentDatesMap]
+    () => buildRows(allSales, allPurchases, tipo, nome, paymentDatesMap, reconAmountsMap),
+    [allSales, allPurchases, tipo, nome, paymentDatesMap, reconAmountsMap]
   );
 
   const [selectedCig, setSelectedCig] = useState<string | null>(null);
@@ -459,9 +475,9 @@ function SchedaDetail({
               <table className="w-full text-sm">
                 <tbody>
                   {[
-                    { label: tipo === "cliente" ? "Fatturato" : "Dare", value: stats.totaleDare, cls: "text-[hsl(var(--success))]" },
-                    { label: tipo === "fornitore" ? "Totale Acquisti" : "Avere", value: stats.totaleAvere, cls: "text-destructive" },
-                    { label: "Saldo", value: stats.saldo, cls: stats.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive" },
+                    { label: tipo === "cliente" ? "Fatturato" : "Totale Acquisti", value: stats.totaleFatturato, cls: "text-[hsl(var(--success))]" },
+                    { label: tipo === "cliente" ? "Incassato" : "Pagato", value: stats.totaleIncassato, cls: "text-primary" },
+                    { label: "Saldo (da incassare)", value: stats.saldoCredito, cls: stats.saldoCredito >= 0 ? "text-[hsl(var(--warning))]" : "text-[hsl(var(--success))]" },
                     { label: "Totale Imponibile", value: stats.totaleImponibile, cls: "" },
                     { label: "Totale IVA", value: stats.totaleImposta, cls: "" },
                   ].map((row, i) => (
@@ -687,14 +703,14 @@ function SchedaDetail({
             <div className="rounded-md border overflow-auto max-h-[calc(100vh-380px)]">
               <Table>
                 <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
-                  <TableRow className="bg-muted/50 font-semibold border-b-2">
+                   <TableRow className="bg-muted/50 font-semibold border-b-2">
                     <TableHead colSpan={6} className="text-[11px] py-2.5">TOTALE</TableHead>
                     <TableHead className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImponibile)}</TableHead>
                     <TableHead className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImposta)}</TableHead>
-                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-[hsl(var(--success))]">{formatCurrency(stats.totaleDare)}</TableHead>
-                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-destructive">{formatCurrency(stats.totaleAvere)}</TableHead>
-                    <TableHead className={`text-right font-mono text-[11px] py-2.5 font-bold ${stats.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
-                      {formatCurrency(stats.saldo)}
+                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-[hsl(var(--success))]">{formatCurrency(stats.totaleFatturato)}</TableHead>
+                    <TableHead className="text-right font-mono text-[11px] py-2.5 text-primary">{formatCurrency(stats.totaleIncassato)}</TableHead>
+                    <TableHead className={`text-right font-mono text-[11px] py-2.5 font-bold ${stats.saldoCredito >= 0 ? "text-[hsl(var(--warning))]" : "text-[hsl(var(--success))]"}`}>
+                      {formatCurrency(stats.saldoCredito)}
                     </TableHead>
                   </TableRow>
                   <TableRow>
@@ -707,8 +723,8 @@ function SchedaDetail({
                       { key: "stato" as SortKey, label: "Stato", w: "w-[70px]", align: "" },
                       { key: "imponibile" as SortKey, label: "Imponibile", w: "w-[100px]", align: "text-right" },
                       { key: "imposta" as SortKey, label: "IVA", w: "w-[80px]", align: "text-right" },
-                      { key: "dare" as SortKey, label: "Dare", w: "w-[110px]", align: "text-right" },
-                      { key: "avere" as SortKey, label: "Avere", w: "w-[110px]", align: "text-right" },
+                      { key: "dare" as SortKey, label: tipo === "cliente" ? "Fatturato" : "Acquistato", w: "w-[110px]", align: "text-right" },
+                      { key: "incassato" as SortKey, label: tipo === "cliente" ? "Incassato" : "Pagato", w: "w-[110px]", align: "text-right" },
                       { key: "saldo" as SortKey, label: "Saldo", w: "w-[110px]", align: "text-right" },
                     ]).map((col) => (
                       <TableHead
@@ -747,13 +763,13 @@ function SchedaDetail({
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imponibile)}</TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imposta)}</TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">
-                        {row.dare > 0 ? <span className="text-[hsl(var(--success))]">{formatCurrency(row.dare)}</span> : "—"}
+                        {(row.dare > 0 || row.avere > 0) ? <span className="text-[hsl(var(--success))]">{formatCurrency(row.dare || row.avere)}</span> : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">
-                        {row.avere > 0 ? <span className="text-destructive">{formatCurrency(row.avere)}</span> : "—"}
+                        {row.incassato > 0 ? <span className="text-primary">{formatCurrency(row.incassato)}</span> : "—"}
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-[11px] font-semibold py-2 ${row.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
-                        {formatCurrency(row.saldo)}
+                      <TableCell className={`text-right font-mono text-[11px] font-semibold py-2 ${(row.dare || row.avere) - row.incassato <= 0 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--warning))]"}`}>
+                        {formatCurrency((row.dare || row.avere) - row.incassato)}
                       </TableCell>
                     </TableRow>
                   ))}
