@@ -130,7 +130,12 @@ const VenditePage = () => {
         const sorted = recs
           .map((r: any) => {
             const invoice = sales.find((s) => s.anno === r.invoice_anno && s.numero === r.invoice_numero);
-            return { rec: r, totale: invoice ? Math.abs(invoice.totale) : 0, dataSort: invoice ? (parseInvDate(invoice.data) || 0) : 0 };
+            let ds = 0;
+            if (invoice) {
+              const parts = invoice.data.split("/");
+              if (parts.length === 3) ds = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).getTime();
+            }
+            return { rec: r, totale: invoice ? Math.abs(invoice.totale) : 0, dataSort: ds };
           })
           .sort((a, b) => a.dataSort - b.dataSort);
 
