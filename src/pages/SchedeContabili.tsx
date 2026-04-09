@@ -112,20 +112,26 @@ function buildRows(
   if (tipo === "cliente") {
     allSales.filter((s) => s.cliente === nome).forEach((s) => {
       const d = parseDate(s.data);
+      const reconKey = `vendita-${s.anno}-${s.numero}`;
+      const isReconciled = paymentDatesMap.has(reconKey);
+      const stato = isReconciled ? "Incassata" : s.stato;
       entries.push({
         data: s.data, dataSort: d ? d.getTime() : 0,
         numero: `${s.numero}/${s.anno}`, descrizione: s.descrizione || s.cliente,
-        tipo: "vendita", dare: s.totale, avere: 0, stato: s.stato,
+        tipo: "vendita", dare: s.totale, avere: 0, stato,
         cig: s.cig, scadenza: s.scadenza, imponibile: s.imponibile, imposta: s.imposta,
       });
     });
   } else {
     allPurchases.filter((p) => p.fornitore === nome).forEach((p) => {
       const d = parseDate(p.data);
+      const reconKey = `acquisto-${p.anno}-${p.numero}`;
+      const isReconciled = paymentDatesMap.has(reconKey);
+      const stato = isReconciled ? "Pagata" : p.stato;
       entries.push({
         data: p.data, dataSort: d ? d.getTime() : 0,
         numero: `${p.numero}/${p.anno}`, descrizione: p.descrizione || p.fornitore,
-        tipo: "acquisto", dare: 0, avere: p.totale, stato: p.stato,
+        tipo: "acquisto", dare: 0, avere: p.totale, stato,
         cig: p.cig, scadenza: p.scadenza, imponibile: p.imponibile, imposta: p.imposta,
       });
     });
