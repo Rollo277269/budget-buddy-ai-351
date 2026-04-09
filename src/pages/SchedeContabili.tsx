@@ -763,13 +763,13 @@ function SchedaDetail({
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imponibile)}</TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">{formatCurrency(row.imposta)}</TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">
-                        {row.dare > 0 ? <span className="text-[hsl(var(--success))]">{formatCurrency(row.dare)}</span> : "—"}
+                        {(row.dare > 0 || row.avere > 0) ? <span className="text-[hsl(var(--success))]">{formatCurrency(row.dare || row.avere)}</span> : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-[11px] py-2">
-                        {row.avere > 0 ? <span className="text-destructive">{formatCurrency(row.avere)}</span> : "—"}
+                        {row.incassato > 0 ? <span className="text-primary">{formatCurrency(row.incassato)}</span> : "—"}
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-[11px] font-semibold py-2 ${row.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
-                        {formatCurrency(row.saldo)}
+                      <TableCell className={`text-right font-mono text-[11px] font-semibold py-2 ${(row.dare || row.avere) - row.incassato <= 0 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--warning))]"}`}>
+                        {formatCurrency((row.dare || row.avere) - row.incassato)}
                       </TableCell>
                     </TableRow>
                   ))}
