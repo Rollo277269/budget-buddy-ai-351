@@ -87,6 +87,7 @@ interface PrimaNotaRow {
   scadenza: string;
   imponibile: number;
   imposta: number;
+  incassato: number;
 }
 
 function StatusBadge({ stato }: { stato: string }) {
