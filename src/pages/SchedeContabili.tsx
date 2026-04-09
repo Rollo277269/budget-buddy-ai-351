@@ -754,16 +754,6 @@ function SchedaDetail({
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-semibold border-t-2 sticky bottom-0">
-                    <TableCell colSpan={6} className="text-[11px] py-2.5">TOTALE</TableCell>
-                    <TableCell className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImponibile)}</TableCell>
-                    <TableCell className="text-right font-mono text-[11px] py-2.5">{formatCurrency(stats.totaleImposta)}</TableCell>
-                    <TableCell className="text-right font-mono text-[11px] py-2.5 text-[hsl(var(--success))]">{formatCurrency(stats.totaleDare)}</TableCell>
-                    <TableCell className="text-right font-mono text-[11px] py-2.5 text-destructive">{formatCurrency(stats.totaleAvere)}</TableCell>
-                    <TableCell className={`text-right font-mono text-[11px] py-2.5 font-bold ${stats.saldo >= 0 ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
-                      {formatCurrency(stats.saldo)}
-                    </TableCell>
-                  </TableRow>
                 </TableBody>
               </Table>
             </div>
