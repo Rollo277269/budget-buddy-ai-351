@@ -1005,9 +1005,17 @@ const AcquistiPage = () => {
             ))}
           </div>
         </ScrollArea>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" size="sm" onClick={handleExcelCancelCollisions}>Annulla</Button>
-          <Button size="sm" onClick={handleExcelConfirmCollisions}>Importa</Button>
+        <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
+          <Button variant="ghost" size="sm" onClick={() => {
+            const allSelected = excelCollisions.every(c => c.selected);
+            setExcelCollisions(prev => prev.map(item => ({ ...item, selected: !allSelected })));
+          }}>
+            {excelCollisions.every(c => c.selected) ? "Deseleziona tutto" : "Seleziona tutto"}
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExcelCancelCollisions}>Annulla</Button>
+            <Button size="sm" onClick={handleExcelConfirmCollisions}>Importa</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
