@@ -79,7 +79,7 @@ const AcquistiPage = () => {
   const [csvDragging, setCsvDragging] = useState(false);
   const csvDragCounter = useRef(0);
   const csvInputRef = useRef<HTMLInputElement>(null);
-  const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
+  const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; cig: string; selected: boolean }[]>([]);
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
   const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: PurchaseInvoice[]; colliding: PurchaseInvoice[] } | null>(null);
   const [xmlExpanded, setXmlExpanded] = useState(false);
@@ -296,7 +296,7 @@ const AcquistiPage = () => {
             const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
             const ex = existingMap.get(key)!;
             const newHasMore = ((item.descrizione || "").length > (ex.descrizione || "").length) || (item.cig && !ex.cig);
-            return { key, anno: item.anno, numero: item.numero, tipo: item.tipo || "", existingDesc: `${ex.tipo} — ${(ex.descrizione || "").slice(0, 60)}`, newDesc: `${item.tipo || ""} — ${(item.descrizione || "").slice(0, 60)}`, selected: newHasMore || ex.source_file === file.name };
+            return { key, anno: item.anno, numero: item.numero, tipo: item.tipo || "", existingDesc: `${ex.tipo} — ${(ex.descrizione || "").slice(0, 60)}`, newDesc: `${item.tipo || ""} — ${(item.descrizione || "").slice(0, 60)}`, cig: item.cig || ex.cig || "", selected: newHasMore || ex.source_file === file.name };
           }));
           setPendingExcelUpload({ fileName: file.name, newOnly, colliding });
           setShowExcelCollisionDialog(true);
