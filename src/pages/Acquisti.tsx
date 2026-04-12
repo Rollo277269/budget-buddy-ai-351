@@ -997,7 +997,7 @@ const AcquistiPage = () => {
               <label key={c.key} className="flex items-start gap-2 p-2 rounded border hover:bg-muted/50 cursor-pointer text-xs">
                 <Checkbox checked={c.selected} onCheckedChange={(v) => setExcelCollisions(prev => prev.map((item, idx) => idx === i ? { ...item, selected: !!v } : item))} className="mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium">{c.tipo} {c.anno}/{c.numero}</p>
+                  <p className="font-medium">{c.tipo} {c.anno}/{c.numero}{c.cig ? <span className="ml-2 font-mono text-muted-foreground">CIG {c.cig}</span> : ""}</p>
                   <p className="text-muted-foreground truncate">Attuale: {c.existingDesc}</p>
                   <p className="truncate">Nuovo: {c.newDesc}</p>
                 </div>
