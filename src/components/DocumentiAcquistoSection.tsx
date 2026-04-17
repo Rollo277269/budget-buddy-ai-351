@@ -335,15 +335,47 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     setEditingValue("");
   }, []);
 
+  const currentDuplicate = duplicateQueue[0];
   const reviewDialogEl = (
-    <DocumentoAiReviewDialog
-      open={reviewOpen && reviewQueue.length > 0}
-      prepared={reviewQueue[0] ?? null}
-      centri={centri}
-      tipo={tipo}
-      onConfirm={handleReviewConfirm}
-      onCancel={handleReviewCancel}
-    />
+    <>
+      <DocumentoAiReviewDialog
+        open={reviewOpen && reviewQueue.length > 0}
+        prepared={reviewQueue[0] ?? null}
+        centri={centri}
+        tipo={tipo}
+        onConfirm={handleReviewConfirm}
+        onCancel={handleReviewCancel}
+      />
+      <AlertDialog open={!!currentDuplicate}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Documento duplicato</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Il file <span className="font-medium text-foreground">"{currentDuplicate?.file.name}"</span> è già presente nei documenti.
+                </p>
+                {currentDuplicate && (
+                  <div className="rounded-md border bg-muted/30 p-2 text-xs space-y-0.5">
+                    <div><span className="text-muted-foreground">Descrizione: </span><span className="text-foreground">{currentDuplicate.existing.descrizione || "—"}</span></div>
+                    <div><span className="text-muted-foreground">{tipo === "vendita" ? "Cliente" : "Fornitore"}: </span><span className="text-foreground">{currentDuplicate.existing.fornitore || "—"}</span></div>
+                    <div><span className="text-muted-foreground">Importo: </span><span className="text-foreground">{currentDuplicate.existing.importo != null ? formatCurrency(currentDuplicate.existing.importo) : "—"}</span></div>
+                    {currentDuplicate.existing.created_at && (
+                      <div><span className="text-muted-foreground">Caricato il: </span><span className="text-foreground">{new Date(currentDuplicate.existing.created_at).toLocaleDateString("it-IT")}</span></div>
+                    )}
+                  </div>
+                )}
+                <p>Vuoi sovrascrivere il documento esistente o annullare l'upload?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDuplicateSkip}>Annulla upload</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDuplicateOverwrite}>Sovrascrivi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 
   // Drop zone only mode
