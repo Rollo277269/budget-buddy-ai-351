@@ -1958,7 +1958,21 @@ function InvoiceList({
               const xmlRecord = findXml ? findXml(key, counterpart || undefined) : undefined;
 
               const cellMap: Record<string, React.ReactNode> = {
-                numero_display: <TableCell key="n" className="font-mono text-xs">{inv.numero}/{inv.anno}</TableCell>,
+                numero_display: (
+                  <TableCell key="n" className="font-mono text-xs">
+                    <span className="inline-flex items-center gap-1.5">
+                      {!isAuto && (
+                        <Link2Off
+                          className="h-3 w-3 text-amber-600 shrink-0"
+                          aria-label="Associazione manuale"
+                        >
+                          <title>Associazione manuale (non da CIG)</title>
+                        </Link2Off>
+                      )}
+                      <span>{inv.numero}/{inv.anno}</span>
+                    </span>
+                  </TableCell>
+                ),
                 data: <TableCell key="d" className="text-xs">{inv.data}</TableCell>,
                 counterpart: <TableCell key="c" className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>,
                 descrizione: <TableCell key="desc" className="text-xs max-w-[300px] whitespace-normal break-words leading-snug py-1">{inv.descrizione || "—"}</TableCell>,
@@ -1985,11 +1999,19 @@ function InvoiceList({
               };
 
               return (
-                <TableRow key={key} className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} onClick={() => onRowClick?.(inv)}>
+                <TableRow
+                  key={key}
+                  className={`${onRowClick ? "cursor-pointer hover:bg-muted/50" : ""} ${!isAuto ? "bg-amber-50/40 dark:bg-amber-950/10" : ""}`}
+                  onClick={() => onRowClick?.(inv)}
+                >
                   {visibleColumns.map((col) => cellMap[col.key])}
                   <TableCell>
-                    <Badge variant={isAuto ? "secondary" : "outline"} className="text-[9px]">
-                      {isAuto ? (<><Link2 className="h-2.5 w-2.5 mr-0.5" />CIG</>) : (<><Link2Off className="h-2.5 w-2.5 mr-0.5" />Man.</>)}
+                    <Badge
+                      variant={isAuto ? "secondary" : "outline"}
+                      className={`text-[9px] ${!isAuto ? "border-amber-500 text-amber-700 dark:text-amber-400" : ""}`}
+                      title={isAuto ? "Associazione automatica via CIG" : "Associazione manuale (non da CIG)"}
+                    >
+                      {isAuto ? (<><Link2 className="h-2.5 w-2.5 mr-0.5" />CIG</>) : (<><Link2Off className="h-2.5 w-2.5 mr-0.5" />Manuale</>)}
                     </Badge>
                   </TableCell>
                   <TableCell>
