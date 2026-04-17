@@ -251,6 +251,20 @@ async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
 }
 
 export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: string) {
+  const { detectCigDiscrepancy } = await import("@/lib/cigCoherence");
+  const discrepancies = salesData
+    .map((s) => detectCigDiscrepancy({
+      cigSalvato: s.cig,
+      descrizione: s.descrizione,
+      invoiceType: "vendita",
+      anno: s.anno,
+      numero: s.numero,
+      suffisso: s.suffisso,
+      label: s.cliente,
+      source: "excel",
+    }))
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
   const rows = salesData.map(s => ({
     tipo: s.tipo, anno: s.anno, numero: s.numero, suffisso: s.suffisso, data: s.data,
     cliente: s.cliente, partita_iva: s.partitaIva,
@@ -264,9 +278,23 @@ export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: s
     const { error } = await supabase.from("fatture_vendita" as any).upsert(batch as any, { onConflict: "anno,numero,suffisso,tipo" });
     if (error) console.error("Seed sales error:", error);
   }
+  return { discrepancies };
 }
 
 export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], sourceFile: string) {
+  const { detectCigDiscrepancy } = await import("@/lib/cigCoherence");
+  const discrepancies = purchasesData
+    .map((p) => detectCigDiscrepancy({
+      cigSalvato: p.cig,
+      descrizione: p.descrizione,
+      invoiceType: "acquisto",
+      anno: p.anno,
+      numero: p.numero,
+      label: p.fornitore,
+      source: "excel",
+    }))
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
   const rows = purchasesData.map(p => ({
     tipo: p.tipo, anno: p.anno, numero: p.numero, data: p.data,
     fornitore: p.fornitore, partita_iva: p.partitaIva,
@@ -281,6 +309,7 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], s
     const { error } = await supabase.from("fatture_acquisto" as any).upsert(batch as any, { onConflict: "anno,numero" });
     if (error) console.error("Seed purchases error:", error);
   }
+  return { discrepancies };
 }
 
 // ── Cache ──

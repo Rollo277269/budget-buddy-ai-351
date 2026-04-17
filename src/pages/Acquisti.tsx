@@ -14,6 +14,8 @@ import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
+import { CigDiscrepanciesDialog } from "@/components/CigDiscrepanciesDialog";
+import { detectCigDiscrepancy, CigDiscrepancy } from "@/lib/cigCoherence";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -82,6 +84,9 @@ const AcquistiPage = () => {
   const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; cig: string; selected: boolean }[]>([]);
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
   const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: PurchaseInvoice[]; colliding: PurchaseInvoice[] } | null>(null);
+  const [cigDiscrepancies, setCigDiscrepancies] = useState<CigDiscrepancy[]>([]);
+  const [showCigDiscrepanciesDialog, setShowCigDiscrepanciesDialog] = useState(false);
+  const [pendingReload, setPendingReload] = useState(false);
   const [xmlExpanded, setXmlExpanded] = useState(false);
   const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
@@ -287,10 +292,16 @@ const AcquistiPage = () => {
         const colliding = parsed.filter((i) => existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
 
         if (colliding.length === 0) {
-          await seedPurchasesFromExcel(parsed, file.name);
+          const result = await seedPurchasesFromExcel(parsed, file.name);
           toast.success(`Importate ${parsed.length} fatture acquisto da ${file.name}`);
           invalidateInvoiceCache();
-          setTimeout(() => window.location.reload(), 800);
+          if (result.discrepancies.length > 0) {
+            setCigDiscrepancies(result.discrepancies);
+            setShowCigDiscrepanciesDialog(true);
+            setPendingReload(true);
+          } else {
+            setTimeout(() => window.location.reload(), 800);
+          }
         } else {
           setExcelCollisions(colliding.map((item) => {
             const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
@@ -319,11 +330,17 @@ const AcquistiPage = () => {
     const overwrite = pendingExcelUpload.colliding.filter((i) => selectedKeys.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
     const all = [...pendingExcelUpload.newOnly, ...overwrite];
     if (all.length === 0) { toast.info("Nessun record importato"); return; }
-    await seedPurchasesFromExcel(all, pendingExcelUpload.fileName);
+    const result = await seedPurchasesFromExcel(all, pendingExcelUpload.fileName);
     const skipped = excelCollisions.length - selectedKeys.size;
     toast.success(`Importati ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""));
     invalidateInvoiceCache();
-    setTimeout(() => window.location.reload(), 800);
+    if (result.discrepancies.length > 0) {
+      setCigDiscrepancies(result.discrepancies);
+      setShowCigDiscrepanciesDialog(true);
+      setPendingReload(true);
+    } else {
+      setTimeout(() => window.location.reload(), 800);
+    }
   }, [pendingExcelUpload, excelCollisions]);
 
   const handleExcelCancelCollisions = useCallback(() => {
@@ -453,6 +470,7 @@ const AcquistiPage = () => {
       }
 
       toast.info(`Analisi di ${relevantXmls.length} XML in corso...`);
+      const enrichDiscrepancies: CigDiscrepancy[] = [];
 
       for (const xml of relevantXmls) {
         const inv = allPurchases.find(p => p.anno === xml.anno && p.numero === xml.numero);
@@ -517,6 +535,19 @@ const AcquistiPage = () => {
             .eq("numero", xml.numero);
           if (!error) updated++;
         }
+
+        // Detect CIG discrepancy after enrichment
+        const finalCig = updates.cig || inv.cig || "";
+        const disc = detectCigDiscrepancy({
+          cigSalvato: finalCig,
+          descrizione: inv.descrizione || "",
+          invoiceType: "acquisto",
+          anno: inv.anno,
+          numero: inv.numero,
+          label: inv.fornitore || "",
+          source: "xml",
+        });
+        if (disc) enrichDiscrepancies.push(disc);
       }
 
       if (updated > 0) {
@@ -526,6 +557,11 @@ const AcquistiPage = () => {
         setSelectedXmlIds(new Set());
       } else {
         toast.info("Tutte le fatture sono già complete");
+      }
+
+      if (enrichDiscrepancies.length > 0) {
+        setCigDiscrepancies(enrichDiscrepancies);
+        setShowCigDiscrepanciesDialog(true);
       }
     } catch (e) {
       console.error("Enrich error:", e);
@@ -1026,6 +1062,22 @@ const AcquistiPage = () => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* CIG discrepancies dialog (shown after import / enrich) */}
+    <CigDiscrepanciesDialog
+      open={showCigDiscrepanciesDialog}
+      onOpenChange={(open) => {
+        setShowCigDiscrepanciesDialog(open);
+        if (!open && pendingReload) {
+          setPendingReload(false);
+          setTimeout(() => window.location.reload(), 400);
+        }
+      }}
+      discrepancies={cigDiscrepancies}
+      onResolved={() => {
+        setCigDiscrepancies([]);
+      }}
+    />
     </>);
 
 };
