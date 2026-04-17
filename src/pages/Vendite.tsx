@@ -1231,6 +1231,20 @@ const VenditePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CIG discrepancies dialog (shown after import / enrich) */}
+      <CigDiscrepanciesDialog
+        open={showCigDiscrepanciesDialog}
+        onOpenChange={(open) => {
+          setShowCigDiscrepanciesDialog(open);
+          if (!open && pendingReload) {
+            setPendingReload(false);
+            setTimeout(() => window.location.reload(), 400);
+          }
+        }}
+        discrepancies={cigDiscrepancies}
+        onResolved={() => setCigDiscrepancies([])}
+      />
     </>
   );
 };
