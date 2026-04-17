@@ -195,27 +195,86 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     if (pdfBlobUrl) window.open(pdfBlobUrl, "_blank");
   }, [pdfBlobUrl]);
 
-  const processPdfFiles = useCallback(async (files: File[]) => {
-    const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
-    if (pdfFiles.length === 0) { toast.error("Seleziona file PDF"); return; }
-    setUploading(true);
-    const prepared: PreparedDocumento[] = [];
-    for (const file of pdfFiles) {
+  // Duplicate confirmation queue: files awaiting user decision
+  const [duplicateQueue, setDuplicateQueue] = useState<Array<{
+    file: File;
+    text: string;
+    existing: { id: string; storage_path: string; file_name: string; descrizione: string | null; importo: number | null; fornitore: string | null; created_at: string | null };
+  }>>([]);
+
+  const enqueuePreparedResults = useCallback(async (
+    items: Array<{ file: File; text: string }>,
+  ) => {
+    const ready: PreparedDocumento[] = [];
+    const duplicates: typeof duplicateQueue = [];
+    for (const { file, text } of items) {
       try {
-        const text = await extractTextFromPdf(file);
         const result = await prepareDocumento(file, text);
-        if (result) prepared.push(result);
+        if (!result) continue;
+        if (result.kind === "duplicate") {
+          duplicates.push({ file, text, existing: result.existing });
+        } else {
+          ready.push(result.prepared);
+        }
       } catch (err) {
         console.error(`Error processing ${file.name}:`, err);
         toast.error(`Errore elaborazione ${file.name}`);
       }
     }
-    setUploading(false);
-    if (prepared.length > 0) {
-      setReviewQueue(prepared);
+    if (ready.length > 0) {
+      setReviewQueue((prev) => [...prev, ...ready]);
       setReviewOpen(true);
     }
+    if (duplicates.length > 0) {
+      setDuplicateQueue((prev) => [...prev, ...duplicates]);
+    }
   }, [prepareDocumento]);
+
+  const processPdfFiles = useCallback(async (files: File[]) => {
+    const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    if (pdfFiles.length === 0) { toast.error("Seleziona file PDF"); return; }
+    setUploading(true);
+    const items: Array<{ file: File; text: string }> = [];
+    for (const file of pdfFiles) {
+      try {
+        const text = await extractTextFromPdf(file);
+        items.push({ file, text });
+      } catch (err) {
+        console.error(`Error reading ${file.name}:`, err);
+        toast.error(`Errore lettura ${file.name}`);
+      }
+    }
+    await enqueuePreparedResults(items);
+    setUploading(false);
+  }, [enqueuePreparedResults]);
+
+  const handleDuplicateOverwrite = useCallback(async () => {
+    const current = duplicateQueue[0];
+    if (!current) return;
+    setDuplicateQueue((prev) => prev.slice(1));
+    setUploading(true);
+    try {
+      const result = await prepareDocumento(current.file, current.text, {
+        overwriteExistingId: current.existing.id,
+        overwriteStoragePath: current.existing.storage_path,
+      });
+      if (result && result.kind === "ready") {
+        setReviewQueue((prev) => [...prev, result.prepared]);
+        setReviewOpen(true);
+      }
+    } catch (err) {
+      console.error("Overwrite error:", err);
+      toast.error(`Errore sovrascrittura ${current.file.name}`);
+    } finally {
+      setUploading(false);
+    }
+  }, [duplicateQueue, prepareDocumento]);
+
+  const handleDuplicateSkip = useCallback(() => {
+    const current = duplicateQueue[0];
+    if (current) toast.info(`"${current.file.name}" non caricato (duplicato)`);
+    setDuplicateQueue((prev) => prev.slice(1));
+  }, [duplicateQueue]);
 
   const handleReviewConfirm = useCallback(async (edited: PreparedDocumento) => {
     await finalizeDocumento(edited);
