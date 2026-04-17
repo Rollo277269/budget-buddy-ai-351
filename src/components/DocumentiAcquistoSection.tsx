@@ -275,6 +275,17 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     setEditingValue("");
   }, []);
 
+  const reviewDialogEl = (
+    <DocumentoAiReviewDialog
+      open={reviewOpen && reviewQueue.length > 0}
+      prepared={reviewQueue[0] ?? null}
+      centri={centri}
+      tipo={tipo}
+      onConfirm={handleReviewConfirm}
+      onCancel={handleReviewCancel}
+    />
+  );
+
   // Drop zone only mode
   if (dropZoneOnly) {
     if (compact) {
@@ -289,6 +300,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Receipt className="h-3.5 w-3.5" />}
             <span className="text-[11px] font-medium">PDF</span>
           </div>
+          {reviewDialogEl}
         </>
       );
     }
@@ -311,6 +323,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             </div>
           )}
         </div>
+        {reviewDialogEl}
       </>
     );
   }
