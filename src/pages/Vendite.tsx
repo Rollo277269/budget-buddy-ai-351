@@ -14,6 +14,8 @@ import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
+import { CigDiscrepanciesDialog } from "@/components/CigDiscrepanciesDialog";
+import { detectCigDiscrepancy, CigDiscrepancy } from "@/lib/cigCoherence";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -84,6 +86,9 @@ const VenditePage = () => {
   const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; selected: boolean }[]>([]);
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
   const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: SaleInvoice[]; colliding: SaleInvoice[] } | null>(null);
+  const [cigDiscrepancies, setCigDiscrepancies] = useState<CigDiscrepancy[]>([]);
+  const [showCigDiscrepanciesDialog, setShowCigDiscrepanciesDialog] = useState(false);
+  const [pendingReload, setPendingReload] = useState(false);
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
   const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
@@ -336,10 +341,16 @@ const VenditePage = () => {
         const colliding = parsed.filter((i) => existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
 
         if (colliding.length === 0) {
-          await seedSalesFromExcel(parsed, file.name);
+          const result = await seedSalesFromExcel(parsed, file.name);
           toast.success(`Importate ${parsed.length} fatture vendita da ${file.name}`);
           invalidateInvoiceCache();
-          setTimeout(() => window.location.reload(), 800);
+          if (result.discrepancies.length > 0) {
+            setCigDiscrepancies(result.discrepancies);
+            setShowCigDiscrepanciesDialog(true);
+            setPendingReload(true);
+          } else {
+            setTimeout(() => window.location.reload(), 800);
+          }
         } else {
           setExcelCollisions(colliding.map((item) => {
             const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
@@ -368,11 +379,17 @@ const VenditePage = () => {
     const overwrite = pendingExcelUpload.colliding.filter((i) => selectedKeys.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
     const all = [...pendingExcelUpload.newOnly, ...overwrite];
     if (all.length === 0) { toast.info("Nessun record importato"); return; }
-    await seedSalesFromExcel(all, pendingExcelUpload.fileName);
+    const result = await seedSalesFromExcel(all, pendingExcelUpload.fileName);
     const skipped = excelCollisions.length - selectedKeys.size;
     toast.success(`Importati ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""));
     invalidateInvoiceCache();
-    setTimeout(() => window.location.reload(), 800);
+    if (result.discrepancies.length > 0) {
+      setCigDiscrepancies(result.discrepancies);
+      setShowCigDiscrepanciesDialog(true);
+      setPendingReload(true);
+    } else {
+      setTimeout(() => window.location.reload(), 800);
+    }
   }, [pendingExcelUpload, excelCollisions]);
 
   const handleExcelCancelCollisions = useCallback(() => {
