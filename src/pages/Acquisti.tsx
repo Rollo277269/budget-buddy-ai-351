@@ -535,6 +535,19 @@ const AcquistiPage = () => {
             .eq("numero", xml.numero);
           if (!error) updated++;
         }
+
+        // Detect CIG discrepancy after enrichment
+        const finalCig = updates.cig || inv.cig || "";
+        const disc = detectCigDiscrepancy({
+          cigSalvato: finalCig,
+          descrizione: inv.descrizione || "",
+          invoiceType: "acquisto",
+          anno: inv.anno,
+          numero: inv.numero,
+          label: inv.fornitore || "",
+          source: "xml",
+        });
+        if (disc) enrichDiscrepancies.push(disc);
       }
 
       if (updated > 0) {
@@ -544,6 +557,11 @@ const AcquistiPage = () => {
         setSelectedXmlIds(new Set());
       } else {
         toast.info("Tutte le fatture sono già complete");
+      }
+
+      if (enrichDiscrepancies.length > 0) {
+        setCigDiscrepancies(enrichDiscrepancies);
+        setShowCigDiscrepanciesDialog(true);
       }
     } catch (e) {
       console.error("Enrich error:", e);
