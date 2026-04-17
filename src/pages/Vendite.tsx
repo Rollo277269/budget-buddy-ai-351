@@ -694,7 +694,7 @@ const VenditePage = () => {
           const xml = findXml(k, r.cliente);
           if (xml) return (
             <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza XML associato" onClick={(e) => { e.stopPropagation(); openXmlSheet(xml); }}>
-              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             </Button>
           );
           if (xmlRecords.some(x => !x.matched)) {
@@ -718,7 +718,7 @@ const VenditePage = () => {
                 e.stopPropagation();
                 openPdf(xml, `Fattura_${r.numero}-${r.anno}.pdf`);
               }}>
-                <FileDown className="h-3.5 w-3.5 text-red-600" />
+                <FileDown className="h-3.5 w-3.5 text-destructive" />
               </Button>
             );
           }
@@ -1102,7 +1102,7 @@ const VenditePage = () => {
                       return [
                         selected ? "bg-accent/40" : "",
                         nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
-                        xml && !nc && !selected ? "bg-green-50/50 dark:bg-green-950/20" : "",
+                        xml && !nc && !selected ? "bg-success/5" : "",
                       ].filter(Boolean).join(" ");
                     }}
                     expandable={(r) => r.righe.length > 1}
@@ -1199,7 +1199,7 @@ const VenditePage = () => {
       <Dialog open={showExcelCollisionDialog} onOpenChange={setShowExcelCollisionDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-yellow-500" /> Record duplicati trovati</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Record duplicati trovati</DialogTitle>
             <DialogDescription>
               {pendingExcelUpload && pendingExcelUpload.newOnly.length > 0 && <span className="block text-sm mb-1">{pendingExcelUpload.newOnly.length} nuovi record verranno importati automaticamente.</span>}
               Seleziona i record duplicati che vuoi <strong>sovrascrivere</strong>.

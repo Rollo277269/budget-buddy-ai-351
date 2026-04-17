@@ -715,8 +715,8 @@ const AcquistiPage = () => {
       const rec = reconMap[k];
       if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
       const diff = Math.round((r.totale - rec.paid) * 100) / 100;
-      if (Math.abs(diff) < 0.01) return <span className="text-xs font-mono text-right block text-green-600">0,00</span>;
-      return <span className={`text-xs font-mono text-right block ${diff > 0 ? "text-destructive" : "text-green-600"}`}>{formatCurrency(Math.abs(diff))}{diff > 0 ? "" : " +"}</span>;
+      if (Math.abs(diff) < 0.01) return <span className="text-xs font-mono text-right block text-success">0,00</span>;
+      return <span className={`text-xs font-mono text-right block ${diff > 0 ? "text-destructive" : "text-success"}`}>{formatCurrency(Math.abs(diff))}{diff > 0 ? "" : " +"}</span>;
     }},
     { key: "dataSaldo", label: "Data Saldo", sortable: true, defaultHidden: false, render: (r) => {
       const k = `${r.anno}-${r.numero}`;
@@ -734,7 +734,7 @@ const AcquistiPage = () => {
         const xml = findXml(k, r.fornitore);
         if (xml) return (
            <Button size="sm" variant="ghost" className="h-6 px-1.5" title="Visualizza XML associato" onClick={(e) => {e.stopPropagation();openXmlSheet(xml);}}>
-              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
              </Button>);
 
         if (xmlRecords.some(x => !x.matched)) {
@@ -758,7 +758,7 @@ const AcquistiPage = () => {
               e.stopPropagation();
               openPdf(xml, `Fattura_${r.numero}-${r.anno}.pdf`);
             }}>
-                <FileDown className="h-3.5 w-3.5 text-red-600" />
+                <FileDown className="h-3.5 w-3.5 text-destructive" />
               </Button>);
 
         }
@@ -976,7 +976,7 @@ const AcquistiPage = () => {
                       return [
                         selected ? "bg-accent/40" : "",
                         nc ? "bg-destructive/5 dark:bg-destructive/10" : "",
-                        xml && !nc && !selected ? "bg-green-50/50 dark:bg-green-950/20" : "",
+                        xml && !nc && !selected ? "bg-success/5" : "",
                       ].filter(Boolean).join(" ");
                     }}
                   />
