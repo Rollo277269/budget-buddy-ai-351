@@ -3,7 +3,6 @@ import { useDocumentiAcquisto, DocumentoAcquisto, PreparedDocumento } from "@/ho
 import { useCentriData } from "@/hooks/useCentri";
 import { DocumentoAiReviewDialog } from "@/components/DocumentoAiReviewDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { formatCurrency as fmtCurrency } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
