@@ -190,7 +190,7 @@ export function CigCoherenceCheck() {
         </Button>
 
         {issues !== null && issues.length === 0 && (
-          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+          <div className="flex items-center gap-2 text-sm text-primary">
             <Check className="h-4 w-4" />
             Nessuna discordanza rilevata fra CIG salvato e descrizione.
           </div>
@@ -200,7 +200,7 @@ export function CigCoherenceCheck() {
           <>
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm text-muted-foreground">
-                <AlertTriangle className="h-4 w-4 inline mr-1 text-amber-500" />
+                <AlertTriangle className="h-4 w-4 inline mr-1 text-destructive" />
                 {issues.length} discordanze. {selected.size} selezionate per correzione.
               </p>
               <div className="flex gap-2">
