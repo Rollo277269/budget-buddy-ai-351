@@ -843,6 +843,7 @@ const VenditePage = () => {
       }
 
       toast.info(`Analisi di ${relevantXmls.length} XML in corso...`);
+      const enrichDiscrepancies: CigDiscrepancy[] = [];
 
       for (const xml of relevantXmls) {
         const inv = allSales.find(s => s.anno === xml.anno && s.numero === xml.numero);
@@ -887,6 +888,19 @@ const VenditePage = () => {
                 .eq("numero", xml.numero);
               if (!error) updated++;
             }
+
+            const finalCig = updates.cig || inv.cig || "";
+            const disc = detectCigDiscrepancy({
+              cigSalvato: finalCig,
+              descrizione: inv.descrizione || "",
+              invoiceType: "vendita",
+              anno: inv.anno,
+              numero: inv.numero,
+              suffisso: inv.suffisso,
+              label: inv.cliente || "",
+              source: "xml",
+            });
+            if (disc) enrichDiscrepancies.push(disc);
           } catch (e) {
             console.warn("Could not re-parse XML:", xml.storage_path, e);
           }
@@ -900,6 +914,11 @@ const VenditePage = () => {
         setSelectedXmlIds(new Set());
       } else {
         toast.info("Tutte le fatture sono già complete");
+      }
+
+      if (enrichDiscrepancies.length > 0) {
+        setCigDiscrepancies(enrichDiscrepancies);
+        setShowCigDiscrepanciesDialog(true);
       }
     } catch (e) {
       console.error("Enrich error:", e);
