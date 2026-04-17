@@ -470,6 +470,7 @@ const AcquistiPage = () => {
       }
 
       toast.info(`Analisi di ${relevantXmls.length} XML in corso...`);
+      const enrichDiscrepancies: CigDiscrepancy[] = [];
 
       for (const xml of relevantXmls) {
         const inv = allPurchases.find(p => p.anno === xml.anno && p.numero === xml.numero);
