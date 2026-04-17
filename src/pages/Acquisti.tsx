@@ -14,6 +14,8 @@ import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { DocumentiAcquistoSection } from "@/components/DocumentiAcquistoSection";
+import { CigDiscrepanciesDialog } from "@/components/CigDiscrepanciesDialog";
+import { detectCigDiscrepancy, CigDiscrepancy } from "@/lib/cigCoherence";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
