@@ -84,6 +84,9 @@ const AcquistiPage = () => {
   const [excelCollisions, setExcelCollisions] = useState<{ key: string; anno: number; numero: number; tipo: string; existingDesc: string; newDesc: string; cig: string; selected: boolean }[]>([]);
   const [showExcelCollisionDialog, setShowExcelCollisionDialog] = useState(false);
   const [pendingExcelUpload, setPendingExcelUpload] = useState<{ fileName: string; newOnly: PurchaseInvoice[]; colliding: PurchaseInvoice[] } | null>(null);
+  const [cigDiscrepancies, setCigDiscrepancies] = useState<CigDiscrepancy[]>([]);
+  const [showCigDiscrepanciesDialog, setShowCigDiscrepanciesDialog] = useState(false);
+  const [pendingReload, setPendingReload] = useState(false);
   const [xmlExpanded, setXmlExpanded] = useState(false);
   const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
