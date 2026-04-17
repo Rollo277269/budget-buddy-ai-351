@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from "react";
-import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
+import { useDocumentiAcquisto, DocumentoAcquisto, PreparedDocumento } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
+import { DocumentoAiReviewDialog } from "@/components/DocumentoAiReviewDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,11 @@ interface Props {
 }
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
-  const { documenti, loading, uploadDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField } = useDocumentiAcquisto(tipo);
+  const { documenti, loading, prepareDocumento, finalizeDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField } = useDocumentiAcquisto(tipo);
+
+  // AI review queue state
+  const [reviewQueue, setReviewQueue] = useState<PreparedDocumento[]>([]);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const { centriCosto, centriRicavo } = useCentriData();
   const centri = tipo === "vendita" ? centriRicavo : centriCosto;
   const ALL_COLUMNS = useMemo(() => buildColumns(tipo), [tipo]);
@@ -194,17 +199,45 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
     if (pdfFiles.length === 0) { toast.error("Seleziona file PDF"); return; }
     setUploading(true);
+    const prepared: PreparedDocumento[] = [];
     for (const file of pdfFiles) {
       try {
         const text = await extractTextFromPdf(file);
-        await uploadDocumento(file, text);
+        const result = await prepareDocumento(file, text);
+        if (result) prepared.push(result);
       } catch (err) {
         console.error(`Error processing ${file.name}:`, err);
         toast.error(`Errore elaborazione ${file.name}`);
       }
     }
     setUploading(false);
-  }, [uploadDocumento]);
+    if (prepared.length > 0) {
+      setReviewQueue(prepared);
+      setReviewOpen(true);
+    }
+  }, [prepareDocumento]);
+
+  const handleReviewConfirm = useCallback(async (edited: PreparedDocumento) => {
+    await finalizeDocumento(edited);
+    setReviewQueue((prev) => {
+      const next = prev.slice(1);
+      if (next.length === 0) setReviewOpen(false);
+      return next;
+    });
+  }, [finalizeDocumento]);
+
+  const handleReviewCancel = useCallback(async () => {
+    const current = reviewQueue[0];
+    if (current) {
+      await supabase.storage.from("documenti-acquisto").remove([current.storage_path]);
+      toast.info(`Upload di "${current.file_name}" annullato`);
+    }
+    setReviewQueue((prev) => {
+      const next = prev.slice(1);
+      if (next.length === 0) setReviewOpen(false);
+      return next;
+    });
+  }, [reviewQueue]);
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     await processPdfFiles(Array.from(e.target.files || []));
@@ -242,6 +275,17 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     setEditingValue("");
   }, []);
 
+  const reviewDialogEl = (
+    <DocumentoAiReviewDialog
+      open={reviewOpen && reviewQueue.length > 0}
+      prepared={reviewQueue[0] ?? null}
+      centri={centri}
+      tipo={tipo}
+      onConfirm={handleReviewConfirm}
+      onCancel={handleReviewCancel}
+    />
+  );
+
   // Drop zone only mode
   if (dropZoneOnly) {
     if (compact) {
@@ -256,6 +300,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Receipt className="h-3.5 w-3.5" />}
             <span className="text-[11px] font-medium">PDF</span>
           </div>
+          {reviewDialogEl}
         </>
       );
     }
@@ -278,6 +323,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             </div>
           )}
         </div>
+        {reviewDialogEl}
       </>
     );
   }
@@ -597,6 +643,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
           {selectedDoc && <DocDetailContent doc={selectedDoc} centroLookup={centroLookup} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
         </SheetContent>
       </Sheet>
+      {reviewDialogEl}
     </>
   );
 }
