@@ -154,12 +154,19 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
     return true;
   }, [fetchDocumenti]);
 
-  /** Legacy one-shot upload (kept for backward compatibility). */
+  /** Legacy one-shot upload (kept for backward compatibility — duplicates are silently overwritten). */
   const uploadDocumento = useCallback(async (file: File, extractedText: string) => {
-    const prepared = await prepareDocumento(file, extractedText);
-    if (!prepared) return null;
-    await finalizeDocumento(prepared);
-    return prepared;
+    let result = await prepareDocumento(file, extractedText);
+    if (!result) return null;
+    if (result.kind === "duplicate") {
+      result = await prepareDocumento(file, extractedText, {
+        overwriteExistingId: result.existing.id,
+        overwriteStoragePath: result.existing.storage_path,
+      });
+      if (!result || result.kind !== "ready") return null;
+    }
+    await finalizeDocumento(result.prepared);
+    return result.prepared;
   }, [prepareDocumento, finalizeDocumento]);
 
   const deleteDocumento = useCallback(async (id: string, storagePath: string) => {
