@@ -199,17 +199,45 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     const pdfFiles = files.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
     if (pdfFiles.length === 0) { toast.error("Seleziona file PDF"); return; }
     setUploading(true);
+    const prepared: PreparedDocumento[] = [];
     for (const file of pdfFiles) {
       try {
         const text = await extractTextFromPdf(file);
-        await uploadDocumento(file, text);
+        const result = await prepareDocumento(file, text);
+        if (result) prepared.push(result);
       } catch (err) {
         console.error(`Error processing ${file.name}:`, err);
         toast.error(`Errore elaborazione ${file.name}`);
       }
     }
     setUploading(false);
-  }, [uploadDocumento]);
+    if (prepared.length > 0) {
+      setReviewQueue(prepared);
+      setReviewOpen(true);
+    }
+  }, [prepareDocumento]);
+
+  const handleReviewConfirm = useCallback(async (edited: PreparedDocumento) => {
+    await finalizeDocumento(edited);
+    setReviewQueue((prev) => {
+      const next = prev.slice(1);
+      if (next.length === 0) setReviewOpen(false);
+      return next;
+    });
+  }, [finalizeDocumento]);
+
+  const handleReviewCancel = useCallback(async () => {
+    const current = reviewQueue[0];
+    if (current) {
+      await supabase.storage.from("documenti-acquisto").remove([current.storage_path]);
+      toast.info(`Upload di "${current.file_name}" annullato`);
+    }
+    setReviewQueue((prev) => {
+      const next = prev.slice(1);
+      if (next.length === 0) setReviewOpen(false);
+      return next;
+    });
+  }, [reviewQueue]);
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     await processPdfFiles(Array.from(e.target.files || []));
