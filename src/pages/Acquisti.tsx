@@ -292,10 +292,16 @@ const AcquistiPage = () => {
         const colliding = parsed.filter((i) => existingMap.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
 
         if (colliding.length === 0) {
-          await seedPurchasesFromExcel(parsed, file.name);
+          const result = await seedPurchasesFromExcel(parsed, file.name);
           toast.success(`Importate ${parsed.length} fatture acquisto da ${file.name}`);
           invalidateInvoiceCache();
-          setTimeout(() => window.location.reload(), 800);
+          if (result.discrepancies.length > 0) {
+            setCigDiscrepancies(result.discrepancies);
+            setShowCigDiscrepanciesDialog(true);
+            setPendingReload(true);
+          } else {
+            setTimeout(() => window.location.reload(), 800);
+          }
         } else {
           setExcelCollisions(colliding.map((item) => {
             const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
@@ -324,11 +330,17 @@ const AcquistiPage = () => {
     const overwrite = pendingExcelUpload.colliding.filter((i) => selectedKeys.has(`${i.anno}-${i.numero}-${i.tipo || ""}`));
     const all = [...pendingExcelUpload.newOnly, ...overwrite];
     if (all.length === 0) { toast.info("Nessun record importato"); return; }
-    await seedPurchasesFromExcel(all, pendingExcelUpload.fileName);
+    const result = await seedPurchasesFromExcel(all, pendingExcelUpload.fileName);
     const skipped = excelCollisions.length - selectedKeys.size;
     toast.success(`Importati ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""));
     invalidateInvoiceCache();
-    setTimeout(() => window.location.reload(), 800);
+    if (result.discrepancies.length > 0) {
+      setCigDiscrepancies(result.discrepancies);
+      setShowCigDiscrepanciesDialog(true);
+      setPendingReload(true);
+    } else {
+      setTimeout(() => window.location.reload(), 800);
+    }
   }, [pendingExcelUpload, excelCollisions]);
 
   const handleExcelCancelCollisions = useCallback(() => {
