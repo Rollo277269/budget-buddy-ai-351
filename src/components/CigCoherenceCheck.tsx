@@ -241,7 +241,7 @@ export function CigCoherenceCheck() {
                     return (
                       <TableRow
                         key={key}
-                        className={`cursor-pointer ${isSel ? "bg-amber-50/40 dark:bg-amber-950/20" : ""}`}
+                        className={`cursor-pointer ${isSel ? "bg-accent/40" : ""}`}
                         onClick={() => toggleSelect(key)}
                       >
                         <TableCell>
@@ -282,7 +282,7 @@ export function CigCoherenceCheck() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-0.5">
-                            <code className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300 font-mono w-fit">
+                            <code className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono w-fit">
                               {issue.bestCandidate}
                             </code>
                             {issue.cigsTrovati.length > 1 && (
