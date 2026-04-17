@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { useDocumentiAcquisto, DocumentoAcquisto, PreparedDocumento } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
 import { DocumentoAiReviewDialog } from "@/components/DocumentoAiReviewDialog";
-import { supabase as supabaseStorage } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
