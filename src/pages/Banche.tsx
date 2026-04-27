@@ -457,6 +457,7 @@ const BanchePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingPlaceholder, setIsDraggingPlaceholder] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [filterYear, setFilterYear] = useState<string>("");
   const [editingCigId, setEditingCigId] = useState<string | null>(null);
@@ -775,16 +776,34 @@ const BanchePage = () => {
 
       {movements.length === 0 && !isLoading && conti.length > 0 &&
       <button
-        className="w-full flex items-center justify-center gap-3 h-24 rounded-lg border-2 border-dashed bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
+        type="button"
+        className={`w-full flex items-center justify-center gap-3 h-24 rounded-lg border-2 border-dashed transition-colors cursor-pointer ${
+        isDraggingPlaceholder ?
+        "border-primary bg-primary/10 text-primary" :
+        "bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent/30"}`
+        }
         onClick={() => {
           if (!hasValidAccount) {toast.error("Seleziona prima un conto dal menu in alto");return;}
           fileInputRef.current?.click();
+        }}
+        onDragOver={(e) => {e.preventDefault();e.stopPropagation();setIsDraggingPlaceholder(true);}}
+        onDragEnter={(e) => {e.preventDefault();e.stopPropagation();setIsDraggingPlaceholder(true);}}
+        onDragLeave={(e) => {e.preventDefault();e.stopPropagation();setIsDraggingPlaceholder(false);}}
+        onDrop={(e) => {
+          e.preventDefault();e.stopPropagation();
+          setIsDraggingPlaceholder(false);
+          setIsDragging(false);
+          if (!hasValidAccount) {toast.error("Seleziona prima un conto dal menu in alto");return;}
+          const files = e.dataTransfer.files;
+          if (files) Array.from(files).filter(isAcceptedFile).forEach((file) => handleFileUpload(file, activeAccountId));
         }}>
         
-          <Upload className="h-6 w-6 opacity-40" />
+          <Upload className={`h-6 w-6 ${isDraggingPlaceholder ? "opacity-100" : "opacity-40"}`} />
           <div className="text-left">
             <p className="text-sm font-medium">
-              {hasValidAccount ? "Carica o trascina un estratto conto" : "Seleziona un conto, poi carica l'estratto"}
+              {isDraggingPlaceholder ?
+              "Rilascia il file qui" :
+              hasValidAccount ? "Carica o trascina un estratto conto" : "Seleziona un conto, poi carica l'estratto"}
             </p>
             <p className="text-[11px] mt-0.5">Excel (.xlsx, .xls, .csv) o PDF</p>
           </div>
