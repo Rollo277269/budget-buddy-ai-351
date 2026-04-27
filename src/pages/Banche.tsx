@@ -457,6 +457,7 @@ const BanchePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingPlaceholder, setIsDraggingPlaceholder] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [filterYear, setFilterYear] = useState<string>("");
   const [editingCigId, setEditingCigId] = useState<string | null>(null);
