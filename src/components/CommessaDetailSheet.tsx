@@ -388,7 +388,7 @@ export function CommessaDetailSheet({
       autoSaleKeys, autoPurchaseKeys,
       monthlyData, supplierData, statusSales, statusPurchases,
     };
-  }, [commessa, allSales, allPurchases, manualLinks]);
+  }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice]);
 
   if (!commessa || !data) return null;
 
