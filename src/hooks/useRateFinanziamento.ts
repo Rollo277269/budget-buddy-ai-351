@@ -15,25 +15,21 @@ export interface RataFinanziamento {
   note: string;
 }
 
-export function useRateFinanziamento(contoId?: string) {
-  const [rate, setRate] = useState<RataFinanziamento[]>([]);
-  const [loading, setLoading] = useState(true);
+// ── Module-scope cache for the FULL list (no contoId filter) ──
+let cachedRate: RataFinanziamento[] | null = null;
+let inflight: Promise<RataFinanziamento[]> | null = null;
+const subs = new Set<(r: RataFinanziamento[]) => void>();
 
-  const fetchRate = useCallback(async () => {
-    let query = supabase
+async function loadAllRate(force = false): Promise<RataFinanziamento[]> {
+  if (cachedRate && !force) return cachedRate;
+  if (inflight && !force) return inflight;
+  inflight = (async () => {
+    const { data, error } = await supabase
       .from("rate_finanziamento" as any)
       .select("*")
       .order("numero_rata", { ascending: true });
-    if (contoId) {
-      query = query.eq("conto_id", contoId);
-    }
-    const { data, error } = await query;
-    if (error) {
-      console.error("Error loading rate:", error);
-      setLoading(false);
-      return;
-    }
-    setRate((data as any[] || []).map((d: any) => ({
+    if (error) { console.error("Error loading rate:", error); cachedRate = cachedRate ?? []; inflight = null; return cachedRate; }
+    cachedRate = (data as any[] || []).map((d: any) => ({
       id: d.id,
       conto_id: d.conto_id,
       numero_rata: d.numero_rata,
@@ -44,11 +40,36 @@ export function useRateFinanziamento(contoId?: string) {
       debito_residuo: Number(d.debito_residuo),
       pagata: d.pagata,
       note: d.note || "",
-    })));
+    }));
+    inflight = null;
+    subs.forEach((s) => s(cachedRate!));
+    return cachedRate;
+  })();
+  return inflight;
+}
+
+export function useRateFinanziamento(contoId?: string) {
+  const initial = cachedRate ? (contoId ? cachedRate.filter((r) => r.conto_id === contoId) : cachedRate) : [];
+  const [rate, setRate] = useState<RataFinanziamento[]>(initial);
+  const [loading, setLoading] = useState(!cachedRate);
+
+  const apply = useCallback((all: RataFinanziamento[]) => {
+    setRate(contoId ? all.filter((r) => r.conto_id === contoId) : all);
     setLoading(false);
   }, [contoId]);
 
-  useEffect(() => { fetchRate(); }, [fetchRate]);
+  const fetchRate = useCallback(async () => {
+    const all = await loadAllRate(true);
+    apply(all);
+  }, [apply]);
+
+  useEffect(() => {
+    const cb = (all: RataFinanziamento[]) => apply(all);
+    subs.add(cb);
+    if (cachedRate) apply(cachedRate);
+    else loadAllRate().then(apply);
+    return () => { subs.delete(cb); };
+  }, [apply]);
 
   const importRate = useCallback(async (contoId: string, rows: Omit<RataFinanziamento, "id">[]) => {
     // Delete existing rates for this account first

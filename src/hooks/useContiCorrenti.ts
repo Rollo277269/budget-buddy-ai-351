@@ -12,20 +12,30 @@ export interface ContoCorrente {
   conto_addebito_id: string;
 }
 
-export function useContiCorrenti() {
-  const [conti, setConti] = useState<ContoCorrente[]>([]);
-  const [loading, setLoading] = useState(true);
+// ── Module-scope cache shared across all hook instances ──
+let cachedConti: ContoCorrente[] | null = null;
+let inflight: Promise<ContoCorrente[]> | null = null;
+const subscribers = new Set<(c: ContoCorrente[]) => void>();
 
-  const fetchConti = useCallback(async () => {
+function notify() {
+  if (cachedConti) subscribers.forEach((s) => s(cachedConti!));
+}
+
+async function loadConti(force = false): Promise<ContoCorrente[]> {
+  if (cachedConti && !force) return cachedConti;
+  if (inflight && !force) return inflight;
+  inflight = (async () => {
     const { data, error } = await supabase
       .from("conti_correnti" as any)
       .select("*")
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Error loading conti:", error);
-      return;
+      cachedConti = cachedConti ?? [];
+      inflight = null;
+      return cachedConti;
     }
-    setConti((data as any[] || []).map((d: any) => ({
+    cachedConti = (data as any[] || []).map((d: any) => ({
       id: d.id,
       tipo: d.tipo as ContoCorrente["tipo"],
       banca: d.banca,
@@ -33,11 +43,35 @@ export function useContiCorrenti() {
       intestatario: d.intestatario || "",
       note: d.note || "",
       conto_addebito_id: d.conto_addebito_id || "",
-    })));
+    }));
+    inflight = null;
+    notify();
+    return cachedConti;
+  })();
+  return inflight;
+}
+
+export function useContiCorrenti() {
+  const [conti, setConti] = useState<ContoCorrente[]>(cachedConti ?? []);
+  const [loading, setLoading] = useState(!cachedConti);
+
+  const fetchConti = useCallback(async () => {
+    const data = await loadConti(true);
+    setConti(data);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchConti(); }, [fetchConti]);
+  useEffect(() => {
+    const cb = (c: ContoCorrente[]) => setConti(c);
+    subscribers.add(cb);
+    if (cachedConti) {
+      setConti(cachedConti);
+      setLoading(false);
+    } else {
+      loadConti().then((c) => { setConti(c); setLoading(false); });
+    }
+    return () => { subscribers.delete(cb); };
+  }, []);
 
   const saveConto = useCallback(async (conto: ContoCorrente) => {
     if (conto.id && conti.some(c => c.id === conto.id)) {

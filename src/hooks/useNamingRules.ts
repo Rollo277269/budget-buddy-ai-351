@@ -15,37 +15,53 @@ const DEFAULTS: Omit<NamingRule, "id">[] = [
   { tipo: "Estratto Conto", pattern: "EC_{BANCA}_{MESE}_{ANNO}", esempio: "EC_Intesa_01_2024" },
 ];
 
-export function useNamingRules() {
-  const [rules, setRules] = useState<NamingRule[]>([]);
-  const [loading, setLoading] = useState(true);
+// ── Module-scope cache ──
+let cachedRules: NamingRule[] | null = null;
+let inflight: Promise<NamingRule[]> | null = null;
+const subs = new Set<(r: NamingRule[]) => void>();
 
-  const fetchRules = useCallback(async () => {
+async function loadRules(force = false): Promise<NamingRule[]> {
+  if (cachedRules && !force) return cachedRules;
+  if (inflight && !force) return inflight;
+  inflight = (async () => {
     const { data, error } = await supabase
       .from("naming_rules" as any)
       .select("*")
       .order("created_at", { ascending: true });
-    if (error) { console.error("Error loading rules:", error); setLoading(false); return; }
-    let rows = (data as any[] || []).map((d: any) => ({
-      id: d.id,
-      tipo: d.tipo,
-      pattern: d.pattern,
-      esempio: d.esempio || "",
-    }));
-    // Seed defaults if empty
+    if (error) { cachedRules = cachedRules ?? []; inflight = null; return cachedRules; }
+    let rows = (data as any[] || []).map((d: any) => ({ id: d.id, tipo: d.tipo, pattern: d.pattern, esempio: d.esempio || "" }));
     if (rows.length === 0) {
-      const { error: insertErr } = await supabase
-        .from("naming_rules" as any)
-        .insert(DEFAULTS as any);
+      const { error: insertErr } = await supabase.from("naming_rules" as any).insert(DEFAULTS as any);
       if (!insertErr) {
         const { data: d2 } = await supabase.from("naming_rules" as any).select("*").order("created_at", { ascending: true });
         rows = (d2 as any[] || []).map((d: any) => ({ id: d.id, tipo: d.tipo, pattern: d.pattern, esempio: d.esempio || "" }));
       }
     }
-    setRules(rows);
+    cachedRules = rows;
+    inflight = null;
+    subs.forEach((s) => s(cachedRules!));
+    return cachedRules;
+  })();
+  return inflight;
+}
+
+export function useNamingRules() {
+  const [rules, setRules] = useState<NamingRule[]>(cachedRules ?? []);
+  const [loading, setLoading] = useState(!cachedRules);
+
+  const fetchRules = useCallback(async () => {
+    const r = await loadRules(true);
+    setRules(r);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchRules(); }, [fetchRules]);
+  useEffect(() => {
+    const cb = (r: NamingRule[]) => setRules(r);
+    subs.add(cb);
+    if (cachedRules) { setRules(cachedRules); setLoading(false); }
+    else { loadRules().then((r) => { setRules(r); setLoading(false); }); }
+    return () => { subs.delete(cb); };
+  }, []);
 
   const saveRule = useCallback(async (rule: NamingRule) => {
     if (rules.some(r => r.id === rule.id)) {

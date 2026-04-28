@@ -21,34 +21,48 @@ export interface CentroCR {
 // ── Load/Save centri from DB ──
 
 export async function fetchCentriFromDb(): Promise<CentroCR[]> {
-  const { data, error } = await supabase
-    .from("centri_cr" as any)
-    .select("*")
-    .order("created_at", { ascending: true });
-  if (error) { console.error("Error loading centri:", error); return []; }
-  return (data as any[] || []).map((d: any) => ({
-    id: d.id,
-    tipo: d.tipo as "costo" | "ricavo",
-    codice: d.codice,
-    descrizione: d.descrizione || "",
-    paroleChiaveMatching: d.parole_chiave_matching || "",
-    note: d.note || "",
-    categoriaId: d.categoria_id || undefined,
-  }));
+  if (centriCache) return centriCache;
+  if (centriInflight) return centriInflight;
+  centriInflight = (async () => {
+    const { data, error } = await supabase
+      .from("centri_cr" as any)
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (error) { console.error("Error loading centri:", error); centriInflight = null; return []; }
+    centriCache = (data as any[] || []).map((d: any) => ({
+      id: d.id,
+      tipo: d.tipo as "costo" | "ricavo",
+      codice: d.codice,
+      descrizione: d.descrizione || "",
+      paroleChiaveMatching: d.parole_chiave_matching || "",
+      note: d.note || "",
+      categoriaId: d.categoria_id || undefined,
+    }));
+    centriInflight = null;
+    return centriCache;
+  })();
+  return centriInflight;
 }
 
 export async function fetchCategorieFromDb(): Promise<CategoriaCentro[]> {
-  const { data, error } = await supabase
-    .from("categorie_centri" as any)
-    .select("*")
-    .order("created_at", { ascending: true });
-  if (error) { console.error("Error loading categorie:", error); return []; }
-  return (data as any[] || []).map((d: any) => ({
-    id: d.id,
-    tipo: d.tipo as "costo" | "ricavo",
-    codice: d.codice,
-    descrizione: d.descrizione || "",
-  }));
+  if (categorieCache) return categorieCache;
+  if (categorieInflight) return categorieInflight;
+  categorieInflight = (async () => {
+    const { data, error } = await supabase
+      .from("categorie_centri" as any)
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (error) { console.error("Error loading categorie:", error); categorieInflight = null; return []; }
+    categorieCache = (data as any[] || []).map((d: any) => ({
+      id: d.id,
+      tipo: d.tipo as "costo" | "ricavo",
+      codice: d.codice,
+      descrizione: d.descrizione || "",
+    }));
+    categorieInflight = null;
+    return categorieCache;
+  })();
+  return categorieInflight;
 }
 
 export async function upsertCentro(c: CentroCR) {
@@ -62,23 +76,39 @@ export async function upsertCentro(c: CentroCR) {
     categoria_id: c.categoriaId || null,
   };
   await supabase.from("centri_cr" as any).upsert(row as any);
+  centriCache = null;
 }
 
 export async function deleteCentroDb(id: string) {
   await supabase.from("centri_cr" as any).delete().eq("id", id);
+  centriCache = null;
 }
 
 export async function upsertCategoria(c: CategoriaCentro) {
   await supabase.from("categorie_centri" as any).upsert({ id: c.id, tipo: c.tipo, codice: c.codice, descrizione: c.descrizione } as any);
+  categorieCache = null;
 }
 
 export async function deleteCategoriaDb(id: string) {
   await supabase.from("categorie_centri" as any).delete().eq("id", id);
+  categorieCache = null;
 }
 
 // ── Centro assignment map (invoice_key → centro_codice) ──
 
+// Module-scope caches
+let centriCache: CentroCR[] | null = null;
+let centriInflight: Promise<CentroCR[]> | null = null;
+let categorieCache: CategoriaCentro[] | null = null;
+let categorieInflight: Promise<CategoriaCentro[]> | null = null;
+const assignmentMapCache: Record<string, Record<string, string>> = {};
+const assignmentMapInflight: Record<string, Promise<Record<string, string>> | undefined> = {};
+
 async function loadMapFromDb(tipo: "costo" | "ricavo", context: "vendite" | "acquisti"): Promise<Record<string, string>> {
+  const ck = `${tipo}|${context}`;
+  if (assignmentMapCache[ck]) return assignmentMapCache[ck];
+  if (assignmentMapInflight[ck]) return assignmentMapInflight[ck]!;
+  assignmentMapInflight[ck] = (async () => {
   const map: Record<string, string> = {};
   let from = 0;
   const pageSize = 1000;
@@ -97,7 +127,11 @@ async function loadMapFromDb(tipo: "costo" | "ricavo", context: "vendite" | "acq
     if (data.length < pageSize) break;
     from += pageSize;
   }
-  return map;
+    assignmentMapCache[ck] = map;
+    assignmentMapInflight[ck] = undefined;
+    return map;
+  })();
+  return assignmentMapInflight[ck]!;
 }
 
 async function saveAssignment(invoiceKey: string, tipo: "costo" | "ricavo", context: "vendite" | "acquisti", centroCodice: string) {
@@ -107,6 +141,8 @@ async function saveAssignment(invoiceKey: string, tipo: "costo" | "ricavo", cont
     context,
     centro_codice: centroCodice,
   } as any, { onConflict: "invoice_key,tipo,context" });
+  const ck = `${tipo}|${context}`;
+  if (assignmentMapCache[ck]) assignmentMapCache[ck][invoiceKey] = centroCodice;
 }
 
 async function deleteAssignment(invoiceKey: string, tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
@@ -115,6 +151,8 @@ async function deleteAssignment(invoiceKey: string, tipo: "costo" | "ricavo", co
     .eq("invoice_key", invoiceKey)
     .eq("tipo", tipo)
     .eq("context", context);
+  const ck = `${tipo}|${context}`;
+  if (assignmentMapCache[ck]) delete assignmentMapCache[ck][invoiceKey];
 }
 
 export async function updateCentroCodeInAssignments(oldCodice: string, newCodice: string) {
@@ -122,19 +160,24 @@ export async function updateCentroCodeInAssignments(oldCodice: string, newCodice
     .from("centro_assignments" as any)
     .update({ centro_codice: newCodice } as any)
     .eq("centro_codice", oldCodice);
+  // Invalidate all assignment maps
+  Object.keys(assignmentMapCache).forEach((k) => delete assignmentMapCache[k]);
 }
 
 export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
-  const [map, setMap] = useState<Record<string, string>>({});
+  const ck = `${tipo}|${context}`;
+  const [map, setMap] = useState<Record<string, string>>(assignmentMapCache[ck] ?? {});
 
   const refresh = useCallback(async () => {
+    delete assignmentMapCache[ck];
     const data = await loadMapFromDb(tipo, context);
     setMap(data);
-  }, [tipo, context]);
+  }, [tipo, context, ck]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (assignmentMapCache[ck]) setMap(assignmentMapCache[ck]);
+    else loadMapFromDb(tipo, context).then(setMap);
+  }, [tipo, context, ck]);
 
   const assign = useCallback(
     (key: string, codice: string) => {
@@ -163,17 +206,22 @@ export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acq
 }
 
 export function useCentriData() {
-  const [centri, setCentri] = useState<CentroCR[]>([]);
-  const [categorie, setCategorie] = useState<CategoriaCentro[]>([]);
+  const [centri, setCentri] = useState<CentroCR[]>(centriCache ?? []);
+  const [categorie, setCategorie] = useState<CategoriaCentro[]>(categorieCache ?? []);
 
   const refresh = useCallback(() => {
+    centriCache = null;
+    categorieCache = null;
     fetchCentriFromDb().then(setCentri);
     fetchCategorieFromDb().then(setCategorie);
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (centriCache) setCentri(centriCache);
+    else fetchCentriFromDb().then(setCentri);
+    if (categorieCache) setCategorie(categorieCache);
+    else fetchCategorieFromDb().then(setCategorie);
+  }, []);
 
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
   const centriRicavo = useMemo(() => centri.filter((c) => c.tipo === "ricavo"), [centri]);

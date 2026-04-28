@@ -6,6 +6,13 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
 
+// Background prefetch of frequently used datasets so navigation between pages is instant.
+function prefetchSharedData() {
+  // Fire-and-forget; each loader has its own module-scope cache and dedup.
+  import("@/hooks/useInvoiceData").then((m) => m.prefetchInvoices()).catch(() => {});
+  import("@/hooks/useCentri").then((m) => { m.fetchCentriFromDb(); m.fetchCategorieFromDb(); }).catch(() => {});
+}
+
 const pageTitles: Record<string, string> = {
   "/": "Cruscotto",
   "/scadenzario": "Scadenzario",
@@ -89,6 +96,9 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
+
+  // Prefetch shared datasets once at app mount so navigating between pages is instant.
+  useEffect(() => { prefetchSharedData(); }, []);
 
   const toggleLock = useCallback(() => {
     setSidebarLocked(prev => {

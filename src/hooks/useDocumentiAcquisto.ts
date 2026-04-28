@@ -32,25 +32,46 @@ export interface PreparedDocumento {
   tipo: "acquisto" | "vendita";
 }
 
-export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") {
-  const [documenti, setDocumenti] = useState<DocumentoAcquisto[]>([]);
-  const [loading, setLoading] = useState(true);
+// ── Module-scope cache (per tipo) ──
+const docCache: Record<string, DocumentoAcquisto[] | undefined> = {};
+const docInflight: Record<string, Promise<DocumentoAcquisto[]> | undefined> = {};
+const docSubs: Record<string, Set<(d: DocumentoAcquisto[]) => void>> = {};
 
-  const fetchDocumenti = useCallback(async () => {
+async function loadDocumenti(tipo: string, force = false): Promise<DocumentoAcquisto[]> {
+  if (docCache[tipo] && !force) return docCache[tipo]!;
+  if (docInflight[tipo] && !force) return docInflight[tipo]!;
+  docInflight[tipo] = (async () => {
     const { data, error } = await supabase
       .from("documenti_acquisto" as any)
       .select("*")
       .eq("tipo", tipo)
       .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Error fetching documenti:", error);
-      return;
-    }
-    setDocumenti((data || []) as unknown as DocumentoAcquisto[]);
+    if (error) { console.error("Error fetching documenti:", error); docCache[tipo] = docCache[tipo] ?? []; docInflight[tipo] = undefined; return docCache[tipo]!; }
+    docCache[tipo] = (data || []) as unknown as DocumentoAcquisto[];
+    docInflight[tipo] = undefined;
+    docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
+    return docCache[tipo]!;
+  })();
+  return docInflight[tipo]!;
+}
+
+export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") {
+  const [documenti, setDocumenti] = useState<DocumentoAcquisto[]>(docCache[tipo] ?? []);
+  const [loading, setLoading] = useState(!docCache[tipo]);
+
+  const fetchDocumenti = useCallback(async () => {
+    const d = await loadDocumenti(tipo, true);
+    setDocumenti(d);
     setLoading(false);
   }, [tipo]);
 
-  useEffect(() => { fetchDocumenti(); }, [fetchDocumenti]);
+  useEffect(() => {
+    const cb = (d: DocumentoAcquisto[]) => setDocumenti(d);
+    (docSubs[tipo] ||= new Set()).add(cb);
+    if (docCache[tipo]) { setDocumenti(docCache[tipo]!); setLoading(false); }
+    else loadDocumenti(tipo).then((d) => { setDocumenti(d); setLoading(false); });
+    return () => { docSubs[tipo]?.delete(cb); };
+  }, [tipo]);
 
   /**
    * Upload PDF + run AI parse, return the prepared data WITHOUT inserting yet.

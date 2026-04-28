@@ -41,23 +41,44 @@ async function migrateLocalStorageToDb(links: ManualLink[]) {
   console.log(`[CommessaLinks] Migrated ${links.length} links from localStorage to DB`);
 }
 
+// ── Module-scope cache ──
+let linksCache: ManualLink[] | null = null;
+let linksInflight: Promise<ManualLink[]> | null = null;
+const linksSubs = new Set<(l: ManualLink[]) => void>();
+let migrationDone = false;
+
+async function ensureLinks(force = false): Promise<ManualLink[]> {
+  if (linksCache && !force) return linksCache;
+  if (linksInflight && !force) return linksInflight;
+  linksInflight = (async () => {
+    if (!migrationDone) {
+      const lsLinks = loadLinksFromLocalStorage();
+      if (lsLinks.length > 0) await migrateLocalStorageToDb(lsLinks);
+      migrationDone = true;
+    }
+    linksCache = await loadLinksFromDb();
+    linksInflight = null;
+    linksSubs.forEach((s) => s(linksCache!));
+    return linksCache;
+  })();
+  return linksInflight;
+}
+
 export function useCommessaLinks() {
-  const [links, setLinks] = useState<ManualLink[]>([]);
+  const [links, setLinks] = useState<ManualLink[]>(linksCache ?? []);
 
   const refresh = useCallback(async () => {
-    const dbLinks = await loadLinksFromDb();
-    setLinks(dbLinks);
+    const l = await ensureLinks(true);
+    setLinks(l);
   }, []);
 
   useEffect(() => {
-    (async () => {
-      const lsLinks = loadLinksFromLocalStorage();
-      if (lsLinks.length > 0) {
-        await migrateLocalStorageToDb(lsLinks);
-      }
-      await refresh();
-    })();
-  }, [refresh]);
+    const cb = (l: ManualLink[]) => setLinks(l);
+    linksSubs.add(cb);
+    if (linksCache) setLinks(linksCache);
+    else ensureLinks().then(setLinks);
+    return () => { linksSubs.delete(cb); };
+  }, []);
 
   const addLink = useCallback(async (link: ManualLink) => {
     const exists = links.some(
@@ -71,7 +92,8 @@ export function useCommessaLinks() {
       cig: link.cig,
     } as any, { onConflict: "invoice_key,invoice_type,cig" });
 
-    setLinks((prev) => [...prev, link]);
+    linksCache = [...(linksCache ?? []), link];
+    linksSubs.forEach((s) => s(linksCache!));
   }, [links]);
 
   const removeLink = useCallback(async (invoiceKey: string, invoiceType: "vendita" | "acquisto", cig: string) => {
@@ -82,9 +104,10 @@ export function useCommessaLinks() {
       .eq("invoice_type", invoiceType)
       .eq("cig", cig);
 
-    setLinks((prev) => prev.filter(
+    linksCache = (linksCache ?? []).filter(
       (l) => !(l.invoiceKey === invoiceKey && l.invoiceType === invoiceType && l.cig === cig)
-    ));
+    );
+    linksSubs.forEach((s) => s(linksCache!));
   }, []);
 
   const getLinksForCig = useCallback(
