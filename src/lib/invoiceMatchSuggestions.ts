@@ -18,16 +18,48 @@ function fuzzyMatch(a: string, b: string): boolean {
   return na.includes(nb) || nb.includes(na);
 }
 
-function dateDiffDays(d1: string, d2: string): number | null {
-  try {
-    const a = new Date(d1.split("/").reverse().join("-"));
-    const b = new Date(d2.split("/").reverse().join("-"));
-    if (isNaN(a.getTime()) || isNaN(b.getTime())) return null;
-    return Math.abs((a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24));
-  } catch {
-    return null;
+function parseDateMs(d: string): number | null {
+  if (!d) return null;
+  // dd/mm/yyyy
+  const parts = d.split("/");
+  if (parts.length === 3) {
+    const [dd, mm, yyyy] = parts;
+    const t = Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd));
+    return isNaN(t) ? null : t;
   }
+  const t = Date.parse(d);
+  return isNaN(t) ? null : t;
 }
+
+// Per-invoice precomputed cache (keyed by reference identity)
+const invoiceMetaCache = new WeakMap<object, {
+  nameNorm: string;
+  dateMs: number | null;
+  isNC: boolean;
+}>();
+
+function getInvoiceMeta(inv: SaleInvoice | PurchaseInvoice, tipo: "vendita" | "acquisto") {
+  let m = invoiceMetaCache.get(inv as unknown as object);
+  if (m) return m;
+  const invName = tipo === "vendita" ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
+  const tipoStr = ((inv as SaleInvoice).tipo || "").toLowerCase();
+  m = {
+    nameNorm: normalizeStr(invName || ""),
+    dateMs: parseDateMs(inv.data),
+    isNC: tipoStr.includes("nota") && tipoStr.includes("credito"),
+  };
+  invoiceMetaCache.set(inv as unknown as object, m);
+  return m;
+}
+
+// Result cache per (record, invoices ref, xmlMap size, tipo)
+const suggestionsCache = new WeakMap<XmlInvoiceRecord, {
+  invoicesRef: object;
+  invoicesLen: number;
+  xmlMapSize: number;
+  tipo: string;
+  result: MatchSuggestion[];
+}>();
 
 export function computeSuggestions(
   record: XmlInvoiceRecord,
@@ -36,24 +68,52 @@ export function computeSuggestions(
   tipo: "vendita" | "acquisto",
   maxResults = 5
 ): MatchSuggestion[] {
-  // Only suggest invoices not already matched to an XML
-  const available = invoices.filter((inv) => !xmlMap.has(`${inv.anno}-${inv.numero}`));
+  // Memoization: skip recompute when inputs haven't changed
+  const cached = suggestionsCache.get(record);
+  if (
+    cached &&
+    cached.invoicesRef === (invoices as unknown as object) &&
+    cached.invoicesLen === invoices.length &&
+    cached.xmlMapSize === xmlMap.size &&
+    cached.tipo === tipo
+  ) {
+    return cached.result;
+  }
+
+  const xmlNameRaw = tipo === "vendita" ? record.cessionario_denominazione : record.cedente_denominazione;
+  const xmlNameNorm = normalizeStr(xmlNameRaw || "");
+  const xmlDateMs = parseDateMs(record.data_fattura || "");
+  const xmlTipoDoc = (record as any).parsed_data?.tipoDocumento || "";
+  const xmlIsNC = xmlTipoDoc.toUpperCase() === "TD04";
+  const xmlImporto = record.importo_totale || 0;
 
   const results: MatchSuggestion[] = [];
 
-  for (const inv of available) {
+  for (const inv of invoices) {
+    // Skip already matched
+    if (xmlMap.has(`${inv.anno}-${inv.numero}`)) continue;
+
+    // Cheap prefilter: must share at least one strong signal
+    // (same year OR amount within 15% OR name overlap)
+    const sameYear = !!record.anno && inv.anno === record.anno;
+    const amtClose = xmlImporto && inv.totale
+      ? Math.abs(xmlImporto - inv.totale) / Math.max(inv.totale, 0.01) < 0.15
+      : false;
+    const meta = getInvoiceMeta(inv, tipo);
+    const nameOverlap = !!xmlNameNorm && !!meta.nameNorm &&
+      (xmlNameNorm.includes(meta.nameNorm) || meta.nameNorm.includes(xmlNameNorm));
+    if (!sameYear && !amtClose && !nameOverlap) continue;
+
     let score = 0;
     const reasons: string[] = [];
 
-    // Year match
-    if (record.anno && inv.anno === record.anno) {
+    if (sameYear) {
       score += 10;
       reasons.push("Stesso anno");
     }
 
-    // Amount similarity (±5%)
-    if (record.importo_totale && inv.totale) {
-      const diff = Math.abs(record.importo_totale - inv.totale) / Math.max(inv.totale, 0.01);
+    if (xmlImporto && inv.totale) {
+      const diff = Math.abs(xmlImporto - inv.totale) / Math.max(inv.totale, 0.01);
       if (diff < 0.01) {
         score += 40;
         reasons.push("Importo identico");
@@ -66,10 +126,8 @@ export function computeSuggestions(
       }
     }
 
-    // Date proximity
-    if (record.data_fattura && inv.data) {
-      const days = dateDiffDays(record.data_fattura, inv.data);
-      if (days !== null) {
+    if (xmlDateMs !== null && meta.dateMs !== null) {
+      const days = Math.abs((xmlDateMs - meta.dateMs) / 86400000);
         if (days === 0) {
           score += 20;
           reasons.push("Stessa data");
@@ -80,28 +138,19 @@ export function computeSuggestions(
           score += 5;
           reasons.push("Data entro 30gg");
         }
-      }
     }
 
-    // Name match
-    const xmlName = tipo === "vendita" ? record.cessionario_denominazione : record.cedente_denominazione;
-    const invName = tipo === "vendita" ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
-    if (xmlName && invName && fuzzyMatch(xmlName, invName)) {
+    if (nameOverlap) {
       score += 30;
       reasons.push(tipo === "vendita" ? "Stesso cliente" : "Stesso fornitore");
     }
 
-    // Document type match (fattura vs nota credito)
     if (tipo === "vendita") {
-      const xmlTipoDoc = (record as any).parsed_data?.tipoDocumento || "";
-      const xmlIsNC = xmlTipoDoc.toUpperCase() === "TD04";
-      const invIsNC = ((inv as SaleInvoice).tipo || "").toLowerCase().includes("nota") &&
-                      ((inv as SaleInvoice).tipo || "").toLowerCase().includes("credito");
-      if (xmlIsNC === invIsNC) {
+      if (xmlIsNC === meta.isNC) {
         score += 15;
         reasons.push(xmlIsNC ? "Entrambe NC" : "Entrambe fatture");
       } else {
-        score -= 20; // penalize type mismatch
+        score -= 20;
         reasons.push(xmlIsNC ? "XML è NC, fattura no" : "Fattura è NC, XML no");
       }
     }
@@ -124,5 +173,13 @@ export function computeSuggestions(
   }
 
   results.sort((a, b) => b.score - a.score);
-  return results.slice(0, maxResults);
+  const sliced = results.slice(0, maxResults);
+  suggestionsCache.set(record, {
+    invoicesRef: invoices as unknown as object,
+    invoicesLen: invoices.length,
+    xmlMapSize: xmlMap.size,
+    tipo,
+    result: sliced,
+  });
+  return sliced;
 }
