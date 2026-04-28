@@ -97,6 +97,9 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { isFs, toggle: toggleFs } = useFullscreen();
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
 
+  // Prefetch shared datasets once at app mount so navigating between pages is instant.
+  useEffect(() => { prefetchSharedData(); }, []);
+
   const toggleLock = useCallback(() => {
     setSidebarLocked(prev => {
       const next = !prev;
