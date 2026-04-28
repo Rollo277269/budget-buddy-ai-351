@@ -192,22 +192,32 @@ function findPurchaseMatch(
 }
 
 export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "acquisto" = "vendita") {
-  const [xmlRecords, setXmlRecords] = useState<XmlInvoiceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [xmlRecords, setXmlRecords] = useState<XmlInvoiceRecord[]>(xmlCache[tipo] ?? []);
+  const [loading, setLoading] = useState(!xmlCache[tipo]);
+
+  const loadOnce = useCallback(async (force = false): Promise<XmlInvoiceRecord[]> => {
+    if (xmlCache[tipo] && !force) return xmlCache[tipo]!;
+    if (xmlInflight[tipo] && !force) return xmlInflight[tipo]!;
+    xmlInflight[tipo] = (async () => {
+      const { data, error } = await supabase
+        .from("fatture_xml" as any)
+        .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at, numero_documento")
+        .eq("tipo", tipo)
+        .order("created_at", { ascending: false });
+      if (error) { console.error("Error fetching XML records:", error); xmlInflight[tipo] = undefined; return xmlCache[tipo] ?? []; }
+      xmlCache[tipo] = (data || []).map((r: any) => ({ ...r, parsed_data: null, numero_documento: r.numero_documento || "" })) as unknown as XmlInvoiceRecord[];
+      xmlInflight[tipo] = undefined;
+      (xmlSubs[tipo] ||= new Set()).forEach((s) => s(xmlCache[tipo]!));
+      return xmlCache[tipo]!;
+    })();
+    return xmlInflight[tipo]!;
+  }, [tipo]);
 
   const fetchRecords = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("fatture_xml" as any)
-      .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at, numero_documento")
-      .eq("tipo", tipo)
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Error fetching XML records:", error);
-      return;
-    }
-    setXmlRecords((data || []).map((r: any) => ({ ...r, parsed_data: null, numero_documento: r.numero_documento || "" })) as unknown as XmlInvoiceRecord[]);
+    const r = await loadOnce(true);
+    setXmlRecords(r);
     setLoading(false);
-  }, [tipo]);
+  }, [loadOnce]);
 
   const fetchParsedData = useCallback(async (id: string): Promise<FatturaPAData | null> => {
     const { data, error } = await supabase
@@ -219,7 +229,13 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     return (data as any).parsed_data as FatturaPAData | null;
   }, []);
 
-  useEffect(() => { fetchRecords(); }, [fetchRecords]);
+  useEffect(() => {
+    const cb = (r: XmlInvoiceRecord[]) => setXmlRecords(r);
+    (xmlSubs[tipo] ||= new Set()).add(cb);
+    if (xmlCache[tipo]) { setXmlRecords(xmlCache[tipo]!); setLoading(false); }
+    else loadOnce().then((r) => { setXmlRecords(r); setLoading(false); });
+    return () => { xmlSubs[tipo]?.delete(cb); };
+  }, [tipo, loadOnce]);
 
   const uploadXmlFiles = useCallback(async (files: File[], onProgress?: (done: number, total: number) => void) => {
     let uploaded = 0;
