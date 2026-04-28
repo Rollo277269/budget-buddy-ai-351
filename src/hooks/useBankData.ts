@@ -99,6 +99,7 @@ async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string)
       invoice_numero: rec.invoiceNumero,
     } as any);
   }
+  recCache = null;
 }
 
 async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: string) {
@@ -125,6 +126,7 @@ async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: str
       await supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId);
     }
   }
+  recCache = null;
 }
 
 function extractCIG(text: string): string {
@@ -695,6 +697,7 @@ async function insertMovementsToDb(movements: RawMovement[]) {
     cig: m.cig,
   }));
   const { data } = await supabase.from("bank_movements" as any).insert(rows as any).select("id");
+  movCache = null;
   return (data as any[] || []).map((d: any) => d.id as string);
 }
 
