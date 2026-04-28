@@ -189,6 +189,59 @@ export function CommessaDetailSheet({
   const [selectedXml, setSelectedXml] = useState<XmlInvoiceRecord | null>(null);
   const [xmlPickerInvoice, setXmlPickerInvoice] = useState<{ inv: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
 
+  // Riconciliazioni bancarie: pagamenti/incassi per ogni fattura, con la DATA del movimento.
+  // Mappa: invoice_type-anno-numero → array di { mese (YYYY-MM), importo }
+  const [reconByInvoice, setReconByInvoice] = useState<Map<string, Array<{ mese: string; importo: number }>>>(new Map());
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data: recs } = await supabase
+        .from("bank_reconciliations")
+        .select("invoice_type, invoice_anno, invoice_numero, movement_id");
+      if (!recs || cancelled) return;
+      const movIds = Array.from(new Set(recs.map((r: any) => r.movement_id).filter(Boolean)));
+      if (movIds.length === 0) {
+        setReconByInvoice(new Map());
+        return;
+      }
+      // Fetch movimenti in batches per evitare URL troppo lunghi
+      const movMap = new Map<string, { data: string; importo: number }>();
+      for (let i = 0; i < movIds.length; i += 200) {
+        const chunk = movIds.slice(i, i + 200);
+        const { data: movs } = await supabase
+          .from("bank_movements")
+          .select("id, data, importo")
+          .in("id", chunk);
+        movs?.forEach((m: any) => movMap.set(m.id, { data: m.data, importo: Number(m.importo) || 0 }));
+      }
+      const map = new Map<string, Array<{ mese: string; importo: number }>>();
+      // Conta quante fatture sono associate a ogni movimento per ripartire l'importo
+      const movInvoiceCount = new Map<string, number>();
+      recs.forEach((r: any) => {
+        if (!r.movement_id || r.invoice_anno == null || r.invoice_numero == null) return;
+        movInvoiceCount.set(r.movement_id, (movInvoiceCount.get(r.movement_id) || 0) + 1);
+      });
+      recs.forEach((r: any) => {
+        if (!r.movement_id || r.invoice_anno == null || r.invoice_numero == null) return;
+        const mov = movMap.get(r.movement_id);
+        if (!mov) return;
+        const parts = mov.data?.split("/");
+        if (!parts || parts.length !== 3) return;
+        const mese = `${parts[2]}-${parts[1].padStart(2, "0")}`;
+        const count = movInvoiceCount.get(r.movement_id) || 1;
+        const quota = Math.abs(mov.importo) / count;
+        const key = `${r.invoice_type}-${r.invoice_anno}-${r.invoice_numero}`;
+        const arr = map.get(key) || [];
+        arr.push({ mese, importo: quota });
+        map.set(key, arr);
+      });
+      if (!cancelled) setReconByInvoice(map);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
   const openXmlSheet = useCallback(async (record: XmlInvoiceRecord, type: "vendita" | "acquisto") => {
     const fetchFn = type === "vendita" ? fetchParsedVendita : fetchParsedAcquisto;
     const parsed = await fetchFn(record.id);
