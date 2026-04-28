@@ -484,7 +484,7 @@ function parseBank(rows: any[]): Omit<BankMovement, "matchedInvoices" | "matched
 // Compute a relevance score (0-100) for a movement-invoice pair
 export function scoreMatch(
   m: { importo: number; descrizione: string; cig: string },
-  inv: { totale: number; cig: string; numero: number; anno: number; partitaIva: string },
+  inv: { totale: number; cig: string; numero: number; anno: number; partitaIva: string; imponibile?: number; cassa?: number; ritenute?: number },
   name: string
 ): number {
   let score = 0;
@@ -495,8 +495,15 @@ export function scoreMatch(
     score += 40;
   }
 
-  // Amount match with graduated tolerance
-  const diff = Math.abs(inv.totale - absImporto);
+  // Amount match with graduated tolerance.
+  // Per professionisti/fornitori con ritenuta d'acconto il bonifico effettivo
+  // è imponibile + cassa - ritenute (importo "da pagare"), non il totale lordo.
+  const ritenute = inv.ritenute || 0;
+  const cassa = inv.cassa || 0;
+  const imponibile = inv.imponibile || 0;
+  const daPagare = ritenute > 0 ? Math.max(0, imponibile + cassa - ritenute) : inv.totale;
+  const candidates = [inv.totale, daPagare];
+  const diff = Math.min(...candidates.map((v) => Math.abs(v - absImporto)));
   if (diff < 0.02) score += 30;
   else if (diff < 1) score += 25;
   else if (absImporto > 0 && diff < absImporto * 0.01) score += 20;
