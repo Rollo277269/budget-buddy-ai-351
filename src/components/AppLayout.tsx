@@ -6,6 +6,14 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
 
+// Background prefetch of frequently used datasets so navigation between pages is instant.
+function prefetchSharedData() {
+  // Fire-and-forget; each loader has its own module-scope cache and dedup.
+  import("@/hooks/useInvoiceData").then(m => m.fetchInvoicesOnce?.()).catch(() => {});
+  import("@/hooks/useContiCorrenti").catch(() => {});
+  import("@/hooks/useCentri").then(m => { m.fetchCentriFromDb(); m.fetchCategorieFromDb(); }).catch(() => {});
+}
+
 const pageTitles: Record<string, string> = {
   "/": "Cruscotto",
   "/scadenzario": "Scadenzario",
