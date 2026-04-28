@@ -498,7 +498,8 @@ export function scoreMatch(
   // Amount match with graduated tolerance.
   // Per professionisti/fornitori con ritenuta d'acconto il bonifico effettivo
   // è imponibile + cassa - ritenute (importo "da pagare"), non il totale lordo.
-  const ritenute = inv.ritenute || 0;
+  // Le ritenute sono spesso memorizzate come valore negativo: usiamo il valore assoluto
+  const ritenute = Math.abs(inv.ritenute || 0);
   const cassa = inv.cassa || 0;
   const imponibile = inv.imponibile || 0;
   const imposta = (inv as any).imposta || 0;
