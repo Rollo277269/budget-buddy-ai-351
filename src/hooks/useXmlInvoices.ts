@@ -191,6 +191,14 @@ function findPurchaseMatch(
   return bestScore >= 40 ? bestMatch : null;
 }
 
+// ── Module-scope cache (per tipo) ──
+const xmlCache: Record<string, XmlInvoiceRecord[] | undefined> = {};
+const xmlInflight: Record<string, Promise<XmlInvoiceRecord[]> | undefined> = {};
+const xmlSubs: Record<string, Set<(r: XmlInvoiceRecord[]) => void>> = {};
+function notifyXmlSubs(tipo: string) {
+  if (xmlCache[tipo]) xmlSubs[tipo]?.forEach((s) => s(xmlCache[tipo]!));
+}
+
 export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "acquisto" = "vendita") {
   const [xmlRecords, setXmlRecords] = useState<XmlInvoiceRecord[]>(xmlCache[tipo] ?? []);
   const [loading, setLoading] = useState(!xmlCache[tipo]);
