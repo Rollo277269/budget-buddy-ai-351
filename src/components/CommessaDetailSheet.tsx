@@ -1130,7 +1130,7 @@ export function CommessaDetailSheet({
               <h2>Avanzamento Contratto</h2>
               <div className="pdf-progress-wrap">
                 <div className="pdf-progress-info">
-                  <span>Fatturato: {formatCurrency(data.totalVendite)}</span>
+                  <span>Fatturato: {formatCurrency(data.totalVenditeImponibile)}</span>
                   <span>Contratto: {formatCurrency(data.importoContratto)}</span>
                 </div>
                 <div className="pdf-progress-track">
@@ -1138,7 +1138,7 @@ export function CommessaDetailSheet({
                 </div>
                 <div className="pdf-progress-info">
                   <span style={{ fontWeight: 700 }}>{(data.percentualeFatturato || 0).toFixed(1)}%</span>
-                  <span>Residuo: {formatCurrency(data.importoContratto - data.totalVendite)}</span>
+                  <span>Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibile)}</span>
                 </div>
               </div>
             </section>
