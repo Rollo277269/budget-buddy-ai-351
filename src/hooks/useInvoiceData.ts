@@ -323,6 +323,13 @@ export function invalidateInvoiceCache() {
   loadPromise = null;
 }
 
+export async function prefetchInvoices(): Promise<void> {
+  if (cachedSales && cachedPurchases) return;
+  if (loadPromise) return loadPromise;
+  loadPromise = loadAll();
+  return loadPromise;
+}
+
 async function loadAll() {
   // Try DB first
   const [dbSales, dbPurchases] = await Promise.all([loadSalesFromDb(), loadPurchasesFromDb()]);
