@@ -694,7 +694,7 @@ export function CommessaDetailSheet({
                   </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Fatturato: {formatCurrency(data.totalVendite)}</span>
+                      <span>Fatturato: {formatCurrency(data.totalVenditeImponibile)}</span>
                       <span>Contratto: {formatCurrency(data.importoContratto)}</span>
                     </div>
                     <div className="h-4 rounded-full bg-muted overflow-hidden">
