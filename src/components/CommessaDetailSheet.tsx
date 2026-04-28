@@ -705,7 +705,7 @@ export function CommessaDetailSheet({
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="font-mono font-semibold text-primary">{(data.percentualeFatturato || 0).toFixed(1)}%</span>
-                      <span className="text-muted-foreground">Residuo: {formatCurrency(data.importoContratto - data.totalVendite)}</span>
+                      <span className="text-muted-foreground">Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibile)}</span>
                     </div>
                     {(data.percentualeFatturato || 0) > 100 && (
                       <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-500/10 rounded-lg px-3 py-2">
