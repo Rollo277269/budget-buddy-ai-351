@@ -289,10 +289,20 @@ export function CommessaDetailSheet({
     const linkedSales = [...autoSales, ...manualSales];
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
-    const totalVendite = linkedSales.reduce((s, i) => s + i.totale, 0);
+    // Totali con IVA (lordi)
+    const totalVendite = linkedSales.reduce((s, i) => s + (i.totale || 0), 0);
     const totalAcquisti = linkedPurchases.reduce((s, i) => s + purchaseCost(i), 0);
+    // Totali imponibile (netti, senza IVA). Per acquisti: imponibile + cassa (esclude IVA e ritenute).
+    const totalVenditeImponibile = linkedSales.reduce((s, i) => s + (i.imponibile || 0), 0);
+    const totalAcquistiImponibile = linkedPurchases.reduce((s, p) => {
+      const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
+      const base = (p.imponibile || 0) + (p.cassa || 0);
+      return s + (isCreditNote ? -Math.abs(base) : base);
+    }, 0);
     const saldo = totalVendite - totalAcquisti;
-    const margine = totalVendite > 0 ? (saldo / totalVendite) * 100 : 0;
+    // Il margine si calcola sull'imponibile (al netto di IVA)
+    const saldoImponibile = totalVenditeImponibile - totalAcquistiImponibile;
+    const margine = totalVenditeImponibile > 0 ? (saldoImponibile / totalVenditeImponibile) * 100 : 0;
 
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
@@ -382,7 +392,9 @@ export function CommessaDetailSheet({
     });
 
     return {
-      linkedSales, linkedPurchases, totalVendite, totalAcquisti, saldo, margine,
+      linkedSales, linkedPurchases, totalVendite, totalAcquisti,
+      totalVenditeImponibile, totalAcquistiImponibile, saldoImponibile,
+      saldo, margine,
       cssr, importoContratto, percentualeFatturato,
       allLinkedSaleKeys, allLinkedPurchaseKeys,
       autoSaleKeys, autoPurchaseKeys,
