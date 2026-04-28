@@ -48,6 +48,9 @@ export interface Reconciliation {
 }
 
 async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
+  if (recCache) return recCache;
+  if (recInflight) return recInflight;
+  recInflight = (async () => {
   const all: any[] = [];
   const PAGE = 1000;
   let offset = 0;
@@ -62,14 +65,25 @@ async function loadReconciliationsFromDb(): Promise<Reconciliation[]> {
     if (data.length < PAGE) break;
     offset += PAGE;
   }
-  return all.map((d: any) => ({
+    recCache = all.map((d: any) => ({
     movementId: d.movement_id,
     invoiceType: d.invoice_type ?? (d.documento_id ? "documento" : ""),
     invoiceAnno: d.invoice_anno ?? 0,
     invoiceNumero: d.invoice_numero ?? 0,
     documentoId: d.documento_id ?? undefined,
   }));
+    recInflight = null;
+    return recCache;
+  })();
+  return recInflight;
 }
+
+// Module-scope caches for bank data
+let recCache: Reconciliation[] | null = null;
+let recInflight: Promise<Reconciliation[]> | null = null;
+let movCache: RawMovement[] | null = null;
+let movInflight: Promise<RawMovement[]> | null = null;
+function invalidateBankCache() { recCache = null; movCache = null; }
 
 async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string) {
   if (rec.documentoId) {
@@ -628,6 +642,9 @@ function autoMatch(
 }
 
 async function loadMovementsFromDb(): Promise<RawMovement[]> {
+  if (movCache) return movCache;
+  if (movInflight) return movInflight;
+  movInflight = (async () => {
   const all: any[] = [];
   const PAGE = 1000;
   let offset = 0;
@@ -643,7 +660,11 @@ async function loadMovementsFromDb(): Promise<RawMovement[]> {
     if (data.length < PAGE) break;
     offset += PAGE;
   }
-  return all.map(mapMovement);
+    movCache = all.map(mapMovement);
+    movInflight = null;
+    return movCache;
+  })();
+  return movInflight;
 }
 
 function mapMovement(d: any): RawMovement {
