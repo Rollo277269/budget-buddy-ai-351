@@ -392,7 +392,26 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                             <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}%</Badge>
                             }
                           </div>
-                          <span className={`text-xs font-mono font-medium ${isVendita ? "text-income" : "text-expense"}`}>{formatCurrency(inv.totale)}</span>
+                          {(() => {
+                            if (isVendita) {
+                              return <span className="text-xs font-mono font-medium text-income">{formatCurrency(inv.totale)}</span>;
+                            }
+                            const p = inv as PurchaseInvoice;
+                            const hasRitenute = (p.ritenute || 0) > 0;
+                            const daPagare = hasRitenute
+                              ? Math.max(0, p.imponibile + p.cassa - p.ritenute)
+                              : p.totale;
+                            return (
+                              <div className="flex flex-col items-end leading-tight">
+                                <span className="text-xs font-mono font-medium text-expense">{formatCurrency(daPagare)}</span>
+                                {hasRitenute && (
+                                  <span className="text-[9px] font-mono text-muted-foreground/80" title="Tot. lordo fattura">
+                                    lordo {formatCurrency(p.totale)}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="flex items-center gap-3 ml-6">
                           <span className="text-[10px] text-muted-foreground">{inv.data}</span>
