@@ -307,7 +307,7 @@ export function CommessaDetailSheet({
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
     const percentualeFatturato = importoContratto && !isNaN(importoContratto) && importoContratto > 0
-      ? (totalVendite / importoContratto) * 100 : null;
+      ? (totalVenditeImponibile / importoContratto) * 100 : null;
 
     const allLinkedSaleKeys = new Set([
       ...autoSales.map((s) => invoiceKey(s.anno, s.numero)),
