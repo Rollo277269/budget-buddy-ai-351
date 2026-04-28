@@ -126,7 +126,9 @@ const ListaCommessePage = () => {
       if (s.cig) {
         const e = cigCounts.get(s.cig) || { fv: 0, fa: 0, tv: 0, ta: 0 };
         e.fv++;
-        e.tv += s.totale || 0;
+        const isNC = (s.tipo || "").toLowerCase().includes("nota di credito");
+        const signed = (isNC ? -1 : 1) * Math.abs(s.totale || 0);
+        e.tv += signed;
         cigCounts.set(s.cig, e);
       }
     });
@@ -134,7 +136,10 @@ const ListaCommessePage = () => {
       if (p.cig) {
         const e = cigCounts.get(p.cig) || { fv: 0, fa: 0, tv: 0, ta: 0 };
         e.fa++;
-        e.ta += p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
+        const base = p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
+        const isNC = (p.tipo || "").toLowerCase().includes("nota di credito");
+        const signed = (isNC ? -1 : 1) * Math.abs(base);
+        e.ta += signed;
         cigCounts.set(p.cig, e);
       }
     });
