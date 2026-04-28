@@ -105,6 +105,7 @@ async function saveReconciliationToDb(rec: Reconciliation, movementDbId: string)
 async function deleteReconciliationFromDb(movementDbId: string, invoiceKey?: string) {
   if (!invoiceKey) {
     await supabase.from("bank_reconciliations" as any).delete().eq("movement_id", movementDbId);
+    recCache = null;
     return;
   }
   // Parse invoiceKey to delete specific reconciliation
