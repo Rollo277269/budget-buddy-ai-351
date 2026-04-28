@@ -510,16 +510,16 @@ export function CommessaDetailSheet({
             <KpiCard
               icon={ArrowUpRight}
               label="Totale Vendite"
-              value={formatCurrency(data.totalVendite)}
-              sub={`${data.linkedSales.length} fatture`}
+              value={formatCurrency(data.totalVenditeImponibile)}
+              sub={`Imp. • IVA incl. ${formatCurrency(data.totalVendite)} • ${data.linkedSales.length} fatture`}
               color="text-income"
               iconBg="bg-income/10"
             />
             <KpiCard
               icon={ArrowDownRight}
               label="Totale Acquisti"
-              value={formatCurrency(data.totalAcquisti)}
-              sub={`${data.linkedPurchases.length} fatture`}
+              value={formatCurrency(data.totalAcquistiImponibile)}
+              sub={`Imp. • IVA incl. ${formatCurrency(data.totalAcquisti)} • ${data.linkedPurchases.length} fatture`}
               color="text-expense"
               iconBg="bg-expense/10"
             />
