@@ -307,7 +307,7 @@ export function CommessaDetailSheet({
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
     const percentualeFatturato = importoContratto && !isNaN(importoContratto) && importoContratto > 0
-      ? (totalVendite / importoContratto) * 100 : null;
+      ? (totalVenditeImponibile / importoContratto) * 100 : null;
 
     const allLinkedSaleKeys = new Set([
       ...autoSales.map((s) => invoiceKey(s.anno, s.numero)),
@@ -694,7 +694,7 @@ export function CommessaDetailSheet({
                   </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Fatturato: {formatCurrency(data.totalVendite)}</span>
+                      <span>Fatturato: {formatCurrency(data.totalVenditeImponibile)}</span>
                       <span>Contratto: {formatCurrency(data.importoContratto)}</span>
                     </div>
                     <div className="h-4 rounded-full bg-muted overflow-hidden">
@@ -705,7 +705,7 @@ export function CommessaDetailSheet({
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="font-mono font-semibold text-primary">{(data.percentualeFatturato || 0).toFixed(1)}%</span>
-                      <span className="text-muted-foreground">Residuo: {formatCurrency(data.importoContratto - data.totalVendite)}</span>
+                      <span className="text-muted-foreground">Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibile)}</span>
                     </div>
                     {(data.percentualeFatturato || 0) > 100 && (
                       <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-500/10 rounded-lg px-3 py-2">
@@ -1130,7 +1130,7 @@ export function CommessaDetailSheet({
               <h2>Avanzamento Contratto</h2>
               <div className="pdf-progress-wrap">
                 <div className="pdf-progress-info">
-                  <span>Fatturato: {formatCurrency(data.totalVendite)}</span>
+                  <span>Fatturato: {formatCurrency(data.totalVenditeImponibile)}</span>
                   <span>Contratto: {formatCurrency(data.importoContratto)}</span>
                 </div>
                 <div className="pdf-progress-track">
@@ -1138,7 +1138,7 @@ export function CommessaDetailSheet({
                 </div>
                 <div className="pdf-progress-info">
                   <span style={{ fontWeight: 700 }}>{(data.percentualeFatturato || 0).toFixed(1)}%</span>
-                  <span>Residuo: {formatCurrency(data.importoContratto - data.totalVendite)}</span>
+                  <span>Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibile)}</span>
                 </div>
               </div>
             </section>
