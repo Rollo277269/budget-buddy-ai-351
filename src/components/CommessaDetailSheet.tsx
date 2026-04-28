@@ -51,7 +51,10 @@ function invoiceKey(anno: number, numero: number) {
 
 /** Per fatture di professionisti (con cassa previdenza), il costo effettivo è imponibile + cassa */
 function purchaseCost(p: PurchaseInvoice): number {
-  return p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
+  const base = p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
+  // Le note di credito fornitore riducono il costo: importo negativo
+  const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
+  return isCreditNote ? -Math.abs(base) : base;
 }
 
 interface Commessa {
