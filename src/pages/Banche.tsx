@@ -217,8 +217,9 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
           // Per fornitori con ritenute il bonifico riguarda l'importo da pagare
           if (type === "acquisto") {
             const p = inv as PurchaseInvoice;
-            const daPagare = p.ritenute > 0
-              ? Math.max(0, p.imponibile + p.cassa + p.imposta - p.ritenute)
+            const ritAbs = Math.abs(p.ritenute || 0);
+            const daPagare = ritAbs > 0
+              ? Math.max(0, p.imponibile + p.cassa + p.imposta - ritAbs)
               : p.totale;
             total += daPagare;
           } else {
@@ -397,9 +398,10 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                               return <span className="text-xs font-mono font-medium text-income">{formatCurrency(inv.totale)}</span>;
                             }
                             const p = inv as PurchaseInvoice;
-                            const hasRitenute = (p.ritenute || 0) > 0;
+                            const ritAbs = Math.abs(p.ritenute || 0);
+                            const hasRitenute = ritAbs > 0;
                             const daPagare = hasRitenute
-                              ? Math.max(0, p.imponibile + p.cassa + p.imposta - p.ritenute)
+                              ? Math.max(0, p.imponibile + p.cassa + p.imposta - ritAbs)
                               : p.totale;
                             return (
                               <div className="flex flex-col items-end leading-tight">
