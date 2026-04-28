@@ -319,9 +319,15 @@ export function CommessaDetailSheet({
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
         const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
         e.vendite += s.totale;
-        if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) e.incassato += s.totale;
         monthlyMap.set(key, e);
       }
+      // Incassi: usa la data del movimento bancario riconciliato
+      const recs = reconByInvoice.get(`vendita-${s.anno}-${s.numero}`);
+      recs?.forEach((r) => {
+        const e = monthlyMap.get(r.mese) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
+        e.incassato += r.importo;
+        monthlyMap.set(r.mese, e);
+      });
     });
     linkedPurchases.forEach((p) => {
       const parts = p.data?.split("/");
@@ -329,9 +335,15 @@ export function CommessaDetailSheet({
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
         const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
         e.acquisti += purchaseCost(p);
-        if (p.stato?.toLowerCase().includes("pagat")) e.pagato += purchaseCost(p);
         monthlyMap.set(key, e);
       }
+      // Pagamenti: usa la data del movimento bancario riconciliato
+      const recs = reconByInvoice.get(`acquisto-${p.anno}-${p.numero}`);
+      recs?.forEach((r) => {
+        const e = monthlyMap.get(r.mese) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
+        e.pagato += r.importo;
+        monthlyMap.set(r.mese, e);
+      });
     });
     const monthlyData = Array.from(monthlyMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
