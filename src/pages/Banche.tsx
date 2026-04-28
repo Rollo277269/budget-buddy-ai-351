@@ -218,7 +218,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
           if (type === "acquisto") {
             const p = inv as PurchaseInvoice;
             const daPagare = p.ritenute > 0
-              ? Math.max(0, p.imponibile + p.cassa - p.ritenute)
+              ? Math.max(0, p.imponibile + p.cassa + p.imposta - p.ritenute)
               : p.totale;
             total += daPagare;
           } else {
@@ -399,7 +399,7 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                             const p = inv as PurchaseInvoice;
                             const hasRitenute = (p.ritenute || 0) > 0;
                             const daPagare = hasRitenute
-                              ? Math.max(0, p.imponibile + p.cassa - p.ritenute)
+                              ? Math.max(0, p.imponibile + p.cassa + p.imposta - p.ritenute)
                               : p.totale;
                             return (
                               <div className="flex flex-col items-end leading-tight">
