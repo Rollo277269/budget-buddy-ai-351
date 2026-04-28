@@ -39,41 +39,22 @@ function parseIndirizzo(raw: any): Indirizzo {
 }
 
 export function useRubrica() {
-  const [contatti, setContatti] = useState<ContattoRubrica[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [contatti, setContatti] = useState<ContattoRubrica[]>(rubricaCache ?? []);
+  const [loading, setLoading] = useState(!rubricaCache);
 
   const fetchContatti = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("rubrica" as any)
-      .select("*")
-      .order("denominazione", { ascending: true });
-    if (error) {
-      console.error("Error loading rubrica:", error);
-      setLoading(false);
-      return;
-    }
-    setContatti(
-      (data as any[] || []).map((d: any) => ({
-        id: d.id,
-        denominazione: d.denominazione,
-        tipo: d.tipo as ContattoRubrica["tipo"],
-        partita_iva: d.partita_iva || "",
-        email: d.email || "",
-        pec: d.pec || "",
-        codice_sdi: d.codice_sdi || "",
-        telefono: d.telefono || "",
-        indirizzo: d.indirizzo || "",
-        note: d.note || "",
-        sede_legale: parseIndirizzo(d.sede_legale),
-        sede_operativa: parseIndirizzo(d.sede_operativa),
-      }))
-    );
+    const c = await loadRubrica(true);
+    setContatti(c);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchContatti();
-  }, [fetchContatti]);
+    const cb = (c: ContattoRubrica[]) => setContatti(c);
+    rubricaSubs.add(cb);
+    if (rubricaCache) { setContatti(rubricaCache); setLoading(false); }
+    else loadRubrica().then((c) => { setContatti(c); setLoading(false); });
+    return () => { rubricaSubs.delete(cb); };
+  }, []);
 
   const saveContatto = useCallback(
     async (contatto: ContattoRubrica) => {
