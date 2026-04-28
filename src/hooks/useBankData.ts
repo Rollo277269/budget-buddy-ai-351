@@ -501,7 +501,11 @@ export function scoreMatch(
   const ritenute = inv.ritenute || 0;
   const cassa = inv.cassa || 0;
   const imponibile = inv.imponibile || 0;
-  const daPagare = ritenute > 0 ? Math.max(0, imponibile + cassa - ritenute) : inv.totale;
+  const imposta = (inv as any).imposta || 0;
+  // Importo "da pagare" al fornitore: imponibile + cassa + IVA - ritenute
+  const daPagare = ritenute > 0
+    ? Math.max(0, imponibile + cassa + imposta - ritenute)
+    : inv.totale;
   const candidates = [inv.totale, daPagare];
   const diff = Math.min(...candidates.map((v) => Math.abs(v - absImporto)));
   if (diff < 0.02) score += 30;
