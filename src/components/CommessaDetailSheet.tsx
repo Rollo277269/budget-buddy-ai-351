@@ -289,9 +289,13 @@ export function CommessaDetailSheet({
     const linkedSales = [...autoSales, ...manualSales];
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
-    // Totali con IVA (lordi)
+    // Totali IVA inclusa (lordi, prima delle ritenute). Per acquisti: imponibile + cassa + IVA.
     const totalVendite = linkedSales.reduce((s, i) => s + (i.totale || 0), 0);
-    const totalAcquisti = linkedPurchases.reduce((s, i) => s + purchaseCost(i), 0);
+    const totalAcquisti = linkedPurchases.reduce((s, p) => {
+      const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
+      const base = (p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0);
+      return s + (isCreditNote ? -Math.abs(base) : base);
+    }, 0);
     // Totali imponibile (netti, senza IVA). Per acquisti: imponibile + cassa (esclude IVA e ritenute).
     const totalVenditeImponibile = linkedSales.reduce((s, i) => s + (i.imponibile || 0), 0);
     const totalAcquistiImponibile = linkedPurchases.reduce((s, p) => {
