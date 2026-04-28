@@ -374,6 +374,9 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
                             {!isVendita && xmlNumDoc && (
                               <span className="text-[10px] font-mono text-muted-foreground">N° forn: {xmlNumDoc}</span>
                             )}
+                            {!isVendita && !xmlNumDoc && (
+                              <span className="text-[10px] font-mono text-muted-foreground/60">N° forn: —</span>
+                            )}
                             {score >= 35 &&
                             <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/50 text-primary">{score}%</Badge>
                             }
