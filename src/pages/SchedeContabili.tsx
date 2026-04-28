@@ -117,6 +117,8 @@ function buildRows(
       const d = parseDate(s.data);
       const reconKey = `vendita-${s.anno}-${s.numero}`;
       const incassato = reconAmountsMap.get(reconKey) || 0;
+      const isNC = (s.tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isNC ? -1 : 1;
       const stato = incassato >= Math.abs(s.totale) - 0.01
         ? "Incassata"
         : incassato > 0
@@ -125,8 +127,10 @@ function buildRows(
       entries.push({
         data: s.data, dataSort: d ? d.getTime() : 0,
         numero: `${s.numero}/${s.anno}`, descrizione: s.descrizione || s.cliente,
-        tipo: "vendita", dare: s.totale, avere: 0, stato,
-        cig: s.cig, scadenza: s.scadenza, imponibile: s.imponibile, imposta: s.imposta,
+        tipo: "vendita", dare: sign * Math.abs(s.totale), avere: 0, stato,
+        cig: s.cig, scadenza: s.scadenza,
+        imponibile: sign * Math.abs(s.imponibile),
+        imposta: sign * Math.abs(s.imposta),
         incassato,
       });
     });
@@ -135,6 +139,8 @@ function buildRows(
       const d = parseDate(p.data);
       const reconKey = `acquisto-${p.anno}-${p.numero}`;
       const incassato = reconAmountsMap.get(reconKey) || 0;
+      const isNC = (p.tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isNC ? -1 : 1;
       const stato = incassato >= Math.abs(p.totale) - 0.01
         ? "Pagata"
         : incassato > 0
@@ -143,8 +149,10 @@ function buildRows(
       entries.push({
         data: p.data, dataSort: d ? d.getTime() : 0,
         numero: `${p.numero}/${p.anno}`, descrizione: p.descrizione || p.fornitore,
-        tipo: "acquisto", dare: 0, avere: p.totale, stato,
-        cig: p.cig, scadenza: p.scadenza, imponibile: p.imponibile, imposta: p.imposta,
+        tipo: "acquisto", dare: 0, avere: sign * Math.abs(p.totale), stato,
+        cig: p.cig, scadenza: p.scadenza,
+        imponibile: sign * Math.abs(p.imponibile),
+        imposta: sign * Math.abs(p.imposta),
         incassato,
       });
     });
