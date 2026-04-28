@@ -213,7 +213,18 @@ function ReconcileSheet({ movement, open, onOpenChange, sales, purchases, docume
         const [type, anno, numero] = key.split("-");
         const list = type === "vendita" ? sales : purchases;
         const inv = list.find((i) => i.anno === Number(anno) && i.numero === Number(numero));
-        if (inv) total += inv.totale;
+        if (inv) {
+          // Per fornitori con ritenute il bonifico riguarda l'importo da pagare
+          if (type === "acquisto") {
+            const p = inv as PurchaseInvoice;
+            const daPagare = p.ritenute > 0
+              ? Math.max(0, p.imponibile + p.cassa - p.ritenute)
+              : p.totale;
+            total += daPagare;
+          } else {
+            total += inv.totale;
+          }
+        }
       }
     }
     return total;
