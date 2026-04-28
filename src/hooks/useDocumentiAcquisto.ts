@@ -33,24 +33,22 @@ export interface PreparedDocumento {
 }
 
 export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") {
-  const [documenti, setDocumenti] = useState<DocumentoAcquisto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [documenti, setDocumenti] = useState<DocumentoAcquisto[]>(docCache[tipo] ?? []);
+  const [loading, setLoading] = useState(!docCache[tipo]);
 
   const fetchDocumenti = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("documenti_acquisto" as any)
-      .select("*")
-      .eq("tipo", tipo)
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Error fetching documenti:", error);
-      return;
-    }
-    setDocumenti((data || []) as unknown as DocumentoAcquisto[]);
+    const d = await loadDocumenti(tipo, true);
+    setDocumenti(d);
     setLoading(false);
   }, [tipo]);
 
-  useEffect(() => { fetchDocumenti(); }, [fetchDocumenti]);
+  useEffect(() => {
+    const cb = (d: DocumentoAcquisto[]) => setDocumenti(d);
+    (docSubs[tipo] ||= new Set()).add(cb);
+    if (docCache[tipo]) { setDocumenti(docCache[tipo]!); setLoading(false); }
+    else loadDocumenti(tipo).then((d) => { setDocumenti(d); setLoading(false); });
+    return () => { docSubs[tipo]?.delete(cb); };
+  }, [tipo]);
 
   /**
    * Upload PDF + run AI parse, return the prepared data WITHOUT inserting yet.

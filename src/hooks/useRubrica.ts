@@ -38,6 +38,41 @@ function parseIndirizzo(raw: any): Indirizzo {
   };
 }
 
+// ── Module-scope cache ──
+let rubricaCache: ContattoRubrica[] | null = null;
+let rubricaInflight: Promise<ContattoRubrica[]> | null = null;
+const rubricaSubs = new Set<(c: ContattoRubrica[]) => void>();
+
+async function loadRubrica(force = false): Promise<ContattoRubrica[]> {
+  if (rubricaCache && !force) return rubricaCache;
+  if (rubricaInflight && !force) return rubricaInflight;
+  rubricaInflight = (async () => {
+    const { data, error } = await supabase
+      .from("rubrica" as any)
+      .select("*")
+      .order("denominazione", { ascending: true });
+    if (error) { console.error("Error loading rubrica:", error); rubricaCache = rubricaCache ?? []; rubricaInflight = null; return rubricaCache; }
+    rubricaCache = (data as any[] || []).map((d: any) => ({
+      id: d.id,
+      denominazione: d.denominazione,
+      tipo: d.tipo as ContattoRubrica["tipo"],
+      partita_iva: d.partita_iva || "",
+      email: d.email || "",
+      pec: d.pec || "",
+      codice_sdi: d.codice_sdi || "",
+      telefono: d.telefono || "",
+      indirizzo: d.indirizzo || "",
+      note: d.note || "",
+      sede_legale: parseIndirizzo(d.sede_legale),
+      sede_operativa: parseIndirizzo(d.sede_operativa),
+    }));
+    rubricaInflight = null;
+    rubricaSubs.forEach((s) => s(rubricaCache!));
+    return rubricaCache;
+  })();
+  return rubricaInflight;
+}
+
 export function useRubrica() {
   const [contatti, setContatti] = useState<ContattoRubrica[]>(rubricaCache ?? []);
   const [loading, setLoading] = useState(!rubricaCache);
