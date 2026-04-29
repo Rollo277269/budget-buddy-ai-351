@@ -58,6 +58,17 @@ function purchaseCost(p: PurchaseInvoice): number {
   return isCreditNote ? -Math.abs(base) : base;
 }
 
+/** Le note di credito vendita riducono il fatturato: importo negativo */
+function isSaleCreditNote(s: SaleInvoice): boolean {
+  return (s.tipo || "").toLowerCase().includes("nota di credito");
+}
+function saleTotale(s: SaleInvoice): number {
+  return isSaleCreditNote(s) ? -Math.abs(s.totale || 0) : (s.totale || 0);
+}
+function saleImponibile(s: SaleInvoice): number {
+  return isSaleCreditNote(s) ? -Math.abs(s.imponibile || 0) : (s.imponibile || 0);
+}
+
 interface Commessa {
   numero: string | number;
   oggetto: string;
@@ -290,14 +301,14 @@ export function CommessaDetailSheet({
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
     // Totali IVA inclusa (lordi, prima delle ritenute). Per acquisti: imponibile + cassa + IVA.
-    const totalVendite = linkedSales.reduce((s, i) => s + (i.totale || 0), 0);
+    const totalVendite = linkedSales.reduce((s, i) => s + saleTotale(i), 0);
     const totalAcquisti = linkedPurchases.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0);
       return s + (isCreditNote ? -Math.abs(base) : base);
     }, 0);
     // Totali imponibile (netti, senza IVA). Per acquisti: imponibile + cassa (esclude IVA e ritenute).
-    const totalVenditeImponibile = linkedSales.reduce((s, i) => s + (i.imponibile || 0), 0);
+    const totalVenditeImponibile = linkedSales.reduce((s, i) => s + saleImponibile(i), 0);
     const totalAcquistiImponibile = linkedPurchases.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0);
@@ -332,7 +343,7 @@ export function CommessaDetailSheet({
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
         const e = monthlyMap.get(key) || { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
-        e.vendite += s.totale;
+        e.vendite += saleTotale(s);
         monthlyMap.set(key, e);
       }
       // Incassi: usa la data del movimento bancario riconciliato
@@ -386,8 +397,9 @@ export function CommessaDetailSheet({
     const statusSales = { pagata: 0, nonPagata: 0 };
     const statusPurchases = { pagata: 0, nonPagata: 0 };
     linkedSales.forEach((s) => {
-      if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) statusSales.pagata += s.totale;
-      else statusSales.nonPagata += s.totale;
+      const amt = saleTotale(s);
+      if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) statusSales.pagata += amt;
+      else statusSales.nonPagata += amt;
     });
     linkedPurchases.forEach((p) => {
       const cost = purchaseCost(p);
@@ -438,7 +450,7 @@ export function CommessaDetailSheet({
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : item.totale;
+      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : saleTotale(item as SaleInvoice);
       agg.set(label, (agg.get(label) || 0) + amount);
     });
     return Array.from(agg.entries())
@@ -1532,7 +1544,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     linkedSales.forEach((s) => {
       const codice = ricavoMap[`${s.anno}-${s.numero}`];
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + s.totale);
+      map.set(label, (map.get(label) || 0) + saleTotale(s));
     });
     return Array.from(map.entries())
       .map(([name, value]) => ({ name, value }))
@@ -1753,7 +1765,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                <span className="text-muted-foreground ml-2">{counterpart}</span>
                                <Eye className="h-3 w-3 inline ml-1.5 text-muted-foreground/50" />
                              </TableCell>
-                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : inv.totale)}</TableCell>
+                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : saleTotale(inv as SaleInvoice))}</TableCell>
                              <TableCell colSpan={2} onClick={(e) => e.stopPropagation()}>
                                <CentroCell
                                  invoiceKey={key}
@@ -2062,11 +2074,11 @@ function InvoiceList({
                 counterpart: <TableCell key="c" className="text-xs max-w-[180px] truncate">{counterpart}</TableCell>,
                 descrizione: <TableCell key="desc" className="text-xs max-w-[300px] whitespace-normal break-words leading-snug py-1">{inv.descrizione || "—"}</TableCell>,
                 stato: <TableCell key="s"><StatoBadge stato={inv.stato} /></TableCell>,
-                imponibile: <TableCell key="imp" className="text-xs font-mono text-right">{formatCurrency(inv.imponibile)}</TableCell>,
+                imponibile: <TableCell key="imp" className={`text-xs font-mono text-right ${type === "vendita" && isSaleCreditNote(inv as SaleInvoice) ? "text-destructive" : ""}`}>{formatCurrency(type === "vendita" ? saleImponibile(inv as SaleInvoice) : inv.imponibile)}</TableCell>,
                 cassa: <TableCell key="cassa" className="text-xs font-mono text-right">{(inv as PurchaseInvoice).cassa ? formatCurrency((inv as PurchaseInvoice).cassa) : "—"}</TableCell>,
                 imposta: <TableCell key="iva" className="text-xs font-mono text-right">{formatCurrency(inv.imposta)}</TableCell>,
                 ritenute: <TableCell key="rit" className="text-xs font-mono text-right">{(inv as PurchaseInvoice).ritenute ? formatCurrency((inv as PurchaseInvoice).ritenute) : "—"}</TableCell>,
-                totale: <TableCell key="tot" className="text-xs font-mono text-right font-semibold">{formatCurrency(inv.totale)}</TableCell>,
+                totale: <TableCell key="tot" className={`text-xs font-mono text-right font-semibold ${type === "vendita" && isSaleCreditNote(inv as SaleInvoice) ? "text-destructive" : ""}`}>{formatCurrency(type === "vendita" ? saleTotale(inv as SaleInvoice) : inv.totale)}</TableCell>,
                 xml: (
                   <TableCell key="xml" onClick={(e) => e.stopPropagation()}>
                     {xmlRecord ? (
