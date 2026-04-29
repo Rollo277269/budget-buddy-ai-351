@@ -21,6 +21,20 @@ type ViewMode = "month" | "week" | "day";
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 const MONTH_NAMES = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 
+const HOUR_START = 7;
+const HOUR_END = 20;
+const HOUR_HEIGHT = 40;
+const HOURS = Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => HOUR_START + i);
+
+function eventHour(ev: CalendarEvent): number {
+  const d = ev.scadenzaDate;
+  if (!d) return 9;
+  const h = d.getHours();
+  const m = d.getMinutes();
+  if (h === 0 && m === 0) return 9;
+  return h + m / 60;
+}
+
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
