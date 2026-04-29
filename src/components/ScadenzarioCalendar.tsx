@@ -166,6 +166,38 @@ export function ScadenzarioCalendar({ events }: Props) {
 
   const today = new Date();
 
+  const renderHourGutter = () => (
+    <div className="border-r bg-muted/20">
+      <div className="h-6 border-b" />
+      {HOURS.map((h) => (
+        <div key={h} style={{ height: HOUR_HEIGHT }} className="border-b text-[9px] text-muted-foreground text-right pr-1 pt-0.5">
+          {String(h).padStart(2, "0")}:00
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderDayColumn = (dayEvents: CalendarEvent[], highlight: boolean) => {
+    const totalH = HOURS.length * HOUR_HEIGHT;
+    return (
+      <div className={cn("relative border-r", highlight && "bg-primary/5")} style={{ height: totalH }}>
+        {HOURS.map((h, i) => (
+          <div key={h} style={{ top: i * HOUR_HEIGHT, height: HOUR_HEIGHT }} className="absolute left-0 right-0 border-b" />
+        ))}
+        {dayEvents.map((ev, j) => {
+          const hour = eventHour(ev);
+          const top = (hour - HOUR_START) * HOUR_HEIGHT;
+          if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return null;
+          return (
+            <div key={j} className="absolute left-0.5 right-0.5" style={{ top }}>
+              <EventCard event={ev} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardContent className="p-4 space-y-3">
