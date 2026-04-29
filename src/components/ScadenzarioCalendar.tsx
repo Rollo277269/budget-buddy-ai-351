@@ -287,34 +287,25 @@ export function ScadenzarioCalendar({ events }: Props) {
         {/* Week View */}
         {viewMode === "week" && (
           <div className="border rounded-md overflow-hidden">
-            <div className="grid grid-cols-7 bg-muted/50">
-              {weekDays.map((d, i) => (
-                <div key={i} className={cn(
-                  "text-center py-2 border-b",
-                  sameDay(d, today) && "bg-primary/10"
-                )}>
-                  <div className="text-[10px] font-semibold text-muted-foreground">{WEEKDAYS[i]}</div>
-                  <div className={cn("text-sm font-medium", sameDay(d, today) && "text-primary font-bold")}>{d.getDate()}</div>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7">
-              {weekDays.map((d, i) => {
-                const dayEvents = getEventsForDay(d);
-                return (
-                  <div key={i} className={cn(
-                    "min-h-[200px] p-1.5 border-r space-y-1",
-                    sameDay(d, today) && "bg-primary/5"
+            <div className="overflow-auto max-h-[600px]">
+              <div className="grid" style={{ gridTemplateColumns: `40px repeat(7, minmax(0,1fr))` }}>
+                <div className="bg-muted/50 border-b border-r h-6" />
+                {weekDays.map((d, i) => (
+                  <div key={`h-${i}`} className={cn(
+                    "border-b border-r bg-muted/50 h-6 flex items-center justify-center gap-1",
+                    sameDay(d, today) && "bg-primary/10"
                   )}>
-                    {dayEvents.map((ev, j) => (
-                      <EventCard key={j} event={ev} />
-                    ))}
-                    {dayEvents.length === 0 && (
-                      <span className="text-[10px] text-muted-foreground/40 block text-center mt-8">—</span>
-                    )}
+                    <span className="text-[10px] font-semibold text-muted-foreground">{WEEKDAYS[i]}</span>
+                    <span className={cn("text-[11px] font-medium", sameDay(d, today) && "text-primary font-bold")}>{d.getDate()}</span>
                   </div>
-                );
-              })}
+                ))}
+                {renderHourGutter()}
+                {weekDays.map((d, i) => (
+                  <div key={`c-${i}`}>
+                    {renderDayColumn(getEventsForDay(d), sameDay(d, today))}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -327,44 +318,59 @@ export function ScadenzarioCalendar({ events }: Props) {
                 {WEEKDAYS[(currentDate.getDay() + 6) % 7]} {currentDate.getDate()} {MONTH_NAMES[currentDate.getMonth()]}
               </span>
             </div>
-            <div className="p-3 space-y-2">
-              {getEventsForDay(currentDate).length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Nessuna scadenza per questa giornata</p>
-              ) : (
-                getEventsForDay(currentDate).map((ev, i) => (
-                  <div key={i} className={cn(
-                    "flex items-center justify-between p-3 rounded-lg border",
-                    ev.stato === "scaduta" ? "bg-destructive/5 border-destructive/20" :
-                    ev.stato === "in_scadenza" ? "bg-[hsl(var(--warning))]/5 border-[hsl(var(--warning))]/20" :
-                    "bg-card"
-                  )}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex flex-col items-center">
-                        {ev.tipo === "credito_fiscale" ? (
-                          <Badge className="bg-primary text-primary-foreground text-[10px]">Cred. Fiscale</Badge>
-                        ) : ev.tipo === "finanziamento" ? (
-                          <Badge className="bg-accent text-accent-foreground text-[10px]">Rata</Badge>
-                        ) : (
-                          <Badge variant={ev.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">
-                            {ev.tipo === "credito" ? "Credito" : "Debito"}
-                          </Badge>
-                        )}
+            <div className="overflow-auto max-h-[600px]">
+              <div className="grid" style={{ gridTemplateColumns: `48px 1fr` }}>
+                {renderHourGutter()}
+                <div className="relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>
+                  {HOURS.map((h, i) => (
+                    <div key={h} style={{ top: i * HOUR_HEIGHT, height: HOUR_HEIGHT }} className="absolute left-0 right-0 border-b" />
+                  ))}
+                  {getEventsForDay(currentDate).map((ev, i) => {
+                    const hour = eventHour(ev);
+                    const top = (hour - HOUR_START) * HOUR_HEIGHT;
+                    if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return null;
+                    const hh = String(Math.floor(hour)).padStart(2, "0");
+                    const mm = String(Math.round((hour % 1) * 60)).padStart(2, "0");
+                    return (
+                      <div key={i} className="absolute left-2 right-2" style={{ top }}>
+                        <div className={cn(
+                          "flex items-center justify-between p-2 rounded-md border",
+                          ev.stato === "scaduta" ? "bg-destructive/5 border-destructive/20" :
+                          ev.stato === "in_scadenza" ? "bg-[hsl(var(--warning))]/5 border-[hsl(var(--warning))]/20" :
+                          "bg-card"
+                        )}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] font-mono text-muted-foreground w-10 shrink-0">{hh}:{mm}</span>
+                            {ev.tipo === "credito_fiscale" ? (
+                              <Badge className="bg-primary text-primary-foreground text-[10px]">Cred. Fiscale</Badge>
+                            ) : ev.tipo === "finanziamento" ? (
+                              <Badge className="bg-accent text-accent-foreground text-[10px]">Rata</Badge>
+                            ) : (
+                              <Badge variant={ev.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">
+                                {ev.tipo === "credito" ? "Credito" : "Debito"}
+                              </Badge>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium truncate">{ev.soggetto}</p>
+                              <p className="text-[10px] text-muted-foreground">{ev.numero}</p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0 ml-2">
+                            <p className={cn("text-xs font-mono font-semibold", ev.tipo === "credito" ? "text-income" : "text-expense")}>
+                              {formatCurrency(ev.totale)}
+                            </p>
+                            {ev.stato === "scaduta" && <span className="text-[9px] text-destructive">Scaduta</span>}
+                            {ev.stato === "in_scadenza" && <span className="text-[9px] text-[hsl(var(--warning))]">In scadenza</span>}
+                          </div>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{ev.soggetto}</p>
-                        <p className="text-xs text-muted-foreground">{ev.numero}</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className={cn("text-sm font-mono font-semibold", ev.tipo === "credito" ? "text-income" : "text-expense")}>
-                        {formatCurrency(ev.totale)}
-                      </p>
-                      {ev.stato === "scaduta" && <span className="text-[10px] text-destructive">Scaduta</span>}
-                      {ev.stato === "in_scadenza" && <span className="text-[10px] text-[hsl(var(--warning))]">In scadenza</span>}
-                    </div>
-                  </div>
-                ))
-              )}
+                    );
+                  })}
+                  {getEventsForDay(currentDate).length === 0 && (
+                    <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">Nessuna scadenza per questa giornata</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
