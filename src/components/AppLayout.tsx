@@ -100,6 +100,25 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   // Prefetch shared datasets once at app mount so navigating between pages is instant.
   useEffect(() => { prefetchSharedData(); }, []);
 
+  // Auto-enter fullscreen on first user interaction (browsers require a user gesture).
+  useEffect(() => {
+    if (sessionStorage.getItem("fs-auto-done") === "1") return;
+    const tryFs = () => {
+      sessionStorage.setItem("fs-auto-done", "1");
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      window.removeEventListener("pointerdown", tryFs);
+      window.removeEventListener("keydown", tryFs);
+    };
+    window.addEventListener("pointerdown", tryFs, { once: true });
+    window.addEventListener("keydown", tryFs, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", tryFs);
+      window.removeEventListener("keydown", tryFs);
+    };
+  }, []);
+
   const toggleLock = useCallback(() => {
     setSidebarLocked(prev => {
       const next = !prev;
