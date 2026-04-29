@@ -58,6 +58,17 @@ function purchaseCost(p: PurchaseInvoice): number {
   return isCreditNote ? -Math.abs(base) : base;
 }
 
+/** Le note di credito vendita riducono il fatturato: importo negativo */
+function isSaleCreditNote(s: SaleInvoice): boolean {
+  return (s.tipo || "").toLowerCase().includes("nota di credito");
+}
+function saleTotale(s: SaleInvoice): number {
+  return isSaleCreditNote(s) ? -Math.abs(s.totale || 0) : (s.totale || 0);
+}
+function saleImponibile(s: SaleInvoice): number {
+  return isSaleCreditNote(s) ? -Math.abs(s.imponibile || 0) : (s.imponibile || 0);
+}
+
 interface Commessa {
   numero: string | number;
   oggetto: string;
