@@ -450,7 +450,7 @@ export function CommessaDetailSheet({
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : item.totale;
+      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : saleTotale(item as SaleInvoice);
       agg.set(label, (agg.get(label) || 0) + amount);
     });
     return Array.from(agg.entries())
