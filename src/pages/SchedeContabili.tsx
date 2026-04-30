@@ -341,7 +341,20 @@ function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
       {/* Stato Fatture */}
       <div className="pdf-section pdf-full-width">
         <h2>Stato Fatture</h2>
-        <table className="pdf-table">
+        <table className="pdf-table pdf-table-fixed">
+          <colgroup>
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "26%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
+          </colgroup>
           <thead>
             <tr>
               <th>N°</th>
