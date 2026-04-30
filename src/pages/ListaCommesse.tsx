@@ -223,6 +223,7 @@ const ListaCommessePage = () => {
         onAddLink={addLink}
         onRemoveLink={removeLink}
         onExpenseAdded={refreshInvoices}
+        onDeleteCommessa={removeCommessa}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
