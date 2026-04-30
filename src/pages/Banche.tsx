@@ -490,6 +490,7 @@ const BanchePage = () => {
   const contiFinanziamento = useMemo(() => conti.filter(c => c.tipo === "finanziamento" || c.tipo === "crediti_fiscali"), [conti]);
   const { rate: allRate, togglePagata, refetch: refetchRate } = useRateFinanziamento();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tableToolbarRef = useRef<HTMLDivElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingPlaceholder, setIsDraggingPlaceholder] = useState(false);
