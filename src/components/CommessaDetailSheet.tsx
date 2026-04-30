@@ -328,16 +328,26 @@ export function CommessaDetailSheet({
     const linkedSales = [...autoSales, ...manualSales];
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
+    // Per il RIEPILOGO di commessa escludiamo le fatture classificate sui centri
+    // "costi di gara" (CO*) e "ribaltamento costi di gara" (RO*).
+    // Le fatture restano comunque visibili nelle tabelle di dettaglio.
+    const linkedSalesForTotals = linkedSales.filter(
+      (s) => !isExcludedFromCommessa(ricavoMap.map[`${s.anno}-${s.numero}`])
+    );
+    const linkedPurchasesForTotals = linkedPurchases.filter(
+      (p) => !isExcludedFromCommessa(costoMap.map[`${p.anno}-${p.numero}`])
+    );
+
     // Totali IVA inclusa (lordi, prima delle ritenute). Per acquisti: imponibile + cassa + IVA.
-    const totalVendite = linkedSales.reduce((s, i) => s + saleTotale(i), 0);
-    const totalAcquisti = linkedPurchases.reduce((s, p) => {
+    const totalVendite = linkedSalesForTotals.reduce((s, i) => s + saleTotale(i), 0);
+    const totalAcquisti = linkedPurchasesForTotals.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0);
       return s + (isCreditNote ? -Math.abs(base) : base);
     }, 0);
     // Totali imponibile (netti, senza IVA). Per acquisti: imponibile + cassa (esclude IVA e ritenute).
-    const totalVenditeImponibile = linkedSales.reduce((s, i) => s + saleImponibile(i), 0);
-    const totalAcquistiImponibile = linkedPurchases.reduce((s, p) => {
+    const totalVenditeImponibile = linkedSalesForTotals.reduce((s, i) => s + saleImponibile(i), 0);
+    const totalAcquistiImponibile = linkedPurchasesForTotals.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0);
       return s + (isCreditNote ? -Math.abs(base) : base);
