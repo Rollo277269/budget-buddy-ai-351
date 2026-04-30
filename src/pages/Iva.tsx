@@ -164,12 +164,9 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
       const q = Math.floor((parsed.month - 1) / 3);
       const imposta = Math.abs(p.imposta || 0);
 
-      // Art.17 reverse charge: invoice-level imposta=0 ma le righe contengono l'IVA teorica → IVA a debito per il consorzio
+      // Art.17 reverse charge: invoice-level imposta=0 ma imponibile>0 → IVA teorica al 22% a debito per il consorzio
       const isArt17 = (p.imposta === 0 && p.imponibile > 0);
-      let art17Iva = 0;
-      if (isArt17 && p.righe && p.righe.length > 0) {
-        art17Iva = p.righe.reduce((sum, r) => sum + Math.abs(r.imposta || 0), 0);
-      }
+      const art17Iva = isArt17 ? p.imponibile * 0.22 : 0;
 
       if (!map.has(fornitore)) {
         map.set(fornitore, { fornitore, t1: 0, t2: 0, t3: 0, t4: 0, art17: 0, total: 0 });
