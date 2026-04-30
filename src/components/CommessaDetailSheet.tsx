@@ -372,6 +372,10 @@ export function CommessaDetailSheet({
     // Il margine si calcola sull'imponibile (al netto di IVA)
     const saldoImponibile = totalVenditeImponibile - totalAcquistiImponibile;
     const margine = totalVenditeImponibile > 0 ? (saldoImponibile / totalVenditeImponibile) * 100 : 0;
+    // Saldo IVA: IVA vendite (a debito) - IVA acquisti (a credito). Positivo = debito.
+    const ivaVendite = totalVendite - totalVenditeImponibile;
+    const ivaAcquisti = totalAcquisti - totalAcquistiImponibile;
+    const saldoIva = ivaVendite - ivaAcquisti;
 
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
@@ -471,7 +475,7 @@ export function CommessaDetailSheet({
     return {
       linkedSales, linkedPurchases, totalVendite, totalAcquisti,
       totalVenditeImponibile, totalAcquistiImponibile, saldoImponibile,
-      saldo, margine,
+      saldo, saldoIva, margine,
       cssr, importoContratto, percentualeFatturato, totalVenditeImponibileRC1,
       allLinkedSaleKeys, allLinkedPurchaseKeys,
       autoSaleKeys, autoPurchaseKeys,
