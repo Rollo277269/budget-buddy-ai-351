@@ -373,6 +373,18 @@
     table-layout: auto;
   }
 
+  body.print-report .pdf-table-fixed {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
+  body.print-report .pdf-table-fixed td,
+  body.print-report .pdf-table-fixed th {
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
   /* Repeat table header on every printed page */
   body.print-report .pdf-table thead {
     display: table-header-group;
