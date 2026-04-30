@@ -478,8 +478,8 @@ function isAcceptedFile(file: File) {
 const BanchePage = () => {
   const { allSales, allPurchases, loading: invoiceLoading } = useInvoiceData();
   const {
-    movements, rawMovements, loading, fileNames, handleFileUpload,
-    addReconciliation, removeReconciliation, clearMovements, deleteMovements, deleteFileMovements,
+    movements, rawMovements, loading, handleFileUpload,
+    addReconciliation, removeReconciliation, clearMovements, deleteMovements,
     stats, activeAccountId, setActiveAccountId,
     pendingDuplicates, confirmDuplicates, dismissDuplicates, refreshAutoMatch,
     deduplicateExisting, bulkUpdateCIG, updateMovementCig,
@@ -693,52 +693,7 @@ const BanchePage = () => {
       }
 
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          
-          {fileNames.length === 0 ?
-          <p className="text-sm text-muted-foreground">Carica un estratto conto per iniziare</p> :
-
-          <Collapsible>
-              <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group">
-                <FileSpreadsheet className="h-3.5 w-3.5" />
-                <span>{fileNames.length} file caricati</span>
-                <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="flex flex-col gap-1">
-                  {[...fileNames].sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" })).map((fn) =>
-                <AlertDialog key={fn}>
-                      <div className="flex items-center gap-2 text-xs">
-                        <FileSpreadsheet className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="truncate">{fn}</span>
-                        <AlertDialogTrigger asChild>
-                          <button
-                        className="ml-auto rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground"
-                        title={`Rimuovi ${fn} e i suoi movimenti`}>
-                        
-                            <X className="h-3 w-3" />
-                          </button>
-                        </AlertDialogTrigger>
-                      </div>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Eliminare il file?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Vuoi rimuovere <span className="font-medium">{fn}</span> e tutti i movimenti importati da questo file? L'azione non può essere annullata.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annulla</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteFileMovements(fn)}>Elimina</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          }
-        </div>
+        <div />
         <div className="flex items-center gap-2">
           {/* Account selector */}
           <Select value={activeAccountId} onValueChange={setActiveAccountId}>
