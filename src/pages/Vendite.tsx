@@ -1024,7 +1024,7 @@ const VenditePage = () => {
                 .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
                 .sort((a, b) => a.label.localeCompare(b.label)),
             }} hideFornitore />
-            <div ref={toolbarPortalRef} className="flex items-center gap-2 ml-auto" />
+            <div ref={toolbarPortalRef} className="flex items-center gap-2" />
           </div>
         </div>
 
