@@ -366,7 +366,7 @@ function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
                   <td>{row.numero}</td>
                   <td style={{ whiteSpace: "nowrap" }}>{row.data}</td>
                   <td className="pdf-desc-cell">{row.descrizione}</td>
-                  <td>{row.cig || "—"}</td>
+                  <td className="pdf-cig-cell">{row.cig || "—"}</td>
                   <td style={{ whiteSpace: "nowrap" }}>{row.scadenza || "—"}</td>
                   <td>{row.stato}</td>
                   <td className="is-right">{formatCurrency(row.imponibile)}</td>
