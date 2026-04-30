@@ -234,14 +234,55 @@ function handleExportPdf() {
   window.print();
 }
 
-function PdfReport({ tipo, nome, rows, stats }: {
+function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
   tipo: "cliente" | "fornitore";
   nome: string;
   rows: PrimaNotaRow[];
   stats: ReturnType<typeof buildRows>["stats"];
+  paymentDatesMap: Map<string, string>;
 }) {
   const label = tipo === "cliente" ? "Scheda Cliente" : "Scheda Fornitore";
   const now = new Date().toLocaleString("it-IT");
+
+  // KPI: scaduto / da incassare(pagare)
+  const today = new Date(); today.setHours(0,0,0,0);
+  let daIncassare = 0;
+  let scaduto = 0;
+  for (const r of rows) {
+    const residuo = (r.dare || r.avere) - r.incassato;
+    if (residuo <= 0.01) continue;
+    daIncassare += residuo;
+    const dueRaw = r.scadenza?.trim() ? r.scadenza : r.data;
+    const parsed = parsePaymentTerms(dueRaw, r.data);
+    const due = parsed?.lastDueDate || parseDate(r.scadenza) || parseDate(r.data);
+    if (due && due.getTime() < today.getTime()) scaduto += residuo;
+  }
+
+  // Indice affidabilità
+  const pt = stats.paymentTiming;
+  const stars = !pt ? 0 : pt.avg <= 0 ? 5 : pt.avg <= 15 ? 4 : pt.avg <= 30 ? 3 : pt.avg <= 60 ? 2 : 1;
+  const ratingLabels = ["—", "Critica", "Scarsa", "Sufficiente", "Buona", "Eccellente"];
+
+  // Pagamenti: una riga per ogni fattura riconciliata (anche parziale)
+  const pagamenti = rows
+    .filter((r) => {
+      const parts = r.numero.split("/");
+      if (parts.length !== 2) return false;
+      const key = `${r.tipo}-${parts[1]}-${parts[0]}`;
+      return paymentDatesMap.has(key) || r.incassato > 0;
+    })
+    .map((r) => {
+      const parts = r.numero.split("/");
+      const key = `${r.tipo}-${parts[1]}-${parts[0]}`;
+      const dataPag = paymentDatesMap.get(key) || "—";
+      const dueRaw = r.scadenza?.trim() ? r.scadenza : r.data;
+      const parsed = parsePaymentTerms(dueRaw, r.data);
+      const dueDate = parsed?.lastDueDate || parseDate(r.scadenza);
+      const payDate = parseDate(dataPag);
+      let ritardo: number | null = null;
+      if (dueDate && payDate) ritardo = Math.round((payDate.getTime() - dueDate.getTime()) / 86400000);
+      return { ...r, dataPag, ritardo };
+    });
 
   return (
     <div className="scheda-pdf-report pdf-report" style={{ display: "none" }}>
@@ -263,72 +304,128 @@ function PdfReport({ tipo, nome, rows, stats }: {
         </div>
       </div>
 
-      {/* KPI */}
-      <div className="pdf-kpi-grid">
+      {/* KPI principali */}
+      <div className="pdf-kpi-grid" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
         <div className="pdf-kpi-card">
-          <p className="pdf-kpi-label">{tipo === "cliente" ? "Fatturato" : "Dare"}</p>
-          <p className="pdf-kpi-value is-positive">{formatCurrency(stats.totaleDare)}</p>
+          <p className="pdf-kpi-label">{tipo === "cliente" ? "Fatturato" : "Totale Acquisti"}</p>
+          <p className="pdf-kpi-value is-positive">{formatCurrency(stats.totaleFatturato)}</p>
+          <p className="pdf-kpi-sub">Imp. {formatCurrency(stats.totaleImponibile)} · IVA {formatCurrency(stats.totaleImposta)}</p>
         </div>
         <div className="pdf-kpi-card">
-          <p className="pdf-kpi-label">{tipo === "fornitore" ? "Totale Acquisti" : "Avere"}</p>
-          <p className="pdf-kpi-value is-negative">{formatCurrency(stats.totaleAvere)}</p>
+          <p className="pdf-kpi-label">{tipo === "cliente" ? "Incassato" : "Pagato"}</p>
+          <p className="pdf-kpi-value">{formatCurrency(stats.totaleIncassato)}</p>
         </div>
         <div className="pdf-kpi-card">
-          <p className="pdf-kpi-label">Saldo</p>
-          <p className={`pdf-kpi-value ${stats.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(stats.saldo)}</p>
+          <p className="pdf-kpi-label">{tipo === "cliente" ? "Da Incassare" : "Da Pagare"}</p>
+          <p className="pdf-kpi-value">{formatCurrency(daIncassare)}</p>
         </div>
         <div className="pdf-kpi-card">
-          <p className="pdf-kpi-label">Media Importo</p>
-          <p className="pdf-kpi-value">{formatCurrency(stats.mediaImporto)}</p>
-          <p className="pdf-kpi-sub">Imponibile: {formatCurrency(stats.totaleImponibile)} · IVA: {formatCurrency(stats.totaleImposta)}</p>
+          <p className="pdf-kpi-label">Scaduto</p>
+          <p className={`pdf-kpi-value ${scaduto > 0 ? "is-negative" : "is-positive"}`}>{formatCurrency(scaduto)}</p>
+        </div>
+        <div className="pdf-kpi-card">
+          <p className="pdf-kpi-label">Affidabilità {tipo === "cliente" ? "Cliente" : "Fornitore"}</p>
+          <p className="pdf-kpi-value" style={{ color: stars >= 4 ? "#16a34a" : stars >= 3 ? "#d97706" : stars > 0 ? "#dc2626" : "#94a3b8", letterSpacing: "2px" }}>
+            {"★".repeat(stars)}{"☆".repeat(5 - stars)}
+          </p>
+          <p className="pdf-kpi-sub">
+            {ratingLabels[stars]}{pt ? ` · media ${pt.avg > 0 ? "+" : ""}${pt.avg}gg` : ""}
+          </p>
         </div>
       </div>
 
-      {/* Prima Nota Table */}
+      {/* Stato Fatture */}
       <div className="pdf-section pdf-full-width">
-        <h2>Prima Nota — Movimenti in ordine cronologico</h2>
+        <h2>Stato Fatture</h2>
         <table className="pdf-table">
           <thead>
             <tr>
-              <th>Data</th>
               <th>N°</th>
+              <th>Data</th>
               <th>Descrizione</th>
               <th>CIG</th>
               <th>Scadenza</th>
               <th>Stato</th>
               <th className="is-right">Imponibile</th>
               <th className="is-right">IVA</th>
-              <th className="is-right">Dare</th>
-              <th className="is-right">Avere</th>
-              <th className="is-right">Saldo</th>
+              <th className="is-right">Totale</th>
+              <th className="is-right">{tipo === "cliente" ? "Incassato" : "Pagato"}</th>
+              <th className="is-right">Residuo</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
-              <tr key={i}>
-                <td style={{ whiteSpace: "nowrap" }}>{row.data}</td>
-                <td>{row.numero}</td>
-                <td className="pdf-desc-cell">{row.descrizione}</td>
-                <td>{row.cig || "—"}</td>
-                <td style={{ whiteSpace: "nowrap" }}>{row.scadenza || "—"}</td>
-                <td>{row.stato}</td>
-                <td className="is-right">{formatCurrency(row.imponibile)}</td>
-                <td className="is-right">{formatCurrency(row.imposta)}</td>
-                <td className="is-right">{row.dare > 0 ? formatCurrency(row.dare) : "—"}</td>
-                <td className="is-right">{row.avere > 0 ? formatCurrency(row.avere) : "—"}</td>
-                <td className={`is-right ${row.saldo >= 0 ? "is-positive" : "is-negative"}`} style={{ fontWeight: 600 }}>{formatCurrency(row.saldo)}</td>
-              </tr>
-            ))}
+            {rows.map((row, i) => {
+              const totale = row.dare || row.avere;
+              const residuo = totale - row.incassato;
+              return (
+                <tr key={i}>
+                  <td>{row.numero}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{row.data}</td>
+                  <td className="pdf-desc-cell">{row.descrizione}</td>
+                  <td>{row.cig || "—"}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{row.scadenza || "—"}</td>
+                  <td>{row.stato}</td>
+                  <td className="is-right">{formatCurrency(row.imponibile)}</td>
+                  <td className="is-right">{formatCurrency(row.imposta)}</td>
+                  <td className="is-right">{formatCurrency(totale)}</td>
+                  <td className="is-right">{row.incassato > 0 ? formatCurrency(row.incassato) : "—"}</td>
+                  <td className={`is-right ${residuo <= 0.01 ? "is-positive" : "is-negative"}`} style={{ fontWeight: 600 }}>
+                    {formatCurrency(residuo)}
+                  </td>
+                </tr>
+              );
+            })}
             <tr className="pdf-table-total">
               <td colSpan={6}>TOTALE</td>
               <td className="is-right">{formatCurrency(stats.totaleImponibile)}</td>
               <td className="is-right">{formatCurrency(stats.totaleImposta)}</td>
-              <td className="is-right is-positive">{formatCurrency(stats.totaleDare)}</td>
-              <td className="is-right is-negative">{formatCurrency(stats.totaleAvere)}</td>
-              <td className={`is-right ${stats.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(stats.saldo)}</td>
+              <td className="is-right is-positive">{formatCurrency(stats.totaleFatturato)}</td>
+              <td className="is-right">{formatCurrency(stats.totaleIncassato)}</td>
+              <td className={`is-right ${stats.saldoCredito <= 0.01 ? "is-positive" : "is-negative"}`}>{formatCurrency(stats.saldoCredito)}</td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* Pagamenti / Riconciliazioni */}
+      <div className="pdf-section pdf-full-width">
+        <h2>Pagamenti & Riconciliazioni Bancarie</h2>
+        {pagamenti.length === 0 ? (
+          <p style={{ fontSize: "10px", color: "#6b7280", padding: "8px 0" }}>Nessun pagamento riconciliato.</p>
+        ) : (
+          <table className="pdf-table">
+            <thead>
+              <tr>
+                <th>Fattura</th>
+                <th>Data Fattura</th>
+                <th>Scadenza</th>
+                <th>Data Pagamento</th>
+                <th className="is-right">Totale Fattura</th>
+                <th className="is-right">Importo Pagato</th>
+                <th className="is-right">Ritardo (gg)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagamenti.map((p, i) => {
+                const totale = p.dare || p.avere;
+                const ritardoCls = p.ritardo === null ? "" : p.ritardo <= 0 ? "is-positive" : "is-negative";
+                return (
+                  <tr key={i}>
+                    <td>{p.numero}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{p.data}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{p.scadenza || "—"}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{p.dataPag}</td>
+                    <td className="is-right">{formatCurrency(totale)}</td>
+                    <td className="is-right">{formatCurrency(p.incassato)}</td>
+                    <td className={`is-right ${ritardoCls}`} style={{ fontWeight: 600 }}>
+                      {p.ritardo === null ? "—" : `${p.ritardo > 0 ? "+" : ""}${p.ritardo}`}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Footer */}
