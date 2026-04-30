@@ -931,7 +931,7 @@ function SchedaDetail({
       </div>
 
       {/* Hidden PDF report */}
-      <PdfReport tipo={tipo} nome={nome} rows={rows} stats={stats} />
+      <PdfReport tipo={tipo} nome={nome} rows={rows} stats={stats} paymentDatesMap={paymentDatesMap} />
 
       <CommessaDetailSheet
         commessa={commessa}
