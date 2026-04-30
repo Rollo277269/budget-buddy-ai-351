@@ -230,14 +230,30 @@ function buildRows(
 
 function handleExportPdf(marginMode: "zero" | "standard" = "zero") {
   document.body.classList.add("print-report");
+  // Inject/remove a dynamic @page style depending on margin mode.
+  // Default CSS uses zero margins; for standard mode we override with
+  // browser-friendly margins and let the report container stop adding its own.
+  const STYLE_ID = "pdf-margin-standard-style";
+  let injected: HTMLStyleElement | null = null;
   if (marginMode === "standard") {
     document.body.classList.add("pdf-margin-standard");
+    injected = document.createElement("style");
+    injected.id = STYLE_ID;
+    injected.media = "print";
+    injected.textContent = `
+      @page { size: A4 landscape; margin: 12mm 10mm 14mm 10mm; }
+      body.print-report.pdf-margin-standard .pdf-report { padding: 0 !important; }
+      body.print-report.pdf-margin-standard .pdf-footer { display: none !important; }
+    `;
+    document.head.appendChild(injected);
   } else {
     document.body.classList.remove("pdf-margin-standard");
   }
   const cleanup = () => {
     document.body.classList.remove("print-report");
     document.body.classList.remove("pdf-margin-standard");
+    const existing = document.getElementById(STYLE_ID);
+    if (existing) existing.remove();
     window.removeEventListener("afterprint", cleanup);
   };
   window.addEventListener("afterprint", cleanup);
