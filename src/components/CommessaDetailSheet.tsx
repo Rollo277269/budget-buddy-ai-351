@@ -1880,7 +1880,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
             <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={[0, maxValue * 1.05]} />
             <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={140} />
             <Tooltip formatter={(v: number) => formatCurrency(v)} />
-            <Bar dataKey="value" name={title} radius={[0, 4, 4, 0]}>
+            <Bar dataKey="value" name={title} radius={[0, 4, 4, 0]} maxBarSize={16}>
               {data.map((_, i) => (
                 <Cell key={i} fill={colors[i % colors.length]} />
               ))}
