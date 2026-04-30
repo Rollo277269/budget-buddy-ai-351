@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { GripVertical, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, GripVertical, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLayoutEditMode } from "@/hooks/useLayoutEditMode";
@@ -58,8 +58,15 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
     const saved = loadOrder(storageKey);
     return saved ?? items.map((i) => i.id);
   });
-  const dragId = useRef<string | null>(null);
+  const orderRef = useRef(order);
+  const activeId = useRef<string | null>(null);
+  const movedRef = useRef(false);
+  const [movingId, setMovingId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+
+  useEffect(() => {
+    orderRef.current = order;
+  }, [order]);
 
   // Reconcile: append new items, drop removed ones — preserve user order otherwise.
   useEffect(() => {
@@ -78,58 +85,74 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
     return order.map((id) => map.get(id)).filter(Boolean) as ReorderableItem[];
   }, [items, order]);
 
-  const handleDragStart = (id: string) => (e: React.DragEvent) => {
-    if (!editMode) return;
-    dragId.current = id;
-    e.dataTransfer.effectAllowed = "move";
-    try { e.dataTransfer.setData("text/plain", id); } catch { /* noop */ }
-    // eslint-disable-next-line no-console
-    console.log(`%c[ReorderableToolbar:${storageKey}] dragstart →`, "color:#2563eb", id, "(handled by wrapper)");
-  };
-
-  const handleDragOver = (id: string) => (e: React.DragEvent) => {
-    if (!editMode || !dragId.current || dragId.current === id) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (overId !== id) {
-      setOverId(id);
-      // eslint-disable-next-line no-console
-      console.log(`%c[ReorderableToolbar:${storageKey}] dragover →`, "color:#9333ea", `${dragId.current} over ${id}`);
-    }
-  };
-
-  const handleDrop = (id: string) => (e: React.DragEvent) => {
-    if (!editMode) return;
-    e.preventDefault();
-    const from = dragId.current;
-    dragId.current = null;
-    setOverId(null);
-    if (!from || from === id) return;
+  const moveItem = useCallback((from: string, to: string, reason: "pointer" | "arrow") => {
+    if (from === to) return;
     setOrder((prev) => {
       const fromIdx = prev.indexOf(from);
-      const toIdx = prev.indexOf(id);
+      const toIdx = prev.indexOf(to);
       if (fromIdx < 0 || toIdx < 0) return prev;
       const next = prev.slice();
       next.splice(fromIdx, 1);
       next.splice(toIdx, 0, from);
+      orderRef.current = next;
       saveOrder(storageKey, next);
+      movedRef.current = true;
       // eslint-disable-next-line no-console
       console.log(
-        `%c[ReorderableToolbar:${storageKey}] drop ✅`,
+        `%c[ReorderableToolbar:${storageKey}] reorder ✅ (${reason})`,
         "color:#16a34a; font-weight:bold",
-        `${from} → ${id}`,
-        "new order:", next,
+        `${from} → ${to}`,
+        "saved:", next,
       );
       return next;
     });
+  }, [storageKey]);
+
+  const moveByOffset = useCallback((id: string, offset: -1 | 1) => {
+    const idx = orderRef.current.indexOf(id);
+    const targetId = orderRef.current[idx + offset];
+    if (targetId) moveItem(id, targetId, "arrow");
+  }, [moveItem]);
+
+  const itemFromPoint = useCallback((clientX: number, clientY: number) => {
+    const elements = document.elementsFromPoint(clientX, clientY);
+    const target = elements.find((el) => {
+      const node = (el as HTMLElement).closest?.("[data-reorderable-id]") as HTMLElement | null;
+      return node?.dataset.reorderableToolbar === storageKey;
+    }) as HTMLElement | undefined;
+    return (target?.closest?.("[data-reorderable-id]") as HTMLElement | null)?.dataset.reorderableId ?? null;
+  }, [storageKey]);
+
+  const handlePointerDown = (id: string) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!editMode || e.button !== 0) return;
+    e.preventDefault();
+    activeId.current = id;
+    movedRef.current = false;
+    setMovingId(id);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    // eslint-disable-next-line no-console
+    console.log(`%c[ReorderableToolbar:${storageKey}] pointerdown → wrapper attivo`, "color:#2563eb", id);
   };
 
-  const handleDragEnd = () => {
-    if (dragId.current) {
-      // eslint-disable-next-line no-console
-      console.log(`%c[ReorderableToolbar:${storageKey}] dragend ⏹ (no drop)`, "color:#6b7280");
-    }
-    dragId.current = null;
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!editMode || !activeId.current) return;
+    const targetId = itemFromPoint(e.clientX, e.clientY);
+    if (!targetId || targetId === activeId.current) return;
+    setOverId(targetId);
+    moveItem(activeId.current, targetId, "pointer");
+  };
+
+  const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!activeId.current) return;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    // eslint-disable-next-line no-console
+    console.log(
+      `%c[ReorderableToolbar:${storageKey}] pointerup ${movedRef.current ? "✅ ordine fissato" : "⏹ nessuno spostamento"}`,
+      "color:#6b7280",
+      activeId.current,
+    );
+    activeId.current = null;
+    setMovingId(null);
     setOverId(null);
   };
 
@@ -144,15 +167,17 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
       {orderedItems.map((it) => (
         <div
           key={it.id}
-          draggable={editMode}
-          onDragStart={handleDragStart(it.id)}
-          onDragOver={handleDragOver(it.id)}
-          onDrop={handleDrop(it.id)}
-          onDragEnd={handleDragEnd}
+          data-reorderable-toolbar={storageKey}
+          data-reorderable-id={it.id}
+          onPointerDown={handlePointerDown(it.id)}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
           title={editMode ? `Trascina per spostare: ${it.label ?? it.id}` : undefined}
           className={cn(
-            "relative inline-flex items-center transition-all rounded-md",
-            editMode && "cursor-grab active:cursor-grabbing ring-1 ring-dashed ring-primary/40 ring-offset-1 ring-offset-background",
+            "relative inline-flex items-center transition-all rounded-md touch-none",
+            editMode && "cursor-grab active:cursor-grabbing ring-1 ring-dashed ring-primary/40 ring-offset-1 ring-offset-background bg-background/80",
+            editMode && movingId === it.id && "opacity-70 scale-[0.98]",
             editMode && overId === it.id && "ring-2 ring-primary",
           )}
         >
@@ -169,6 +194,32 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
               aria-hidden="true"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
             />
+          )}
+          {editMode && (
+            <div className="relative z-20 ml-0.5 flex items-center gap-0.5">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-5 w-5"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveByOffset(it.id, -1); }}
+                title="Sposta a sinistra"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-5 w-5"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveByOffset(it.id, 1); }}
+                title="Sposta a destra"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
           )}
         </div>
       ))}
