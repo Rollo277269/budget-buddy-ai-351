@@ -291,7 +291,12 @@ function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
       {/* Header */}
       <div className="pdf-header">
         <div className="pdf-header-logo">
-          <img src={logoCssr} alt="CSSR" className="pdf-logo-cssr" />
+          <img
+            src={logoCssr}
+            alt="CSSR"
+            className="pdf-logo-cssr"
+            style={{ height: "28px", width: "auto", maxHeight: "28px", maxWidth: "110px", objectFit: "contain", display: "block" }}
+          />
         </div>
         <div className="pdf-header-text">
           <h1>{label}</h1>
@@ -430,7 +435,11 @@ function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
       {/* Footer */}
       <div className="pdf-footer">
         <div className="pdf-footer-agis">
-          <img src={logoAgis} alt="AGIS" />
+          <img
+            src={logoAgis}
+            alt="AGIS"
+            style={{ height: "10px", width: "auto", maxHeight: "10px", maxWidth: "40px", objectFit: "contain", display: "block" }}
+          />
         </div>
         <div className="pdf-footer-left">{label} — {nome}</div>
         <div className="pdf-footer-center">Esportato il {now}</div>
