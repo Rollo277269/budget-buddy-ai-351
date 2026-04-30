@@ -194,6 +194,25 @@
     flex-shrink: 0;
   }
 
+  body.print-report .pdf-logo-cssr {
+    display: block;
+    height: 48px;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  body.print-report .pdf-footer-agis {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+  }
+
+  body.print-report .pdf-footer-agis img {
+    height: 18px;
+    width: auto;
+    display: block;
+  }
+
   body.print-report .pdf-header-text {
     flex: 1;
   }
@@ -341,6 +360,21 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 10px;
+    table-layout: auto;
+  }
+
+  /* Repeat table header on every printed page */
+  body.print-report .pdf-table thead {
+    display: table-header-group;
+  }
+
+  body.print-report .pdf-table tfoot {
+    display: table-footer-group;
+  }
+
+  body.print-report .pdf-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   body.print-report .pdf-table th,
@@ -348,6 +382,8 @@
     padding: 5px 8px;
     border-bottom: 1px solid #e5e7eb;
     color: #1a1a1a;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   body.print-report .pdf-table th {
