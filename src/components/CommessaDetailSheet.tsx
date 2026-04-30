@@ -34,8 +34,18 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil, Trash2, Loader2
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
@@ -89,6 +99,7 @@ interface CommessaDetailSheetProps {
   onAddLink: (link: ManualLink) => void;
   onRemoveLink: (invoiceKey: string, invoiceType: "vendita" | "acquisto", cig: string) => void;
   onExpenseAdded?: () => void;
+  onDeleteCommessa?: (id: string) => Promise<boolean>;
 }
 
 const CHART_COLORS = [
@@ -112,6 +123,7 @@ export function CommessaDetailSheet({
   onAddLink,
   onRemoveLink,
   onExpenseAdded,
+  onDeleteCommessa,
 }: CommessaDetailSheetProps) {
   const [addMode, setAddMode] = useState<"vendita" | "acquisto" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,6 +132,8 @@ export function CommessaDetailSheet({
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const [editingExpense, setEditingExpense] = useState<PurchaseInvoice | null>(null);
   const [detailInvoice, setDetailInvoice] = useState<{ inv: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // -- Dati Commessa slot-based grid reorder --
   const isAdmin = true; // TODO: replace with actual admin check
