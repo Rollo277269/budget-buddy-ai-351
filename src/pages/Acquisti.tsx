@@ -831,7 +831,7 @@ const AcquistiPage = () => {
     <div className="flex h-full">
       <div className={`flex flex-col overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Sticky header area */}
-        <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 space-y-2">
+        <div className="sticky top-0 z-20 bg-background border-b border-border px-3 py-1.5 space-y-1.5">
           {/* Single row: summary + filters + table toolbar + actions */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Counters moved next to XML badges below */}
