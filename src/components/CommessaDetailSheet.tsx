@@ -831,7 +831,7 @@ export function CommessaDetailSheet({
                   </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Fatturato: {formatCurrency(data.totalVenditeImponibile)}</span>
+                      <span>Lavori eseguiti (RC1): {formatCurrency(data.totalVenditeImponibileRC1)}</span>
                       <span>Contratto: {formatCurrency(data.importoContratto)}</span>
                     </div>
                     <div className="h-4 rounded-full bg-muted overflow-hidden">
@@ -842,7 +842,7 @@ export function CommessaDetailSheet({
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="font-mono font-semibold text-primary">{(data.percentualeFatturato || 0).toFixed(1)}%</span>
-                      <span className="text-muted-foreground">Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibile)}</span>
+                      <span className="text-muted-foreground">Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibileRC1)}</span>
                     </div>
                     {(data.percentualeFatturato || 0) > 100 && (
                       <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-500/10 rounded-lg px-3 py-2">
