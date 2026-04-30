@@ -548,11 +548,33 @@ export function CommessaDetailSheet({
   ) => {
     const agg = new Map<string, { imponibile: number; iva: number; totale: number }>();
     items.forEach((item) => {
+      const isCN = ((item as any).tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isCN ? -1 : 1;
+      // Vendite multi-riga: se almeno una riga ha una classificazione propria,
+      // distribuisci gli importi sui rispettivi centri (riga per riga).
+      if (!isPurchase) {
+        const s = item as SaleInvoice;
+        const righe = Array.isArray(s.righe) ? s.righe : [];
+        const fatturaCodice = map[`${s.anno}-${s.numero}`] || "";
+        const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!map[`${s.anno}-${s.numero}-${idx}`]);
+        if (hasRowAssignments) {
+          righe.forEach((riga, idx) => {
+            const codiceRiga = map[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice || "Non classificato";
+            if (isExcludedFromCommessa(codiceRiga)) return;
+            const labelRiga = codiceRiga === "Non classificato" ? codiceRiga : `${codiceRiga} - ${centroLabelMap.get(codiceRiga) || ""}`;
+            const impR = sign * Math.abs(riga.imponibile || 0);
+            const totR = sign * Math.abs(riga.totale || 0);
+            const ivaR = sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
+            const eR = agg.get(labelRiga) || { imponibile: 0, iva: 0, totale: 0 };
+            eR.imponibile += impR; eR.iva += ivaR; eR.totale += totR;
+            agg.set(labelRiga, eR);
+          });
+          return;
+        }
+      }
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       if (isExcludedFromCommessa(codice)) return;
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      const isCN = ((item as any).tipo || "").toLowerCase().includes("nota di credito");
-      const sign = isCN ? -1 : 1;
       let imp = 0, iva = 0, tot = 0;
       if (isPurchase) {
         const p = item as PurchaseInvoice;
