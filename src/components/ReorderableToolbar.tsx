@@ -167,15 +167,17 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
       {orderedItems.map((it) => (
         <div
           key={it.id}
-          draggable={editMode}
-          onDragStart={handleDragStart(it.id)}
-          onDragOver={handleDragOver(it.id)}
-          onDrop={handleDrop(it.id)}
-          onDragEnd={handleDragEnd}
+          data-reorderable-toolbar={storageKey}
+          data-reorderable-id={it.id}
+          onPointerDown={handlePointerDown(it.id)}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
           title={editMode ? `Trascina per spostare: ${it.label ?? it.id}` : undefined}
           className={cn(
-            "relative inline-flex items-center transition-all rounded-md",
-            editMode && "cursor-grab active:cursor-grabbing ring-1 ring-dashed ring-primary/40 ring-offset-1 ring-offset-background",
+            "relative inline-flex items-center transition-all rounded-md touch-none",
+            editMode && "cursor-grab active:cursor-grabbing ring-1 ring-dashed ring-primary/40 ring-offset-1 ring-offset-background bg-background/80",
+            editMode && movingId === it.id && "opacity-70 scale-[0.98]",
             editMode && overId === it.id && "ring-2 ring-primary",
           )}
         >
@@ -192,6 +194,32 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
               aria-hidden="true"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
             />
+          )}
+          {editMode && (
+            <div className="relative z-20 ml-0.5 flex items-center gap-0.5">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-5 w-5"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveByOffset(it.id, -1); }}
+                title="Sposta a sinistra"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-5 w-5"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveByOffset(it.id, 1); }}
+                title="Sposta a destra"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
           )}
         </div>
       ))}
