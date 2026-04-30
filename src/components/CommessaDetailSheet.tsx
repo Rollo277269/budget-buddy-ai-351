@@ -23,6 +23,8 @@ import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { ManualLink } from "@/hooks/useCommessaLinks";
 import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
+import logoCssr from "@/assets/logo-cssr.jpg";
+import logoAgis from "@/assets/logo-agis.png";
 import { CentroCell } from "@/components/CentroCell";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
@@ -1085,6 +1087,9 @@ export function CommessaDetailSheet({
         <div className="pdf-report">
           {/* Fixed footer repeats on every printed page */}
           <div className="pdf-footer">
+            <div className="pdf-footer-agis">
+              <img src={logoAgis} alt="AGIS" />
+            </div>
             <span className="pdf-footer-left">Report generato da Gestione Commesse</span>
             <span className="pdf-footer-center">Esportato il {new Date().toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
             <span className="pdf-footer-right pdf-page-number"></span>
@@ -1092,10 +1097,7 @@ export function CommessaDetailSheet({
 
           <div className="pdf-header">
             <div className="pdf-header-logo">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="48" height="48" rx="10" fill="hsl(220 60% 28%)"/>
-                <text x="24" y="30" textAnchor="middle" fill="white" fontSize="20" fontWeight="700" fontFamily="DM Sans, sans-serif">GC</text>
-              </svg>
+              <img src={logoCssr} alt="CSSR" className="pdf-logo-cssr" />
             </div>
             <div className="pdf-header-text">
               <h1>Report Economico Commessa {commessa.numero}</h1>
