@@ -283,7 +283,7 @@ const AcquistiPage = () => {
         const keys = parsed.map((i) => `${i.anno}-${i.numero}-${i.tipo || ""}`);
         const { data: existing } = await supabase
           .from("fatture_acquisto")
-          .select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig, source_file")
+          .select("anno, numero, tipo, descrizione, imponibile, imposta, totale, cig")
           .or(keys.map(k => { const [a, n] = k.split("-"); return `and(anno.eq.${a},numero.eq.${n})`; }).join(","));
 
         const existingMap = new Map<string, any>();
@@ -311,7 +311,7 @@ const AcquistiPage = () => {
             const key = `${item.anno}-${item.numero}-${item.tipo || ""}`;
             const ex = existingMap.get(key)!;
             const newHasMore = ((item.descrizione || "").length > (ex.descrizione || "").length) || (item.cig && !ex.cig);
-            return { key, anno: item.anno, numero: item.numero, tipo: item.tipo || "", existingDesc: `${ex.tipo} — ${(ex.descrizione || "").slice(0, 60)}`, newDesc: `${item.tipo || ""} — ${(item.descrizione || "").slice(0, 60)}`, cig: item.cig || ex.cig || "", selected: newHasMore || ex.source_file === file.name };
+            return { key, anno: item.anno, numero: item.numero, tipo: item.tipo || "", existingDesc: `${ex.tipo} — ${(ex.descrizione || "").slice(0, 60)}`, newDesc: `${item.tipo || ""} — ${(item.descrizione || "").slice(0, 60)}`, cig: item.cig || ex.cig || "", selected: newHasMore };
           }));
           setPendingExcelUpload({ fileName: file.name, newOnly, colliding });
           setShowExcelCollisionDialog(true);
