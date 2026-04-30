@@ -40,6 +40,8 @@ import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { useCentroMap, useCentriData } from "@/hooks/useCentri";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 type SortKey = "data" | "numero" | "descrizione" | "cig" | "scadenza" | "stato" | "imponibile" | "imposta" | "dare" | "avere" | "saldo" | "incassato";
 type SortDir = "asc" | "desc";
@@ -226,10 +228,32 @@ function buildRows(
 
 /* ── PDF Export ── */
 
-function handleExportPdf() {
+function handleExportPdf(marginMode: "zero" | "standard" = "zero") {
   document.body.classList.add("print-report");
+  // Inject/remove a dynamic @page style depending on margin mode.
+  // Default CSS uses zero margins; for standard mode we override with
+  // browser-friendly margins and let the report container stop adding its own.
+  const STYLE_ID = "pdf-margin-standard-style";
+  let injected: HTMLStyleElement | null = null;
+  if (marginMode === "standard") {
+    document.body.classList.add("pdf-margin-standard");
+    injected = document.createElement("style");
+    injected.id = STYLE_ID;
+    injected.media = "print";
+    injected.textContent = `
+      @page { size: A4 landscape; margin: 12mm 10mm 14mm 10mm; }
+      body.print-report.pdf-margin-standard .pdf-report { padding: 0 !important; }
+      body.print-report.pdf-margin-standard .pdf-footer { display: none !important; }
+    `;
+    document.head.appendChild(injected);
+  } else {
+    document.body.classList.remove("pdf-margin-standard");
+  }
   const cleanup = () => {
     document.body.classList.remove("print-report");
+    document.body.classList.remove("pdf-margin-standard");
+    const existing = document.getElementById(STYLE_ID);
+    if (existing) existing.remove();
     window.removeEventListener("afterprint", cleanup);
   };
   window.addEventListener("afterprint", cleanup);
@@ -980,6 +1004,15 @@ export default function SchedeContabiliPage() {
   const [tab, setTab] = useState("clienti");
   const [selectedCliente, setSelectedCliente] = useState("");
   const [selectedFornitore, setSelectedFornitore] = useState("");
+  const [pdfStandardMargins, setPdfStandardMargins] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("pdf-standard-margins") === "1";
+  });
+  const togglePdfMargins = (v: boolean) => {
+    setPdfStandardMargins(v);
+    try { localStorage.setItem("pdf-standard-margins", v ? "1" : "0"); } catch {}
+  };
+  const exportPdf = () => handleExportPdf(pdfStandardMargins ? "standard" : "zero");
 
   const clienti = useMemo(() => {
     const set = new Set<string>();
@@ -1038,7 +1071,7 @@ export default function SchedeContabiliPage() {
     const activeNome = tab === "clienti" ? selectedCliente : selectedFornitore;
     if (!activeNome) return;
     const t = setTimeout(() => {
-      handleExportPdf();
+      exportPdf();
       searchParams.delete("autoprint");
       setSearchParams(searchParams, { replace: true });
     }, 1200);
@@ -1081,10 +1114,22 @@ export default function SchedeContabiliPage() {
           </div>
 
           {activeNome && (
-            <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 ml-auto no-print" title="Esporta scheda contabile in PDF">
-              <FileText className="h-3.5 w-3.5" />
-              Report
-            </Button>
+            <div className="flex items-center gap-3 ml-auto no-print">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="pdf-margin-toggle"
+                  checked={pdfStandardMargins}
+                  onCheckedChange={togglePdfMargins}
+                />
+                <Label htmlFor="pdf-margin-toggle" className="text-xs cursor-pointer text-muted-foreground">
+                  {pdfStandardMargins ? "Margini standard" : "Margini zero"}
+                </Label>
+              </div>
+              <Button variant="outline" size="sm" onClick={exportPdf} className="gap-1.5" title="Esporta scheda contabile in PDF">
+                <FileText className="h-3.5 w-3.5" />
+                Report
+              </Button>
+            </div>
           )}
         </div>
       </div>
