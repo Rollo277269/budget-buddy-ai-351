@@ -1823,8 +1823,15 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       {(() => {
         const totalRicavi = ricavoData.reduce((s, r) => s + r.value, 0);
         const totalCosti = costoData.reduce((s, r) => s + r.value, 0);
-        const saldo = totalRicavi - totalCosti;
-        const margine = totalRicavi > 0 ? (saldo / totalRicavi) * 100 : 0;
+        const totalRicaviImp = ricavoData.reduce((s, r) => s + (r.imponibile || 0), 0);
+        const totalCostiImp = costoData.reduce((s, r) => s + (r.imponibile || 0), 0);
+        const totalRicaviIva = ricavoData.reduce((s, r) => s + (r.iva || 0), 0);
+        const totalCostiIva = costoData.reduce((s, r) => s + (r.iva || 0), 0);
+        // Saldo della commessa: differenza tra imponibili (al netto IVA)
+        const saldo = totalRicaviImp - totalCostiImp;
+        // Saldo IVA: IVA a debito (vendite) - IVA a credito (acquisti). Positivo = debito.
+        const saldoIva = totalRicaviIva - totalCostiIva;
+        const margine = totalRicaviImp > 0 ? (saldo / totalRicaviImp) * 100 : 0;
 
         const orderedRicavo = ricavoOrder
           ? [
@@ -2028,10 +2035,14 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
             {/* Saldo / Margine */}
             {ricavoData.length > 0 && costoData.length > 0 && (
               <div className="rounded-xl border bg-card p-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-muted-foreground">Saldo</p>
+                    <p className="text-[10px] text-muted-foreground">Saldo (imponibili)</p>
                     <p className={`text-sm font-bold font-mono ${saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(saldo)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Saldo IVA {saldoIva >= 0 ? "(a debito)" : "(a credito)"}</p>
+                    <p className={`text-sm font-bold font-mono ${saldoIva >= 0 ? "text-expense" : "text-income"}`}>{formatCurrency(saldoIva)}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Margine</p>
