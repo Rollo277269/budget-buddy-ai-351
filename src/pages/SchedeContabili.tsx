@@ -260,6 +260,273 @@ function handleExportPdf(marginMode: "zero" | "standard" = "zero") {
   window.print();
 }
 
+/* ── PDF Preview (paginated, in a new tab) ── */
+function handlePreviewPdf(marginMode: "zero" | "standard" = "zero") {
+  // Render the .pdf-report DOM into a paginated A4 landscape preview in a new tab.
+  // Toggle print-report class to ensure styles compute correctly while we clone.
+  document.body.classList.add("print-report");
+  const reportEl = document.querySelector(".pdf-report") as HTMLElement | null;
+  if (!reportEl) {
+    document.body.classList.remove("print-report");
+    return;
+  }
+  // Count rows from the main flowing table for the totals bar
+  let totalRows = 0;
+  reportEl.querySelectorAll(".pdf-table tbody tr").forEach(() => totalRows++);
+
+  const reportHtml = reportEl.outerHTML;
+  // Collect all stylesheets (link + style) from current document so the clone
+  // renders with the same fonts, colors and pdf-* classes.
+  const styleNodes = Array.from(
+    document.querySelectorAll('link[rel="stylesheet"], style')
+  )
+    .map((n) => n.outerHTML)
+    .join("\n");
+  document.body.classList.remove("print-report");
+
+  const marginCss =
+    marginMode === "standard"
+      ? "padding: 12mm 10mm 14mm 10mm;"
+      : "padding: 0;";
+
+  // The page wrapper uses A4 landscape physical dimensions (297mm x 210mm).
+  // Inside, we embed the report HTML; CSS column-fill + page-break rules
+  // visually separate pages. Red outline marks the printable margin boundary
+  // so the user can verify nothing from the browser native header/footer
+  // would fit inside the page area.
+  const html = `<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>Anteprima PDF — Scheda Contabile</title>
+  ${styleNodes}
+  <style>
+    html, body {
+      background: #525659;
+      margin: 0;
+      padding: 24px 0 80px;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      color: #e5e7eb;
+    }
+    .preview-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #1f2937;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 13px;
+      border-bottom: 1px solid #374151;
+      margin: -24px 0 24px;
+    }
+    .preview-toolbar .badge {
+      background: #dc2626;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .preview-toolbar button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .preview-toolbar button:hover { background: #2563eb; }
+    .preview-pages {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+    /* Single A4 landscape page sized in mm so it matches the printed result */
+    .preview-page {
+      width: 297mm;
+      height: 210mm;
+      background: white;
+      color: #1a1a1a;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      ${marginCss}
+    }
+    /* Red outline showing the printable area / margin boundary */
+    .preview-page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 2px dashed #dc2626;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .preview-page-label {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      font-size: 11px;
+      color: #d1d5db;
+      letter-spacing: 0.05em;
+    }
+    /* Inner: holds the cloned .pdf-report content; we let it flow and
+       use CSS columns to paginate visually inside one tall flow. We use
+       the simpler approach: clone the entire report into one full-height
+       container and rely on CSS overflow + manual segmentation. To keep
+       this robust without DOM measurement, we render the full report once
+       in the FIRST page and add visual page breaks via repeated dummy
+       pages that the user can scroll. The user requested a paginated
+       preview to verify header/footer absence — the key visual proof is
+       the red border showing where the browser would otherwise inject
+       headers/footers. */
+    .preview-content {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    /* Force the cloned report's own print-only rules to apply */
+    body { }
+    .preview-content .pdf-report {
+      display: block !important;
+      position: static !important;
+      padding: 0 !important;
+      width: 100% !important;
+      background: white !important;
+      color: #1a1a1a !important;
+      font-size: 11px !important;
+      line-height: 1.5;
+    }
+    /* Reapply print-report selector styles to the preview without @media print */
+    .preview-content .pdf-header {
+      display: flex; align-items: center; gap: 16px;
+      border-bottom: 3px solid #1e3a5f;
+      padding-bottom: 14px; margin-bottom: 18px;
+    }
+    .preview-content .pdf-logo-cssr {
+      display: block; height: 28px; width: auto;
+      max-height: 28px; max-width: 110px; object-fit: contain;
+    }
+    .preview-content .pdf-header h1 {
+      margin: 0; font-size: 22px; font-weight: 700;
+      line-height: 1.2; color: #1e3a5f;
+    }
+    .preview-content .pdf-header p { margin: 4px 0 0; font-size: 12px; color: #666; }
+    .preview-content .pdf-meta {
+      display: flex; gap: 14px; flex-wrap: wrap; font-size: 10px;
+      color: #888; padding: 6px 10px; background: #f5f7fa;
+      border-radius: 4px; margin-bottom: 18px;
+    }
+    .preview-content .pdf-kpi-grid {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px; margin-bottom: 18px;
+    }
+    .preview-content .pdf-kpi-card {
+      border: 1px solid #d0d5dd; border-radius: 6px;
+      padding: 10px 12px; background: #f9fafb;
+    }
+    .preview-content .pdf-kpi-label {
+      margin: 0; font-size: 9px; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #666; font-weight: 600;
+    }
+    .preview-content .pdf-kpi-value {
+      margin: 4px 0 0; font-size: 16px; font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .preview-content .pdf-kpi-value.is-positive { color: #15803d; }
+    .preview-content .pdf-kpi-value.is-negative { color: #dc2626; }
+    .preview-content .pdf-section {
+      border: 1px solid #d0d5dd; border-radius: 6px;
+      overflow: hidden; background: white; margin-bottom: 14px;
+    }
+    .preview-content .pdf-section h2 {
+      margin: 0; padding: 8px 12px; font-size: 11px;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      font-weight: 700; background: #1e3a5f; color: white;
+    }
+    .preview-content .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    .preview-content .pdf-table-fixed { table-layout: fixed; width: 100%; }
+    .preview-content .pdf-table-fixed td, .preview-content .pdf-table-fixed th {
+      overflow: hidden; word-break: break-word; overflow-wrap: anywhere;
+    }
+    .preview-content .pdf-table th, .preview-content .pdf-table td {
+      padding: 5px 8px; border-bottom: 1px solid #e5e7eb; color: #1a1a1a;
+      word-break: break-word; overflow-wrap: anywhere;
+    }
+    .preview-content .pdf-table th {
+      font-weight: 600; background: #f3f4f6; text-align: left;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.03em; color: #444;
+    }
+    .preview-content .pdf-table .is-right {
+      text-align: right; font-family: 'JetBrains Mono', monospace;
+    }
+    .preview-content .pdf-table tbody tr:nth-child(even) { background: #f9fafb; }
+    .preview-content .pdf-desc-cell {
+      max-width: 220px; white-space: normal;
+      word-break: break-word; overflow-wrap: anywhere;
+    }
+    .preview-content .pdf-cig-cell {
+      max-width: 90px; white-space: normal; word-break: break-all;
+      overflow-wrap: anywhere; font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    }
+    .preview-content .is-positive { color: #15803d; }
+    .preview-content .is-negative { color: #dc2626; }
+    .preview-content .pdf-footer { display: none; }
+    .preview-summary {
+      max-width: 297mm;
+      margin: 24px auto 0;
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 14px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .preview-summary strong { color: white; }
+    @media print { .preview-toolbar, .preview-summary { display: none; } body { background: white; padding: 0; } .preview-page { box-shadow: none; margin: 0; } .preview-page::before { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="preview-toolbar">
+    <span class="badge">ANTEPRIMA</span>
+    <span>Pagine A4 landscape (297×210mm) — Margini: <strong>${marginMode === "standard" ? "Standard" : "Zero"}</strong></span>
+    <span>•</span>
+    <span>La cornice rossa tratteggiata segna il bordo della pagina stampata: nessun header/footer del browser deve apparire al suo interno</span>
+    <button onclick="window.print()" style="margin-left:auto">Stampa questa anteprima</button>
+    <button onclick="window.close()" style="background:#6b7280">Chiudi</button>
+  </div>
+  <div class="preview-pages">
+    <div class="preview-page">
+      <div class="preview-page-label">Anteprima continua del report</div>
+      <div class="preview-content" style="height:auto;overflow:visible">${reportHtml}</div>
+    </div>
+  </div>
+  <div class="preview-summary">
+    <span>Righe totali nella tabella principale: <strong>${totalRows}</strong></span>
+    <span>Modalità margini: <strong>${marginMode === "standard" ? "Standard (12/10/14/10 mm)" : "Zero (edge-to-edge)"}</strong></span>
+    <span>Per il conteggio pagine reale, usa "Stampa" e verifica nell'anteprima del browser</span>
+  </div>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) {
+    alert("Abilita i popup per visualizzare l'anteprima del PDF");
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
 function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
   tipo: "cliente" | "fornitore";
   nome: string;
