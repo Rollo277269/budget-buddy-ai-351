@@ -558,13 +558,20 @@ export function CommessaDetailSheet({
         const fatturaCodice = map[`${s.anno}-${s.numero}`] || "";
         const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!map[`${s.anno}-${s.numero}-${idx}`]);
         if (hasRowAssignments) {
+          // Se l'header ha IVA=0 (reverse charge / split / esente), l'IVA teorica
+          // delle righe XML non deve essere considerata: totale riga = imponibile.
+          const headerSenzaIva = Number(s.imposta || 0) === 0;
           righe.forEach((riga, idx) => {
             const codiceRiga = map[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice || "Non classificato";
             if (isExcludedFromCommessa(codiceRiga)) return;
             const labelRiga = codiceRiga === "Non classificato" ? codiceRiga : `${codiceRiga} - ${centroLabelMap.get(codiceRiga) || ""}`;
             const impR = sign * Math.abs(riga.imponibile || 0);
-            const totR = sign * Math.abs(riga.totale || 0);
-            const ivaR = sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
+            const totR = headerSenzaIva
+              ? sign * Math.abs(riga.imponibile || 0)
+              : sign * Math.abs(riga.totale || 0);
+            const ivaR = headerSenzaIva
+              ? 0
+              : sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
             const eR = agg.get(labelRiga) || { imponibile: 0, iva: 0, totale: 0 };
             eR.imponibile += impR; eR.iva += ivaR; eR.totale += totR;
             agg.set(labelRiga, eR);
@@ -1760,13 +1767,19 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
       const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
       if (hasRowAssignments) {
+        // Header IVA=0 (reverse charge / split / esente): IVA teorica delle righe XML non considerata.
+        const headerSenzaIva = Number(s.imposta || 0) === 0;
         righe.forEach((riga, idx) => {
           const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
           if (isExcludedFromCommessa(codiceRiga)) return;
           const labelRiga = codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato";
           const impR = sign * Math.abs(riga.imponibile || 0);
-          const totR = sign * Math.abs(riga.totale || 0);
-          const ivaR = sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
+          const totR = headerSenzaIva
+            ? sign * Math.abs(riga.imponibile || 0)
+            : sign * Math.abs(riga.totale || 0);
+          const ivaR = headerSenzaIva
+            ? 0
+            : sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
           const eR = map.get(labelRiga) || { imponibile: 0, iva: 0, totale: 0 };
           eR.imponibile += impR; eR.iva += ivaR; eR.totale += totR;
           map.set(labelRiga, eR);

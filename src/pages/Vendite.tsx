@@ -577,6 +577,8 @@ const VenditePage = () => {
             return s + sign * Math.abs(r.imposta);
           }
           if (matchingCount > 0) {
+            // Header IVA=0: la IVA teorica delle righe XML non deve essere conteggiata.
+            if (Number(r.imposta || 0) === 0) return s;
             let rowSum = 0;
             righe.forEach((riga: any, idx: number) => {
               if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.imposta;
@@ -653,9 +655,13 @@ const VenditePage = () => {
             return s + sign * Math.abs(r.totale);
           }
           if (matchingCount > 0) {
+            // Header IVA=0: il totale riga XML include IVA teorica → usa l'imponibile.
+            const headerSenzaIva = Number(r.imposta || 0) === 0;
             let rowSum = 0;
             righe.forEach((riga: any, idx: number) => {
-              if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) rowSum += riga.totale;
+              if (ricavoMap.map[`${headerKey}-${idx}`] === filters.centroRicavo) {
+                rowSum += headerSenzaIva ? (riga.imponibile || 0) : (riga.totale || 0);
+              }
             });
             return s + sign * Math.abs(rowSum);
           }
