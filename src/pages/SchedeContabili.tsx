@@ -226,10 +226,16 @@ function buildRows(
 
 /* ── PDF Export ── */
 
-function handleExportPdf() {
+function handleExportPdf(marginMode: "zero" | "standard" = "zero") {
   document.body.classList.add("print-report");
+  if (marginMode === "standard") {
+    document.body.classList.add("pdf-margin-standard");
+  } else {
+    document.body.classList.remove("pdf-margin-standard");
+  }
   const cleanup = () => {
     document.body.classList.remove("print-report");
+    document.body.classList.remove("pdf-margin-standard");
     window.removeEventListener("afterprint", cleanup);
   };
   window.addEventListener("afterprint", cleanup);
