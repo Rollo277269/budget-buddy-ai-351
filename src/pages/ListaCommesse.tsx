@@ -100,7 +100,6 @@ const ListaCommessePage = () => {
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-destructive"
           title="Elimina commessa"
-          disabled
           onClick={(e) => {
             e.stopPropagation();
             setDeleteTarget(r);
