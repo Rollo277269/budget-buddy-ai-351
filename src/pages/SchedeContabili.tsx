@@ -22,6 +22,8 @@ import { formatCurrency } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Combobox } from "@/components/ui/combobox";
+import logoCssr from "@/assets/logo-cssr.jpg";
+import logoAgis from "@/assets/logo-agis.png";
 import {
   Table,
   TableBody,
@@ -289,10 +291,7 @@ function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
       {/* Header */}
       <div className="pdf-header">
         <div className="pdf-header-logo">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <rect width="36" height="36" rx="8" fill="hsl(var(--primary))" />
-            <text x="18" y="24" textAnchor="middle" fill="white" fontSize="18" fontWeight="700" fontFamily="sans-serif">G</text>
-          </svg>
+          <img src={logoCssr} alt="CSSR" className="pdf-logo-cssr" />
         </div>
         <div className="pdf-header-text">
           <h1>{label}</h1>
@@ -430,6 +429,9 @@ function PdfReport({ tipo, nome, rows, stats, paymentDatesMap }: {
 
       {/* Footer */}
       <div className="pdf-footer">
+        <div className="pdf-footer-agis">
+          <img src={logoAgis} alt="AGIS" />
+        </div>
         <div className="pdf-footer-left">{label} — {nome}</div>
         <div className="pdf-footer-center">Esportato il {now}</div>
         <div className="pdf-footer-right">Pag. <span className="pdf-page-number"></span></div>
