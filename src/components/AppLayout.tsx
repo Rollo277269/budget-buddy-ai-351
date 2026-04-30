@@ -5,6 +5,7 @@ import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { RitaAssistant } from "@/components/RitaAssistant";
+import { LayoutEditModeIndicator } from "@/components/LayoutEditModeIndicator";
 
 // Background prefetch of frequently used datasets so navigation between pages is instant.
 function prefetchSharedData() {
@@ -156,5 +157,6 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
         </div>
       </div>
       <RitaAssistant />
+      <LayoutEditModeIndicator />
     </SidebarProvider>);
 }
