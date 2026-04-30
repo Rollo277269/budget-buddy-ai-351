@@ -519,13 +519,28 @@ export function CommessaDetailSheet({
     map: Record<string, string>,
     isPurchase = false
   ) => {
-    const agg = new Map<string, number>();
+    const agg = new Map<string, { imponibile: number; iva: number; totale: number }>();
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       if (isExcludedFromCommessa(codice)) return;
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : saleTotale(item as SaleInvoice);
-      agg.set(label, (agg.get(label) || 0) + amount);
+      const isCN = ((item as any).tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isCN ? -1 : 1;
+      let imp = 0, iva = 0, tot = 0;
+      if (isPurchase) {
+        const p = item as PurchaseInvoice;
+        imp = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0));
+        iva = sign * Math.abs(p.imposta || 0);
+        tot = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0));
+      } else {
+        const s = item as SaleInvoice;
+        imp = sign * Math.abs(s.imponibile || 0);
+        iva = sign * Math.abs(s.imposta || 0);
+        tot = sign * Math.abs(s.totale || 0);
+      }
+      const e = agg.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      e.imponibile += imp; e.iva += iva; e.totale += tot;
+      agg.set(label, e);
     });
     // Aggiungo le spese extra (solo per i costi)
     if (isPurchase) {
@@ -534,20 +549,23 @@ export function CommessaDetailSheet({
         const label = codice
           ? `${codice} - ${centroLabelMap.get(codice) || ""}`
           : "Non classificato";
-        agg.set(label, (agg.get(label) || 0) + importo);
+        const e = agg.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+        e.imponibile += importo;
+        e.totale += importo;
+        agg.set(label, e);
       });
     }
     return Array.from(agg.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, v]) => ({ name, imponibile: v.imponibile, iva: v.iva, totale: v.totale, value: v.totale }))
       .sort((a, b) => b.value - a.value);
   };
 
-  const applySavedOrder = (rows: { name: string; value: number }[], storageKey: string) => {
+  const applySavedOrder = <T extends { name: string }>(rows: T[], storageKey: string): T[] => {
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey) || "null") as string[] | null;
       if (!saved || !Array.isArray(saved) || saved.length === 0) return rows;
       const lookup = new Map(rows.map((r) => [r.name, r]));
-      const ordered = saved.map((name) => lookup.get(name)).filter(Boolean) as { name: string; value: number }[];
+      const ordered = saved.map((name) => lookup.get(name)).filter(Boolean) as T[];
       const missing = rows.filter((r) => !saved.includes(r.name));
       return [...ordered, ...missing];
     } catch {
@@ -1311,15 +1329,15 @@ export function CommessaDetailSheet({
             <section className="pdf-section">
               <h2>Riepilogo Centri di Ricavo</h2>
               <table className="pdf-table">
-                <thead><tr><th>Centro</th><th className="is-right">Importo</th><th className="is-right">%</th></tr></thead>
-                <tbody>{ricavoRows.map((r) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
+                <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                <tbody>{ricavoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
               </table>
             </section>
             <section className="pdf-section">
               <h2>Riepilogo Centri di Costo</h2>
               <table className="pdf-table">
-                <thead><tr><th>Centro</th><th className="is-right">Importo</th><th className="is-right">%</th></tr></thead>
-                <tbody>{costoRows.map((r) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
+                <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                <tbody>{costoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
               </table>
             </section>
           </div>
@@ -1678,33 +1696,51 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   }, [centri]);
 
   const ricavoData = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { imponibile: number; iva: number; totale: number }>();
     linkedSales.forEach((s) => {
       const codice = ricavoMap[`${s.anno}-${s.numero}`];
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + saleTotale(s));
+      const sign = isSaleCreditNote(s) ? -1 : 1;
+      const imp = sign * Math.abs(s.imponibile || 0);
+      const iva = sign * Math.abs(s.imposta || 0);
+      const tot = sign * Math.abs(s.totale || 0);
+      const e = map.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      e.imponibile += imp; e.iva += iva; e.totale += tot;
+      map.set(label, e);
     });
     return Array.from(map.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, v]) => ({ name, imponibile: v.imponibile, iva: v.iva, totale: v.totale, value: v.totale }))
       .sort((a, b) => b.value - a.value);
   }, [linkedSales, ricavoMap, centroLookup]);
 
   const costoData = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { imponibile: number; iva: number; totale: number }>();
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + purchaseCost(p));
+      const isCN = (p.tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isCN ? -1 : 1;
+      // Imponibile costo professionisti = imponibile + cassa
+      const imp = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0));
+      const iva = sign * Math.abs(p.imposta || 0);
+      const tot = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0));
+      const e = map.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      e.imponibile += imp; e.iva += iva; e.totale += tot;
+      map.set(label, e);
     });
     extraCostiPerCentro.forEach((importo, codice) => {
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + importo);
+      const e = map.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      // I documenti extra non hanno IVA scorporata: importo trattato come totale = imponibile
+      e.imponibile += importo;
+      e.totale += importo;
+      map.set(label, e);
     });
     return Array.from(map.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, v]) => ({ name, imponibile: v.imponibile, iva: v.iva, totale: v.totale, value: v.totale }))
       .sort((a, b) => b.value - a.value);
   }, [linkedPurchases, costoMap, centroLookup, extraCostiPerCentro]);
 
@@ -1858,7 +1894,9 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                 <TableRow>
                   <TableHead className="text-[10px] w-[20px]"></TableHead>
                   <TableHead className="text-[10px]">Centro</TableHead>
-                  <TableHead className="text-[10px] text-right">Importo</TableHead>
+                  <TableHead className="text-[10px] text-right">Imponibile</TableHead>
+                  <TableHead className="text-[10px] text-right">IVA</TableHead>
+                  <TableHead className="text-[10px] text-right">Totale</TableHead>
                   <TableHead className="text-[10px] text-right">%</TableHead>
                   <TableHead className="text-[10px] w-[30px]"></TableHead>
                 </TableRow>
@@ -1881,7 +1919,9 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                       >
                         <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
                         <TableCell className="text-xs">{d.name}</TableCell>
-                        <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
+                        <TableCell className="text-xs font-mono text-right">{formatCurrency(d.imponibile)}</TableCell>
+                        <TableCell className="text-xs font-mono text-right text-muted-foreground">{formatCurrency(d.iva)}</TableCell>
+                        <TableCell className="text-xs font-mono text-right font-semibold">{formatCurrency(d.totale)}</TableCell>
                         <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
                         <TableCell className="px-1">
                           <Button
@@ -1897,6 +1937,15 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                       {isExpanded && groupInvoices.map((inv) => {
                         const key = `${inv.anno}-${inv.numero}`;
                         const counterpart = "cliente" in inv ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
+                        const rowImp = tipo === "costo"
+                          ? ((inv as PurchaseInvoice).imponibile || 0) + ((inv as PurchaseInvoice).cassa || 0)
+                          : ((inv as SaleInvoice).imponibile || 0);
+                        const rowIva = (inv as any).imposta || 0;
+                        const rowTot = tipo === "costo"
+                          ? rowImp + rowIva
+                          : ((inv as SaleInvoice).totale || 0);
+                        const isCN = (((inv as any).tipo || "") + "").toLowerCase().includes("nota di credito");
+                        const sign = isCN ? -1 : 1;
                         return (
                           <TableRow
                             key={`detail-${key}`}
@@ -1912,7 +1961,9 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                <span className="text-muted-foreground ml-2">{counterpart}</span>
                                <Eye className="h-3 w-3 inline ml-1.5 text-muted-foreground/50" />
                              </TableCell>
-                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : saleTotale(inv as SaleInvoice))}</TableCell>
+                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(sign * Math.abs(rowImp))}</TableCell>
+                             <TableCell className="text-[11px] font-mono text-right text-muted-foreground">{formatCurrency(sign * Math.abs(rowIva))}</TableCell>
+                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(sign * Math.abs(rowTot))}</TableCell>
                              <TableCell colSpan={2} onClick={(e) => e.stopPropagation()}>
                                <CentroCell
                                  invoiceKey={key}
