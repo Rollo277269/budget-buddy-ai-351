@@ -41,7 +41,7 @@ export function getIssuedInvoiceRows(righe: SaleInvoiceRiga[] = []): { riga: Sal
     parseNumber(riga.imponibile) === 0 && parseNumber(riga.imposta) === 0 && parseNumber(riga.totale) === 0 && !!String(riga.descrizione || "").trim()
   );
 
-  return firstDescriptiveIdx > indexedRows.length / 2 ? indexedRows.slice().reverse() : indexedRows;
+  return firstDescriptiveIdx >= indexedRows.length / 2 ? indexedRows.slice().reverse() : indexedRows;
 }
 
 export interface PurchaseInvoice {
