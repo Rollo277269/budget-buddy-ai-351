@@ -1,5 +1,7 @@
 import { useMemo, useState, useCallback, useEffect, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
+import logoCssr from "@/assets/logo-cssr.jpg";
+import logoAgis from "@/assets/logo-agis.png";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useCentriData, CategoriaCentro, CentroCR } from "@/hooks/useCentri";
 import { useDocumentiAcquisto, DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
@@ -419,6 +421,9 @@ export default function BilancioPage() {
       {/* ── Hidden PDF Report ── */}
       <div className="pdf-report">
         <div className="pdf-header">
+          <div className="pdf-header-logo">
+            <img src={logoCssr} alt="CSSR" className="pdf-logo-cssr" />
+          </div>
           <div className="pdf-header-text">
             <h1>RELAZIONE ECONOMICA — {annoLabel}</h1>
             <p>Riepilogo costi e ricavi con ripartizione per centri di competenza</p>
@@ -532,6 +537,9 @@ export default function BilancioPage() {
         </div>
 
         <div className="pdf-footer">
+          <div className="pdf-footer-agis">
+            <img src={logoAgis} alt="AGIS" />
+          </div>
           <span className="pdf-footer-left">Bilancio — {annoLabel}</span>
           <span className="pdf-footer-center">Generato il {now}</span>
           <span className="pdf-footer-right">Pag. <span className="pdf-page-number" /></span>
