@@ -61,6 +61,18 @@ function invoiceKey(anno: number, numero: number) {
   return `${anno}-${numero}`;
 }
 
+/**
+ * Centri di costo/ricavo da escludere dal Riepilogo di commessa:
+ * - CO1..CO9: costi di gara (Predisposizione, Bolli, Polizze offerta, ANAC, ecc.)
+ * - RO1..RO9: ribaltamento costi di gara (ricavo)
+ * Qualsiasi codice che inizia per "CO" o "RO" è considerato fuori commessa.
+ */
+function isExcludedFromCommessa(codice: string | null | undefined): boolean {
+  if (!codice) return false;
+  const c = codice.trim().toUpperCase();
+  return /^(CO|RO)\d+/.test(c);
+}
+
 /** Per fatture di professionisti (con cassa previdenza), il costo effettivo è imponibile + cassa */
 function purchaseCost(p: PurchaseInvoice): number {
   const base = p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
@@ -316,16 +328,26 @@ export function CommessaDetailSheet({
     const linkedSales = [...autoSales, ...manualSales];
     const linkedPurchases = [...autoPurchases, ...manualPurchases];
 
+    // Per il RIEPILOGO di commessa escludiamo le fatture classificate sui centri
+    // "costi di gara" (CO*) e "ribaltamento costi di gara" (RO*).
+    // Le fatture restano comunque visibili nelle tabelle di dettaglio.
+    const linkedSalesForTotals = linkedSales.filter(
+      (s) => !isExcludedFromCommessa(ricavoMap.map[`${s.anno}-${s.numero}`])
+    );
+    const linkedPurchasesForTotals = linkedPurchases.filter(
+      (p) => !isExcludedFromCommessa(costoMap.map[`${p.anno}-${p.numero}`])
+    );
+
     // Totali IVA inclusa (lordi, prima delle ritenute). Per acquisti: imponibile + cassa + IVA.
-    const totalVendite = linkedSales.reduce((s, i) => s + saleTotale(i), 0);
-    const totalAcquisti = linkedPurchases.reduce((s, p) => {
+    const totalVendite = linkedSalesForTotals.reduce((s, i) => s + saleTotale(i), 0);
+    const totalAcquisti = linkedPurchasesForTotals.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0);
       return s + (isCreditNote ? -Math.abs(base) : base);
     }, 0);
     // Totali imponibile (netti, senza IVA). Per acquisti: imponibile + cassa (esclude IVA e ritenute).
-    const totalVenditeImponibile = linkedSales.reduce((s, i) => s + saleImponibile(i), 0);
-    const totalAcquistiImponibile = linkedPurchases.reduce((s, p) => {
+    const totalVenditeImponibile = linkedSalesForTotals.reduce((s, i) => s + saleImponibile(i), 0);
+    const totalAcquistiImponibile = linkedPurchasesForTotals.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0);
       return s + (isCreditNote ? -Math.abs(base) : base);
@@ -354,7 +376,7 @@ export function CommessaDetailSheet({
 
     // Monthly breakdown
     const monthlyMap = new Map<string, { vendite: number; acquisti: number; incassato: number; pagato: number }>();
-    linkedSales.forEach((s) => {
+    linkedSalesForTotals.forEach((s) => {
       const parts = s.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
@@ -370,7 +392,7 @@ export function CommessaDetailSheet({
         monthlyMap.set(r.mese, e);
       });
     });
-    linkedPurchases.forEach((p) => {
+    linkedPurchasesForTotals.forEach((p) => {
       const parts = p.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
@@ -400,7 +422,7 @@ export function CommessaDetailSheet({
 
     // Supplier breakdown for purchases
     const supplierMap = new Map<string, number>();
-    linkedPurchases.forEach((p) => {
+    linkedPurchasesForTotals.forEach((p) => {
       const name = p.fornitore || "Sconosciuto";
       supplierMap.set(name, (supplierMap.get(name) || 0) + purchaseCost(p));
     });
@@ -412,12 +434,12 @@ export function CommessaDetailSheet({
     // Status breakdown
     const statusSales = { pagata: 0, nonPagata: 0 };
     const statusPurchases = { pagata: 0, nonPagata: 0 };
-    linkedSales.forEach((s) => {
+    linkedSalesForTotals.forEach((s) => {
       const amt = saleTotale(s);
       if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) statusSales.pagata += amt;
       else statusSales.nonPagata += amt;
     });
-    linkedPurchases.forEach((p) => {
+    linkedPurchasesForTotals.forEach((p) => {
       const cost = purchaseCost(p);
       if (p.stato?.toLowerCase().includes("pagat")) statusPurchases.pagata += cost;
       else statusPurchases.nonPagata += cost;
@@ -432,7 +454,7 @@ export function CommessaDetailSheet({
       autoSaleKeys, autoPurchaseKeys,
       monthlyData, supplierData, statusSales, statusPurchases,
     };
-  }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice]);
+  }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice, ricavoMap.map, costoMap.map]);
 
   if (!commessa || !data) return null;
 
@@ -486,6 +508,7 @@ export function CommessaDetailSheet({
       const codice = d.centro_costo || "";
       const importo = Number(d.importo || 0);
       if (!importo) return;
+      if (isExcludedFromCommessa(codice)) return;
       map.set(codice, (map.get(codice) || 0) + importo);
     });
     return map;
@@ -499,6 +522,7 @@ export function CommessaDetailSheet({
     const agg = new Map<string, number>();
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
       const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : saleTotale(item as SaleInvoice);
       agg.set(label, (agg.get(label) || 0) + amount);
@@ -506,6 +530,7 @@ export function CommessaDetailSheet({
     // Aggiungo le spese extra (solo per i costi)
     if (isPurchase) {
       extraCostiPerCentro.forEach((importo, codice) => {
+        if (isExcludedFromCommessa(codice)) return;
         const label = codice
           ? `${codice} - ${centroLabelMap.get(codice) || ""}`
           : "Non classificato";
@@ -1656,6 +1681,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const map = new Map<string, number>();
     linkedSales.forEach((s) => {
       const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       map.set(label, (map.get(label) || 0) + saleTotale(s));
     });
@@ -1668,10 +1694,12 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const map = new Map<string, number>();
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       map.set(label, (map.get(label) || 0) + purchaseCost(p));
     });
     extraCostiPerCentro.forEach((importo, codice) => {
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       map.set(label, (map.get(label) || 0) + importo);
     });
@@ -1685,6 +1713,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const groups = new Map<string, SaleInvoice[]>();
     linkedSales.forEach((s) => {
       const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       if (!groups.has(label)) groups.set(label, []);
       groups.get(label)!.push(s);
@@ -1696,6 +1725,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const groups = new Map<string, PurchaseInvoice[]>();
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       if (!groups.has(label)) groups.set(label, []);
       groups.get(label)!.push(p);
