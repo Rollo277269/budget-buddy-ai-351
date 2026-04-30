@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useInvoiceData, SaleInvoice, SaleInvoiceRiga, parseExcelSales, seedSalesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
+import { useInvoiceData, SaleInvoice, SaleInvoiceRiga, parseExcelSales, seedSalesFromExcel, invalidateInvoiceCache, getIssuedInvoiceRows } from "@/hooks/useInvoiceData";
 import { parseFatturaPA } from "@/lib/fatturaPA";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
@@ -1136,10 +1136,7 @@ const VenditePage = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {(Array.isArray(r.righe) ? r.righe : [])
-                              .map((riga, idx) => ({ riga, idx }))
-                              .slice()
-                              .reverse()
+                            {getIssuedInvoiceRows(r.righe)
                               .map(({ riga, idx }, displayIdx) => {
                               const nc = isNotaCredito(r);
                               const amtClass = nc ? "text-destructive" : "";

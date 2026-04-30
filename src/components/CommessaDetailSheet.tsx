@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { SaleInvoice, PurchaseInvoice, getIssuedInvoiceRows } from "@/hooks/useInvoiceData";
 import { ManualLink } from "@/hooks/useCommessaLinks";
 import { CssrCommessa } from "@/hooks/useCssrCommesse";
 import { useCentriData, useCentroMap, CentroCR } from "@/hooks/useCentri";
@@ -1598,10 +1598,7 @@ export function CommessaDetailSheet({
 
                 {hasRighe ? (
                   <div className="space-y-2">
-                    {(inv as SaleInvoice).righe
-                      .map((riga, idx) => ({ riga, idx }))
-                      .slice()
-                      .reverse()
+                    {getIssuedInvoiceRows((inv as SaleInvoice).righe)
                       .map(({ riga, idx }) => (
                       <div key={idx} className="flex items-center justify-between gap-2 rounded-lg border p-2">
                         <div className="min-w-0 flex-1">
