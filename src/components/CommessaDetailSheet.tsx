@@ -815,6 +815,8 @@ export function CommessaDetailSheet({
                 centri={centri}
                 onAssignRicavo={ricavoMap.assign}
                 onAssignCosto={costoMap.assign}
+                extraCostiPerCentro={extraCostiPerCentro}
+                extraSpeseDocumenti={extraSpeseDocumenti}
               />
             </TabsContent>
 
