@@ -49,14 +49,14 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
 
   if (compact) {
     return (
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
         <Combobox
           value={filters.anno}
           onValueChange={(v) => update("anno", v)}
           options={yearOptions}
           placeholder="Anno"
           searchPlaceholder="Cerca anno..."
-          className="w-[130px]"
+          className="w-[100px]"
         />
 
         {!hideCliente && (
@@ -66,7 +66,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={clientOptions}
             placeholder="Cliente"
             searchPlaceholder="Cerca cliente..."
-            className="w-[200px]"
+            className="w-[170px]"
           />
         )}
 
@@ -77,7 +77,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={supplierOptions}
             placeholder="Fornitore"
             searchPlaceholder="Cerca fornitore..."
-            className="w-[200px]"
+            className="w-[170px]"
           />
         )}
 
@@ -87,7 +87,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           options={cigOptions}
           placeholder="CIG"
           searchPlaceholder="Cerca CIG..."
-          className="w-[160px] font-mono text-xs"
+          className="w-[130px] font-mono"
         />
 
         {options.centriCosto && options.centriCosto.length > 0 && (
@@ -97,7 +97,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={[{ value: "", label: "Tutti i centri" }, { value: "__unassigned__", label: "⚠ Non classificate" }, ...options.centriCosto]}
             placeholder="C. Costo"
             searchPlaceholder="Cerca centro..."
-            className="w-[180px]"
+            className="w-[150px]"
           />
         )}
 
@@ -108,7 +108,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
             options={[{ value: "", label: "Tutti i centri" }, { value: "__unassigned__", label: "⚠ Non classificate" }, ...options.centriRicavo]}
             placeholder="C. Ricavo"
             searchPlaceholder="Cerca centro..."
-            className="w-[180px]"
+            className="w-[150px]"
           />
         )}
 
@@ -116,7 +116,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
             onClick={() => onFiltersChange({ anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "", centroRicavo: "" })}
           >
             <RotateCcw className="h-3.5 w-3.5" />

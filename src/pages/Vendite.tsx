@@ -963,7 +963,7 @@ const VenditePage = () => {
     <div className="flex h-full">
       <div className={`flex flex-col overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Sticky header area */}
-        <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 space-y-2">
+        <div className="sticky top-0 z-20 bg-background border-b border-border px-3 py-1.5 space-y-1.5">
           {/* Row 1: summary + actions + compact drop zones */}
           <div className="flex items-center justify-between gap-3">
             <div />

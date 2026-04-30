@@ -262,29 +262,29 @@ export function DataTable<T extends Record<string, any>>({
   }, [sorted, scrollTop, containerHeight, totalRows, useVirtual]);
 
   const toolbarContent = (
-    <div className="flex items-center gap-2">
-      <div className="relative max-w-xs flex-1">
-        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+    <div className="flex items-center gap-1.5">
+      <div className="relative max-w-[220px] flex-1">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <Input
-          placeholder="Cerca in tutte le colonne..."
+          placeholder="Cerca…"
           value={globalSearchInput}
           onChange={(e) => setGlobalSearchInput(e.target.value)}
-          className="pl-8 h-9 text-xs"
+          className="pl-7 h-7 text-xs"
         />
         {globalSearchInput && (
-          <button onClick={() => setGlobalSearchInput("")} className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground">
+          <button onClick={() => setGlobalSearchInput("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
             <X className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
       {(isReordered || Object.keys(columnWidths).length > 0) && (
-        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={resetOrder} title="Ripristina ordine e larghezza colonne">
+        <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={resetOrder} title="Ripristina ordine e larghezza colonne">
           <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
         </Button>
       )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="text-xs" title="Mostra/nascondi colonne">
+          <Button variant="outline" size="sm" className="text-xs h-7 px-2" title="Mostra/nascondi colonne">
             <Columns3 className="h-3.5 w-3.5 mr-1.5" /> Colonne
           </Button>
         </DropdownMenuTrigger>
@@ -312,7 +312,7 @@ export function DataTable<T extends Record<string, any>>({
           <Button
             variant="outline"
             size="sm"
-            className="text-xs"
+            className="text-xs h-7 px-2"
             title="Espandi tutto"
             onClick={() => {
               const allKeys = new Set(sorted.filter((r) => expandable(r)).map((r) => rowKey(r)));
@@ -324,7 +324,7 @@ export function DataTable<T extends Record<string, any>>({
           <Button
             variant="outline"
             size="sm"
-            className="text-xs"
+            className="text-xs h-7 px-2"
             title="Comprimi tutto"
             onClick={() => setExpandedRows(new Set())}
           >
