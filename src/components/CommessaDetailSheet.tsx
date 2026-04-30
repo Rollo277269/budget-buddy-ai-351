@@ -663,7 +663,7 @@ export function CommessaDetailSheet({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
             <KpiCard
               icon={ArrowUpRight}
               label="Totale Vendite"
@@ -687,6 +687,14 @@ export function CommessaDetailSheet({
               sub={data.saldoImponibile >= 0 ? "Attivo" : "Passivo"}
               color={data.saldoImponibile >= 0 ? "text-income" : "text-expense"}
               iconBg={data.saldoImponibile >= 0 ? "bg-income/10" : "bg-expense/10"}
+            />
+            <KpiCard
+              icon={Scale}
+              label={`Saldo IVA ${data.saldoIva >= 0 ? "(a debito)" : "(a credito)"}`}
+              value={formatCurrency(Math.abs(data.saldoIva))}
+              sub={data.saldoIva >= 0 ? "Da versare" : "A credito"}
+              color={data.saldoIva >= 0 ? "text-expense" : "text-income"}
+              iconBg={data.saldoIva >= 0 ? "bg-expense/10" : "bg-income/10"}
             />
             <KpiCard
               icon={Percent}
