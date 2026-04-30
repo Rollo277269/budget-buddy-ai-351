@@ -1083,25 +1083,7 @@ const BanchePage = () => {
 
       {movements.length > 0 && !isLoading &&
       <>
-          {/* Year filter + Stats */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Select value={filterYear} onValueChange={setFilterYear}>
-              <SelectTrigger className="w-[140px] h-9 text-xs">
-                <SelectValue placeholder="Tutti gli anni" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti gli anni</SelectItem>
-                {availableYears.map((y) =>
-              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              )}
-              </SelectContent>
-            </Select>
-            {filterYear && filterYear !== "all" &&
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setFilterYear("")}>
-                Reset
-              </Button>
-          }
-          </div>
+          {/* Stats cards (in alto) */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Movimenti</p><p className="text-xl font-bold">{stats.total}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Riconciliati</p><p className="text-xl font-bold text-income">{stats.matched}</p></CardContent></Card>
@@ -1139,13 +1121,32 @@ const BanchePage = () => {
             </div>
         }
 
-          {/* Table */}
-          <DataTable<BankMovement>
-          columns={columns}
-          data={filteredMovements}
-          rowKey={(r) => r.id}
-          onRowClick={setSelectedMovement} />
-        
+          {/* Filtro anno + Reset accanto alla toolbar del DataTable */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Tutti gli anni" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti gli anni</SelectItem>
+                {availableYears.map((y) =>
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {filterYear && filterYear !== "all" &&
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-9" onClick={() => setFilterYear("")}>
+                Reset
+              </Button>
+            }
+            <div className="flex-1 min-w-0">
+              <DataTable<BankMovement>
+                columns={columns}
+                data={filteredMovements}
+                rowKey={(r) => r.id}
+                onRowClick={setSelectedMovement} />
+            </div>
+          </div>
         </>
       }
 
