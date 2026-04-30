@@ -679,10 +679,10 @@ export function CommessaDetailSheet({
             <KpiCard
               icon={TrendingUp}
               label="Saldo"
-              value={formatCurrency(data.saldo)}
-              sub={data.saldo >= 0 ? "Attivo" : "Passivo"}
-              color={data.saldo >= 0 ? "text-income" : "text-expense"}
-              iconBg={data.saldo >= 0 ? "bg-income/10" : "bg-expense/10"}
+              value={formatCurrency(data.saldoImponibile)}
+              sub={data.saldoImponibile >= 0 ? "Attivo" : "Passivo"}
+              color={data.saldoImponibile >= 0 ? "text-income" : "text-expense"}
+              iconBg={data.saldoImponibile >= 0 ? "bg-income/10" : "bg-expense/10"}
             />
             <KpiCard
               icon={Percent}
