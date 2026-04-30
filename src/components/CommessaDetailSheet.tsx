@@ -548,11 +548,33 @@ export function CommessaDetailSheet({
   ) => {
     const agg = new Map<string, { imponibile: number; iva: number; totale: number }>();
     items.forEach((item) => {
+      const isCN = ((item as any).tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isCN ? -1 : 1;
+      // Vendite multi-riga: se almeno una riga ha una classificazione propria,
+      // distribuisci gli importi sui rispettivi centri (riga per riga).
+      if (!isPurchase) {
+        const s = item as SaleInvoice;
+        const righe = Array.isArray(s.righe) ? s.righe : [];
+        const fatturaCodice = map[`${s.anno}-${s.numero}`] || "";
+        const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!map[`${s.anno}-${s.numero}-${idx}`]);
+        if (hasRowAssignments) {
+          righe.forEach((riga, idx) => {
+            const codiceRiga = map[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice || "Non classificato";
+            if (isExcludedFromCommessa(codiceRiga)) return;
+            const labelRiga = codiceRiga === "Non classificato" ? codiceRiga : `${codiceRiga} - ${centroLabelMap.get(codiceRiga) || ""}`;
+            const impR = sign * Math.abs(riga.imponibile || 0);
+            const totR = sign * Math.abs(riga.totale || 0);
+            const ivaR = sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
+            const eR = agg.get(labelRiga) || { imponibile: 0, iva: 0, totale: 0 };
+            eR.imponibile += impR; eR.iva += ivaR; eR.totale += totR;
+            agg.set(labelRiga, eR);
+          });
+          return;
+        }
+      }
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       if (isExcludedFromCommessa(codice)) return;
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      const isCN = ((item as any).tipo || "").toLowerCase().includes("nota di credito");
-      const sign = isCN ? -1 : 1;
       let imp = 0, iva = 0, tot = 0;
       if (isPurchase) {
         const p = item as PurchaseInvoice;
@@ -1733,10 +1755,27 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   const ricavoData = useMemo(() => {
     const map = new Map<string, { imponibile: number; iva: number; totale: number }>();
     linkedSales.forEach((s) => {
-      const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      const sign = isSaleCreditNote(s) ? -1 : 1;
+      const righe = Array.isArray(s.righe) ? s.righe : [];
+      const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
+      const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
+      if (hasRowAssignments) {
+        righe.forEach((riga, idx) => {
+          const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
+          if (isExcludedFromCommessa(codiceRiga)) return;
+          const labelRiga = codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato";
+          const impR = sign * Math.abs(riga.imponibile || 0);
+          const totR = sign * Math.abs(riga.totale || 0);
+          const ivaR = sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
+          const eR = map.get(labelRiga) || { imponibile: 0, iva: 0, totale: 0 };
+          eR.imponibile += impR; eR.iva += ivaR; eR.totale += totR;
+          map.set(labelRiga, eR);
+        });
+        return;
+      }
+      const codice = fatturaCodice;
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      const sign = isSaleCreditNote(s) ? -1 : 1;
       const imp = sign * Math.abs(s.imponibile || 0);
       const iva = sign * Math.abs(s.imposta || 0);
       const tot = sign * Math.abs(s.totale || 0);
@@ -1783,11 +1822,24 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   const ricavoInvoiceGroups = useMemo(() => {
     const groups = new Map<string, SaleInvoice[]>();
     linkedSales.forEach((s) => {
-      const codice = ricavoMap[`${s.anno}-${s.numero}`];
-      if (isExcludedFromCommessa(codice)) return;
-      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      if (!groups.has(label)) groups.set(label, []);
-      groups.get(label)!.push(s);
+      const righe = Array.isArray(s.righe) ? s.righe : [];
+      const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
+      const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
+      const labels = new Set<string>();
+      if (hasRowAssignments) {
+        righe.forEach((_, idx) => {
+          const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
+          if (isExcludedFromCommessa(codiceRiga)) return;
+          labels.add(codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato");
+        });
+      } else {
+        if (isExcludedFromCommessa(fatturaCodice)) return;
+        labels.add(fatturaCodice ? `${fatturaCodice} - ${centroLookup.get(fatturaCodice) || ""}` : "Non classificato");
+      }
+      labels.forEach((label) => {
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label)!.push(s);
+      });
     });
     return groups;
   }, [linkedSales, ricavoMap, centroLookup]);
