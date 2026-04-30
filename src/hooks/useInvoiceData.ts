@@ -429,18 +429,35 @@ export function useInvoiceData() {
   const normalizedSales = useMemo(() => {
     return sales.map((invoice) => {
       const righe = Array.isArray(invoice.righe) ? invoice.righe : [];
-      if (righe.length === 0) return invoice;
+
+      // Fallback CIG/CUP: se l'header non ha CIG/CUP, ereditali dalla prima riga che ne contiene uno.
+      // Tipicamente l'ultima riga "Gara/Oggetto" della fattura emessa contiene CIG/CUP estratti dal parser.
+      let inheritedCig = invoice.cig || "";
+      let inheritedCup = invoice.cup || "";
+      if (!inheritedCig || !inheritedCup) {
+        for (const riga of righe) {
+          if (!inheritedCig && riga.cig) inheritedCig = riga.cig;
+          if (!inheritedCup && riga.cup) inheritedCup = riga.cup;
+          if (inheritedCig && inheritedCup) break;
+        }
+      }
+      const headerEnriched =
+        inheritedCig !== (invoice.cig || "") || inheritedCup !== (invoice.cup || "")
+          ? { ...invoice, cig: inheritedCig, cup: inheritedCup }
+          : invoice;
+
+      if (righe.length === 0) return headerEnriched;
 
       const sumRowsImponibile = righe.reduce((sum, riga) => sum + parseNumber(riga.imponibile), 0);
       const sumRowsTotale = righe.reduce((sum, riga) => sum + parseNumber(riga.totale), 0);
       const hasLegacyRowAmounts =
-        Math.abs(sumRowsTotale - invoice.imponibile) < 0.05 &&
-        Math.abs(sumRowsImponibile - invoice.imponibile) > 0.05;
+        Math.abs(sumRowsTotale - headerEnriched.imponibile) < 0.05 &&
+        Math.abs(sumRowsImponibile - headerEnriched.imponibile) > 0.05;
 
-      if (!hasLegacyRowAmounts) return invoice;
+      if (!hasLegacyRowAmounts) return headerEnriched;
 
       return {
-        ...invoice,
+        ...headerEnriched,
         righe: righe.map((riga) => {
           const imponibile = parseNumber(riga.imponibile);
           const imposta = parseNumber(riga.imposta);
