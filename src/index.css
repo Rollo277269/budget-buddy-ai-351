@@ -225,10 +225,10 @@
 
   body.print-report .pdf-logo-cssr {
     display: block;
-    height: 28px !important;
+    height: 40px !important;
     width: auto !important;
-    max-height: 28px !important;
-    max-width: 110px !important;
+    max-height: 40px !important;
+    max-width: 150px !important;
     flex-shrink: 0;
     object-fit: contain;
   }
@@ -241,10 +241,10 @@
   }
 
   body.print-report .pdf-footer-agis img {
-    height: 10px !important;
+    height: 9px !important;
     width: auto !important;
-    max-height: 10px !important;
-    max-width: 40px !important;
+    max-height: 9px !important;
+    max-width: 36px !important;
     display: block;
     object-fit: contain;
   }
