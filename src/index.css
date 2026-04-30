@@ -175,7 +175,9 @@
     z-index: 99999;
     background: white !important;
     color: #1a1a1a !important;
-    padding: 12mm 12mm 22mm 12mm !important;
+    /* Margini pagina richiesti: top 2.5cm, bottom 2cm, left 2cm, right 2cm.
+       Bottom padding aumentato per lasciare spazio al footer fisso (2cm + ~1cm footer). */
+    padding: 25mm 20mm 30mm 20mm !important;
     box-sizing: border-box !important;
     font-family: var(--font-sans), "Segoe UI", system-ui, sans-serif;
     line-height: 1.5;
@@ -282,13 +284,13 @@
   /* Footer fixed on every page */
   body.print-report .pdf-footer {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 8mm;
+    left: 20mm;
+    right: 20mm;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 12mm;
+    padding: 6px 0;
     border-top: 2px solid #1e3a5f;
     font-size: 9px;
     color: #888;
@@ -398,6 +400,8 @@
     border-collapse: collapse;
     font-size: 10px;
     table-layout: auto;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   body.print-report .pdf-table-fixed {
