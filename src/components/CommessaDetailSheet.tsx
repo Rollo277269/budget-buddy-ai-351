@@ -1311,15 +1311,15 @@ export function CommessaDetailSheet({
             <section className="pdf-section">
               <h2>Riepilogo Centri di Ricavo</h2>
               <table className="pdf-table">
-                <thead><tr><th>Centro</th><th className="is-right">Importo</th><th className="is-right">%</th></tr></thead>
-                <tbody>{ricavoRows.map((r) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
+                <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                <tbody>{ricavoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
               </table>
             </section>
             <section className="pdf-section">
               <h2>Riepilogo Centri di Costo</h2>
               <table className="pdf-table">
-                <thead><tr><th>Centro</th><th className="is-right">Importo</th><th className="is-right">%</th></tr></thead>
-                <tbody>{costoRows.map((r) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
+                <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                <tbody>{costoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
               </table>
             </section>
           </div>
