@@ -342,18 +342,32 @@ export function CommessaDetailSheet({
 
     // Totali IVA inclusa (lordi, prima delle ritenute). Per acquisti: imponibile + cassa + IVA.
     const totalVendite = linkedSalesForTotals.reduce((s, i) => s + saleTotale(i), 0);
-    const totalAcquisti = linkedPurchasesForTotals.reduce((s, p) => {
+    let totalAcquisti = linkedPurchasesForTotals.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0);
       return s + (isCreditNote ? -Math.abs(base) : base);
     }, 0);
     // Totali imponibile (netti, senza IVA). Per acquisti: imponibile + cassa (esclude IVA e ritenute).
     const totalVenditeImponibile = linkedSalesForTotals.reduce((s, i) => s + saleImponibile(i), 0);
-    const totalAcquistiImponibile = linkedPurchasesForTotals.reduce((s, p) => {
+    let totalAcquistiImponibile = linkedPurchasesForTotals.reduce((s, p) => {
       const isCreditNote = (p.tipo || "").toLowerCase().includes("nota di credito");
       const base = (p.imponibile || 0) + (p.cassa || 0);
       return s + (isCreditNote ? -Math.abs(base) : base);
     }, 0);
+
+    // Spese extra (documenti acquisto PDF/ricevute) collegate ai CIG della commessa,
+    // escludendo quelle già contate (generate da CommessaExpenseUpload) e i centri esclusi.
+    const extraDocs = documentiAcquisto.filter(
+      (d) =>
+        d.cig &&
+        commessaCigs.has(d.cig) &&
+        !(d.ai_summary || "").startsWith("Spesa commessa") &&
+        !isExcludedFromCommessa(d.centro_costo || "")
+    );
+    const totalExtraSpese = extraDocs.reduce((s, d) => s + Number(d.importo || 0), 0);
+    totalAcquisti += totalExtraSpese;
+    totalAcquistiImponibile += totalExtraSpese;
+
     const saldo = totalVendite - totalAcquisti;
     // Il margine si calcola sull'imponibile (al netto di IVA)
     const saldoImponibile = totalVenditeImponibile - totalAcquistiImponibile;
