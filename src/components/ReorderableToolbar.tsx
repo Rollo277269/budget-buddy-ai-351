@@ -83,13 +83,19 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
     dragId.current = id;
     e.dataTransfer.effectAllowed = "move";
     try { e.dataTransfer.setData("text/plain", id); } catch { /* noop */ }
+    // eslint-disable-next-line no-console
+    console.log(`%c[ReorderableToolbar:${storageKey}] dragstart →`, "color:#2563eb", id, "(handled by wrapper)");
   };
 
   const handleDragOver = (id: string) => (e: React.DragEvent) => {
     if (!editMode || !dragId.current || dragId.current === id) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    if (overId !== id) setOverId(id);
+    if (overId !== id) {
+      setOverId(id);
+      // eslint-disable-next-line no-console
+      console.log(`%c[ReorderableToolbar:${storageKey}] dragover →`, "color:#9333ea", `${dragId.current} over ${id}`);
+    }
   };
 
   const handleDrop = (id: string) => (e: React.DragEvent) => {
@@ -107,11 +113,22 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
       next.splice(fromIdx, 1);
       next.splice(toIdx, 0, from);
       saveOrder(storageKey, next);
+      // eslint-disable-next-line no-console
+      console.log(
+        `%c[ReorderableToolbar:${storageKey}] drop ✅`,
+        "color:#16a34a; font-weight:bold",
+        `${from} → ${id}`,
+        "new order:", next,
+      );
       return next;
     });
   };
 
   const handleDragEnd = () => {
+    if (dragId.current) {
+      // eslint-disable-next-line no-console
+      console.log(`%c[ReorderableToolbar:${storageKey}] dragend ⏹ (no drop)`, "color:#6b7280");
+    }
     dragId.current = null;
     setOverId(null);
   };
