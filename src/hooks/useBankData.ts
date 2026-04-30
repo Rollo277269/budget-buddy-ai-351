@@ -24,7 +24,7 @@ export interface MatchedInvoice {
 export interface BankMovement {
   id: string;
   accountId: string;
-  sourceFile: string;
+  sourceFile?: string;
   data: string;
   dataValuta: string;
   causale: string;
