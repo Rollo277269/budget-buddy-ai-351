@@ -827,15 +827,7 @@ const AcquistiPage = () => {
         <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 space-y-2">
           {/* Single row: summary + filters + table toolbar + actions */}
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm text-muted-foreground whitespace-nowrap">
-              {purchases.length} fatture
-              {xmlRecords.length > 0 && (
-                <span className="ml-1.5">
-                  · <FileText className="inline h-3 w-3 mb-0.5" /> {xmlMatchedCount}
-                  {xmlUnmatchedCount > 0 && <span className="text-destructive"> · {xmlUnmatchedCount} non assoc.</span>}
-                </span>
-              )}
-            </p>
+            {/* Counters moved next to XML badges below */}
 
             <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
               ...filterOptions,
@@ -930,6 +922,7 @@ const AcquistiPage = () => {
             <TabsContent value="xml">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="secondary" className="text-[10px]">{purchases.length} fatture</Badge>
                   <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
                   <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
                   {xmlUnmatchedCount > 0 && <Badge variant={xmlFilterUnmatched ? "default" : "destructive"} className="text-[10px] cursor-pointer" onClick={() => setXmlFilterUnmatched(f => !f)}>{xmlUnmatchedCount} non assoc.{xmlFilterUnmatched ? " ✕" : ""}</Badge>}
