@@ -1121,7 +1121,7 @@ const BanchePage = () => {
             </div>
         }
 
-          {/* Filtro anno + Reset accanto alla toolbar del DataTable */}
+          {/* Toolbar custom: filtro anno + Reset a sinistra, search e altri controlli del DataTable a destra (via portal) */}
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={filterYear} onValueChange={setFilterYear}>
               <SelectTrigger className="w-[140px] h-9 text-xs">
@@ -1139,14 +1139,14 @@ const BanchePage = () => {
                 Reset
               </Button>
             }
-            <div className="flex-1 min-w-0">
-              <DataTable<BankMovement>
-                columns={columns}
-                data={filteredMovements}
-                rowKey={(r) => r.id}
-                onRowClick={setSelectedMovement} />
-            </div>
+            <div ref={tableToolbarRef} className="flex items-center gap-2 flex-1 min-w-0" />
           </div>
+          <DataTable<BankMovement>
+            columns={columns}
+            data={filteredMovements}
+            rowKey={(r) => r.id}
+            onRowClick={setSelectedMovement}
+            toolbarPortalRef={tableToolbarRef} />
         </>
       }
 
