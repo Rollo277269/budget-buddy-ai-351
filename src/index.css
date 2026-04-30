@@ -112,6 +112,32 @@
     margin: 0;
   }
 
+  @page :first {
+    margin: 0;
+  }
+
+  @page :left {
+    margin: 0;
+  }
+
+  @page :right {
+    margin: 0;
+  }
+
+  /* Explicitly clear browser-generated margin boxes (date, title, URL, page #) */
+  @page {
+    @top-left { content: none !important; }
+    @top-center { content: none !important; }
+    @top-right { content: none !important; }
+    @bottom-left { content: none !important; }
+    @bottom-center { content: none !important; }
+    @bottom-right { content: none !important; }
+    @top-left-corner { content: none !important; }
+    @top-right-corner { content: none !important; }
+    @bottom-left-corner { content: none !important; }
+    @bottom-right-corner { content: none !important; }
+  }
+
   html,
   body {
     background: white !important;
