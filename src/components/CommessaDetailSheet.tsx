@@ -1671,6 +1671,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const map = new Map<string, number>();
     linkedSales.forEach((s) => {
       const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       map.set(label, (map.get(label) || 0) + saleTotale(s));
     });
@@ -1683,10 +1684,12 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const map = new Map<string, number>();
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       map.set(label, (map.get(label) || 0) + purchaseCost(p));
     });
     extraCostiPerCentro.forEach((importo, codice) => {
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       map.set(label, (map.get(label) || 0) + importo);
     });
@@ -1700,6 +1703,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const groups = new Map<string, SaleInvoice[]>();
     linkedSales.forEach((s) => {
       const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       if (!groups.has(label)) groups.set(label, []);
       groups.get(label)!.push(s);
@@ -1711,6 +1715,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     const groups = new Map<string, PurchaseInvoice[]>();
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       if (!groups.has(label)) groups.set(label, []);
       groups.get(label)!.push(p);
