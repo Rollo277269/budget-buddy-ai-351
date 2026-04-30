@@ -958,11 +958,6 @@ const AcquistiPage = () => {
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                    {xmlUnmatchedCount > 0 && (
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={rematchAll}>
-                        <RefreshCw className="h-3 w-3 mr-1" />Riassocia
-                      </Button>
-                    )}
                   </div>
                 </div>
                 {/* Main invoices table */}
