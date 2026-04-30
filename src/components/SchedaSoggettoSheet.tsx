@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -18,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TrendingUp, TrendingDown, Scale, Receipt } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Receipt, FileText } from "lucide-react";
 
 interface SchedaSoggettoSheetProps {
   tipo: "cliente" | "fornitore";
@@ -73,6 +75,7 @@ export function SchedaSoggettoSheet({
   open,
   onOpenChange,
 }: SchedaSoggettoSheetProps) {
+  const navigate = useNavigate();
   const { rows, stats } = useMemo(() => {
     if (!nome) return { rows: [], stats: { totaleDare: 0, totaleAvere: 0, saldo: 0, numFatture: 0, mediaImporto: 0 } };
 
@@ -149,10 +152,27 @@ export function SchedaSoggettoSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="!max-w-[720px] w-[90vw] overflow-y-auto">
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-base">{label}</SheetTitle>
-          <SheetDescription className="text-lg font-semibold text-foreground">
-            {nome}
-          </SheetDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <SheetTitle className="text-base">{label}</SheetTitle>
+              <SheetDescription className="text-lg font-semibold text-foreground">
+                {nome}
+              </SheetDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 shrink-0"
+              title="Apri scheda contabile e stampa report PDF"
+              onClick={() => {
+                onOpenChange(false);
+                navigate(`/schede-contabili?soggetto=${encodeURIComponent(nome)}&autoprint=1`);
+              }}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Report PDF
+            </Button>
+          </div>
         </SheetHeader>
 
         {/* KPI cards */}
