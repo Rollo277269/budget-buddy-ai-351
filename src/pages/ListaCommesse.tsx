@@ -4,6 +4,7 @@ import { DataTable, ColumnDef } from "@/components/DataTable";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { useCommessaLinks } from "@/hooks/useCommessaLinks";
+import { useDocumentiAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/format";
@@ -42,6 +43,7 @@ const ListaCommessePage = () => {
   const { commesse: cssrCommesse, loading: cssrLoading, removeCommessa } = useCssrCommesse();
   const { allSales, allPurchases, loading: invoiceLoading, refresh: refreshInvoices } = useInvoiceData();
   const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
+  const { documenti: documentiAcquisto } = useDocumentiAcquisto("acquisto");
   const [selected, setSelected] = useState<Commessa | null>(null);
   const [statoFilter, setStatoFilter] = useState<StatoFilter>("tutte");
   const [deleteTarget, setDeleteTarget] = useState<Commessa | null>(null);
@@ -142,6 +144,16 @@ const ListaCommessePage = () => {
         cigCounts.set(p.cig, e);
       }
     });
+    // Include extra expenses from PDFs/receipts (documenti_acquisto), excluding those
+    // already converted into purchase invoices (ai_summary starts with "Spesa commessa").
+    documentiAcquisto.forEach((d) => {
+      if (!d.cig) return;
+      if ((d.ai_summary || "").startsWith("Spesa commessa")) return;
+      const e = cigCounts.get(d.cig) || { fv: 0, fa: 0, tv: 0, ta: 0 };
+      e.fa++;
+      e.ta += Math.abs(Number(d.importo) || 0);
+      cigCounts.set(d.cig, e);
+    });
 
     return cssrCommesse.map((c) => {
       const cig = c.cig || "";
@@ -163,7 +175,7 @@ const ListaCommessePage = () => {
         cssrData: c,
       };
     }).sort((a, b) => b.numero - a.numero);
-  }, [cssrCommesse, allSales, allPurchases]);
+  }, [cssrCommesse, allSales, allPurchases, documentiAcquisto]);
 
   const statoCounts = useMemo(() => {
     const c = { in_corso: 0, completata: 0, da_iniziare: 0 };
