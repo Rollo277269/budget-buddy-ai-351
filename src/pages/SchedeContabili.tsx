@@ -1280,6 +1280,7 @@ export default function SchedeContabiliPage() {
     try { localStorage.setItem("pdf-standard-margins", v ? "1" : "0"); } catch {}
   };
   const exportPdf = () => handleExportPdf(pdfStandardMargins ? "standard" : "zero");
+  const previewPdf = () => handlePreviewPdf(pdfStandardMargins ? "standard" : "zero");
 
   const clienti = useMemo(() => {
     const set = new Set<string>();
@@ -1395,6 +1396,10 @@ export default function SchedeContabiliPage() {
               <Button variant="outline" size="sm" onClick={exportPdf} className="gap-1.5" title="Esporta scheda contabile in PDF">
                 <FileText className="h-3.5 w-3.5" />
                 Report
+              </Button>
+              <Button variant="outline" size="sm" onClick={previewPdf} className="gap-1.5" title="Apri anteprima paginata in nuova scheda">
+                <FileText className="h-3.5 w-3.5" />
+                Anteprima
               </Button>
             </div>
           )}
