@@ -498,6 +498,7 @@ export function CommessaDetailSheet({
       const codice = d.centro_costo || "";
       const importo = Number(d.importo || 0);
       if (!importo) return;
+      if (isExcludedFromCommessa(codice)) return;
       map.set(codice, (map.get(codice) || 0) + importo);
     });
     return map;
@@ -511,6 +512,7 @@ export function CommessaDetailSheet({
     const agg = new Map<string, number>();
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
+      if (isExcludedFromCommessa(codice)) return;
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
       const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : saleTotale(item as SaleInvoice);
       agg.set(label, (agg.get(label) || 0) + amount);
@@ -518,6 +520,7 @@ export function CommessaDetailSheet({
     // Aggiungo le spese extra (solo per i costi)
     if (isPurchase) {
       extraCostiPerCentro.forEach((importo, codice) => {
+        if (isExcludedFromCommessa(codice)) return;
         const label = codice
           ? `${codice} - ${centroLabelMap.get(codice) || ""}`
           : "Non classificato";
