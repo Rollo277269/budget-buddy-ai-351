@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { GripVertical, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, GripVertical, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLayoutEditMode } from "@/hooks/useLayoutEditMode";
@@ -58,8 +58,15 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
     const saved = loadOrder(storageKey);
     return saved ?? items.map((i) => i.id);
   });
-  const dragId = useRef<string | null>(null);
+  const orderRef = useRef(order);
+  const activeId = useRef<string | null>(null);
+  const movedRef = useRef(false);
+  const [movingId, setMovingId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+
+  useEffect(() => {
+    orderRef.current = order;
+  }, [order]);
 
   // Reconcile: append new items, drop removed ones — preserve user order otherwise.
   useEffect(() => {
@@ -78,33 +85,8 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
     return order.map((id) => map.get(id)).filter(Boolean) as ReorderableItem[];
   }, [items, order]);
 
-  const handleDragStart = (id: string) => (e: React.DragEvent) => {
-    if (!editMode) return;
-    dragId.current = id;
-    e.dataTransfer.effectAllowed = "move";
-    try { e.dataTransfer.setData("text/plain", id); } catch { /* noop */ }
-    // eslint-disable-next-line no-console
-    console.log(`%c[ReorderableToolbar:${storageKey}] dragstart →`, "color:#2563eb", id, "(handled by wrapper)");
-  };
-
-  const handleDragOver = (id: string) => (e: React.DragEvent) => {
-    if (!editMode || !dragId.current || dragId.current === id) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (overId !== id) {
-      setOverId(id);
-      // eslint-disable-next-line no-console
-      console.log(`%c[ReorderableToolbar:${storageKey}] dragover →`, "color:#9333ea", `${dragId.current} over ${id}`);
-    }
-  };
-
-  const handleDrop = (id: string) => (e: React.DragEvent) => {
-    if (!editMode) return;
-    e.preventDefault();
-    const from = dragId.current;
-    dragId.current = null;
-    setOverId(null);
-    if (!from || from === id) return;
+  const moveItem = useCallback((from: string, to: string, reason: "pointer" | "arrow") => {
+    if (from === to) return;
     setOrder((prev) => {
       const fromIdx = prev.indexOf(from);
       const toIdx = prev.indexOf(id);
