@@ -1876,7 +1876,9 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                 <TableRow>
                   <TableHead className="text-[10px] w-[20px]"></TableHead>
                   <TableHead className="text-[10px]">Centro</TableHead>
-                  <TableHead className="text-[10px] text-right">Importo</TableHead>
+                  <TableHead className="text-[10px] text-right">Imponibile</TableHead>
+                  <TableHead className="text-[10px] text-right">IVA</TableHead>
+                  <TableHead className="text-[10px] text-right">Totale</TableHead>
                   <TableHead className="text-[10px] text-right">%</TableHead>
                   <TableHead className="text-[10px] w-[30px]"></TableHead>
                 </TableRow>
@@ -1899,7 +1901,9 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                       >
                         <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
                         <TableCell className="text-xs">{d.name}</TableCell>
-                        <TableCell className="text-xs font-mono text-right">{formatCurrency(d.value)}</TableCell>
+                        <TableCell className="text-xs font-mono text-right">{formatCurrency(d.imponibile)}</TableCell>
+                        <TableCell className="text-xs font-mono text-right text-muted-foreground">{formatCurrency(d.iva)}</TableCell>
+                        <TableCell className="text-xs font-mono text-right font-semibold">{formatCurrency(d.totale)}</TableCell>
                         <TableCell className="text-xs font-mono text-right">{pct.toFixed(1)}%</TableCell>
                         <TableCell className="px-1">
                           <Button
@@ -1915,6 +1919,15 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                       {isExpanded && groupInvoices.map((inv) => {
                         const key = `${inv.anno}-${inv.numero}`;
                         const counterpart = "cliente" in inv ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
+                        const rowImp = tipo === "costo"
+                          ? ((inv as PurchaseInvoice).imponibile || 0) + ((inv as PurchaseInvoice).cassa || 0)
+                          : ((inv as SaleInvoice).imponibile || 0);
+                        const rowIva = (inv as any).imposta || 0;
+                        const rowTot = tipo === "costo"
+                          ? rowImp + rowIva
+                          : ((inv as SaleInvoice).totale || 0);
+                        const isCN = (((inv as any).tipo || "") + "").toLowerCase().includes("nota di credito");
+                        const sign = isCN ? -1 : 1;
                         return (
                           <TableRow
                             key={`detail-${key}`}
@@ -1930,7 +1943,9 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                <span className="text-muted-foreground ml-2">{counterpart}</span>
                                <Eye className="h-3 w-3 inline ml-1.5 text-muted-foreground/50" />
                              </TableCell>
-                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(tipo === "costo" ? purchaseCost(inv as PurchaseInvoice) : saleTotale(inv as SaleInvoice))}</TableCell>
+                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(sign * Math.abs(rowImp))}</TableCell>
+                             <TableCell className="text-[11px] font-mono text-right text-muted-foreground">{formatCurrency(sign * Math.abs(rowIva))}</TableCell>
+                             <TableCell className="text-[11px] font-mono text-right">{formatCurrency(sign * Math.abs(rowTot))}</TableCell>
                              <TableCell colSpan={2} onClick={(e) => e.stopPropagation()}>
                                <CentroCell
                                  invoiceKey={key}
