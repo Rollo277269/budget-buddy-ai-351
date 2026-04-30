@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users, PanelLeftClose, PanelLeft, Lock, Unlock } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
+import { useLayoutEditMode } from "@/hooks/useLayoutEditMode";
 import {
   Sidebar,
   SidebarContent,
@@ -63,6 +64,7 @@ function saveOrder(items: MenuItem[]) {
 
 export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggleLock: () => void }) {
   const { state } = useSidebar();
+  const [editLayout, , toggleEditLayout] = useLayoutEditMode();
   const collapsed = state === "collapsed";
   const [items, setItems] = useState<MenuItem[]>(loadOrder);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -104,7 +106,7 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="flex items-center px-2 pt-3 pb-1">
+      <SidebarHeader className="flex flex-row items-center gap-1 px-2 pt-3 pb-1">
         <Button
           variant="ghost"
           size="icon"
@@ -114,6 +116,17 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
         >
           {locked ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
         </Button>
+        {!collapsed && (
+          <Button
+            variant={editLayout ? "default" : "ghost"}
+            size="icon"
+            className="h-7 w-7"
+            onClick={toggleEditLayout}
+            title={editLayout ? "Blocca layout (fine modifica)" : "Modifica layout: riordina pulsanti delle pagine"}
+          >
+            {editLayout ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+          </Button>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
