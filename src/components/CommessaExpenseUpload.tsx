@@ -284,7 +284,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
           descrizione: formData.descrizione, totale: formData.importo_totale,
           imponibile: formData.imponibile, imposta: formData.imposta,
           data: formData.data_documento, tipo: formData.tipo_documento,
-          cig, stato: "", source_file: `commessa-${commessaNumero}`,
+          cig, stato: "",
         } as any);
       if (insertError) throw insertError;
 

@@ -280,7 +280,7 @@ export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: s
     totale: s.totale, imponibile: s.imponibile, imposta: s.imposta,
     descrizione: s.descrizione, cig: s.cig, cup: s.cup,
     stato: s.stato, scadenza: s.scadenza, pagamento: s.pagamento,
-    righe: JSON.stringify(s.righe), source_file: sourceFile,
+    righe: JSON.stringify(s.righe),
   }));
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);
@@ -290,7 +290,7 @@ export async function seedSalesFromExcel(salesData: SaleInvoice[], sourceFile: s
   return { discrepancies };
 }
 
-export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], sourceFile: string) {
+export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], _sourceFile?: string) {
   const { detectCigDiscrepancy } = await import("@/lib/cigCoherence");
   const discrepancies = purchasesData
     .map((p) => detectCigDiscrepancy({
@@ -311,7 +311,6 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], s
     cassa: p.cassa, ritenute: p.ritenute,
     descrizione: p.descrizione, cig: p.cig, cup: p.cup,
     stato: p.stato, scadenza: p.scadenza, pagamento: p.pagamento,
-    source_file: sourceFile,
   }));
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);

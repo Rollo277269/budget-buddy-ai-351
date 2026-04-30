@@ -26,7 +26,6 @@ export type Database = {
           id: string
           importo: number
           saldo: number
-          source_file: string
         }
         Insert: {
           account_id?: string
@@ -39,7 +38,6 @@ export type Database = {
           id?: string
           importo?: number
           saldo?: number
-          source_file?: string
         }
         Update: {
           account_id?: string
@@ -52,7 +50,6 @@ export type Database = {
           id?: string
           importo?: number
           saldo?: number
-          source_file?: string
         }
         Relationships: []
       }
@@ -308,7 +305,6 @@ export type Database = {
           partita_iva: string
           ritenute: number
           scadenza: string
-          source_file: string
           stato: string
           tipo: string
           totale: number
@@ -330,7 +326,6 @@ export type Database = {
           partita_iva?: string
           ritenute?: number
           scadenza?: string
-          source_file?: string
           stato?: string
           tipo?: string
           totale?: number
@@ -352,7 +347,6 @@ export type Database = {
           partita_iva?: string
           ritenute?: number
           scadenza?: string
-          source_file?: string
           stato?: string
           tipo?: string
           totale?: number
@@ -376,7 +370,6 @@ export type Database = {
           partita_iva: string
           righe: Json
           scadenza: string
-          source_file: string
           stato: string
           suffisso: string
           tipo: string
@@ -398,7 +391,6 @@ export type Database = {
           partita_iva?: string
           righe?: Json
           scadenza?: string
-          source_file?: string
           stato?: string
           suffisso?: string
           tipo?: string
@@ -420,7 +412,6 @@ export type Database = {
           partita_iva?: string
           righe?: Json
           scadenza?: string
-          source_file?: string
           stato?: string
           suffisso?: string
           tipo?: string

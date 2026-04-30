@@ -24,7 +24,7 @@ export interface MatchedInvoice {
 export interface BankMovement {
   id: string;
   accountId: string;
-  sourceFile: string;
+  sourceFile?: string;
   data: string;
   dataValuta: string;
   causale: string;
@@ -675,7 +675,6 @@ function mapMovement(d: any): RawMovement {
   return {
     id: d.id,
     accountId: d.account_id || "default",
-    sourceFile: d.source_file || "",
     data: d.data || "",
     dataValuta: d.data_valuta || "",
     causale: d.causale || "",
@@ -689,7 +688,6 @@ function mapMovement(d: any): RawMovement {
 async function insertMovementsToDb(movements: RawMovement[]) {
   const rows = movements.map(m => ({
     account_id: m.accountId,
-    source_file: m.sourceFile,
     data: m.data,
     data_valuta: m.dataValuta,
     causale: m.causale,
