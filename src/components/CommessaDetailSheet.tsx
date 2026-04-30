@@ -1598,7 +1598,11 @@ export function CommessaDetailSheet({
 
                 {hasRighe ? (
                   <div className="space-y-2">
-                    {(inv as SaleInvoice).righe.map((riga, idx) => (
+                    {(inv as SaleInvoice).righe
+                      .map((riga, idx) => ({ riga, idx }))
+                      .slice()
+                      .reverse()
+                      .map(({ riga, idx }) => (
                       <div key={idx} className="flex items-center justify-between gap-2 rounded-lg border p-2">
                         <div className="min-w-0 flex-1">
                           <p className="text-xs truncate">{riga.descrizione || `Riga ${idx + 1}`}</p>
