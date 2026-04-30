@@ -707,6 +707,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             {selectedDoc && <DocDetailContent doc={selectedDoc} centroLookup={centroLookup} onDelete={() => { deleteDocumento(selectedDoc.id, selectedDoc.storage_path); setSelectedDoc(null); }} />}
           </SheetContent>
         </Sheet>
+        {reviewDialogEl}
       </>
     );
   }
