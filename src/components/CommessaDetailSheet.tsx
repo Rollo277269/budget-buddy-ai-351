@@ -460,29 +460,27 @@ export function CommessaDetailSheet({
 
   // ── Spese extra (PDF/ricevute caricate via "Ricevute e Documenti") ──
   // Sono salvate in documenti_acquisto con cig + centro_costo, ma NON in fatture_acquisto.
-  // Le aggreghiamo qui per includerle nel Riepilogo Centri di Costo della commessa.
-  const commessaCigsSet = useMemo(() => {
+  // (Calcoli normali — siamo dopo l'early return, niente hook qui.)
+  const commessaCigsSet = (() => {
     const set = new Set<string>();
-    if (commessa?.cig) set.add(commessa.cig);
-    if (commessa?.cigDerivato) set.add(commessa.cigDerivato);
-    if (commessa?.cssrData?.cig) set.add(commessa.cssrData.cig);
-    if (commessa?.cssrData?.cig_derivato) set.add(commessa.cssrData.cig_derivato);
+    if (commessa.cig) set.add(commessa.cig);
+    if (commessa.cigDerivato) set.add(commessa.cigDerivato);
+    if (commessa.cssrData?.cig) set.add(commessa.cssrData.cig);
+    if (commessa.cssrData?.cig_derivato) set.add(commessa.cssrData.cig_derivato);
     return set;
-  }, [commessa]);
+  })();
 
-  const linkedDocumenti = useMemo(() => {
-    if (commessaCigsSet.size === 0) return [] as typeof documentiAcquisto;
-    return documentiAcquisto.filter((d) => d.cig && commessaCigsSet.has(d.cig));
-  }, [documentiAcquisto, commessaCigsSet]);
+  const linkedDocumenti = commessaCigsSet.size === 0
+    ? []
+    : documentiAcquisto.filter((d) => d.cig && commessaCigsSet.has(d.cig));
 
-  // Esclude i documenti già collegati a una fattura di acquisto (stesso source_file commessa-N)
-  // Per evitare doppi conteggi: se un documento ha generato una fatture_acquisto (CommessaExpenseUpload),
-  // il suo importo è già contato in linkedPurchases. Distinguiamo via ai_summary che inizia con "Spesa commessa".
-  const extraSpeseDocumenti = useMemo(() => {
-    return linkedDocumenti.filter((d) => !(d.ai_summary || "").startsWith("Spesa commessa"));
-  }, [linkedDocumenti]);
+  // Evita double-count: i documenti generati da CommessaExpenseUpload
+  // hanno ai_summary che inizia con "Spesa commessa" (già contati in linkedPurchases).
+  const extraSpeseDocumenti = linkedDocumenti.filter(
+    (d) => !(d.ai_summary || "").startsWith("Spesa commessa")
+  );
 
-  const extraCostiPerCentro = useMemo(() => {
+  const extraCostiPerCentro = (() => {
     const map = new Map<string, number>();
     extraSpeseDocumenti.forEach((d) => {
       const codice = d.centro_costo || "";
@@ -491,7 +489,7 @@ export function CommessaDetailSheet({
       map.set(codice, (map.get(codice) || 0) + importo);
     });
     return map;
-  }, [extraSpeseDocumenti]);
+  })();
 
   const buildCentroRows = (
     items: Array<SaleInvoice | PurchaseInvoice>,
