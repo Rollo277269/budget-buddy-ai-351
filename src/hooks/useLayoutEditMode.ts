@@ -10,6 +10,11 @@ let current = false;
 
 export function setLayoutEditMode(value: boolean) {
   current = value;
+  // eslint-disable-next-line no-console
+  console.log(
+    `%c[LayoutEditMode] ${value ? "ON 🔓 — drag attivo" : "OFF 🔒 — drag disattivato"}`,
+    `color: ${value ? "#16a34a" : "#dc2626"}; font-weight: bold;`,
+  );
   window.dispatchEvent(new CustomEvent<boolean>(EVENT_NAME, { detail: value }));
 }
 
