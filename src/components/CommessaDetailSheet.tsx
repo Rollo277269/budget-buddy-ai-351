@@ -376,7 +376,7 @@ export function CommessaDetailSheet({
 
     // Monthly breakdown
     const monthlyMap = new Map<string, { vendite: number; acquisti: number; incassato: number; pagato: number }>();
-    linkedSales.forEach((s) => {
+    linkedSalesForTotals.forEach((s) => {
       const parts = s.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
@@ -392,7 +392,7 @@ export function CommessaDetailSheet({
         monthlyMap.set(r.mese, e);
       });
     });
-    linkedPurchases.forEach((p) => {
+    linkedPurchasesForTotals.forEach((p) => {
       const parts = p.data?.split("/");
       if (parts?.length === 3) {
         const key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
@@ -422,7 +422,7 @@ export function CommessaDetailSheet({
 
     // Supplier breakdown for purchases
     const supplierMap = new Map<string, number>();
-    linkedPurchases.forEach((p) => {
+    linkedPurchasesForTotals.forEach((p) => {
       const name = p.fornitore || "Sconosciuto";
       supplierMap.set(name, (supplierMap.get(name) || 0) + purchaseCost(p));
     });
@@ -434,12 +434,12 @@ export function CommessaDetailSheet({
     // Status breakdown
     const statusSales = { pagata: 0, nonPagata: 0 };
     const statusPurchases = { pagata: 0, nonPagata: 0 };
-    linkedSales.forEach((s) => {
+    linkedSalesForTotals.forEach((s) => {
       const amt = saleTotale(s);
       if (s.stato?.toLowerCase().includes("pagat") || s.stato?.toLowerCase().includes("incass")) statusSales.pagata += amt;
       else statusSales.nonPagata += amt;
     });
-    linkedPurchases.forEach((p) => {
+    linkedPurchasesForTotals.forEach((p) => {
       const cost = purchaseCost(p);
       if (p.stato?.toLowerCase().includes("pagat")) statusPurchases.pagata += cost;
       else statusPurchases.nonPagata += cost;
