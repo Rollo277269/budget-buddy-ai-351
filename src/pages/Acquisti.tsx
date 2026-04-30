@@ -7,6 +7,7 @@ import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CentroCell } from "@/components/CentroCell";
 import { FilterBar } from "@/components/FilterBar";
+import { ReorderableToolbar, type ReorderableItem } from "@/components/ReorderableToolbar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { parsePaymentTerms, formatDateIT } from "@/lib/paymentTerms";
@@ -839,56 +840,97 @@ const AcquistiPage = () => {
             {/* DataTable toolbar (search + columns) */}
             <div ref={toolbarPortalRef} className="flex items-center gap-2" />
 
-            {/* Action buttons / drop zones */}
-            <div className="flex items-center gap-1.5 ml-auto">
-              <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
-              <div
-                className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
-                title="Carica fatture elettroniche XML"
-                onDragEnter={handleXmlDragEnter}
-                onDragLeave={handleXmlDragLeave}
-                onDragOver={handleXmlDragOver}
-                onDrop={handleXmlDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <FileCode2 className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium">XML</span>
-              </div>
-
-              <input ref={csvInputRef} type="file" accept=".csv,.xlsx,.xls" multiple className="hidden" onChange={handleCsvFileInput} />
-              <div
-                className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
-                title="Importa fatture acquisto da file CSV o Excel (.xlsx)"
-                onDragEnter={handleCsvDragEnter}
-                onDragLeave={handleCsvDragLeave}
-                onDragOver={handleCsvDragOver}
-                onDrop={handleCsvDrop}
-                onClick={() => csvInputRef.current?.click()}
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium">CSV / Excel</span>
-              </div>
-
-              <DocumentiAcquistoSection dropZoneOnly compact />
-
-              {hasCentri && (
-                <Button size="sm" variant="outline" className="h-7 text-xs" title="Classifica automaticamente con intelligenza artificiale" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
-                  {classifying ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                  {classifying ? "AI..." : `AI (${unclassifiedCount})`}
-                </Button>
-              )}
-
-              <Button size="sm" variant="outline" className="h-7 text-xs" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
-                {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
-                {enriching ? "Aggiornamento..." : selectedInvoiceKeys.size > 0 ? `Aggiorna da XML (${selectedInvoiceKeys.size})` : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
-              </Button>
-
-              {xmlUnmatchedCount > 0 && (
-                <Button size="sm" variant="outline" className="h-7 text-xs" title="Riassocia gli XML non associati" onClick={rematchAll}>
-                  <RefreshCw className="h-3 w-3 mr-1" />Riassocia
-                </Button>
-              )}
-            </div>
+            {/* Action buttons / drop zones — reorderable */}
+            <ReorderableToolbar
+              storageKey="acquisti-header"
+              canEdit
+              className="ml-auto"
+              items={(() => {
+                const items: ReorderableItem[] = [
+                  {
+                    id: "xml-drop",
+                    label: "XML",
+                    node: (
+                      <>
+                        <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
+                        <div
+                          className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                          title="Carica fatture elettroniche XML"
+                          onDragEnter={handleXmlDragEnter}
+                          onDragLeave={handleXmlDragLeave}
+                          onDragOver={handleXmlDragOver}
+                          onDrop={handleXmlDrop}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <FileCode2 className="h-3.5 w-3.5" />
+                          <span className="text-[11px] font-medium">XML</span>
+                        </div>
+                      </>
+                    ),
+                  },
+                  {
+                    id: "csv-drop",
+                    label: "CSV / Excel",
+                    node: (
+                      <>
+                        <input ref={csvInputRef} type="file" accept=".csv,.xlsx,.xls" multiple className="hidden" onChange={handleCsvFileInput} />
+                        <div
+                          className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${csvDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                          title="Importa fatture acquisto da file CSV o Excel (.xlsx)"
+                          onDragEnter={handleCsvDragEnter}
+                          onDragLeave={handleCsvDragLeave}
+                          onDragOver={handleCsvDragOver}
+                          onDrop={handleCsvDrop}
+                          onClick={() => csvInputRef.current?.click()}
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5" />
+                          <span className="text-[11px] font-medium">CSV / Excel</span>
+                        </div>
+                      </>
+                    ),
+                  },
+                  {
+                    id: "pdf-drop",
+                    label: "PDF",
+                    node: <DocumentiAcquistoSection dropZoneOnly compact />,
+                  },
+                ];
+                if (hasCentri) {
+                  items.push({
+                    id: "ai",
+                    label: "AI",
+                    node: (
+                      <Button size="sm" variant="outline" className="h-7 text-xs" title="Classifica automaticamente con intelligenza artificiale" onClick={handleAIClassify} disabled={classifying || unclassifiedCount === 0}>
+                        {classifying ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                        {classifying ? "AI..." : `AI (${unclassifiedCount})`}
+                      </Button>
+                    ),
+                  });
+                }
+                items.push({
+                  id: "enrich-xml",
+                  label: "Aggiorna da XML",
+                  node: (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
+                      {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
+                      {enriching ? "Aggiornamento..." : selectedInvoiceKeys.size > 0 ? `Aggiorna da XML (${selectedInvoiceKeys.size})` : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
+                    </Button>
+                  ),
+                });
+                if (xmlUnmatchedCount > 0) {
+                  items.push({
+                    id: "riassocia",
+                    label: "Riassocia",
+                    node: (
+                      <Button size="sm" variant="outline" className="h-7 text-xs" title="Riassocia gli XML non associati" onClick={rematchAll}>
+                        <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+                      </Button>
+                    ),
+                  });
+                }
+                return items;
+              })()}
+            />
           </div>
 
           {/* Upload progress bar */}
