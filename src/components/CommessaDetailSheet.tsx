@@ -454,7 +454,7 @@ export function CommessaDetailSheet({
       autoSaleKeys, autoPurchaseKeys,
       monthlyData, supplierData, statusSales, statusPurchases,
     };
-  }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice]);
+  }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice, ricavoMap.map, costoMap.map]);
 
   if (!commessa || !data) return null;
 
