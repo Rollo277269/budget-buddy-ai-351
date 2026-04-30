@@ -519,13 +519,28 @@ export function CommessaDetailSheet({
     map: Record<string, string>,
     isPurchase = false
   ) => {
-    const agg = new Map<string, number>();
+    const agg = new Map<string, { imponibile: number; iva: number; totale: number }>();
     items.forEach((item) => {
       const codice = map[`${item.anno}-${item.numero}`] || "Non classificato";
       if (isExcludedFromCommessa(codice)) return;
       const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-      const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : saleTotale(item as SaleInvoice);
-      agg.set(label, (agg.get(label) || 0) + amount);
+      const isCN = ((item as any).tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isCN ? -1 : 1;
+      let imp = 0, iva = 0, tot = 0;
+      if (isPurchase) {
+        const p = item as PurchaseInvoice;
+        imp = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0));
+        iva = sign * Math.abs(p.imposta || 0);
+        tot = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0));
+      } else {
+        const s = item as SaleInvoice;
+        imp = sign * Math.abs(s.imponibile || 0);
+        iva = sign * Math.abs(s.imposta || 0);
+        tot = sign * Math.abs(s.totale || 0);
+      }
+      const e = agg.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      e.imponibile += imp; e.iva += iva; e.totale += tot;
+      agg.set(label, e);
     });
     // Aggiungo le spese extra (solo per i costi)
     if (isPurchase) {
@@ -534,20 +549,23 @@ export function CommessaDetailSheet({
         const label = codice
           ? `${codice} - ${centroLabelMap.get(codice) || ""}`
           : "Non classificato";
-        agg.set(label, (agg.get(label) || 0) + importo);
+        const e = agg.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+        e.imponibile += importo;
+        e.totale += importo;
+        agg.set(label, e);
       });
     }
     return Array.from(agg.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, v]) => ({ name, imponibile: v.imponibile, iva: v.iva, totale: v.totale, value: v.totale }))
       .sort((a, b) => b.value - a.value);
   };
 
-  const applySavedOrder = (rows: { name: string; value: number }[], storageKey: string) => {
+  const applySavedOrder = <T extends { name: string }>(rows: T[], storageKey: string): T[] => {
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey) || "null") as string[] | null;
       if (!saved || !Array.isArray(saved) || saved.length === 0) return rows;
       const lookup = new Map(rows.map((r) => [r.name, r]));
-      const ordered = saved.map((name) => lookup.get(name)).filter(Boolean) as { name: string; value: number }[];
+      const ordered = saved.map((name) => lookup.get(name)).filter(Boolean) as T[];
       const missing = rows.filter((r) => !saved.includes(r.name));
       return [...ordered, ...missing];
     } catch {
