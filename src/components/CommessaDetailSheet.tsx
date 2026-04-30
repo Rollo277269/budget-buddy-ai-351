@@ -1624,7 +1624,7 @@ function MiniCard({ label, value, highlight }: { label: string; value: string; h
 }
 
 /* ── Centro Ricavo/Costo breakdown charts ── */
-function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoMap, centri, onAssignRicavo, onAssignCosto }: {
+function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoMap, centri, onAssignRicavo, onAssignCosto, extraCostiPerCentro, extraSpeseDocumenti }: {
   linkedSales: SaleInvoice[];
   linkedPurchases: PurchaseInvoice[];
   ricavoMap: Record<string, string>;
@@ -1632,6 +1632,8 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   centri: CentroCR[];
   onAssignRicavo: (key: string, codice: string) => void;
   onAssignCosto: (key: string, codice: string) => void;
+  extraCostiPerCentro: Map<string, number>;
+  extraSpeseDocumenti: DocumentoAcquisto[];
 }) {
   const [layout, setLayout] = useState<"horizontal" | "vertical">("horizontal");
   const [selectedInvoice, setSelectedInvoice] = useState<{ invoice: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
@@ -1671,10 +1673,14 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
       map.set(label, (map.get(label) || 0) + purchaseCost(p));
     });
+    extraCostiPerCentro.forEach((importo, codice) => {
+      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
+      map.set(label, (map.get(label) || 0) + importo);
+    });
     return Array.from(map.entries())
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [linkedPurchases, costoMap, centroLookup]);
+  }, [linkedPurchases, costoMap, centroLookup, extraCostiPerCentro]);
 
   // Group invoices by centro label
   const ricavoInvoiceGroups = useMemo(() => {
