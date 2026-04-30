@@ -1312,6 +1312,44 @@ export function CommessaDetailSheet({
       </DialogContent>
     </Dialog>
 
+    {/* Conferma eliminazione commessa (solo admin) */}
+    <AlertDialog open={deleteOpen} onOpenChange={(o) => !deleting && setDeleteOpen(o)}>
+      <AlertDialogContent className="z-[80]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Eliminare la commessa?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Stai per eliminare definitivamente la commessa <strong>N° {commessa?.numero}</strong>
+            {commessa?.oggetto && commessa.oggetto !== "—" ? <> — {commessa.oggetto}</> : null}.
+            <br />
+            L'azione è <strong>irreversibile</strong> e non eliminerà le fatture collegate.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Annulla</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async (e) => {
+              e.preventDefault();
+              if (!onDeleteCommessa || !commessa?.cssrData?.id) return;
+              setDeleting(true);
+              const ok = await onDeleteCommessa(commessa.cssrData.id);
+              setDeleting(false);
+              if (ok) {
+                toast.success("Commessa eliminata");
+                setDeleteOpen(false);
+                onOpenChange(false);
+              } else {
+                toast.error("Errore durante l'eliminazione");
+              }
+            }}
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Elimina"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     {/* XML detail sheet */}
     <XmlInvoiceSheet
       record={selectedXml}
