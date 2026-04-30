@@ -196,21 +196,28 @@
 
   body.print-report .pdf-logo-cssr {
     display: block;
-    height: 48px;
-    width: auto;
+    height: 28px !important;
+    width: auto !important;
+    max-height: 28px !important;
+    max-width: 110px !important;
     flex-shrink: 0;
+    object-fit: contain;
   }
 
   body.print-report .pdf-footer-agis {
     display: flex;
     align-items: center;
-    margin-right: 10px;
+    margin-right: 8px;
+    flex-shrink: 0;
   }
 
   body.print-report .pdf-footer-agis img {
-    height: 18px;
-    width: auto;
+    height: 10px !important;
+    width: auto !important;
+    max-height: 10px !important;
+    max-width: 40px !important;
     display: block;
+    object-fit: contain;
   }
 
   body.print-report .pdf-header-text {
