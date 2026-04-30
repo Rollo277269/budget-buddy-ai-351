@@ -340,8 +340,11 @@
     border-radius: 6px;
     overflow: hidden;
     background: white;
-    break-inside: avoid;
-    page-break-inside: avoid;
+  }
+
+  /* Allow large full-width tables to flow across pages */
+  body.print-report .pdf-full-width {
+    overflow: visible;
   }
 
   body.print-report .pdf-section h2 {
