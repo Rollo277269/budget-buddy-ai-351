@@ -816,8 +816,8 @@ export function CommessaDetailSheet({
                             <Tooltip formatter={(v: number) => formatCurrency(v)} />
                             <Legend wrapperStyle={{ fontSize: 11 }} />
                             <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
-                            <Bar dataKey="vendite" name="Vendite" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="acquisti" name="Acquisti" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="vendite" name="Vendite" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                            <Bar dataKey="acquisti" name="Acquisti" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} maxBarSize={18} />
                             <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
                           </ComposedChart>
                         </ResponsiveContainer>
@@ -840,8 +840,8 @@ export function CommessaDetailSheet({
                             <Tooltip formatter={(v: number) => formatCurrency(v)} />
                             <Legend wrapperStyle={{ fontSize: 11 }} />
                             <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
-                            <Bar dataKey="incassato" name="Incassato" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="pagato" name="Pagato" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="incassato" name="Incassato" fill="hsl(var(--income))" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                            <Bar dataKey="pagato" name="Pagato" fill="hsl(var(--expense))" radius={[4, 4, 0, 0]} maxBarSize={18} />
                             <Line type="monotone" dataKey="saldoCassa" name="Saldo Cassa" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
                           </ComposedChart>
                         </ResponsiveContainer>
