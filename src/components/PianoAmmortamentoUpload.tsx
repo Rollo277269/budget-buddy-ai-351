@@ -117,6 +117,10 @@ export function PianoAmmortamentoUpload({ contoId, bancaName }: Props) {
     }
 
     await importRate(contoId, parsed);
+    toast.success(`Import completato: ${parsed.length} rate`, {
+      description: `Puoi cancellare il file "${file.name}" — i dati sono salvati nel database.`,
+      duration: 6000,
+    });
   };
 
   const onDrop = (e: React.DragEvent) => {
