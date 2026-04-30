@@ -61,6 +61,18 @@ function invoiceKey(anno: number, numero: number) {
   return `${anno}-${numero}`;
 }
 
+/**
+ * Centri di costo/ricavo da escludere dal Riepilogo di commessa:
+ * - CO1..CO9: costi di gara (Predisposizione, Bolli, Polizze offerta, ANAC, ecc.)
+ * - RO1..RO9: ribaltamento costi di gara (ricavo)
+ * Qualsiasi codice che inizia per "CO" o "RO" è considerato fuori commessa.
+ */
+function isExcludedFromCommessa(codice: string | null | undefined): boolean {
+  if (!codice) return false;
+  const c = codice.trim().toUpperCase();
+  return /^(CO|RO)\d+/.test(c);
+}
+
 /** Per fatture di professionisti (con cassa previdenza), il costo effettivo è imponibile + cassa */
 function purchaseCost(p: PurchaseInvoice): number {
   const base = p.cassa > 0 ? p.imponibile + p.cassa : p.totale;
