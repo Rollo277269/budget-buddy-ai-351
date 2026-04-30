@@ -490,6 +490,7 @@ const BanchePage = () => {
   const contiFinanziamento = useMemo(() => conti.filter(c => c.tipo === "finanziamento" || c.tipo === "crediti_fiscali"), [conti]);
   const { rate: allRate, togglePagata, refetch: refetchRate } = useRateFinanziamento();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tableToolbarRef = useRef<HTMLDivElement>(null);
   const [selectedMovement, setSelectedMovement] = useState<BankMovement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingPlaceholder, setIsDraggingPlaceholder] = useState(false);
@@ -1083,25 +1084,7 @@ const BanchePage = () => {
 
       {movements.length > 0 && !isLoading &&
       <>
-          {/* Year filter + Stats */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Select value={filterYear} onValueChange={setFilterYear}>
-              <SelectTrigger className="w-[140px] h-9 text-xs">
-                <SelectValue placeholder="Tutti gli anni" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti gli anni</SelectItem>
-                {availableYears.map((y) =>
-              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              )}
-              </SelectContent>
-            </Select>
-            {filterYear && filterYear !== "all" &&
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setFilterYear("")}>
-                Reset
-              </Button>
-          }
-          </div>
+          {/* Stats cards (in alto) */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Movimenti</p><p className="text-xl font-bold">{stats.total}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Riconciliati</p><p className="text-xl font-bold text-income">{stats.matched}</p></CardContent></Card>
@@ -1139,13 +1122,32 @@ const BanchePage = () => {
             </div>
         }
 
-          {/* Table */}
+          {/* Toolbar custom: filtro anno + Reset a sinistra, search e altri controlli del DataTable a destra (via portal) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Tutti gli anni" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti gli anni</SelectItem>
+                {availableYears.map((y) =>
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {filterYear && filterYear !== "all" &&
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-9" onClick={() => setFilterYear("")}>
+                Reset
+              </Button>
+            }
+            <div ref={tableToolbarRef} className="flex items-center gap-2 flex-1 min-w-0" />
+          </div>
           <DataTable<BankMovement>
-          columns={columns}
-          data={filteredMovements}
-          rowKey={(r) => r.id}
-          onRowClick={setSelectedMovement} />
-        
+            columns={columns}
+            data={filteredMovements}
+            rowKey={(r) => r.id}
+            onRowClick={setSelectedMovement}
+            toolbarPortalRef={tableToolbarRef} />
         </>
       }
 
