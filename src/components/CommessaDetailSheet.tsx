@@ -34,8 +34,18 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil, Trash2, Loader2
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { XmlInvoiceSheet } from "@/components/XmlInvoiceSheet";
 import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
@@ -89,6 +99,7 @@ interface CommessaDetailSheetProps {
   onAddLink: (link: ManualLink) => void;
   onRemoveLink: (invoiceKey: string, invoiceType: "vendita" | "acquisto", cig: string) => void;
   onExpenseAdded?: () => void;
+  onDeleteCommessa?: (id: string) => Promise<boolean>;
 }
 
 const CHART_COLORS = [
@@ -112,6 +123,7 @@ export function CommessaDetailSheet({
   onAddLink,
   onRemoveLink,
   onExpenseAdded,
+  onDeleteCommessa,
 }: CommessaDetailSheetProps) {
   const [addMode, setAddMode] = useState<"vendita" | "acquisto" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,6 +132,8 @@ export function CommessaDetailSheet({
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const [editingExpense, setEditingExpense] = useState<PurchaseInvoice | null>(null);
   const [detailInvoice, setDetailInvoice] = useState<{ inv: SaleInvoice | PurchaseInvoice; type: "vendita" | "acquisto" } | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // -- Dati Commessa slot-based grid reorder --
   const isAdmin = true; // TODO: replace with actual admin check
@@ -510,6 +524,18 @@ export function CommessaDetailSheet({
                 <FileText className="h-3.5 w-3.5" />
                 Report
               </Button>
+              {isAdmin && onDeleteCommessa && commessa.cssrData?.id && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteOpen(true)}
+                  className="gap-1.5 no-print"
+                  title="Elimina definitivamente questa commessa"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Elimina commessa
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 no-print" title="Chiudi e torna alla lista commesse">
                 <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
                 Torna a Commesse
@@ -1285,6 +1311,44 @@ export function CommessaDetailSheet({
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Conferma eliminazione commessa (solo admin) */}
+    <AlertDialog open={deleteOpen} onOpenChange={(o) => !deleting && setDeleteOpen(o)}>
+      <AlertDialogContent className="z-[80]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Eliminare la commessa?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Stai per eliminare definitivamente la commessa <strong>N° {commessa?.numero}</strong>
+            {commessa?.oggetto && commessa.oggetto !== "—" ? <> — {commessa.oggetto}</> : null}.
+            <br />
+            L'azione è <strong>irreversibile</strong> e non eliminerà le fatture collegate.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Annulla</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async (e) => {
+              e.preventDefault();
+              if (!onDeleteCommessa || !commessa?.cssrData?.id) return;
+              setDeleting(true);
+              const ok = await onDeleteCommessa(commessa.cssrData.id);
+              setDeleting(false);
+              if (ok) {
+                toast.success("Commessa eliminata");
+                setDeleteOpen(false);
+                onOpenChange(false);
+              } else {
+                toast.error("Errore durante l'eliminazione");
+              }
+            }}
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Elimina"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     {/* XML detail sheet */}
     <XmlInvoiceSheet
