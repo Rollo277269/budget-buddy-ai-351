@@ -1008,6 +1008,19 @@ export default function SchedeContabiliPage() {
     }
   }, [searchParams, clienti, fornitori]);
 
+  // Auto-print: if ?autoprint=1, trigger PDF export shortly after data renders
+  useEffect(() => {
+    if (searchParams.get("autoprint") !== "1") return;
+    const activeNome = tab === "clienti" ? selectedCliente : selectedFornitore;
+    if (!activeNome) return;
+    const t = setTimeout(() => {
+      handleExportPdf();
+      searchParams.delete("autoprint");
+      setSearchParams(searchParams, { replace: true });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [searchParams, tab, selectedCliente, selectedFornitore, setSearchParams]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
