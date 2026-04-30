@@ -116,17 +116,15 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
         >
           {locked ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
         </Button>
-        {!collapsed && (
-          <Button
-            variant={editLayout ? "default" : "ghost"}
-            size="icon"
-            className="h-7 w-7"
-            onClick={toggleEditLayout}
-            title={editLayout ? "Blocca layout (fine modifica)" : "Modifica layout: riordina pulsanti delle pagine"}
-          >
-            {editLayout ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-          </Button>
-        )}
+        <Button
+          variant={editLayout ? "default" : "ghost"}
+          size="icon"
+          className="h-7 w-7"
+          onClick={toggleEditLayout}
+          title={editLayout ? "Blocca layout (fine modifica)" : "Modifica layout: riordina pulsanti delle pagine"}
+        >
+          {editLayout ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+        </Button>
       </SidebarHeader>
 
       <SidebarContent>
