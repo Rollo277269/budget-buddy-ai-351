@@ -35,6 +35,15 @@ export interface SaleInvoice {
   righe: SaleInvoiceRiga[];
 }
 
+export function getIssuedInvoiceRows(righe: SaleInvoiceRiga[] = []): { riga: SaleInvoiceRiga; idx: number }[] {
+  const indexedRows = (Array.isArray(righe) ? righe : []).map((riga, idx) => ({ riga, idx }));
+  const firstDescriptiveIdx = indexedRows.findIndex(({ riga }) =>
+    parseNumber(riga.imponibile) === 0 && parseNumber(riga.imposta) === 0 && parseNumber(riga.totale) === 0 && !!String(riga.descrizione || "").trim()
+  );
+
+  return firstDescriptiveIdx > indexedRows.length / 2 ? indexedRows.slice().reverse() : indexedRows;
+}
+
 export interface PurchaseInvoice {
   tipo: string;
   anno: number;
