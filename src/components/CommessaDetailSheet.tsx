@@ -457,6 +457,42 @@ export function CommessaDetailSheet({
   const cssr = data.cssr;
 
   const centroLabelMap = new Map(centri.map((c) => [c.codice, c.descrizione]));
+
+  // ── Spese extra (PDF/ricevute caricate via "Ricevute e Documenti") ──
+  // Sono salvate in documenti_acquisto con cig + centro_costo, ma NON in fatture_acquisto.
+  // Le aggreghiamo qui per includerle nel Riepilogo Centri di Costo della commessa.
+  const commessaCigsSet = useMemo(() => {
+    const set = new Set<string>();
+    if (commessa?.cig) set.add(commessa.cig);
+    if (commessa?.cigDerivato) set.add(commessa.cigDerivato);
+    if (commessa?.cssrData?.cig) set.add(commessa.cssrData.cig);
+    if (commessa?.cssrData?.cig_derivato) set.add(commessa.cssrData.cig_derivato);
+    return set;
+  }, [commessa]);
+
+  const linkedDocumenti = useMemo(() => {
+    if (commessaCigsSet.size === 0) return [] as typeof documentiAcquisto;
+    return documentiAcquisto.filter((d) => d.cig && commessaCigsSet.has(d.cig));
+  }, [documentiAcquisto, commessaCigsSet]);
+
+  // Esclude i documenti già collegati a una fattura di acquisto (stesso source_file commessa-N)
+  // Per evitare doppi conteggi: se un documento ha generato una fatture_acquisto (CommessaExpenseUpload),
+  // il suo importo è già contato in linkedPurchases. Distinguiamo via ai_summary che inizia con "Spesa commessa".
+  const extraSpeseDocumenti = useMemo(() => {
+    return linkedDocumenti.filter((d) => !(d.ai_summary || "").startsWith("Spesa commessa"));
+  }, [linkedDocumenti]);
+
+  const extraCostiPerCentro = useMemo(() => {
+    const map = new Map<string, number>();
+    extraSpeseDocumenti.forEach((d) => {
+      const codice = d.centro_costo || "";
+      const importo = Number(d.importo || 0);
+      if (!importo) return;
+      map.set(codice, (map.get(codice) || 0) + importo);
+    });
+    return map;
+  }, [extraSpeseDocumenti]);
+
   const buildCentroRows = (
     items: Array<SaleInvoice | PurchaseInvoice>,
     map: Record<string, string>,
@@ -469,6 +505,15 @@ export function CommessaDetailSheet({
       const amount = isPurchase ? purchaseCost(item as PurchaseInvoice) : saleTotale(item as SaleInvoice);
       agg.set(label, (agg.get(label) || 0) + amount);
     });
+    // Aggiungo le spese extra (solo per i costi)
+    if (isPurchase) {
+      extraCostiPerCentro.forEach((importo, codice) => {
+        const label = codice
+          ? `${codice} - ${centroLabelMap.get(codice) || ""}`
+          : "Non classificato";
+        agg.set(label, (agg.get(label) || 0) + importo);
+      });
+    }
     return Array.from(agg.entries())
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
