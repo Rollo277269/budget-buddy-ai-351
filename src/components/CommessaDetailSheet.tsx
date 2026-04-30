@@ -1822,11 +1822,24 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   const ricavoInvoiceGroups = useMemo(() => {
     const groups = new Map<string, SaleInvoice[]>();
     linkedSales.forEach((s) => {
-      const codice = ricavoMap[`${s.anno}-${s.numero}`];
-      if (isExcludedFromCommessa(codice)) return;
-      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      if (!groups.has(label)) groups.set(label, []);
-      groups.get(label)!.push(s);
+      const righe = Array.isArray(s.righe) ? s.righe : [];
+      const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
+      const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
+      const labels = new Set<string>();
+      if (hasRowAssignments) {
+        righe.forEach((_, idx) => {
+          const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
+          if (isExcludedFromCommessa(codiceRiga)) return;
+          labels.add(codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato");
+        });
+      } else {
+        if (isExcludedFromCommessa(fatturaCodice)) return;
+        labels.add(fatturaCodice ? `${fatturaCodice} - ${centroLookup.get(fatturaCodice) || ""}` : "Non classificato");
+      }
+      labels.forEach((label) => {
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label)!.push(s);
+      });
     });
     return groups;
   }, [linkedSales, ricavoMap, centroLookup]);
