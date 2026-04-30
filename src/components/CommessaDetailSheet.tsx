@@ -37,7 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
-  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil, Trash2, Loader2
+  Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil, Trash2, Loader2, Scale
 } from "lucide-react";
 import {
   AlertDialog,
@@ -372,6 +372,10 @@ export function CommessaDetailSheet({
     // Il margine si calcola sull'imponibile (al netto di IVA)
     const saldoImponibile = totalVenditeImponibile - totalAcquistiImponibile;
     const margine = totalVenditeImponibile > 0 ? (saldoImponibile / totalVenditeImponibile) * 100 : 0;
+    // Saldo IVA: IVA vendite (a debito) - IVA acquisti (a credito). Positivo = debito.
+    const ivaVendite = totalVendite - totalVenditeImponibile;
+    const ivaAcquisti = totalAcquisti - totalAcquistiImponibile;
+    const saldoIva = ivaVendite - ivaAcquisti;
 
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
@@ -471,7 +475,7 @@ export function CommessaDetailSheet({
     return {
       linkedSales, linkedPurchases, totalVendite, totalAcquisti,
       totalVenditeImponibile, totalAcquistiImponibile, saldoImponibile,
-      saldo, margine,
+      saldo, saldoIva, margine,
       cssr, importoContratto, percentualeFatturato, totalVenditeImponibileRC1,
       allLinkedSaleKeys, allLinkedPurchaseKeys,
       autoSaleKeys, autoPurchaseKeys,
@@ -659,7 +663,7 @@ export function CommessaDetailSheet({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
             <KpiCard
               icon={ArrowUpRight}
               label="Totale Vendite"
@@ -683,6 +687,14 @@ export function CommessaDetailSheet({
               sub={data.saldoImponibile >= 0 ? "Attivo" : "Passivo"}
               color={data.saldoImponibile >= 0 ? "text-income" : "text-expense"}
               iconBg={data.saldoImponibile >= 0 ? "bg-income/10" : "bg-expense/10"}
+            />
+            <KpiCard
+              icon={Scale}
+              label={`Saldo IVA ${data.saldoIva >= 0 ? "(a debito)" : "(a credito)"}`}
+              value={formatCurrency(Math.abs(data.saldoIva))}
+              sub={data.saldoIva >= 0 ? "Da versare" : "A credito"}
+              color={data.saldoIva >= 0 ? "text-expense" : "text-income"}
+              iconBg={data.saldoIva >= 0 ? "bg-expense/10" : "bg-income/10"}
             />
             <KpiCard
               icon={Percent}
@@ -2055,25 +2067,6 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
               )}
             </div>
 
-            {/* Saldo / Margine */}
-            {ricavoData.length > 0 && costoData.length > 0 && (
-              <div className="rounded-xl border bg-card p-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Saldo (imponibili)</p>
-                    <p className={`text-sm font-bold font-mono ${saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(saldo)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Saldo IVA {saldoIva >= 0 ? "(a debito)" : "(a credito)"}</p>
-                    <p className={`text-sm font-bold font-mono ${saldoIva >= 0 ? "text-expense" : "text-income"}`}>{formatCurrency(saldoIva)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Margine</p>
-                    <p className={`text-sm font-bold font-mono ${margine >= 0 ? "text-income" : "text-expense"}`}>{margine.toFixed(1)}%</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </>
         );
       })()}
