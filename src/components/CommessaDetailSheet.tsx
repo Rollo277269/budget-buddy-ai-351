@@ -2035,10 +2035,14 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
             {/* Saldo / Margine */}
             {ricavoData.length > 0 && costoData.length > 0 && (
               <div className="rounded-xl border bg-card p-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-muted-foreground">Saldo</p>
+                    <p className="text-[10px] text-muted-foreground">Saldo (imponibili)</p>
                     <p className={`text-sm font-bold font-mono ${saldo >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(saldo)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Saldo IVA {saldoIva >= 0 ? "(a debito)" : "(a credito)"}</p>
+                    <p className={`text-sm font-bold font-mono ${saldoIva >= 0 ? "text-expense" : "text-income"}`}>{formatCurrency(saldoIva)}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Margine</p>
