@@ -294,7 +294,10 @@ const AcquistiPage = () => {
 
         if (colliding.length === 0) {
           const result = await seedPurchasesFromExcel(parsed, file.name);
-          toast.success(`Importate ${parsed.length} fatture acquisto da ${file.name}`);
+          toast.success(`Import completato: ${parsed.length} fatture acquisto`, {
+            description: `Puoi cancellare il file "${file.name}" — i dati sono salvati nel database.`,
+            duration: 6000,
+          });
           invalidateInvoiceCache();
           if (result.discrepancies.length > 0) {
             setCigDiscrepancies(result.discrepancies);
@@ -333,7 +336,10 @@ const AcquistiPage = () => {
     if (all.length === 0) { toast.info("Nessun record importato"); return; }
     const result = await seedPurchasesFromExcel(all, pendingExcelUpload.fileName);
     const skipped = excelCollisions.length - selectedKeys.size;
-    toast.success(`Importati ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""));
+    toast.success(`Import completato: ${all.length} record` + (skipped > 0 ? `, ${skipped} ignorati` : ""), {
+      description: `Puoi cancellare il file "${pendingExcelUpload.fileName}" — i dati sono salvati nel database.`,
+      duration: 6000,
+    });
     invalidateInvoiceCache();
     if (result.discrepancies.length > 0) {
       setCigDiscrepancies(result.discrepancies);

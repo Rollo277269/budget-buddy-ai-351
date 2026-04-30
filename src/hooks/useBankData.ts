@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { SaleInvoice, PurchaseInvoice } from "./useInvoiceData";
 
 async function getXLSX() {
@@ -841,8 +842,13 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
       }
 
       setFileNames((prev) => prev.includes(file.name) ? prev : [...prev, file.name]);
+      toast.success(`Import completato: ${unique.length} movimenti importati`, {
+        description: `Puoi cancellare il file "${file.name}" — i dati sono salvati nel database.`,
+        duration: 6000,
+      });
     } catch (err) {
       console.error("Errore parsing file bancario:", err);
+      toast.error(`Errore durante l'import di "${file.name}"`);
     } finally {
       setLoading(false);
     }
