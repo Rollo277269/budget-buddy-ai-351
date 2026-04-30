@@ -1678,33 +1678,51 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   }, [centri]);
 
   const ricavoData = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { imponibile: number; iva: number; totale: number }>();
     linkedSales.forEach((s) => {
       const codice = ricavoMap[`${s.anno}-${s.numero}`];
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + saleTotale(s));
+      const sign = isSaleCreditNote(s) ? -1 : 1;
+      const imp = sign * Math.abs(s.imponibile || 0);
+      const iva = sign * Math.abs(s.imposta || 0);
+      const tot = sign * Math.abs(s.totale || 0);
+      const e = map.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      e.imponibile += imp; e.iva += iva; e.totale += tot;
+      map.set(label, e);
     });
     return Array.from(map.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, v]) => ({ name, imponibile: v.imponibile, iva: v.iva, totale: v.totale, value: v.totale }))
       .sort((a, b) => b.value - a.value);
   }, [linkedSales, ricavoMap, centroLookup]);
 
   const costoData = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { imponibile: number; iva: number; totale: number }>();
     linkedPurchases.forEach((p) => {
       const codice = costoMap[`${p.anno}-${p.numero}`];
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + purchaseCost(p));
+      const isCN = (p.tipo || "").toLowerCase().includes("nota di credito");
+      const sign = isCN ? -1 : 1;
+      // Imponibile costo professionisti = imponibile + cassa
+      const imp = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0));
+      const iva = sign * Math.abs(p.imposta || 0);
+      const tot = sign * Math.abs((p.imponibile || 0) + (p.cassa || 0) + (p.imposta || 0));
+      const e = map.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      e.imponibile += imp; e.iva += iva; e.totale += tot;
+      map.set(label, e);
     });
     extraCostiPerCentro.forEach((importo, codice) => {
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      map.set(label, (map.get(label) || 0) + importo);
+      const e = map.get(label) || { imponibile: 0, iva: 0, totale: 0 };
+      // I documenti extra non hanno IVA scorporata: importo trattato come totale = imponibile
+      e.imponibile += importo;
+      e.totale += importo;
+      map.set(label, e);
     });
     return Array.from(map.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, v]) => ({ name, imponibile: v.imponibile, iva: v.iva, totale: v.totale, value: v.totale }))
       .sort((a, b) => b.value - a.value);
   }, [linkedPurchases, costoMap, centroLookup, extraCostiPerCentro]);
 
