@@ -22,6 +22,8 @@ import { formatCurrency } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Combobox } from "@/components/ui/combobox";
+import logoCssr from "@/assets/logo-cssr.jpg";
+import logoAgis from "@/assets/logo-agis.png";
 import {
   Table,
   TableBody,
