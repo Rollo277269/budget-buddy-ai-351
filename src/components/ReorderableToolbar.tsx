@@ -142,7 +142,17 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
           {editMode && (
             <GripVertical className="h-3 w-3 text-muted-foreground mr-0.5 shrink-0" />
           )}
-          {it.node}
+          <div className={cn(editMode && "pointer-events-none select-none")}>
+            {it.node}
+          </div>
+          {editMode && (
+            // Transparent overlay: blocks inner click / drag handlers, lets the wrapper own the drag.
+            <div
+              className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing"
+              aria-hidden="true"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            />
+          )}
         </div>
       ))}
 
