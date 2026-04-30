@@ -988,6 +988,15 @@ export default function SchedeContabiliPage() {
   const [tab, setTab] = useState("clienti");
   const [selectedCliente, setSelectedCliente] = useState("");
   const [selectedFornitore, setSelectedFornitore] = useState("");
+  const [pdfStandardMargins, setPdfStandardMargins] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("pdf-standard-margins") === "1";
+  });
+  const togglePdfMargins = (v: boolean) => {
+    setPdfStandardMargins(v);
+    try { localStorage.setItem("pdf-standard-margins", v ? "1" : "0"); } catch {}
+  };
+  const exportPdf = () => handleExportPdf(pdfStandardMargins ? "standard" : "zero");
 
   const clienti = useMemo(() => {
     const set = new Set<string>();
@@ -1046,7 +1055,7 @@ export default function SchedeContabiliPage() {
     const activeNome = tab === "clienti" ? selectedCliente : selectedFornitore;
     if (!activeNome) return;
     const t = setTimeout(() => {
-      handleExportPdf();
+      exportPdf();
       searchParams.delete("autoprint");
       setSearchParams(searchParams, { replace: true });
     }, 1200);
@@ -1089,10 +1098,22 @@ export default function SchedeContabiliPage() {
           </div>
 
           {activeNome && (
-            <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 ml-auto no-print" title="Esporta scheda contabile in PDF">
-              <FileText className="h-3.5 w-3.5" />
-              Report
-            </Button>
+            <div className="flex items-center gap-3 ml-auto no-print">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="pdf-margin-toggle"
+                  checked={pdfStandardMargins}
+                  onCheckedChange={togglePdfMargins}
+                />
+                <Label htmlFor="pdf-margin-toggle" className="text-xs cursor-pointer text-muted-foreground">
+                  {pdfStandardMargins ? "Margini standard" : "Margini zero"}
+                </Label>
+              </div>
+              <Button variant="outline" size="sm" onClick={exportPdf} className="gap-1.5" title="Esporta scheda contabile in PDF">
+                <FileText className="h-3.5 w-3.5" />
+                Report
+              </Button>
+            </div>
           )}
         </div>
       </div>
