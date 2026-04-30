@@ -712,6 +712,9 @@ const IvaPage = () => {
 
         {/* IVA debito per cliente/socio per trimestre */}
         <ClientQuarterIvaSection sales={allSales} year={yearNum} />
+
+        {/* IVA a debito per fornitore (filtrato sui Soci del consorzio) */}
+        <SocioFornitoreIvaSection purchases={allPurchases} year={yearNum} soci={sociSet} />
       </div>
     </div>
   );
