@@ -335,15 +335,20 @@ export function DataTable<T extends Record<string, any>>({
     </div>
   );
 
-  const [portalReady, setPortalReady] = useState(false);
+  // Force a single re-render once the portal target mounts, without creating an update loop.
+  const [, forcePortalRender] = useState(0);
   useEffect(() => {
-    if (toolbarPortalRef?.current) setPortalReady(true);
-  }, [toolbarPortalRef]);
+    if (toolbarPortalRef?.current) {
+      forcePortalRender((n) => (n === 0 ? 1 : n));
+    }
+    // Intentionally empty deps: refs are mutable and don't need to be tracked.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-3">
       {/* Toolbar: render inline or via portal */}
-      {toolbarPortalRef?.current && portalReady
+      {toolbarPortalRef?.current
         ? createPortal(toolbarContent, toolbarPortalRef.current)
         : (
           <div className="flex items-center justify-between gap-2">
