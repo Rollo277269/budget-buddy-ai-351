@@ -40,6 +40,8 @@ import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { useCentroMap, useCentriData } from "@/hooks/useCentri";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 type SortKey = "data" | "numero" | "descrizione" | "cig" | "scadenza" | "stato" | "imponibile" | "imposta" | "dare" | "avere" | "saldo" | "incassato";
 type SortDir = "asc" | "desc";
