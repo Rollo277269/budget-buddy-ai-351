@@ -89,29 +89,70 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
     if (from === to) return;
     setOrder((prev) => {
       const fromIdx = prev.indexOf(from);
-      const toIdx = prev.indexOf(id);
+      const toIdx = prev.indexOf(to);
       if (fromIdx < 0 || toIdx < 0) return prev;
       const next = prev.slice();
       next.splice(fromIdx, 1);
       next.splice(toIdx, 0, from);
+      orderRef.current = next;
       saveOrder(storageKey, next);
+      movedRef.current = true;
       // eslint-disable-next-line no-console
       console.log(
-        `%c[ReorderableToolbar:${storageKey}] drop ✅`,
+        `%c[ReorderableToolbar:${storageKey}] reorder ✅ (${reason})`,
         "color:#16a34a; font-weight:bold",
-        `${from} → ${id}`,
-        "new order:", next,
+        `${from} → ${to}`,
+        "saved:", next,
       );
       return next;
     });
+  }, [storageKey]);
+
+  const moveByOffset = useCallback((id: string, offset: -1 | 1) => {
+    const idx = orderRef.current.indexOf(id);
+    const targetId = orderRef.current[idx + offset];
+    if (targetId) moveItem(id, targetId, "arrow");
+  }, [moveItem]);
+
+  const itemFromPoint = useCallback((clientX: number, clientY: number) => {
+    const elements = document.elementsFromPoint(clientX, clientY);
+    const target = elements.find((el) => {
+      const node = (el as HTMLElement).closest?.("[data-reorderable-id]") as HTMLElement | null;
+      return node?.dataset.reorderableToolbar === storageKey;
+    }) as HTMLElement | undefined;
+    return (target?.closest?.("[data-reorderable-id]") as HTMLElement | null)?.dataset.reorderableId ?? null;
+  }, [storageKey]);
+
+  const handlePointerDown = (id: string) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!editMode || e.button !== 0) return;
+    e.preventDefault();
+    activeId.current = id;
+    movedRef.current = false;
+    setMovingId(id);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    // eslint-disable-next-line no-console
+    console.log(`%c[ReorderableToolbar:${storageKey}] pointerdown → wrapper attivo`, "color:#2563eb", id);
   };
 
-  const handleDragEnd = () => {
-    if (dragId.current) {
-      // eslint-disable-next-line no-console
-      console.log(`%c[ReorderableToolbar:${storageKey}] dragend ⏹ (no drop)`, "color:#6b7280");
-    }
-    dragId.current = null;
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!editMode || !activeId.current) return;
+    const targetId = itemFromPoint(e.clientX, e.clientY);
+    if (!targetId || targetId === activeId.current) return;
+    setOverId(targetId);
+    moveItem(activeId.current, targetId, "pointer");
+  };
+
+  const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!activeId.current) return;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    // eslint-disable-next-line no-console
+    console.log(
+      `%c[ReorderableToolbar:${storageKey}] pointerup ${movedRef.current ? "✅ ordine fissato" : "⏹ nessuno spostamento"}`,
+      "color:#6b7280",
+      activeId.current,
+    );
+    activeId.current = null;
+    setMovingId(null);
     setOverId(null);
   };
 
