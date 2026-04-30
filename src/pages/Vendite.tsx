@@ -342,7 +342,10 @@ const VenditePage = () => {
 
         if (colliding.length === 0) {
           const result = await seedSalesFromExcel(parsed, file.name);
-          toast.success(`Importate ${parsed.length} fatture vendita da ${file.name}`);
+          toast.success(`Import completato: ${parsed.length} fatture vendita`, {
+            description: `Puoi cancellare il file "${file.name}" — i dati sono salvati nel database.`,
+            duration: 6000,
+          });
           invalidateInvoiceCache();
           if (result.discrepancies.length > 0) {
             setCigDiscrepancies(result.discrepancies);
