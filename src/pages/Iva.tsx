@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +12,7 @@ import {
   ResponsiveContainer, ReferenceLine, ComposedChart, Line,
   PieChart, Pie, Cell,
 } from "recharts";
-import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent, Users } from "lucide-react";
+import { Receipt, TrendingUp, TrendingDown, ArrowLeftRight, AlertCircle, Percent, Users, Handshake } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 
