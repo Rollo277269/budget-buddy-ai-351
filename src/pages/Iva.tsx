@@ -250,7 +250,18 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
 
 const IvaPage = () => {
   const { allSales, allPurchases, loading } = useInvoiceData();
+  const { contatti } = useRubrica();
   const [viewMode, setViewMode] = useState<"monthly" | "quarterly">("monthly");
+
+  const sociSet = useMemo(() => {
+    const s = new Set<string>();
+    contatti.forEach((c) => {
+      if ((c.tipo || "").split(",").includes("socio")) {
+        s.add((c.denominazione || "").trim().toLowerCase());
+      }
+    });
+    return s;
+  }, [contatti]);
 
   const availableYears = useMemo(() => {
     const years = new Set<number>();
