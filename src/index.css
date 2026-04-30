@@ -396,6 +396,23 @@
     overflow-wrap: anywhere;
   }
 
+  /* Hard cap on long-text columns to prevent edge clipping */
+  body.print-report .pdf-desc-cell {
+    max-width: 220px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.print-report .pdf-cig-cell {
+    max-width: 90px;
+    white-space: normal;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    font-family: var(--font-mono), monospace;
+    font-size: 9px;
+  }
+
   body.print-report .pdf-table th {
     font-weight: 600;
     background: #f3f4f6;
