@@ -1159,15 +1159,17 @@ const VenditePage = () => {
                                   <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{isDescOnly ? "" : formatCreditAmount(rigaTotale, nc)}</TableCell>
                                   <TableCell className="text-[11px] font-mono py-1.5">{rigaCig || "—"}</TableCell>
                                   <TableCell className="py-1.5">
-                                    <CentroCell
-                                      invoiceKey={`${r.anno}-${r.numero}-${idx}`}
-                                      tipo="ricavo"
-                                      centri={centri}
-                                      centroMap={ricavoMap.map}
-                                      onAssign={ricavoMap.assign}
-                                      onRemove={ricavoMap.remove}
-                                      importo={rigaTotale}
-                                    />
+                                    {isDescOnly ? null : (
+                                      <CentroCell
+                                        invoiceKey={`${r.anno}-${r.numero}-${idx}`}
+                                        tipo="ricavo"
+                                        centri={centri}
+                                        centroMap={ricavoMap.map}
+                                        onAssign={ricavoMap.assign}
+                                        onRemove={ricavoMap.remove}
+                                        importo={rigaTotale}
+                                      />
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               );
