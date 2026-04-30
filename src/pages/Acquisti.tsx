@@ -825,8 +825,8 @@ const AcquistiPage = () => {
       <div className={`flex flex-col overflow-auto ${pdfData ? "w-1/2" : "w-full"} transition-all`}>
         {/* Sticky header area */}
         <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 space-y-2">
-          {/* Row 1: summary + actions + compact drop zones */}
-          <div className="flex items-center justify-between gap-3">
+          {/* Single row: summary + filters + table toolbar + actions */}
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm text-muted-foreground whitespace-nowrap">
               {purchases.length} fatture
               {xmlRecords.length > 0 && (
@@ -836,8 +836,19 @@ const AcquistiPage = () => {
                 </span>
               )}
             </p>
-            <div className="flex items-center gap-1.5">
-              {/* Compact drop zones */}
+
+            <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
+              ...filterOptions,
+              centriCosto: centriCosto
+                .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
+                .sort((a, b) => a.label.localeCompare(b.label)),
+            }} hideCliente />
+
+            {/* DataTable toolbar (search + columns) */}
+            <div ref={toolbarPortalRef} className="flex items-center gap-2" />
+
+            {/* Action buttons / drop zones */}
+            <div className="flex items-center gap-1.5 ml-auto">
               <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
               <div
                 className={`flex items-center gap-1.5 border border-dashed rounded-md px-2.5 py-1.5 cursor-pointer transition-colors text-muted-foreground hover:text-foreground ${xmlDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
@@ -879,6 +890,12 @@ const AcquistiPage = () => {
                 {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
                 {enriching ? "Aggiornamento..." : selectedInvoiceKeys.size > 0 ? `Aggiorna da XML (${selectedInvoiceKeys.size})` : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
               </Button>
+
+              {xmlUnmatchedCount > 0 && (
+                <Button size="sm" variant="outline" className="h-7 text-xs" title="Riassocia gli XML non associati" onClick={rematchAll}>
+                  <RefreshCw className="h-3 w-3 mr-1" />Riassocia
+                </Button>
+              )}
             </div>
           </div>
 
@@ -889,17 +906,6 @@ const AcquistiPage = () => {
               <Progress value={(uploadProgress.done / uploadProgress.total) * 100} className="h-1.5 flex-1" />
             </div>
           )}
-
-          {/* Row 2: Compact filters + DataTable toolbar */}
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterBar compact filters={filters} onFiltersChange={setFilters} options={{
-              ...filterOptions,
-              centriCosto: centriCosto
-                .map((c) => ({ value: c.codice, label: `${c.codice} - ${c.descrizione}` }))
-                .sort((a, b) => a.label.localeCompare(b.label)),
-            }} hideCliente />
-            <div ref={toolbarPortalRef} className="flex items-center gap-2 ml-auto" />
-          </div>
         </div>
 
         {/* ── Schede: Ricevute e Documenti / Fatture XML ── */}
