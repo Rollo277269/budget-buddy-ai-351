@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { GripVertical, Lock, Unlock, RotateCcw } from "lucide-react";
+import { GripVertical, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLayoutEditMode } from "@/hooks/useLayoutEditMode";
 
 export interface ReorderableItem {
   /** Stable id used for ordering and persistence */
@@ -51,7 +52,8 @@ function clearOrder(key: string) {
 }
 
 export function ReorderableToolbar({ storageKey, items, canEdit = true, className, prefix }: ReorderableToolbarProps) {
-  const [editMode, setEditMode] = useState(false);
+  const [globalEdit] = useLayoutEditMode();
+  const editMode = canEdit && globalEdit;
   const [order, setOrder] = useState<string[]>(() => {
     const saved = loadOrder(storageKey);
     return saved ?? items.map((i) => i.id);
@@ -144,30 +146,16 @@ export function ReorderableToolbar({ storageKey, items, canEdit = true, classNam
         </div>
       ))}
 
-      {canEdit && (
-        <div className="flex items-center gap-1 ml-1">
-          {editMode && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-[11px]"
-              onClick={handleReset}
-              title="Ripristina l'ordine predefinito"
-            >
-              <RotateCcw className="h-3 w-3 mr-1" />Reset
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant={editMode ? "default" : "ghost"}
-            className="h-7 px-2 text-[11px]"
-            onClick={() => setEditMode((v) => !v)}
-            title={editMode ? "Blocca layout" : "Modifica layout (riordina pulsanti)"}
-          >
-            {editMode ? <Lock className="h-3 w-3 mr-1" /> : <Unlock className="h-3 w-3 mr-1" />}
-            {editMode ? "Fine" : "Layout"}
-          </Button>
-        </div>
+      {editMode && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-[11px]"
+          onClick={handleReset}
+          title="Ripristina l'ordine predefinito"
+        >
+          <RotateCcw className="h-3 w-3 mr-1" />Reset
+        </Button>
       )}
     </div>
   );
