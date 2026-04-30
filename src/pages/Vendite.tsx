@@ -1146,14 +1146,18 @@ const VenditePage = () => {
                               const headerSenzaIva = Number(r.imposta || 0) === 0;
                               const rigaImposta = headerSenzaIva ? 0 : riga.imposta;
                               const rigaTotale = headerSenzaIva ? riga.imponibile : riga.totale;
+                              // Riga di sola descrizione: nessun importo (mostra celle vuote anziché 0,00 €)
+                              const isDescOnly = Number(riga.imponibile || 0) === 0 && Number(riga.imposta || 0) === 0 && Number(riga.totale || 0) === 0 && !!String(riga.descrizione || "").trim();
+                              // CIG: se l'header ha un CIG unico, ripetilo su tutte le righe come fallback
+                              const rigaCig = riga.cig || r.cig || "";
                               return (
                                 <TableRow key={idx} className="border-b border-border/30">
                                   <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{displayIdx + 1}</TableCell>
                                   <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5 overflow-hidden" style={{ overflowWrap: "anywhere" }}>{riga.descrizione || "—"}</TableCell>
-                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
-                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(rigaImposta, nc)}</TableCell>
-                                  <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(rigaTotale, nc)}</TableCell>
-                                  <TableCell className="text-[11px] font-mono py-1.5">{riga.cig || "—"}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{isDescOnly ? "" : formatCreditAmount(riga.imponibile, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{isDescOnly ? "" : formatCreditAmount(rigaImposta, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{isDescOnly ? "" : formatCreditAmount(rigaTotale, nc)}</TableCell>
+                                  <TableCell className="text-[11px] font-mono py-1.5">{rigaCig || "—"}</TableCell>
                                   <TableCell className="py-1.5">
                                     <CentroCell
                                       invoiceKey={`${r.anno}-${r.numero}-${idx}`}
