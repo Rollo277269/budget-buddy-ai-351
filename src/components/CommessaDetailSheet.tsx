@@ -1755,10 +1755,27 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
   const ricavoData = useMemo(() => {
     const map = new Map<string, { imponibile: number; iva: number; totale: number }>();
     linkedSales.forEach((s) => {
-      const codice = ricavoMap[`${s.anno}-${s.numero}`];
+      const sign = isSaleCreditNote(s) ? -1 : 1;
+      const righe = Array.isArray(s.righe) ? s.righe : [];
+      const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
+      const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
+      if (hasRowAssignments) {
+        righe.forEach((riga, idx) => {
+          const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
+          if (isExcludedFromCommessa(codiceRiga)) return;
+          const labelRiga = codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato";
+          const impR = sign * Math.abs(riga.imponibile || 0);
+          const totR = sign * Math.abs(riga.totale || 0);
+          const ivaR = sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
+          const eR = map.get(labelRiga) || { imponibile: 0, iva: 0, totale: 0 };
+          eR.imponibile += impR; eR.iva += ivaR; eR.totale += totR;
+          map.set(labelRiga, eR);
+        });
+        return;
+      }
+      const codice = fatturaCodice;
       if (isExcludedFromCommessa(codice)) return;
       const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
-      const sign = isSaleCreditNote(s) ? -1 : 1;
       const imp = sign * Math.abs(s.imponibile || 0);
       const iva = sign * Math.abs(s.imposta || 0);
       const tot = sign * Math.abs(s.totale || 0);
