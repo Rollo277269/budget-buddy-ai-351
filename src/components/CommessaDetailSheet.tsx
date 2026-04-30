@@ -524,6 +524,18 @@ export function CommessaDetailSheet({
                 <FileText className="h-3.5 w-3.5" />
                 Report
               </Button>
+              {isAdmin && onDeleteCommessa && commessa.cssrData?.id && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteOpen(true)}
+                  className="gap-1.5 no-print"
+                  title="Elimina definitivamente questa commessa"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Elimina commessa
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5 no-print" title="Chiudi e torna alla lista commesse">
                 <ArrowDownRight className="h-3.5 w-3.5 rotate-90" />
                 Torna a Commesse
