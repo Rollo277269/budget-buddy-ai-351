@@ -966,15 +966,7 @@ const VenditePage = () => {
         <div className="sticky top-0 z-20 bg-background border-b border-border px-4 py-3 space-y-2">
           {/* Row 1: summary + actions + compact drop zones */}
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground whitespace-nowrap">
-              {displayedSales.length} fatture
-              {xmlRecords.length > 0 && (
-                <span className="ml-1.5">
-                  · <FileText className="inline h-3 w-3 mb-0.5" /> {xmlMatchedCount}
-                  {xmlUnmatchedCount > 0 && <span className="text-destructive"> · {xmlUnmatchedCount} non assoc.</span>}
-                </span>
-              )}
-            </p>
+            <div />
             <div className="flex items-center gap-1.5">
               {/* Compact drop zones */}
               <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
