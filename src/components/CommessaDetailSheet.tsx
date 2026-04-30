@@ -359,8 +359,15 @@ export function CommessaDetailSheet({
 
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
+    // Avanzamento contratto: solo ricavi classificati come RC1 (Lavori eseguiti)
+    const isRC1 = (codice: string | null | undefined) =>
+      !!codice && codice.trim().toUpperCase().startsWith("RC1");
+    const totalVenditeImponibileRC1 = linkedSalesForTotals.reduce((s, i) => {
+      const codice = ricavoMap.map[`${i.anno}-${i.numero}`];
+      return isRC1(codice) ? s + saleImponibile(i) : s;
+    }, 0);
     const percentualeFatturato = importoContratto && !isNaN(importoContratto) && importoContratto > 0
-      ? (totalVenditeImponibile / importoContratto) * 100 : null;
+      ? (totalVenditeImponibileRC1 / importoContratto) * 100 : null;
 
     const allLinkedSaleKeys = new Set([
       ...autoSales.map((s) => invoiceKey(s.anno, s.numero)),
@@ -449,7 +456,7 @@ export function CommessaDetailSheet({
       linkedSales, linkedPurchases, totalVendite, totalAcquisti,
       totalVenditeImponibile, totalAcquistiImponibile, saldoImponibile,
       saldo, margine,
-      cssr, importoContratto, percentualeFatturato,
+      cssr, importoContratto, percentualeFatturato, totalVenditeImponibileRC1,
       allLinkedSaleKeys, allLinkedPurchaseKeys,
       autoSaleKeys, autoPurchaseKeys,
       monthlyData, supplierData, statusSales, statusPurchases,
