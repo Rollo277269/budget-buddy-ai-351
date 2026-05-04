@@ -206,17 +206,26 @@ export function parseExcelPurchases(rows: any[]): PurchaseInvoice[] {
 
 // ── DB helpers ──
 
-async function loadSalesFromDb(): Promise<SaleInvoice[]> {
+/**
+ * Default window of recent years loaded at startup. Older years are fetched
+ * on-demand (e.g. when the user filters by an older year).
+ */
+const RECENT_YEARS = 5;
+
+async function loadSalesFromDb(minYear?: number, exactYear?: number): Promise<SaleInvoice[]> {
   const allRows: any[] = [];
   let from = 0;
   const PAGE = 1000;
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("fatture_vendita" as any)
       .select("tipo,anno,numero,suffisso,data,cliente,partita_iva,totale,imponibile,imposta,descrizione,cig,cup,stato,scadenza,pagamento,righe")
       .order("anno", { ascending: true })
       .order("numero", { ascending: true })
       .range(from, from + PAGE - 1);
+    if (exactYear !== undefined) q = q.eq("anno", exactYear);
+    else if (minYear !== undefined) q = q.gte("anno", minYear);
+    const { data, error } = await q;
     if (error) { console.error("Error loading sales:", error); break; }
     if (!data || data.length === 0) break;
     allRows.push(...(data as any[]));
@@ -233,17 +242,20 @@ async function loadSalesFromDb(): Promise<SaleInvoice[]> {
   }));
 }
 
-async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
+async function loadPurchasesFromDb(minYear?: number, exactYear?: number): Promise<PurchaseInvoice[]> {
   const allRows: any[] = [];
   let from = 0;
   const PAGE = 1000;
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("fatture_acquisto" as any)
       .select("tipo,anno,numero,data,fornitore,partita_iva,totale,imponibile,imposta,cassa,ritenute,descrizione,cig,cup,stato,scadenza,pagamento")
       .order("anno", { ascending: true })
       .order("numero", { ascending: true })
       .range(from, from + PAGE - 1);
+    if (exactYear !== undefined) q = q.eq("anno", exactYear);
+    else if (minYear !== undefined) q = q.gte("anno", minYear);
+    const { data, error } = await q;
     if (error) { console.error("Error loading purchases:", error); break; }
     if (!data || data.length === 0) break;
     allRows.push(...(data as any[]));
@@ -325,6 +337,39 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], _
 let cachedSales: SaleInvoice[] | null = null;
 let cachedPurchases: PurchaseInvoice[] | null = null;
 let loadPromise: Promise<void> | null = null;
+/** Years already fetched from DB into the in-memory cache. */
+const loadedYears = new Set<number>();
+const yearLoadPromises = new Map<number, Promise<void>>();
+/** All distinct years available in DB (lightweight metadata fetch). */
+let availableYears: number[] | null = null;
+let availableYearsPromise: Promise<number[]> | null = null;
+
+async function fetchAvailableYears(): Promise<number[]> {
+  if (availableYears) return availableYears;
+  if (availableYearsPromise) return availableYearsPromise;
+  availableYearsPromise = (async () => {
+    const years = new Set<number>();
+    const fetchAll = async (table: string) => {
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from(table as any)
+          .select("anno")
+          .order("anno", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error || !data || data.length === 0) break;
+        (data as any[]).forEach((r) => r.anno && years.add(r.anno));
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+    };
+    await Promise.all([fetchAll("fatture_vendita"), fetchAll("fatture_acquisto")]);
+    availableYears = Array.from(years).filter((y) => !isNaN(y)).sort((a, b) => b - a);
+    return availableYears;
+  })();
+  return availableYearsPromise;
+}
 // True when in-memory caches come only from IDB and a fresh DB fetch hasn't completed yet.
 let cacheNeedsRevalidation = false;
 
@@ -332,6 +377,8 @@ export function invalidateInvoiceCache() {
   cachedSales = null;
   cachedPurchases = null;
   loadPromise = null;
+  loadedYears.clear();
+  yearLoadPromises.clear();
 }
 
 export async function prefetchInvoices(): Promise<void> {
@@ -339,6 +386,34 @@ export async function prefetchInvoices(): Promise<void> {
   if (loadPromise) return loadPromise;
   loadPromise = loadAll();
   return loadPromise;
+}
+
+/**
+ * Load a specific year on-demand (older than the recent window). Idempotent.
+ */
+export async function ensureYearLoaded(year: number): Promise<void> {
+  if (!year || isNaN(year)) return;
+  if (loadedYears.has(year)) return;
+  const existing = yearLoadPromises.get(year);
+  if (existing) return existing;
+  const p = (async () => {
+    const [s, p] = await Promise.all([
+      loadSalesFromDb(undefined, year),
+      loadPurchasesFromDb(undefined, year),
+    ]);
+    // Merge avoiding duplicates by primary key
+    const sKey = (x: SaleInvoice) => `${x.anno}-${x.numero}-${x.suffisso}-${x.tipo}`;
+    const pKey = (x: PurchaseInvoice) => `${x.anno}-${x.numero}`;
+    const existingSales = new Set((cachedSales ?? []).map(sKey));
+    const existingPurchases = new Set((cachedPurchases ?? []).map(pKey));
+    cachedSales = [...(cachedSales ?? []), ...s.filter((x) => !existingSales.has(sKey(x)))];
+    cachedPurchases = [...(cachedPurchases ?? []), ...p.filter((x) => !existingPurchases.has(pKey(x)))];
+    loadedYears.add(year);
+    idbSet(CACHE_KEYS.sales, cachedSales);
+    idbSet(CACHE_KEYS.purchases, cachedPurchases);
+  })();
+  yearLoadPromises.set(year, p);
+  try { await p; } finally { yearLoadPromises.delete(year); }
 }
 
 /**
@@ -355,13 +430,21 @@ export async function hydrateInvoicesFromIdb(): Promise<void> {
 }
 
 async function loadAll() {
-  // Try DB first
-  const [dbSales, dbPurchases] = await Promise.all([loadSalesFromDb(), loadPurchasesFromDb()]);
+  // Try DB first — only the recent window of years
+  const minYear = new Date().getFullYear() - (RECENT_YEARS - 1);
+  const [dbSales, dbPurchases] = await Promise.all([
+    loadSalesFromDb(minYear),
+    loadPurchasesFromDb(minYear),
+  ]);
 
   if (dbSales.length > 0 || dbPurchases.length > 0) {
     cachedSales = dbSales;
     cachedPurchases = dbPurchases;
     cacheNeedsRevalidation = false;
+    for (let y = minYear; y <= new Date().getFullYear(); y++) loadedYears.add(y);
+    // Also mark any older years actually present (e.g. seeded data)
+    dbSales.forEach((s) => s.anno && loadedYears.add(s.anno));
+    dbPurchases.forEach((p) => p.anno && loadedYears.add(p.anno));
     idbSet(CACHE_KEYS.sales, dbSales);
     idbSet(CACHE_KEYS.purchases, dbPurchases);
     return;
@@ -423,6 +506,7 @@ export function useInvoiceData() {
   const [sales, setSales] = useState<SaleInvoice[]>([]);
   const [purchases, setPurchases] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allYears, setAllYears] = useState<number[]>([]);
   const [filters, setFilters] = useState<Filters>({
     anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "", centroRicavo: "",
   });
@@ -436,6 +520,21 @@ export function useInvoiceData() {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    fetchAvailableYears().then(setAllYears).catch(() => {});
+  }, []);
+
+  // On-demand loading of older years when the user filters by anno
+  useEffect(() => {
+    const y = parseInt(filters.anno);
+    if (!y || isNaN(y)) return;
+    if (loadedYears.has(y)) return;
+    ensureYearLoaded(y).then(() => {
+      setSales([...(cachedSales ?? [])]);
+      setPurchases([...(cachedPurchases ?? [])]);
+    });
+  }, [filters.anno]);
 
   useEffect(() => {
     if (cachedSales && cachedPurchases) {
@@ -519,7 +618,7 @@ export function useInvoiceData() {
   }, [sales]);
 
   const filterOptions = useMemo(() => {
-    const years = new Set<number>();
+    const years = new Set<number>(allYears);
     const clients = new Set<string>();
     const suppliers = new Set<string>();
     const cigs = new Set<string>();
@@ -531,7 +630,7 @@ export function useInvoiceData() {
       suppliers: Array.from(suppliers).filter(Boolean).sort(),
       cigs: Array.from(cigs).filter(Boolean).sort(),
     };
-  }, [normalizedSales, purchases]);
+  }, [normalizedSales, purchases, allYears]);
 
   const filteredSales = useMemo(() => {
     return normalizedSales.filter((s) => {
