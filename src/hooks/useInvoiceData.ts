@@ -212,19 +212,20 @@ export function parseExcelPurchases(rows: any[]): PurchaseInvoice[] {
  */
 const RECENT_YEARS = 5;
 
-async function loadSalesFromDb(): Promise<SaleInvoice[]> {
+async function loadSalesFromDb(minYear?: number, exactYear?: number): Promise<SaleInvoice[]> {
   const allRows: any[] = [];
   let from = 0;
   const PAGE = 1000;
-  const minYear = new Date().getFullYear() - (RECENT_YEARS - 1);
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("fatture_vendita" as any)
       .select("tipo,anno,numero,suffisso,data,cliente,partita_iva,totale,imponibile,imposta,descrizione,cig,cup,stato,scadenza,pagamento,righe")
-      .gte("anno", minYear)
       .order("anno", { ascending: true })
       .order("numero", { ascending: true })
       .range(from, from + PAGE - 1);
+    if (exactYear !== undefined) q = q.eq("anno", exactYear);
+    else if (minYear !== undefined) q = q.gte("anno", minYear);
+    const { data, error } = await q;
     if (error) { console.error("Error loading sales:", error); break; }
     if (!data || data.length === 0) break;
     allRows.push(...(data as any[]));
@@ -241,19 +242,20 @@ async function loadSalesFromDb(): Promise<SaleInvoice[]> {
   }));
 }
 
-async function loadPurchasesFromDb(): Promise<PurchaseInvoice[]> {
+async function loadPurchasesFromDb(minYear?: number, exactYear?: number): Promise<PurchaseInvoice[]> {
   const allRows: any[] = [];
   let from = 0;
   const PAGE = 1000;
-  const minYear = new Date().getFullYear() - (RECENT_YEARS - 1);
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("fatture_acquisto" as any)
       .select("tipo,anno,numero,data,fornitore,partita_iva,totale,imponibile,imposta,cassa,ritenute,descrizione,cig,cup,stato,scadenza,pagamento")
-      .gte("anno", minYear)
       .order("anno", { ascending: true })
       .order("numero", { ascending: true })
       .range(from, from + PAGE - 1);
+    if (exactYear !== undefined) q = q.eq("anno", exactYear);
+    else if (minYear !== undefined) q = q.gte("anno", minYear);
+    const { data, error } = await q;
     if (error) { console.error("Error loading purchases:", error); break; }
     if (!data || data.length === 0) break;
     allRows.push(...(data as any[]));
