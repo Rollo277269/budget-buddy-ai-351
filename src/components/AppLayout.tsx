@@ -14,6 +14,18 @@ function prefetchSharedData() {
   import("@/hooks/useCentri").then((m) => { m.fetchCentriFromDb(); m.fetchCategorieFromDb(); }).catch(() => {});
 }
 
+// Schedule prefetch when the browser is idle so it does not compete with the
+// initial render / lazy-loaded route chunks. Falls back to a small timeout.
+function schedulePrefetch() {
+  const run = () => prefetchSharedData();
+  const ric = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: { timeout: number }) => number);
+  if (typeof ric === "function") {
+    ric(run, { timeout: 4000 });
+  } else {
+    setTimeout(run, 1500);
+  }
+}
+
 const pageTitles: Record<string, string> = {
   "/": "Cruscotto",
   "/scadenzario": "Scadenzario",
@@ -99,7 +111,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
 
   // Prefetch shared datasets once at app mount so navigating between pages is instant.
-  useEffect(() => { prefetchSharedData(); }, []);
+  useEffect(() => { schedulePrefetch(); }, []);
 
   // Auto-enter fullscreen on first user interaction (browsers require a user gesture).
   useEffect(() => {
