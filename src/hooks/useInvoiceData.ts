@@ -337,6 +337,9 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], _
 let cachedSales: SaleInvoice[] | null = null;
 let cachedPurchases: PurchaseInvoice[] | null = null;
 let loadPromise: Promise<void> | null = null;
+/** Years already fetched from DB into the in-memory cache. */
+const loadedYears = new Set<number>();
+const yearLoadPromises = new Map<number, Promise<void>>();
 // True when in-memory caches come only from IDB and a fresh DB fetch hasn't completed yet.
 let cacheNeedsRevalidation = false;
 
@@ -344,6 +347,8 @@ export function invalidateInvoiceCache() {
   cachedSales = null;
   cachedPurchases = null;
   loadPromise = null;
+  loadedYears.clear();
+  yearLoadPromises.clear();
 }
 
 export async function prefetchInvoices(): Promise<void> {
@@ -367,13 +372,21 @@ export async function hydrateInvoicesFromIdb(): Promise<void> {
 }
 
 async function loadAll() {
-  // Try DB first
-  const [dbSales, dbPurchases] = await Promise.all([loadSalesFromDb(), loadPurchasesFromDb()]);
+  // Try DB first — only the recent window of years
+  const minYear = new Date().getFullYear() - (RECENT_YEARS - 1);
+  const [dbSales, dbPurchases] = await Promise.all([
+    loadSalesFromDb(minYear),
+    loadPurchasesFromDb(minYear),
+  ]);
 
   if (dbSales.length > 0 || dbPurchases.length > 0) {
     cachedSales = dbSales;
     cachedPurchases = dbPurchases;
     cacheNeedsRevalidation = false;
+    for (let y = minYear; y <= new Date().getFullYear(); y++) loadedYears.add(y);
+    // Also mark any older years actually present (e.g. seeded data)
+    dbSales.forEach((s) => s.anno && loadedYears.add(s.anno));
+    dbPurchases.forEach((p) => p.anno && loadedYears.add(p.anno));
     idbSet(CACHE_KEYS.sales, dbSales);
     idbSet(CACHE_KEYS.purchases, dbPurchases);
     return;
