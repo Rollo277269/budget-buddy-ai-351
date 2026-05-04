@@ -340,6 +340,20 @@ let loadPromise: Promise<void> | null = null;
 /** Years already fetched from DB into the in-memory cache. */
 const loadedYears = new Set<number>();
 const yearLoadPromises = new Map<number, Promise<void>>();
+
+// ── On-demand year loading: tiny pubsub for global status badge ──
+const yearLoadingListeners = new Set<(year: number | null) => void>();
+let currentLoadingYear: number | null = null;
+function setCurrentLoadingYear(y: number | null) {
+  currentLoadingYear = y;
+  yearLoadingListeners.forEach((l) => l(y));
+}
+export function subscribeYearLoading(cb: (year: number | null) => void): () => void {
+  yearLoadingListeners.add(cb);
+  cb(currentLoadingYear);
+  return () => yearLoadingListeners.delete(cb);
+}
+export function getCurrentLoadingYear(): number | null { return currentLoadingYear; }
 /** All distinct years available in DB (lightweight metadata fetch). */
 let availableYears: number[] | null = null;
 let availableYearsPromise: Promise<number[]> | null = null;
