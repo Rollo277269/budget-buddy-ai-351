@@ -27,8 +27,14 @@ function ContiCorrentiTab() {
 
   const handleSave = async () => {
     if (!editing) return;
-    if (!editing.banca || !editing.iban) {
-      toast.error("Banca e IBAN sono obbligatori");
+    // Tipi "non bancari" non hanno né banca né IBAN: basta la descrizione/intestatario.
+    const requiresBank = ["conto_corrente", "carta_credito", "finanziamento"].includes(editing.tipo);
+    if (requiresBank && (!editing.banca || !editing.iban)) {
+      toast.error("Banca e IBAN sono obbligatori per questo tipo di conto");
+      return;
+    }
+    if (!requiresBank && !editing.banca && !editing.intestatario && !editing.note) {
+      toast.error("Inserisci almeno una descrizione (Banca/Emittente, Intestatario o Note)");
       return;
     }
     await saveConto(editing);
