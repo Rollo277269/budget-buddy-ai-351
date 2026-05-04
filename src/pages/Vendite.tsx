@@ -42,7 +42,26 @@ function formatCreditAmount(value: number, isCreditNote: boolean): string {
   return isCreditNote ? `- ${formatted}` : formatted;
 }
 
-function StatusBadge({ stato }: { stato: string }) {
+function StatusBadge({ stato, paid, totale }: { stato: string; paid?: number; totale?: number }) {
+  // Payment-based override (vendite): se ci sono incassi, mostra stato di incasso
+  if (typeof paid === "number" && typeof totale === "number" && Math.abs(totale) > 0.01) {
+    const absTot = Math.abs(totale);
+    const absPaid = Math.abs(paid);
+    if (absPaid >= absTot - 0.01) {
+      return (
+        <Badge className="text-[10px] font-medium bg-green-600 text-white hover:bg-green-600/90 border-transparent">
+          INCASSATA
+        </Badge>
+      );
+    }
+    if (absPaid > 0.01) {
+      return (
+        <Badge className="text-[10px] font-medium bg-yellow-500 text-black hover:bg-yellow-500/90 border-transparent">
+          PARZIALMENTE INCASSATA
+        </Badge>
+      );
+    }
+  }
   const s = stato.toLowerCase();
   if (s.includes("scadut"))
     return <Badge variant="destructive" className="text-[10px] font-medium">{stato}</Badge>;
@@ -675,7 +694,10 @@ const VenditePage = () => {
         }, 0);
         return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>;
       } },
-      { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
+      { key: "stato", label: "Stato", render: (r) => {
+        const rec = reconMap[`${r.anno}-${r.numero}`];
+        return <StatusBadge stato={r.stato} paid={rec?.paid} totale={r.totale} />;
+      }, sortable: true, filterable: true },
       { key: "importoPagato", label: "Importo Incassato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
         const rec = reconMap[`${r.anno}-${r.numero}`];
         if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
