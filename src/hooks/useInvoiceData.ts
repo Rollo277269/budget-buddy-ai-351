@@ -506,6 +506,7 @@ export function useInvoiceData() {
   const [sales, setSales] = useState<SaleInvoice[]>([]);
   const [purchases, setPurchases] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allYears, setAllYears] = useState<number[]>([]);
   const [filters, setFilters] = useState<Filters>({
     anno: "", cliente: "", fornitore: "", cig: "", centroCosto: "", centroRicavo: "",
   });
@@ -518,6 +519,10 @@ export function useInvoiceData() {
       setPurchases(cachedPurchases!);
       setLoading(false);
     });
+  }, []);
+
+  useEffect(() => {
+    fetchAvailableYears().then(setAllYears).catch(() => {});
   }, []);
 
   // On-demand loading of older years when the user filters by anno
@@ -613,7 +618,7 @@ export function useInvoiceData() {
   }, [sales]);
 
   const filterOptions = useMemo(() => {
-    const years = new Set<number>();
+    const years = new Set<number>(allYears);
     const clients = new Set<string>();
     const suppliers = new Set<string>();
     const cigs = new Set<string>();
@@ -625,7 +630,7 @@ export function useInvoiceData() {
       suppliers: Array.from(suppliers).filter(Boolean).sort(),
       cigs: Array.from(cigs).filter(Boolean).sort(),
     };
-  }, [normalizedSales, purchases]);
+  }, [normalizedSales, purchases, allYears]);
 
   const filteredSales = useMemo(() => {
     return normalizedSales.filter((s) => {
