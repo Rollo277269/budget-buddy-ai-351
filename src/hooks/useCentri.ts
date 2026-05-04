@@ -234,10 +234,12 @@ export function useCentriData() {
   }, []);
 
   useEffect(() => {
+    // Show whatever we have (possibly hydrated from IDB) immediately.
     if (centriCache) setCentri(centriCache);
-    else fetchCentriFromDb().then(setCentri);
     if (categorieCache) setCategorie(categorieCache);
-    else fetchCategorieFromDb().then(setCategorie);
+    // Always trigger a fresh fetch so IDB-hydrated data gets revalidated.
+    fetchCentriFromDb().then(setCentri);
+    fetchCategorieFromDb().then(setCategorie);
   }, []);
 
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);
