@@ -325,6 +325,8 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], _
 let cachedSales: SaleInvoice[] | null = null;
 let cachedPurchases: PurchaseInvoice[] | null = null;
 let loadPromise: Promise<void> | null = null;
+// True when in-memory caches come only from IDB and a fresh DB fetch hasn't completed yet.
+let cacheNeedsRevalidation = false;
 
 export function invalidateInvoiceCache() {
   cachedSales = null;
@@ -348,8 +350,8 @@ export async function hydrateInvoicesFromIdb(): Promise<void> {
     idbGet<SaleInvoice[]>(CACHE_KEYS.sales),
     idbGet<PurchaseInvoice[]>(CACHE_KEYS.purchases),
   ]);
-  if (s && !cachedSales) cachedSales = s;
-  if (p && !cachedPurchases) cachedPurchases = p;
+  if (s && !cachedSales) { cachedSales = s; cacheNeedsRevalidation = true; }
+  if (p && !cachedPurchases) { cachedPurchases = p; cacheNeedsRevalidation = true; }
 }
 
 async function loadAll() {
@@ -359,6 +361,7 @@ async function loadAll() {
   if (dbSales.length > 0 || dbPurchases.length > 0) {
     cachedSales = dbSales;
     cachedPurchases = dbPurchases;
+    cacheNeedsRevalidation = false;
     idbSet(CACHE_KEYS.sales, dbSales);
     idbSet(CACHE_KEYS.purchases, dbPurchases);
     return;
