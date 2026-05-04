@@ -443,6 +443,15 @@ export function useInvoiceData() {
       setSales(cachedSales);
       setPurchases(cachedPurchases);
       setLoading(false);
+      // Stale-while-revalidate: if the in-memory cache came from IDB only,
+      // fetch fresh data in the background and update state when ready.
+      if (cacheNeedsRevalidation && !loadPromise) {
+        loadPromise = loadAll();
+        loadPromise.then(() => {
+          setSales(cachedSales!);
+          setPurchases(cachedPurchases!);
+        });
+      }
       return;
     }
     if (!loadPromise) {
