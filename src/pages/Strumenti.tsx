@@ -27,8 +27,14 @@ function ContiCorrentiTab() {
 
   const handleSave = async () => {
     if (!editing) return;
-    if (!editing.banca || !editing.iban) {
-      toast.error("Banca e IBAN sono obbligatori");
+    // Tipi "non bancari" non hanno né banca né IBAN: basta la descrizione/intestatario.
+    const requiresBank = ["conto_corrente", "carta_credito", "finanziamento"].includes(editing.tipo);
+    if (requiresBank && (!editing.banca || !editing.iban)) {
+      toast.error("Banca e IBAN sono obbligatori per questo tipo di conto");
+      return;
+    }
+    if (!requiresBank && !editing.banca && !editing.intestatario && !editing.note) {
+      toast.error("Inserisci almeno una descrizione (Banca/Emittente, Intestatario o Note)");
       return;
     }
     await saveConto(editing);
@@ -70,14 +76,21 @@ function ContiCorrentiTab() {
                   <option value="bolli">Bolli</option>
                 </select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Banca / Emittente *</Label>
-                <Input value={editing.banca} onChange={(e) => setEditing({ ...editing, banca: e.target.value })} placeholder="Nome banca o emittente" className="h-9 text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{editing.tipo === "carta_credito" ? "Numero Carta" : "IBAN"} *</Label>
-                <Input value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value.toUpperCase() })} placeholder={editing.tipo === "carta_credito" ? "**** **** **** 1234" : "IT60X0542811101000000123456"} className="h-9 text-sm font-mono" />
-              </div>
+              {(() => {
+                const requiresBank = ["conto_corrente", "carta_credito", "finanziamento"].includes(editing.tipo);
+                return (
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Banca / Emittente {requiresBank ? "*" : ""}</Label>
+                      <Input value={editing.banca} onChange={(e) => setEditing({ ...editing, banca: e.target.value })} placeholder={requiresBank ? "Nome banca o emittente" : "Es. Cassa Contanti, Bolli, Crediti Fiscali"} className="h-9 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{editing.tipo === "carta_credito" ? "Numero Carta" : "IBAN"} {requiresBank ? "*" : "(facoltativo)"}</Label>
+                      <Input value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value.toUpperCase() })} placeholder={editing.tipo === "carta_credito" ? "**** **** **** 1234" : (requiresBank ? "IT60X0542811101000000123456" : "—")} className="h-9 text-sm font-mono" />
+                    </div>
+                  </>
+                );
+              })()}
               <div className="space-y-1">
                 <Label className="text-xs">Intestatario</Label>
                 <Input value={editing.intestatario} onChange={(e) => setEditing({ ...editing, intestatario: e.target.value })} placeholder="Ragione sociale" className="h-9 text-sm" />
