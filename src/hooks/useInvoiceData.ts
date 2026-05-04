@@ -411,6 +411,7 @@ export async function ensureYearLoaded(year: number): Promise<void> {
   const existing = yearLoadPromises.get(year);
   if (existing) return existing;
   const p = (async () => {
+    setCurrentLoadingYear(year);
     const [s, p] = await Promise.all([
       loadSalesFromDb(undefined, year),
       loadPurchasesFromDb(undefined, year),
@@ -427,7 +428,12 @@ export async function ensureYearLoaded(year: number): Promise<void> {
     idbSet(CACHE_KEYS.purchases, cachedPurchases);
   })();
   yearLoadPromises.set(year, p);
-  try { await p; } finally { yearLoadPromises.delete(year); }
+  try {
+    await p;
+  } finally {
+    yearLoadPromises.delete(year);
+    if (yearLoadPromises.size === 0) setCurrentLoadingYear(null);
+  }
 }
 
 /**
