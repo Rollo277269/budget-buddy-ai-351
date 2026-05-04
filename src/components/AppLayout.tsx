@@ -31,6 +31,16 @@ function schedulePrefetch() {
   }
 }
 
+// Lazily start the Web Vitals logger so it does not delay first paint.
+function startWebVitalsWhenIdle() {
+  const run = () => {
+    import("@/lib/webVitalsLogger").then((m) => m.startWebVitalsLogger()).catch(() => {});
+  };
+  const ric = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: { timeout: number }) => number);
+  if (typeof ric === "function") ric(run, { timeout: 4000 });
+  else setTimeout(run, 2000);
+}
+
 const pageTitles: Record<string, string> = {
   "/": "Cruscotto",
   "/scadenzario": "Scadenzario",
@@ -116,7 +126,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
 
   // Prefetch shared datasets once at app mount so navigating between pages is instant.
-  useEffect(() => { schedulePrefetch(); }, []);
+  useEffect(() => { schedulePrefetch(); startWebVitalsWhenIdle(); }, []);
 
   // Auto-enter fullscreen on first user interaction (browsers require a user gesture).
   useEffect(() => {
