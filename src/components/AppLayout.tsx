@@ -5,6 +5,7 @@ import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LayoutEditModeIndicator } from "@/components/LayoutEditModeIndicator";
+import { YearLoadingBadge } from "@/components/YearLoadingBadge";
 
 // Lazy-load the floating assistant — it's non-critical for first paint and
 // pulls in react-markdown (~70KB).
@@ -203,5 +204,6 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
         <RitaAssistant />
       </Suspense>
       <LayoutEditModeIndicator />
+      <YearLoadingBadge />
     </SidebarProvider>);
 }
