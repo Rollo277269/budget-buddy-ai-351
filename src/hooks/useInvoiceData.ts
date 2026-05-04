@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type * as XLSXType from "xlsx";
+import { idbGet, idbSet, CACHE_KEYS } from "@/lib/idbCache";
 
 async function getXLSX(): Promise<typeof XLSXType> {
   return await import("xlsx");
@@ -338,6 +339,19 @@ export async function prefetchInvoices(): Promise<void> {
   return loadPromise;
 }
 
+/**
+ * Hydrate in-memory invoice caches from IndexedDB. The fresh DB fetch is
+ * triggered separately by `prefetchInvoices` (stale-while-revalidate).
+ */
+export async function hydrateInvoicesFromIdb(): Promise<void> {
+  const [s, p] = await Promise.all([
+    idbGet<SaleInvoice[]>(CACHE_KEYS.sales),
+    idbGet<PurchaseInvoice[]>(CACHE_KEYS.purchases),
+  ]);
+  if (s && !cachedSales) cachedSales = s;
+  if (p && !cachedPurchases) cachedPurchases = p;
+}
+
 async function loadAll() {
   // Try DB first
   const [dbSales, dbPurchases] = await Promise.all([loadSalesFromDb(), loadPurchasesFromDb()]);
@@ -345,6 +359,8 @@ async function loadAll() {
   if (dbSales.length > 0 || dbPurchases.length > 0) {
     cachedSales = dbSales;
     cachedPurchases = dbPurchases;
+    idbSet(CACHE_KEYS.sales, dbSales);
+    idbSet(CACHE_KEYS.purchases, dbPurchases);
     return;
   }
 
@@ -381,6 +397,8 @@ async function loadAll() {
 
     cachedSales = sales;
     cachedPurchases = purchases;
+    idbSet(CACHE_KEYS.sales, sales);
+    idbSet(CACHE_KEYS.purchases, purchases);
     console.log(`[InvoiceData] Seeded ${sales.length} sales + ${purchases.length} purchases`);
   } catch (err) {
     console.warn("[InvoiceData] Seeding failed:", err);
