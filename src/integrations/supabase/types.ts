@@ -587,6 +587,42 @@ export type Database = {
         }
         Relationships: []
       }
+      web_vitals: {
+        Row: {
+          created_at: string
+          id: string
+          metric_name: string
+          navigation_type: string
+          pathname: string
+          rating: string
+          session_id: string
+          user_agent: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_name: string
+          navigation_type?: string
+          pathname?: string
+          rating?: string
+          session_id?: string
+          user_agent?: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_name?: string
+          navigation_type?: string
+          pathname?: string
+          rating?: string
+          session_id?: string
+          user_agent?: string
+          value?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
