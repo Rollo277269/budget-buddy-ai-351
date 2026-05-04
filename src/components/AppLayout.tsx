@@ -1,11 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { RitaAssistant } from "@/components/RitaAssistant";
 import { LayoutEditModeIndicator } from "@/components/LayoutEditModeIndicator";
+
+// Lazy-load the floating assistant — it's non-critical for first paint and
+// pulls in react-markdown (~70KB).
+const RitaAssistant = lazy(() =>
+  import("@/components/RitaAssistant").then((m) => ({ default: m.RitaAssistant }))
+);
 
 // Background prefetch of frequently used datasets so navigation between pages is instant.
 function prefetchSharedData() {
@@ -168,7 +173,9 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           </main>
         </div>
       </div>
-      <RitaAssistant />
+      <Suspense fallback={null}>
+        <RitaAssistant />
+      </Suspense>
       <LayoutEditModeIndicator />
     </SidebarProvider>);
 }
