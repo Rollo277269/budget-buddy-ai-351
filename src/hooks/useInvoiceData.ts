@@ -429,7 +429,6 @@ export function useInvoiceData() {
 
   const refresh = useCallback(() => {
     invalidateInvoiceCache();
-    setLoading(true);
     loadPromise = loadAll();
     loadPromise.then(() => {
       setSales(cachedSales!);
