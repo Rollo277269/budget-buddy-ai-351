@@ -359,6 +359,34 @@ export async function prefetchInvoices(): Promise<void> {
 }
 
 /**
+ * Load a specific year on-demand (older than the recent window). Idempotent.
+ */
+export async function ensureYearLoaded(year: number): Promise<void> {
+  if (!year || isNaN(year)) return;
+  if (loadedYears.has(year)) return;
+  const existing = yearLoadPromises.get(year);
+  if (existing) return existing;
+  const p = (async () => {
+    const [s, p] = await Promise.all([
+      loadSalesFromDb(undefined, year),
+      loadPurchasesFromDb(undefined, year),
+    ]);
+    // Merge avoiding duplicates by primary key
+    const sKey = (x: SaleInvoice) => `${x.anno}-${x.numero}-${x.suffisso}-${x.tipo}`;
+    const pKey = (x: PurchaseInvoice) => `${x.anno}-${x.numero}`;
+    const existingSales = new Set((cachedSales ?? []).map(sKey));
+    const existingPurchases = new Set((cachedPurchases ?? []).map(pKey));
+    cachedSales = [...(cachedSales ?? []), ...s.filter((x) => !existingSales.has(sKey(x)))];
+    cachedPurchases = [...(cachedPurchases ?? []), ...p.filter((x) => !existingPurchases.has(pKey(x)))];
+    loadedYears.add(year);
+    idbSet(CACHE_KEYS.sales, cachedSales);
+    idbSet(CACHE_KEYS.purchases, cachedPurchases);
+  })();
+  yearLoadPromises.set(year, p);
+  try { await p; } finally { yearLoadPromises.delete(year); }
+}
+
+/**
  * Hydrate in-memory invoice caches from IndexedDB. The fresh DB fetch is
  * triggered separately by `prefetchInvoices` (stale-while-revalidate).
  */
@@ -461,6 +489,17 @@ export function useInvoiceData() {
       setLoading(false);
     });
   }, []);
+
+  // On-demand loading of older years when the user filters by anno
+  useEffect(() => {
+    const y = parseInt(filters.anno);
+    if (!y || isNaN(y)) return;
+    if (loadedYears.has(y)) return;
+    ensureYearLoaded(y).then(() => {
+      setSales([...(cachedSales ?? [])]);
+      setPurchases([...(cachedPurchases ?? [])]);
+    });
+  }, [filters.anno]);
 
   useEffect(() => {
     if (cachedSales && cachedPurchases) {
