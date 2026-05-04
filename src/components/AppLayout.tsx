@@ -19,6 +19,18 @@ function prefetchSharedData() {
   import("@/hooks/useCentri").then((m) => { m.fetchCentriFromDb(); m.fetchCategorieFromDb(); }).catch(() => {});
 }
 
+// Hydrate persistent IndexedDB cache as early as possible so first paint of
+// data-heavy pages can show cached rows instantly (stale-while-revalidate).
+async function hydratePersistentCache() {
+  try {
+    const [inv, cen] = await Promise.all([
+      import("@/hooks/useInvoiceData"),
+      import("@/hooks/useCentri"),
+    ]);
+    await Promise.all([inv.hydrateInvoicesFromIdb(), cen.hydrateCentriFromIdb()]);
+  } catch { /* ignore */ }
+}
+
 // Schedule prefetch when the browser is idle so it does not compete with the
 // initial render / lazy-loaded route chunks. Falls back to a small timeout.
 function schedulePrefetch() {
@@ -126,8 +138,11 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { isFs, toggle: toggleFs } = useFullscreen();
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
 
-  // Prefetch shared datasets once at app mount so navigating between pages is instant.
-  useEffect(() => { schedulePrefetch(); startWebVitalsWhenIdle(); }, []);
+  // Hydrate IDB cache immediately, then schedule fresh-data prefetch when idle.
+  useEffect(() => {
+    hydratePersistentCache().then(() => schedulePrefetch());
+    startWebVitalsWhenIdle();
+  }, []);
 
   // Auto-enter fullscreen on first user interaction (browsers require a user gesture).
   useEffect(() => {

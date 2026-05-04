@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { idbGet, idbSet, CACHE_KEYS } from "@/lib/idbCache";
 
 export interface CategoriaCentro {
   id: string;
@@ -39,6 +40,7 @@ export async function fetchCentriFromDb(): Promise<CentroCR[]> {
       categoriaId: d.categoria_id || undefined,
     }));
     centriInflight = null;
+    idbSet(CACHE_KEYS.centri, centriCache);
     return centriCache;
   })();
   return centriInflight;
@@ -60,9 +62,24 @@ export async function fetchCategorieFromDb(): Promise<CategoriaCentro[]> {
       descrizione: d.descrizione || "",
     }));
     categorieInflight = null;
+    idbSet(CACHE_KEYS.categorie, categorieCache);
     return categorieCache;
   })();
   return categorieInflight;
+}
+
+/**
+ * Hydrate in-memory caches from IndexedDB. Call early at app boot so the
+ * first render of pages using `useCentriData` shows data instantly while a
+ * fresh fetch revalidates in the background.
+ */
+export async function hydrateCentriFromIdb(): Promise<void> {
+  const [c, cat] = await Promise.all([
+    idbGet<CentroCR[]>(CACHE_KEYS.centri),
+    idbGet<CategoriaCentro[]>(CACHE_KEYS.categorie),
+  ]);
+  if (c && !centriCache) centriCache = c;
+  if (cat && !categorieCache) categorieCache = cat;
 }
 
 export async function upsertCentro(c: CentroCR) {
@@ -217,10 +234,12 @@ export function useCentriData() {
   }, []);
 
   useEffect(() => {
+    // Show whatever we have (possibly hydrated from IDB) immediately.
     if (centriCache) setCentri(centriCache);
-    else fetchCentriFromDb().then(setCentri);
     if (categorieCache) setCategorie(categorieCache);
-    else fetchCategorieFromDb().then(setCategorie);
+    // Always trigger a fresh fetch so IDB-hydrated data gets revalidated.
+    fetchCentriFromDb().then(setCentri);
+    fetchCategorieFromDb().then(setCategorie);
   }, []);
 
   const centriCosto = useMemo(() => centri.filter((c) => c.tipo === "costo"), [centri]);

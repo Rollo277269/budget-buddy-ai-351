@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type * as XLSXType from "xlsx";
+import { idbGet, idbSet, CACHE_KEYS } from "@/lib/idbCache";
 
 async function getXLSX(): Promise<typeof XLSXType> {
   return await import("xlsx");
@@ -324,6 +325,8 @@ export async function seedPurchasesFromExcel(purchasesData: PurchaseInvoice[], _
 let cachedSales: SaleInvoice[] | null = null;
 let cachedPurchases: PurchaseInvoice[] | null = null;
 let loadPromise: Promise<void> | null = null;
+// True when in-memory caches come only from IDB and a fresh DB fetch hasn't completed yet.
+let cacheNeedsRevalidation = false;
 
 export function invalidateInvoiceCache() {
   cachedSales = null;
@@ -338,6 +341,19 @@ export async function prefetchInvoices(): Promise<void> {
   return loadPromise;
 }
 
+/**
+ * Hydrate in-memory invoice caches from IndexedDB. The fresh DB fetch is
+ * triggered separately by `prefetchInvoices` (stale-while-revalidate).
+ */
+export async function hydrateInvoicesFromIdb(): Promise<void> {
+  const [s, p] = await Promise.all([
+    idbGet<SaleInvoice[]>(CACHE_KEYS.sales),
+    idbGet<PurchaseInvoice[]>(CACHE_KEYS.purchases),
+  ]);
+  if (s && !cachedSales) { cachedSales = s; cacheNeedsRevalidation = true; }
+  if (p && !cachedPurchases) { cachedPurchases = p; cacheNeedsRevalidation = true; }
+}
+
 async function loadAll() {
   // Try DB first
   const [dbSales, dbPurchases] = await Promise.all([loadSalesFromDb(), loadPurchasesFromDb()]);
@@ -345,6 +361,9 @@ async function loadAll() {
   if (dbSales.length > 0 || dbPurchases.length > 0) {
     cachedSales = dbSales;
     cachedPurchases = dbPurchases;
+    cacheNeedsRevalidation = false;
+    idbSet(CACHE_KEYS.sales, dbSales);
+    idbSet(CACHE_KEYS.purchases, dbPurchases);
     return;
   }
 
@@ -381,6 +400,8 @@ async function loadAll() {
 
     cachedSales = sales;
     cachedPurchases = purchases;
+    idbSet(CACHE_KEYS.sales, sales);
+    idbSet(CACHE_KEYS.purchases, purchases);
     console.log(`[InvoiceData] Seeded ${sales.length} sales + ${purchases.length} purchases`);
   } catch (err) {
     console.warn("[InvoiceData] Seeding failed:", err);
@@ -422,6 +443,15 @@ export function useInvoiceData() {
       setSales(cachedSales);
       setPurchases(cachedPurchases);
       setLoading(false);
+      // Stale-while-revalidate: if the in-memory cache came from IDB only,
+      // fetch fresh data in the background and update state when ready.
+      if (cacheNeedsRevalidation && !loadPromise) {
+        loadPromise = loadAll();
+        loadPromise.then(() => {
+          setSales(cachedSales!);
+          setPurchases(cachedPurchases!);
+        });
+      }
       return;
     }
     if (!loadPromise) {

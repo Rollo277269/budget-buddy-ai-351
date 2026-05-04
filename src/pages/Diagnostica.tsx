@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { idbClearAll, idbMeta, CACHE_KEYS } from "@/lib/idbCache";
+import { toast } from "sonner";
 
 interface VitalRow {
   id: string;
@@ -43,6 +45,17 @@ function ratingColor(rating: string): string {
 export default function DiagnosticaPage() {
   const [rows, setRows] = useState<VitalRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cacheInfo, setCacheInfo] = useState<{ key: string; updatedAt: number | null }[]>([]);
+
+  const loadCacheInfo = async () => {
+    const entries = await Promise.all(
+      Object.values(CACHE_KEYS).map(async (k) => {
+        const m = await idbMeta(k);
+        return { key: k, updatedAt: m?.updatedAt ?? null };
+      })
+    );
+    setCacheInfo(entries);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -56,6 +69,14 @@ export default function DiagnosticaPage() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { loadCacheInfo(); }, []);
+
+  const clearLocalCache = async () => {
+    if (!confirm("Svuotare la cache locale (IndexedDB)? L'app ricaricherà i dati dal database.")) return;
+    await idbClearAll();
+    toast.success("Cache locale svuotata. Ricarica la pagina per ripopolarla.");
+    loadCacheInfo();
+  };
 
   const purge = async () => {
     if (!confirm("Cancellare tutte le metriche raccolte?")) return;
@@ -113,8 +134,25 @@ export default function DiagnosticaPage() {
           <Button variant="outline" size="sm" onClick={purge}>
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Svuota
           </Button>
+          <Button variant="outline" size="sm" onClick={clearLocalCache}>
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Svuota cache locale
+          </Button>
         </div>
       </div>
+
+      <Card className="p-3">
+        <div className="text-xs font-semibold mb-2">Cache locale (IndexedDB)</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          {cacheInfo.map((c) => (
+            <div key={c.key} className="flex items-center justify-between border rounded px-2 py-1">
+              <span className="font-medium">{c.key}</span>
+              <span className="text-muted-foreground">
+                {c.updatedAt ? new Date(c.updatedAt).toLocaleString("it-IT") : "—"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {loading && rows.length === 0 ? (
         <div className="flex items-center justify-center h-32 text-muted-foreground">
