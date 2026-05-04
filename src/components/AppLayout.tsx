@@ -53,7 +53,8 @@ const pageTitles: Record<string, string> = {
   "/lista-commesse": "Commesse",
   "/offerte": "Gare",
   "/iva": "IVA",
-  "/strumenti": "Strumenti"
+  "/strumenti": "Strumenti",
+  "/diagnostica": "Diagnostica Performance"
 };
 
 function useDarkMode() {
