@@ -206,6 +206,12 @@ export function parseExcelPurchases(rows: any[]): PurchaseInvoice[] {
 
 // ── DB helpers ──
 
+/**
+ * Default window of recent years loaded at startup. Older years are fetched
+ * on-demand (e.g. when the user filters by an older year).
+ */
+const RECENT_YEARS = 5;
+
 async function loadSalesFromDb(): Promise<SaleInvoice[]> {
   const allRows: any[] = [];
   let from = 0;
