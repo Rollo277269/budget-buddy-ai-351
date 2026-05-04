@@ -340,6 +340,36 @@ let loadPromise: Promise<void> | null = null;
 /** Years already fetched from DB into the in-memory cache. */
 const loadedYears = new Set<number>();
 const yearLoadPromises = new Map<number, Promise<void>>();
+/** All distinct years available in DB (lightweight metadata fetch). */
+let availableYears: number[] | null = null;
+let availableYearsPromise: Promise<number[]> | null = null;
+
+async function fetchAvailableYears(): Promise<number[]> {
+  if (availableYears) return availableYears;
+  if (availableYearsPromise) return availableYearsPromise;
+  availableYearsPromise = (async () => {
+    const years = new Set<number>();
+    const fetchAll = async (table: string) => {
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from(table as any)
+          .select("anno")
+          .order("anno", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error || !data || data.length === 0) break;
+        (data as any[]).forEach((r) => r.anno && years.add(r.anno));
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+    };
+    await Promise.all([fetchAll("fatture_vendita"), fetchAll("fatture_acquisto")]);
+    availableYears = Array.from(years).filter((y) => !isNaN(y)).sort((a, b) => b - a);
+    return availableYears;
+  })();
+  return availableYearsPromise;
+}
 // True when in-memory caches come only from IDB and a fresh DB fetch hasn't completed yet.
 let cacheNeedsRevalidation = false;
 
