@@ -777,6 +777,7 @@ function DocDetailContent({ doc, centroLookup, onDelete }: { doc: DocumentoAcqui
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-muted-foreground">DETTAGLI</h4>
           <DetailRow label="File" value={doc.file_name} />
+          <DetailRow label="Numero" value={doc.numero} />
           <DetailRow label="Fornitore" value={doc.fornitore} />
           <DetailRow label="Data" value={doc.data_documento} />
           <DetailRow label="Importo" value={doc.importo ? formatCurrency(doc.importo) : null} />
