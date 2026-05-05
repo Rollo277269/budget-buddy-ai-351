@@ -39,7 +39,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
 }
 
 /* ── Column definitions ── */
-type ColumnKey = "descrizione" | "file_name" | "fornitore" | "data" | "importo" | "cig" | "centro_costo" | "created_at";
+type ColumnKey = "descrizione" | "file_name" | "numero" | "fornitore" | "data" | "importo" | "cig" | "centro_costo" | "created_at";
 
 interface ColumnDef {
   key: ColumnKey;
@@ -51,6 +51,7 @@ function buildColumns(tipo: "acquisto" | "vendita"): ColumnDef[] {
   return [
     { key: "descrizione", label: "Documento", defaultVisible: true },
     { key: "file_name", label: "Nome file", defaultVisible: true },
+    { key: "numero", label: "Numero", defaultVisible: true },
     { key: "fornitore", label: tipo === "vendita" ? "Cliente" : "Fornitore", defaultVisible: true },
     { key: "data", label: "Data", defaultVisible: true },
     { key: "importo", label: "Importo", defaultVisible: true },
@@ -129,6 +130,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     switch (key) {
       case "descrizione": return (doc.descrizione || doc.file_name || "").toLowerCase();
       case "file_name": return (doc.file_name || "").toLowerCase();
+      case "numero": return (doc.numero || "").toLowerCase();
       case "fornitore": return (doc.fornitore || "").toLowerCase();
       case "data": return doc.data_documento || "";
       case "importo": return doc.importo || 0;
@@ -145,6 +147,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
       result = result.filter(d =>
         (d.descrizione || "").toLowerCase().includes(q) ||
         (d.file_name || "").toLowerCase().includes(q) ||
+        (d.numero || "").toLowerCase().includes(q) ||
         (d.fornitore || "").toLowerCase().includes(q) ||
         (d.cig || "").toLowerCase().includes(q)
       );
