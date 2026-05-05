@@ -446,6 +446,11 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 <span className="flex items-center gap-1">Nome file <SortIcon col="file_name" /></span>
               </TableHead>
             )}
+            {visibleCols.has("numero") && (
+              <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("numero")}>
+                <span className="flex items-center gap-1">Numero <SortIcon col="numero" /></span>
+              </TableHead>
+            )}
             {visibleCols.has("fornitore") && (
               <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("fornitore")}>
                 <span className="flex items-center gap-1">{ALL_COLUMNS.find(c => c.key === "fornitore")?.label} <SortIcon col="fornitore" /></span>
