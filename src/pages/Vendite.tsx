@@ -1081,6 +1081,57 @@ const VenditePage = () => {
                     </Badge>
                   )}
                   <div className="ml-auto flex gap-1">
+                    {selectedInvoiceKeys.size > 0 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3 mr-1" />Elimina ({selectedInvoiceKeys.size})
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Eliminare {selectedInvoiceKeys.size} fatture emesse?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              L'operazione è irreversibile. Verranno eliminate dal database le fatture selezionate insieme alle relative riconciliazioni bancarie, associazioni a commesse e assegnazioni di centro. Gli XML eventualmente associati non verranno eliminati ma risulteranno non associati.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annulla</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={async () => {
+                                const keys = Array.from(selectedInvoiceKeys);
+                                const pairs = keys.map((k) => { const [a, n] = k.split("-"); return { anno: Number(a), numero: Number(n) }; });
+                                try {
+                                  let deleted = 0;
+                                  for (const { anno, numero } of pairs) {
+                                    const invKey = `${numero}/${anno}`;
+                                    // Cleanup correlations (best-effort)
+                                    await supabase.from("bank_reconciliations").delete().eq("invoice_anno", anno).eq("invoice_numero", numero).eq("invoice_type", "vendita");
+                                    await supabase.from("commessa_links" as any).delete().eq("invoice_key", invKey).eq("invoice_type", "vendita");
+                                    await supabase.from("centro_assignments" as any).delete().eq("invoice_key", invKey).eq("context", "vendite");
+                                    // Detach XML
+                                    await supabase.from("fatture_xml").update({ matched: false, invoice_key: null } as any).eq("anno", anno).eq("numero", numero).eq("tipo", "vendita");
+                                    // Delete invoice
+                                    const { error } = await supabase.from("fatture_vendita").delete().eq("anno", anno).eq("numero", numero);
+                                    if (!error) deleted++;
+                                  }
+                                  toast.success(`Eliminate ${deleted} fatture`);
+                                  setSelectedInvoiceKeys(new Set());
+                                  invalidateInvoiceCache();
+                                  refreshInvoices();
+                                } catch (err) {
+                                  console.error(err);
+                                  toast.error("Errore durante l'eliminazione");
+                                }
+                              }}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Elimina
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                     {xmlDuplicateCount > 0 && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
