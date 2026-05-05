@@ -377,6 +377,20 @@ export function CommessaDetailSheet({
     const ivaAcquisti = totalAcquisti - totalAcquistiImponibile;
     const saldoIva = ivaVendite - ivaAcquisti;
 
+    // Totali incassato / pagato dalle riconciliazioni bancarie
+    let totalIncassato = 0;
+    linkedSalesForTotals.forEach((s) => {
+      const recs = reconByInvoice.get(`vendita-${s.anno}-${s.numero}`);
+      recs?.forEach((r) => { totalIncassato += r.importo; });
+    });
+    let totalPagato = 0;
+    linkedPurchasesForTotals.forEach((p) => {
+      const recs = reconByInvoice.get(`acquisto-${p.anno}-${p.numero}`);
+      recs?.forEach((r) => { totalPagato += r.importo; });
+    });
+    const pctIncassato = totalVendite > 0 ? (totalIncassato / totalVendite) * 100 : null;
+    const pctPagato = totalAcquisti > 0 ? (totalPagato / totalAcquisti) * 100 : null;
+
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
     // Avanzamento contratto: solo ricavi classificati come RC1 (Lavori eseguiti)
@@ -480,6 +494,7 @@ export function CommessaDetailSheet({
       allLinkedSaleKeys, allLinkedPurchaseKeys,
       autoSaleKeys, autoPurchaseKeys,
       monthlyData, supplierData, statusSales, statusPurchases,
+      totalIncassato, totalPagato, pctIncassato, pctPagato,
     };
   }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice, ricavoMap.map, costoMap.map, documentiAcquisto]);
 
