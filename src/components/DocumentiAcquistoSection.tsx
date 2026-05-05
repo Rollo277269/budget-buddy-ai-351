@@ -615,8 +615,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
           )}
         </div>
         <div className="flex items-center gap-2">
-          {documenti.length > 0 && (
-            <div className="relative w-[200px]">
+          <div className="relative w-[200px]">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Filtra documenti..."
@@ -624,8 +623,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-7 text-xs pl-7"
               />
-            </div>
-          )}
+          </div>
           {documenti.length > 0 && (
             <Popover>
               <PopoverTrigger asChild>
