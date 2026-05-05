@@ -377,6 +377,20 @@ export function CommessaDetailSheet({
     const ivaAcquisti = totalAcquisti - totalAcquistiImponibile;
     const saldoIva = ivaVendite - ivaAcquisti;
 
+    // Totali incassato / pagato dalle riconciliazioni bancarie
+    let totalIncassato = 0;
+    linkedSalesForTotals.forEach((s) => {
+      const recs = reconByInvoice.get(`vendita-${s.anno}-${s.numero}`);
+      recs?.forEach((r) => { totalIncassato += r.importo; });
+    });
+    let totalPagato = 0;
+    linkedPurchasesForTotals.forEach((p) => {
+      const recs = reconByInvoice.get(`acquisto-${p.anno}-${p.numero}`);
+      recs?.forEach((r) => { totalPagato += r.importo; });
+    });
+    const pctIncassato = totalVendite > 0 ? (totalIncassato / totalVendite) * 100 : null;
+    const pctPagato = totalAcquisti > 0 ? (totalPagato / totalAcquisti) * 100 : null;
+
     const cssr = commessa.cssrData;
     const importoContratto = cssr?.importo_contrattuale ? parseFloat(cssr.importo_contrattuale) : null;
     // Avanzamento contratto: solo ricavi classificati come RC1 (Lavori eseguiti)
@@ -480,6 +494,7 @@ export function CommessaDetailSheet({
       allLinkedSaleKeys, allLinkedPurchaseKeys,
       autoSaleKeys, autoPurchaseKeys,
       monthlyData, supplierData, statusSales, statusPurchases,
+      totalIncassato, totalPagato, pctIncassato, pctPagato,
     };
   }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice, ricavoMap.map, costoMap.map, documentiAcquisto]);
 
@@ -693,22 +708,42 @@ export function CommessaDetailSheet({
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
-            <KpiCard
-              icon={ArrowUpRight}
-              label="Totale Vendite"
-              value={formatCurrency(data.totalVenditeImponibile)}
-              sub={`Imp. • IVA incl. ${formatCurrency(data.totalVendite)} • ${data.linkedSales.length} fatture`}
-              color="text-income"
-              iconBg="bg-income/10"
-            />
-            <KpiCard
-              icon={ArrowDownRight}
-              label="Totale Acquisti"
-              value={formatCurrency(data.totalAcquistiImponibile)}
-              sub={`Imp. • IVA incl. ${formatCurrency(data.totalAcquisti)} • ${data.linkedPurchases.length} fatture`}
-              color="text-expense"
-              iconBg="bg-expense/10"
-            />
+            <div className="flex flex-col gap-3">
+              <KpiCard
+                icon={ArrowUpRight}
+                label="Totale Vendite"
+                value={formatCurrency(data.totalVenditeImponibile)}
+                sub={`Imp. • IVA incl. ${formatCurrency(data.totalVendite)} • ${data.linkedSales.length} fatture`}
+                color="text-income"
+                iconBg="bg-income/10"
+              />
+              <KpiCard
+                icon={ArrowUpRight}
+                label="Totale Incassato"
+                value={formatCurrency(data.totalIncassato)}
+                sub={data.pctIncassato != null ? `${data.pctIncassato.toFixed(1)}% del fatturato vendite` : "—"}
+                color="text-income"
+                iconBg="bg-income/10"
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <KpiCard
+                icon={ArrowDownRight}
+                label="Totale Acquisti"
+                value={formatCurrency(data.totalAcquistiImponibile)}
+                sub={`Imp. • IVA incl. ${formatCurrency(data.totalAcquisti)} • ${data.linkedPurchases.length} fatture`}
+                color="text-expense"
+                iconBg="bg-expense/10"
+              />
+              <KpiCard
+                icon={ArrowDownRight}
+                label="Totale Pagato"
+                value={formatCurrency(data.totalPagato)}
+                sub={data.pctPagato != null ? `${data.pctPagato.toFixed(1)}% del fatturato acquisti` : "—"}
+                color="text-expense"
+                iconBg="bg-expense/10"
+              />
+            </div>
             <KpiCard
               icon={TrendingUp}
               label="Saldo"
