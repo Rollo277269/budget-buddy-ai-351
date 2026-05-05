@@ -628,7 +628,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
       className={`bg-muted/30 border border-border rounded-lg p-4 space-y-3 ${pdfBase64 ? "h-full flex flex-col" : ""} ${pdfDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""} transition-colors`}
       onDragEnter={handlePdfDragEnter} onDragLeave={handlePdfDragLeave} onDragOver={handlePdfDragOver} onDrop={handlePdfDrop}
     >
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex items-center justify-between shrink-0 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold">Ricevute e Documenti</h3>
@@ -636,20 +636,20 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
             <Badge variant="secondary" className="text-[10px]">{documenti.length}</Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative w-[200px]">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative w-[200px]" title="Cerca tra descrizione, nome file, numero, fornitore, CIG">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Filtra documenti..."
+                placeholder={documenti.length === 0 ? "Cerca (nessun documento)" : "Filtra documenti..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-7 text-xs pl-7"
+                disabled={documenti.length === 0}
               />
           </div>
-          {documenti.length > 0 && (
-            <Popover>
+          <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs" title="Mostra/nascondi colonne">
+                <Button variant="outline" size="sm" className="h-7 text-xs" title="Mostra/nascondi colonne" disabled={documenti.length === 0}>
                   <Columns3 className="h-3.5 w-3.5 mr-1" /> Colonne
                 </Button>
               </PopoverTrigger>
@@ -664,8 +664,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                   </label>
                 ))}
               </PopoverContent>
-            </Popover>
-          )}
+          </Popover>
           {!isTableOnly && (
             <>
               <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
