@@ -10,6 +10,7 @@ export interface DocumentoAcquisto {
   descrizione: string | null;
   importo: number | null;
   data_documento: string | null;
+  numero: string | null;
   fornitore: string | null;
   centro_costo: string | null;
   cig: string | null;
@@ -24,6 +25,7 @@ export interface PreparedDocumento {
   descrizione: string;
   importo: number | null;
   data_documento: string;
+  numero: string;
   fornitore: string;
   centro_costo: string;
   cig: string;
@@ -136,6 +138,7 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
         descrizione: aiData.descrizione || file.name,
         importo: aiData.importo ?? null,
         data_documento: aiData.data_documento || "",
+        numero: aiData.numero || "",
         fornitore: aiData.fornitore || "",
         centro_costo: aiData.centro_costo || "",
         cig: aiData.cig || "",
@@ -156,6 +159,7 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
         descrizione: prepared.descrizione || prepared.file_name,
         importo: prepared.importo,
         data_documento: prepared.data_documento || null,
+        numero: prepared.numero || "",
         fornitore: prepared.fornitore || null,
         centro_costo: prepared.centro_costo || null,
         cig: prepared.cig || "",
