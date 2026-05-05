@@ -507,6 +507,20 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                   <span className="truncate max-w-[160px] block" title={doc.file_name}>{doc.file_name}</span>
                 </TableCell>
               )}
+              {visibleCols.has("numero") && (
+                <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
+                  {editingCell?.id === doc.id && editingCell?.field === "numero" ? (
+                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
+                      className="h-6 text-[10px] w-[120px]" autoFocus />
+                  ) : (
+                    <span className="cursor-text hover:text-primary transition-colors"
+                      onClick={() => startEditing(doc.id, "numero", doc.numero || "")}>
+                      {doc.numero || "—"}
+                    </span>
+                  )}
+                </TableCell>
+              )}
               {visibleCols.has("fornitore") && (
                 <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
                   {editingCell?.id === doc.id && editingCell?.field === "fornitore" ? (
