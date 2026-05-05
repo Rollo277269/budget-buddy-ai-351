@@ -1870,6 +1870,19 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     return groups;
   }, [linkedPurchases, costoMap, centroLookup]);
 
+  // Documenti extra (PDF/ricevute) raggruppati per centro di costo
+  const costoExtraGroups = useMemo(() => {
+    const groups = new Map<string, DocumentoAcquisto[]>();
+    extraSpeseDocumenti.forEach((d) => {
+      const codice = d.centro_costo || "";
+      if (isExcludedFromCommessa(codice)) return;
+      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(d);
+    });
+    return groups;
+  }, [extraSpeseDocumenti, centroLookup]);
+
   if (ricavoData.length === 0 && costoData.length === 0) return null;
 
   const maxValue = Math.max(
@@ -1988,7 +2001,8 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           setExpanded: (v: string | null) => void,
           tipo: "ricavo" | "costo",
           centroMapObj: Record<string, string>,
-          onAssign: (key: string, codice: string) => void
+          onAssign: (key: string, codice: string) => void,
+          extraGroups?: Map<string, DocumentoAcquisto[]>
         ) => (
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b bg-muted/30">
@@ -2084,6 +2098,23 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                            </TableRow>
                         );
                       })}
+                      {isExpanded && extraGroups?.get(d.name)?.map((doc) => (
+                        <TableRow
+                          key={`extra-${doc.id}`}
+                          className="bg-amber-50/40 dark:bg-amber-900/10 cursor-default"
+                        >
+                          <TableCell></TableCell>
+                          <TableCell className="text-[11px]">
+                            <span className="font-mono text-muted-foreground">PDF</span>
+                            <span className="text-muted-foreground ml-2">{doc.descrizione || doc.file_name}</span>
+                            {doc.fornitore && <span className="text-muted-foreground/70 ml-1">— {doc.fornitore}</span>}
+                          </TableCell>
+                          <TableCell className="text-[11px] font-mono text-right">{formatCurrency(Number(doc.importo || 0))}</TableCell>
+                          <TableCell className="text-[11px] font-mono text-right text-muted-foreground">—</TableCell>
+                          <TableCell className="text-[11px] font-mono text-right">{formatCurrency(Number(doc.importo || 0))}</TableCell>
+                          <TableCell colSpan={2} className="text-[10px] text-muted-foreground">spesa extra</TableCell>
+                        </TableRow>
+                      ))}
                     </>
                   );
                 })}
@@ -2113,7 +2144,8 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                 dragCostoIdx, setDragCostoIdx, setCostoOrder, "centro-costo-order",
                 costoInvoiceGroups as Map<string, (SaleInvoice | PurchaseInvoice)[]>,
                 expandedCosto, setExpandedCosto,
-                "costo", costoMap, onAssignCosto
+                "costo", costoMap, onAssignCosto,
+                costoExtraGroups
               )}
             </div>
 
