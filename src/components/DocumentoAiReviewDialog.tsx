@@ -87,6 +87,15 @@ export function DocumentoAiReviewDialog({ open, prepared, centri, tipo, onConfir
             </div>
 
             <div className="space-y-1">
+              <Label className="text-[11px]">Numero (es. polizza, ricevuta)</Label>
+              <Input
+                value={form.numero}
+                onChange={(e) => update("numero", e.target.value)}
+                className="h-9 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1">
               <Label className="text-[11px]">Importo (€)</Label>
               <Input
                 type="number"
