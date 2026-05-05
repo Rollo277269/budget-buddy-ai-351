@@ -429,7 +429,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   };
 
   const tableContent = (docs: DocumentoAcquisto[]) => (
-    <ScrollArea className="max-h-[300px]">
+    <ScrollArea className="max-h-[60vh]">
       <Table>
         <TableHeader>
           <TableRow>
