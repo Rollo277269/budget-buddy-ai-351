@@ -251,6 +251,7 @@ export type Database = {
           fornitore: string | null
           id: string
           importo: number | null
+          numero: string
           parsed_text: string | null
           storage_path: string
           tipo: string
@@ -266,6 +267,7 @@ export type Database = {
           fornitore?: string | null
           id?: string
           importo?: number | null
+          numero?: string
           parsed_text?: string | null
           storage_path: string
           tipo?: string
@@ -281,6 +283,7 @@ export type Database = {
           fornitore?: string | null
           id?: string
           importo?: number | null
+          numero?: string
           parsed_text?: string | null
           storage_path?: string
           tipo?: string

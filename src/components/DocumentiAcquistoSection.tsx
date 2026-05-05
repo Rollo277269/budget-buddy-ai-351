@@ -39,7 +39,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
 }
 
 /* ── Column definitions ── */
-type ColumnKey = "descrizione" | "file_name" | "fornitore" | "data" | "importo" | "cig" | "centro_costo" | "created_at";
+type ColumnKey = "descrizione" | "file_name" | "numero" | "fornitore" | "data" | "importo" | "cig" | "centro_costo" | "created_at";
 
 interface ColumnDef {
   key: ColumnKey;
@@ -51,6 +51,7 @@ function buildColumns(tipo: "acquisto" | "vendita"): ColumnDef[] {
   return [
     { key: "descrizione", label: "Documento", defaultVisible: true },
     { key: "file_name", label: "Nome file", defaultVisible: true },
+    { key: "numero", label: "Numero", defaultVisible: true },
     { key: "fornitore", label: tipo === "vendita" ? "Cliente" : "Fornitore", defaultVisible: true },
     { key: "data", label: "Data", defaultVisible: true },
     { key: "importo", label: "Importo", defaultVisible: true },
@@ -129,6 +130,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     switch (key) {
       case "descrizione": return (doc.descrizione || doc.file_name || "").toLowerCase();
       case "file_name": return (doc.file_name || "").toLowerCase();
+      case "numero": return (doc.numero || "").toLowerCase();
       case "fornitore": return (doc.fornitore || "").toLowerCase();
       case "data": return doc.data_documento || "";
       case "importo": return doc.importo || 0;
@@ -145,6 +147,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
       result = result.filter(d =>
         (d.descrizione || "").toLowerCase().includes(q) ||
         (d.file_name || "").toLowerCase().includes(q) ||
+        (d.numero || "").toLowerCase().includes(q) ||
         (d.fornitore || "").toLowerCase().includes(q) ||
         (d.cig || "").toLowerCase().includes(q)
       );
@@ -443,6 +446,11 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 <span className="flex items-center gap-1">Nome file <SortIcon col="file_name" /></span>
               </TableHead>
             )}
+            {visibleCols.has("numero") && (
+              <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("numero")}>
+                <span className="flex items-center gap-1">Numero <SortIcon col="numero" /></span>
+              </TableHead>
+            )}
             {visibleCols.has("fornitore") && (
               <TableHead className="text-[11px] h-8 cursor-pointer select-none" onClick={() => handleSort("fornitore")}>
                 <span className="flex items-center gap-1">{ALL_COLUMNS.find(c => c.key === "fornitore")?.label} <SortIcon col="fornitore" /></span>
@@ -497,6 +505,20 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
               {visibleCols.has("file_name") && (
                 <TableCell className="text-xs py-1.5 text-muted-foreground">
                   <span className="truncate max-w-[160px] block" title={doc.file_name}>{doc.file_name}</span>
+                </TableCell>
+              )}
+              {visibleCols.has("numero") && (
+                <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
+                  {editingCell?.id === doc.id && editingCell?.field === "numero" ? (
+                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
+                      className="h-6 text-[10px] w-[120px]" autoFocus />
+                  ) : (
+                    <span className="cursor-text hover:text-primary transition-colors"
+                      onClick={() => startEditing(doc.id, "numero", doc.numero || "")}>
+                      {doc.numero || "—"}
+                    </span>
+                  )}
                 </TableCell>
               )}
               {visibleCols.has("fornitore") && (
@@ -755,6 +777,7 @@ function DocDetailContent({ doc, centroLookup, onDelete }: { doc: DocumentoAcqui
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-muted-foreground">DETTAGLI</h4>
           <DetailRow label="File" value={doc.file_name} />
+          <DetailRow label="Numero" value={doc.numero} />
           <DetailRow label="Fornitore" value={doc.fornitore} />
           <DetailRow label="Data" value={doc.data_documento} />
           <DetailRow label="Importo" value={doc.importo ? formatCurrency(doc.importo) : null} />
