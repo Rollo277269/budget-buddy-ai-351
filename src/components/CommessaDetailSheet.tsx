@@ -1870,6 +1870,19 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     return groups;
   }, [linkedPurchases, costoMap, centroLookup]);
 
+  // Documenti extra (PDF/ricevute) raggruppati per centro di costo
+  const costoExtraGroups = useMemo(() => {
+    const groups = new Map<string, DocumentoAcquisto[]>();
+    extraSpeseDocumenti.forEach((d) => {
+      const codice = d.centro_costo || "";
+      if (isExcludedFromCommessa(codice)) return;
+      const label = codice ? `${codice} - ${centroLookup.get(codice) || ""}` : "Non classificato";
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(d);
+    });
+    return groups;
+  }, [extraSpeseDocumenti, centroLookup]);
+
   if (ricavoData.length === 0 && costoData.length === 0) return null;
 
   const maxValue = Math.max(
