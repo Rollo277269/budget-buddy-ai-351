@@ -54,11 +54,12 @@ Rispondi SOLO con la funzione tool.`;
                     descrizione: { type: "string", description: "Breve descrizione del documento (es. 'Acquisto marche da bollo', 'Canone affitto gennaio 2024')" },
                     importo: { type: "number", description: "Importo totale del documento. 0 se non trovato." },
                     data_documento: { type: "string", description: "Data del documento in formato DD/MM/YYYY. Stringa vuota se non trovata." },
+                    numero: { type: "string", description: "Numero identificativo del documento (es. numero polizza, numero ricevuta, numero contratto). Stringa vuota se non trovato." },
                     fornitore: { type: "string", description: "Nome del fornitore o emittente. Stringa vuota se non trovato." },
                     centro_costo: { type: "string", description: "Codice del centro di costo suggerito. Stringa vuota se non determinabile." },
                     summary: { type: "string", description: "Riassunto del contenuto del documento in 1-2 frasi." },
                   },
-                  required: ["descrizione", "importo", "data_documento", "fornitore", "centro_costo", "summary"],
+                  required: ["descrizione", "importo", "data_documento", "numero", "fornitore", "centro_costo", "summary"],
                   additionalProperties: false,
                 },
               },
@@ -86,7 +87,7 @@ Rispondi SOLO con la funzione tool.`;
       });
     }
 
-    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", fornitore: "", centro_costo: "", summary: "" }),
+    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", numero: "", fornitore: "", centro_costo: "", summary: "" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("parse-documento error:", e);
