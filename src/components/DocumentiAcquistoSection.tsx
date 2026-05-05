@@ -680,9 +680,13 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
 
       <div className={pdfBase64 ? "flex-1 overflow-auto" : ""}>
         {filteredAndSorted.length > 0 ? tableContent(filteredAndSorted) : (
-          !isTableOnly && documenti.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-2">
-              Carica PDF di ricevute, marche da bollo, affitti e altri documenti non fiscali XML
+          documenti.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              Trascina qui i PDF di ricevute, marche da bollo, affitti e altri documenti
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              Nessun documento corrisponde alla ricerca
             </p>
           )
         )}
