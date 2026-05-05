@@ -680,9 +680,13 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
 
       <div className={pdfBase64 ? "flex-1 overflow-auto" : ""}>
         {filteredAndSorted.length > 0 ? tableContent(filteredAndSorted) : (
-          !isTableOnly && documenti.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-2">
-              Carica PDF di ricevute, marche da bollo, affitti e altri documenti non fiscali XML
+          documenti.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              Trascina qui i PDF di ricevute, marche da bollo, affitti e altri documenti
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              Nessun documento corrisponde alla ricerca
             </p>
           )
         )}
@@ -692,18 +696,6 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
 
   // Table only mode
   if (tableOnly) {
-    if (documenti.length === 0) {
-      return (
-        <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${pdfDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
-          onDragEnter={handlePdfDragEnter} onDragLeave={handlePdfDragLeave} onDragOver={handlePdfDragOver} onDrop={handlePdfDrop}
-        >
-          <p className="text-xs text-muted-foreground">
-            Trascina qui i PDF di ricevute, marche da bollo, affitti e altri documenti
-          </p>
-        </div>
-      );
-    }
     return (
       <>
         {pdfBase64 ? (
