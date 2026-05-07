@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { FileText, ArrowLeft } from "lucide-react";
+import { BankMovementSuggestions } from "@/components/BankMovementSuggestions";
 
 type Invoice = SaleInvoice | PurchaseInvoice;
 
@@ -110,6 +111,9 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
               </span>
             } />
           </div>
+
+          {/* Bank movement reconciliation suggestions */}
+          <BankMovementSuggestions invoice={invoice} type={type} />
 
           {/* PDF placeholder */}
           <div className="rounded-xl border border-dashed bg-muted/30 p-8 flex flex-col items-center justify-center gap-3 text-center">
