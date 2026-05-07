@@ -23,48 +23,56 @@ interface Props {
 }
 
 export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases, movements = [], selectedYear }: Props) {
-  const data = useMemo(() => {
-    const months: Record<string, { vendite: number; acquisti: number; incassato: number; pagato: number }> = {};
+  const aggregateByYear = !selectedYear;
 
-    const getMonthKey = (data: string, _anno: number): string | null => {
+  const data = useMemo(() => {
+    const buckets: Record<string, { vendite: number; acquisti: number; incassato: number; pagato: number }> = {};
+
+    const parseDate = (data: string): { m: number; y: number } | null => {
       const parts = data.split("/");
       if (parts.length === 3) {
-        return `${parts[1]}/${parts[2]}`;
+        return { m: Number(parts[1]), y: Number(parts[2]) };
       }
       const serial = parseFloat(data);
       if (!isNaN(serial) && serial > 30000) {
         const d = new Date((serial - 25569) * 86400 * 1000);
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        return `${m}/${d.getFullYear()}`;
+        return { m: d.getMonth() + 1, y: d.getFullYear() };
       }
       return null;
     };
 
+    const getKey = (data: string): string | null => {
+      const p = parseDate(data);
+      if (!p) return null;
+      if (aggregateByYear) return String(p.y);
+      return `${String(p.m).padStart(2, "0")}/${p.y}`;
+    };
+
     const ensure = (key: string) => {
-      if (!months[key]) months[key] = { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
+      if (!buckets[key]) buckets[key] = { vendite: 0, acquisti: 0, incassato: 0, pagato: 0 };
     };
 
     sales.forEach((s) => {
-      const key = getMonthKey(s.data, s.anno);
-      if (key) { ensure(key); months[key].vendite += s.totale; }
+      const key = getKey(s.data);
+      if (key) { ensure(key); buckets[key].vendite += s.totale; }
     });
 
     purchases.forEach((p) => {
-      const key = getMonthKey(p.data, p.anno);
-      if (key) { ensure(key); months[key].acquisti += p.totale; }
+      const key = getKey(p.data);
+      if (key) { ensure(key); buckets[key].acquisti += p.totale; }
     });
 
     movements.forEach((m) => {
-      const key = getMonthKey(m.data, 0);
+      const key = getKey(m.data);
       if (key) {
         ensure(key);
-        if (m.importo > 0) months[key].incassato += m.importo;
-        else months[key].pagato += Math.abs(m.importo);
+        if (m.importo > 0) buckets[key].incassato += m.importo;
+        else buckets[key].pagato += Math.abs(m.importo);
       }
     });
 
     // If a year is selected, ensure all 12 months are present
-    if (selectedYear) {
+    if (selectedYear && !aggregateByYear) {
       const y = selectedYear;
       for (let m = 1; m <= 12; m++) {
         const key = `${String(m).padStart(2, "0")}/${y}`;
@@ -72,24 +80,26 @@ export const MonthlyChart = React.memo(function MonthlyChart({ sales, purchases,
       }
     }
 
-    return Object.entries(months)
+    return Object.entries(buckets)
       .filter(([key]) => {
+        if (aggregateByYear) return true;
         if (!selectedYear) return true;
         return key.endsWith(`/${selectedYear}`);
       })
       .sort(([a], [b]) => {
+        if (aggregateByYear) return Number(a) - Number(b);
         const [ma, ya] = a.split("/").map(Number);
         const [mb, yb] = b.split("/").map(Number);
         return ya !== yb ? ya - yb : ma - mb;
       })
-      .map(([month, vals]) => ({
-        mese: month,
+      .map(([label, vals]) => ({
+        mese: label,
         Vendite: Math.round(vals.vendite),
         Acquisti: Math.round(vals.acquisti),
         "Ricavi-Costi": Math.round(vals.vendite - vals.acquisti),
         "Incassato-Pagato": Math.round(vals.incassato - vals.pagato),
       }));
-  }, [sales, purchases, movements, selectedYear]);
+  }, [sales, purchases, movements, selectedYear, aggregateByYear]);
 
   if (data.length === 0) {
     return (
