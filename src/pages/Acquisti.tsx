@@ -828,6 +828,10 @@ const AcquistiPage = () => {
 
   const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
+  const unassignedCostoCount = useMemo(
+    () => purchases.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`]).length,
+    [purchases, costoMap.map]
+  );
 
 
   return (<>
@@ -977,6 +981,16 @@ const AcquistiPage = () => {
                   <Badge variant="outline" className="text-[10px]">{xmlRecords.length} totali</Badge>
                   <Badge className="text-[10px]">{xmlMatchedCount} assoc.</Badge>
                   {xmlUnmatchedCount > 0 && <Badge variant={xmlFilterUnmatched ? "default" : "destructive"} className="text-[10px] cursor-pointer" onClick={() => setXmlFilterUnmatched(f => !f)}>{xmlUnmatchedCount} non assoc.{xmlFilterUnmatched ? " ✕" : ""}</Badge>}
+                  {centriCosto.length > 0 && unassignedCostoCount > 0 && (
+                    <Badge
+                      variant={filters.centroCosto === "__unassigned__" ? "default" : "outline"}
+                      className="text-[10px] cursor-pointer border-amber-500/60 text-amber-600 dark:text-amber-400"
+                      onClick={() => setFilters({ ...filters, centroCosto: filters.centroCosto === "__unassigned__" ? "" : "__unassigned__" })}
+                      title="Filtra fatture senza centro di costo"
+                    >
+                      ⚠ {unassignedCostoCount} senza centro{filters.centroCosto === "__unassigned__" ? " ✕" : ""}
+                    </Badge>
+                  )}
                   {selectedXmlIds.size > 0 && (
                     <Badge variant="secondary" className="text-[10px] cursor-pointer" onClick={() => setSelectedXmlIds(new Set())}>
                       {selectedXmlIds.size} selezionati ✕
