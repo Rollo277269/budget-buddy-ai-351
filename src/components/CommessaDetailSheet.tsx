@@ -707,8 +707,8 @@ export function CommessaDetailSheet({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
-            <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 mb-4">
+            <div className="flex flex-col gap-2">
               <KpiCard
                 icon={ArrowUpRight}
                 label="Totale Vendite"
@@ -726,7 +726,7 @@ export function CommessaDetailSheet({
                 iconBg="bg-income/10"
               />
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <KpiCard
                 icon={ArrowDownRight}
                 label="Totale Acquisti"
@@ -1700,15 +1700,15 @@ function KpiCard({ icon: Icon, label, value, sub, color, iconBg }: {
   icon: React.ElementType; label: string; value: string; sub: string; color: string; iconBg: string;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4 transition-all hover:shadow-md">
-      <div className="flex items-start justify-between mb-2">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <div className={`rounded-lg p-1.5 ${iconBg}`}>
-          <Icon className={`h-3.5 w-3.5 ${color}`} />
+    <div className="rounded-lg border bg-card px-2.5 py-2 transition-all hover:shadow-sm">
+      <div className="flex items-center justify-between mb-0.5">
+        <p className="text-[10px] text-muted-foreground truncate">{label}</p>
+        <div className={`rounded-md p-1 ${iconBg}`}>
+          <Icon className={`h-3 w-3 ${color}`} />
         </div>
       </div>
-      <p className={`text-lg font-bold font-mono ${color}`}>{value}</p>
-      <p className="text-[10px] text-muted-foreground">{sub}</p>
+      <p className={`text-sm font-bold font-mono leading-tight ${color}`}>{value}</p>
+      <p className="text-[9px] text-muted-foreground truncate leading-tight">{sub}</p>
     </div>
   );
 }
