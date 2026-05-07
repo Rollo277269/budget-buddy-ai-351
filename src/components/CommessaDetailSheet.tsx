@@ -707,8 +707,8 @@ export function CommessaDetailSheet({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
-            <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 mb-4">
+            <div className="flex flex-col gap-2">
               <KpiCard
                 icon={ArrowUpRight}
                 label="Totale Vendite"
@@ -726,7 +726,7 @@ export function CommessaDetailSheet({
                 iconBg="bg-income/10"
               />
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <KpiCard
                 icon={ArrowDownRight}
                 label="Totale Acquisti"
