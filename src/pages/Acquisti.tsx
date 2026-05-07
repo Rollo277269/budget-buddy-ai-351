@@ -654,13 +654,16 @@ const AcquistiPage = () => {
     { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imposta) : r.imposta), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
     { key: "percIva", label: "% IVA", sortable: true, filterable: true, defaultHidden: false, align: "right",
       render: (r) => {
-        if (!r.imponibile || r.imponibile === 0) return <span className="text-xs text-muted-foreground">—</span>;
-        const pct = Math.round((r.imposta / r.imponibile) * 100);
+        // Per i professionisti l'IVA è calcolata su (imponibile + cassa previdenziale)
+        const base = (r.imponibile || 0) + (r.cassa || 0);
+        if (!base) return <span className="text-xs text-muted-foreground">—</span>;
+        const pct = Math.round((r.imposta / base) * 100);
         return <span className="text-xs font-mono text-right block">{pct}%</span>;
       },
       filterValue: (r) => {
-        if (!r.imponibile || r.imponibile === 0) return "0%";
-        return `${Math.round((r.imposta / r.imponibile) * 100)}%`;
+        const base = (r.imponibile || 0) + (r.cassa || 0);
+        if (!base) return "0%";
+        return `${Math.round((r.imposta / base) * 100)}%`;
       },
     },
     { key: "articoloIva", label: "Articolo IVA", sortable: true, filterable: true, defaultHidden: false,
