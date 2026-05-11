@@ -812,6 +812,11 @@ const AcquistiPage = () => {
     return dupes;
   }, [xmlRecords]);
 
+  const unassignedCostoCount = useMemo(
+    () => purchases.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`]).length,
+    [purchases, costoMap.map]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -828,11 +833,6 @@ const AcquistiPage = () => {
 
   const xmlMatchedCount = xmlRecords.filter((r) => r.matched).length;
   const xmlUnmatchedCount = xmlRecords.filter((r) => !r.matched).length;
-  const unassignedCostoCount = useMemo(
-    () => purchases.filter((p) => !costoMap.map[`${p.anno}-${p.numero}`]).length,
-    [purchases, costoMap.map]
-  );
-
 
   return (<>
     <div className="flex h-full">
