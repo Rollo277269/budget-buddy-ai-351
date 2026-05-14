@@ -51,7 +51,7 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
   const [expanded, setExpanded] = useState(false);
 
   const data = useMemo(() => {
-    const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; split: number; total: number }>();
+    const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; total: number }>();
     const yearSales = sales.filter((s) => s.anno === year);
 
     for (const s of yearSales) {
@@ -61,15 +61,8 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
       const imposta = Math.abs(s.imposta || 0);
       const cliente = s.cliente || "Sconosciuto";
 
-      // Art.17: invoice-level imposta=0 ma le righe contengono l'IVA teorica
-      const isArt17 = (s.imposta === 0 && s.imponibile > 0);
-      let art17Iva = 0;
-      if (isArt17 && s.righe && s.righe.length > 0) {
-        art17Iva = s.righe.reduce((sum, r) => sum + Math.abs(r.imposta || 0), 0);
-      }
-
       if (!map.has(cliente)) {
-        map.set(cliente, { cliente, t1: 0, t2: 0, t3: 0, t4: 0, split: 0, total: 0 });
+        map.set(cliente, { cliente, t1: 0, t2: 0, t3: 0, t4: 0, total: 0 });
       }
       const entry = map.get(cliente)!;
       if (q === 0) entry.t1 += imposta;
@@ -77,7 +70,6 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
       else if (q === 2) entry.t3 += imposta;
       else entry.t4 += imposta;
       entry.total += imposta;
-      if (isArt17) entry.split += art17Iva;
     }
 
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -86,8 +78,8 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
   if (data.length === 0) return null;
 
   const totals = data.reduce(
-    (acc, d) => ({ t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4, split: acc.split + d.split, total: acc.total + d.total }),
-    { t1: 0, t2: 0, t3: 0, t4: 0, split: 0, total: 0 }
+    (acc, d) => ({ t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4, total: acc.total + d.total }),
+    { t1: 0, t2: 0, t3: 0, t4: 0, total: 0 }
   );
 
   return (
@@ -113,7 +105,6 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
                   <TableHead className="text-xs text-right">T2</TableHead>
                   <TableHead className="text-xs text-right">T3</TableHead>
                   <TableHead className="text-xs text-right">T4</TableHead>
-                  <TableHead className="text-xs text-right">IVA Art.17</TableHead>
                   <TableHead className="text-xs text-right">Totale</TableHead>
                 </TableRow>
               </TableHeader>
@@ -125,7 +116,6 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
                     <TableCell className="text-xs text-right font-mono">{d.t2 > 0 ? formatCurrency(d.t2) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono">{d.t3 > 0 ? formatCurrency(d.t3) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono">{d.t4 > 0 ? formatCurrency(d.t4) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.split > 0 ? formatCurrency(d.split) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(d.total)}</TableCell>
                   </TableRow>
                 ))}
@@ -135,7 +125,6 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t2)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t3)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t4)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.split)}</TableCell>
                   <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(totals.total)}</TableCell>
                 </TableRow>
               </TableBody>
@@ -151,7 +140,7 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
   const [expanded, setExpanded] = useState(false);
 
   const data = useMemo(() => {
-    const map = new Map<string, { fornitore: string; t1: number; t2: number; t3: number; t4: number; art17: number; total: number }>();
+    const map = new Map<string, { fornitore: string; t1: number; t2: number; t3: number; t4: number; total: number }>();
     const yearPurchases = purchases.filter((p) => p.anno === year);
 
     for (const p of yearPurchases) {
@@ -164,21 +153,16 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
       const q = Math.floor((parsed.month - 1) / 3);
       const imposta = Math.abs(p.imposta || 0);
 
-      // Art.17 reverse charge: invoice-level imposta=0 ma imponibile>0 → IVA teorica al 22% a debito per il consorzio
-      const isArt17 = (p.imposta === 0 && p.imponibile > 0);
-      const art17Iva = isArt17 ? p.imponibile * 0.22 : 0;
-
       if (!map.has(fornitore)) {
-        map.set(fornitore, { fornitore, t1: 0, t2: 0, t3: 0, t4: 0, art17: 0, total: 0 });
+        map.set(fornitore, { fornitore, t1: 0, t2: 0, t3: 0, t4: 0, total: 0 });
       }
       const entry = map.get(fornitore)!;
-      const debito = imposta + art17Iva;
+      const debito = imposta;
       if (q === 0) entry.t1 += debito;
       else if (q === 1) entry.t2 += debito;
       else if (q === 2) entry.t3 += debito;
       else entry.t4 += debito;
       entry.total += debito;
-      if (isArt17) entry.art17 += art17Iva;
     }
 
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -187,8 +171,8 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
   if (data.length === 0) return null;
 
   const totals = data.reduce(
-    (acc, d) => ({ t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4, art17: acc.art17 + d.art17, total: acc.total + d.total }),
-    { t1: 0, t2: 0, t3: 0, t4: 0, art17: 0, total: 0 }
+    (acc, d) => ({ t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4, total: acc.total + d.total }),
+    { t1: 0, t2: 0, t3: 0, t4: 0, total: 0 }
   );
 
   return (
@@ -214,7 +198,6 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
                   <TableHead className="text-xs text-right">T2</TableHead>
                   <TableHead className="text-xs text-right">T3</TableHead>
                   <TableHead className="text-xs text-right">T4</TableHead>
-                  <TableHead className="text-xs text-right">IVA Art.17</TableHead>
                   <TableHead className="text-xs text-right">Totale</TableHead>
                 </TableRow>
               </TableHeader>
@@ -226,7 +209,6 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
                     <TableCell className="text-xs text-right font-mono">{d.t2 > 0 ? formatCurrency(d.t2) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono">{d.t3 > 0 ? formatCurrency(d.t3) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono">{d.t4 > 0 ? formatCurrency(d.t4) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.art17 > 0 ? formatCurrency(d.art17) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(d.total)}</TableCell>
                   </TableRow>
                 ))}
@@ -236,7 +218,6 @@ function SocioFornitoreIvaSection({ purchases, year, soci }: { purchases: Purcha
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t2)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t3)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t4)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.art17)}</TableCell>
                   <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(totals.total)}</TableCell>
                 </TableRow>
               </TableBody>
