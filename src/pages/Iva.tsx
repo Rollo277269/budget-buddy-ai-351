@@ -91,7 +91,7 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
           <CollapsibleTrigger asChild>
             <button className="flex items-center gap-2 w-full text-left">
               <Users className="h-4 w-4 text-primary" />
-              <CardTitle className="text-sm flex-1">IVA a debito per cliente — Dettaglio trimestrale {year}</CardTitle>
+              <CardTitle className="text-sm flex-1">IVA a debito per cliente — Dettaglio trimestrale {year} (escluso split)</CardTitle>
               <Badge variant="secondary" className="text-[10px]">{data.length} clienti</Badge>
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
