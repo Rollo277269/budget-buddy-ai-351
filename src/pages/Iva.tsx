@@ -34,6 +34,18 @@ function isSplitPayment(inv: SaleInvoice | PurchaseInvoice): boolean {
   return pag.includes("split") || desc.includes("split payment") || desc.includes("scissione") || tipo.includes("split");
 }
 
+/**
+ * IVA teorica di una vendita in reverse charge / Art.17.
+ * Riconosciuta quando l'imposta a livello fattura è 0 ma le righe contengono
+ * un importo IVA scorporato. Restituisce la somma di righe[].imposta.
+ */
+function art17SalesIva(s: SaleInvoice): number {
+  if ((s.imposta || 0) !== 0) return 0;
+  if (!s.imponibile || s.imponibile <= 0) return 0;
+  if (!Array.isArray(s.righe) || s.righe.length === 0) return 0;
+  return s.righe.reduce((sum, r: any) => sum + Math.abs(Number(r?.imposta) || 0), 0);
+}
+
 const MONTH_LABELS = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 const QUARTER_LABELS = ["T1 (Gen-Mar)", "T2 (Apr-Giu)", "T3 (Lug-Set)", "T4 (Ott-Dic)"];
 
