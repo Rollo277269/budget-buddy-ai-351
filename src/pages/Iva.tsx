@@ -384,6 +384,13 @@ const IvaPage = () => {
       } else {
         data[idx].ivaDebito += imposta;
       }
+      // Vendite in reverse charge / Art.17: l'IVA teorica scorporata nelle righe
+      // viene contabilizzata come split (debito + credito, neutra)
+      const art17 = art17SalesIva(s);
+      if (art17 > 0) {
+        data[idx].ivaSplitDebito += art17;
+        data[idx].ivaSplitCredito += art17;
+      }
     });
 
     // IVA a credito (acquisti)
