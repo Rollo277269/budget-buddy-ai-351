@@ -51,7 +51,7 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
   const [expanded, setExpanded] = useState(false);
 
   const data = useMemo(() => {
-    const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; s1: number; s2: number; s3: number; s4: number; total: number }>();
+    const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; total: number }>();
     const yearSales = sales.filter((s) => s.anno === year);
 
     for (const s of yearSales) {
@@ -60,23 +60,17 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
       const q = Math.floor((parsed.month - 1) / 3);
       const imposta = Math.abs(s.imposta || 0);
       const cliente = s.cliente || "Sconosciuto";
-      const split = isSplitPayment(s);
+      // Le vendite in split payment hanno una tabella dedicata
+      if (isSplitPayment(s)) continue;
 
       if (!map.has(cliente)) {
-        map.set(cliente, { cliente, t1: 0, t2: 0, t3: 0, t4: 0, s1: 0, s2: 0, s3: 0, s4: 0, total: 0 });
+        map.set(cliente, { cliente, t1: 0, t2: 0, t3: 0, t4: 0, total: 0 });
       }
       const entry = map.get(cliente)!;
-      if (split) {
-        if (q === 0) entry.s1 += imposta;
-        else if (q === 1) entry.s2 += imposta;
-        else if (q === 2) entry.s3 += imposta;
-        else entry.s4 += imposta;
-      } else {
-        if (q === 0) entry.t1 += imposta;
-        else if (q === 1) entry.t2 += imposta;
-        else if (q === 2) entry.t3 += imposta;
-        else entry.t4 += imposta;
-      }
+      if (q === 0) entry.t1 += imposta;
+      else if (q === 1) entry.t2 += imposta;
+      else if (q === 2) entry.t3 += imposta;
+      else entry.t4 += imposta;
       entry.total += imposta;
     }
 
@@ -86,12 +80,8 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
   if (data.length === 0) return null;
 
   const totals = data.reduce(
-    (acc, d) => ({
-      t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4,
-      s1: acc.s1 + d.s1, s2: acc.s2 + d.s2, s3: acc.s3 + d.s3, s4: acc.s4 + d.s4,
-      total: acc.total + d.total,
-    }),
-    { t1: 0, t2: 0, t3: 0, t4: 0, s1: 0, s2: 0, s3: 0, s4: 0, total: 0 }
+    (acc, d) => ({ t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4, total: acc.total + d.total }),
+    { t1: 0, t2: 0, t3: 0, t4: 0, total: 0 }
   );
 
   return (
@@ -117,10 +107,6 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
                   <TableHead className="text-xs text-right">T2</TableHead>
                   <TableHead className="text-xs text-right">T3</TableHead>
                   <TableHead className="text-xs text-right">T4</TableHead>
-                  <TableHead className="text-xs text-right text-amber-600" title="Split payment T1">Split T1</TableHead>
-                  <TableHead className="text-xs text-right text-amber-600" title="Split payment T2">Split T2</TableHead>
-                  <TableHead className="text-xs text-right text-amber-600" title="Split payment T3">Split T3</TableHead>
-                  <TableHead className="text-xs text-right text-amber-600" title="Split payment T4">Split T4</TableHead>
                   <TableHead className="text-xs text-right">Totale</TableHead>
                 </TableRow>
               </TableHeader>
@@ -132,10 +118,6 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
                     <TableCell className="text-xs text-right font-mono">{d.t2 > 0 ? formatCurrency(d.t2) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono">{d.t3 > 0 ? formatCurrency(d.t3) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono">{d.t4 > 0 ? formatCurrency(d.t4) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.s1 > 0 ? formatCurrency(d.s1) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.s2 > 0 ? formatCurrency(d.s2) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.s3 > 0 ? formatCurrency(d.s3) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.s4 > 0 ? formatCurrency(d.s4) : "—"}</TableCell>
                     <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(d.total)}</TableCell>
                   </TableRow>
                 ))}
@@ -145,10 +127,6 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t2)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t3)}</TableCell>
                   <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.t4)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.s1)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.s2)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.s3)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.s4)}</TableCell>
                   <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(totals.total)}</TableCell>
                 </TableRow>
               </TableBody>
