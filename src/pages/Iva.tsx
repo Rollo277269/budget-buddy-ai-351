@@ -34,6 +34,18 @@ function isSplitPayment(inv: SaleInvoice | PurchaseInvoice): boolean {
   return pag.includes("split") || desc.includes("split payment") || desc.includes("scissione") || tipo.includes("split");
 }
 
+/**
+ * IVA teorica di una vendita in reverse charge / Art.17.
+ * Riconosciuta quando l'imposta a livello fattura è 0 ma le righe contengono
+ * un importo IVA scorporato. Restituisce la somma di righe[].imposta.
+ */
+function art17SalesIva(s: SaleInvoice): number {
+  if ((s.imposta || 0) !== 0) return 0;
+  if (!s.imponibile || s.imponibile <= 0) return 0;
+  if (!Array.isArray(s.righe) || s.righe.length === 0) return 0;
+  return s.righe.reduce((sum, r: any) => sum + Math.abs(Number(r?.imposta) || 0), 0);
+}
+
 const MONTH_LABELS = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 const QUARTER_LABELS = ["T1 (Gen-Mar)", "T2 (Apr-Giu)", "T3 (Lug-Set)", "T4 (Ott-Dic)"];
 
@@ -143,13 +155,20 @@ function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; yea
 
   const data = useMemo(() => {
     const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; total: number }>();
-    const yearSales = sales.filter((s) => s.anno === year && isSplitPayment(s));
+    const yearSales = sales.filter((s) => {
+      if (s.anno !== year) return false;
+      return isSplitPayment(s) || art17SalesIva(s) > 0;
+    });
 
     for (const s of yearSales) {
       const parsed = parseMonthYear(s.data);
       if (!parsed) continue;
       const q = Math.floor((parsed.month - 1) / 3);
-      const imposta = Math.abs(s.imposta || 0);
+      // Per le vendite split usa l'imposta in fattura;
+      // per le vendite Art.17 usa l'IVA teorica scorporata nelle righe.
+      const imposta = isSplitPayment(s)
+        ? Math.abs(s.imposta || 0)
+        : art17SalesIva(s);
       const cliente = s.cliente || "Sconosciuto";
 
       if (!map.has(cliente)) {
@@ -180,7 +199,7 @@ function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; yea
           <CollapsibleTrigger asChild>
             <button className="flex items-center gap-2 w-full text-left">
               <ArrowLeftRight className="h-4 w-4 text-amber-600" />
-              <CardTitle className="text-sm flex-1">IVA in Split Payment per cliente — Dettaglio trimestrale {year}</CardTitle>
+              <CardTitle className="text-sm flex-1">IVA Split Payment / Art.17 per cliente — Dettaglio trimestrale {year}</CardTitle>
               <Badge variant="secondary" className="text-[10px]">{data.length} clienti</Badge>
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
@@ -371,6 +390,13 @@ const IvaPage = () => {
         data[idx].ivaSplitDebito += imposta;
       } else {
         data[idx].ivaDebito += imposta;
+      }
+      // Vendite in reverse charge / Art.17: l'IVA teorica scorporata nelle righe
+      // viene contabilizzata come split (debito + credito, neutra)
+      const art17 = art17SalesIva(s);
+      if (art17 > 0) {
+        data[idx].ivaSplitDebito += art17;
+        data[idx].ivaSplitCredito += art17;
       }
     });
 
