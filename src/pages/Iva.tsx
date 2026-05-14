@@ -155,13 +155,20 @@ function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; yea
 
   const data = useMemo(() => {
     const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; total: number }>();
-    const yearSales = sales.filter((s) => s.anno === year && isSplitPayment(s));
+    const yearSales = sales.filter((s) => {
+      if (s.anno !== year) return false;
+      return isSplitPayment(s) || art17SalesIva(s) > 0;
+    });
 
     for (const s of yearSales) {
       const parsed = parseMonthYear(s.data);
       if (!parsed) continue;
       const q = Math.floor((parsed.month - 1) / 3);
-      const imposta = Math.abs(s.imposta || 0);
+      // Per le vendite split usa l'imposta in fattura;
+      // per le vendite Art.17 usa l'IVA teorica scorporata nelle righe.
+      const imposta = isSplitPayment(s)
+        ? Math.abs(s.imposta || 0)
+        : art17SalesIva(s);
       const cliente = s.cliente || "Sconosciuto";
 
       if (!map.has(cliente)) {
