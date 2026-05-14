@@ -1,8 +1,12 @@
 ---
-name: IVA — nessun calcolo teorico
-description: Le fatture con imposta=0 NON devono mai generare IVA teorica (no 22% su imponibile, no somma righe). Attenersi solo agli importi caricati.
+name: IVA Art.17 / Split — calcolo
+description: Acquisti con imposta=0 NON generano IVA teorica. Vendite con imposta=0 ma righe[].imposta>0 sono Art.17 reverse charge: IVA letta dalle righe e contabilizzata come split (debito + credito neutri).
 type: logic
 ---
-Le fatture (vendita o acquisto) con `imposta=0` e `imponibile>0` sono operazioni in reverse charge / split / non soggette già correttamente fatturate senza IVA. Il consorzio NON deve auto-applicare IVA teorica perché ribalta a sua volta in reverse charge al cliente finale.
+**Acquisti**: usare solo `imposta` come da fattura. Nessun calcolo `imponibile * 0.22`, nessuna somma righe.
 
-Regola: in tutta la pagina IVA usare esclusivamente `imposta` come stoccato in DB. Nessuna colonna "IVA Art.17", nessun calcolo `imponibile * 0.22`, nessuna somma `righe[].imposta` per fatture con imposta=0.
+**Vendite Art.17 (reverse charge)**: invoice `imposta=0` ma `imponibile>0` con `righe[].imposta>0`. La somma di `righe[].imposta` rappresenta l'IVA teorica scorporata; va aggiunta sia a `ivaSplitDebito` sia a `ivaSplitCredito` (operazione neutra) e mostrata nella tabella "IVA Split Payment / Art.17 per cliente".
+
+**Vendite split payment** (scissione pagamenti): rilevate via `isSplitPayment()`. L'imposta a livello fattura va in `ivaSplitDebito` (e mostrata nella stessa tabella).
+
+Helper: `art17SalesIva(s)` in `src/pages/Iva.tsx`.
