@@ -199,7 +199,7 @@ function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; yea
           <CollapsibleTrigger asChild>
             <button className="flex items-center gap-2 w-full text-left">
               <ArrowLeftRight className="h-4 w-4 text-amber-600" />
-              <CardTitle className="text-sm flex-1">IVA in Split Payment per cliente — Dettaglio trimestrale {year}</CardTitle>
+              <CardTitle className="text-sm flex-1">IVA Split Payment / Art.17 per cliente — Dettaglio trimestrale {year}</CardTitle>
               <Badge variant="secondary" className="text-[10px]">{data.length} clienti</Badge>
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
