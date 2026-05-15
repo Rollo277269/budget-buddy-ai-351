@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
+import { art17SalesIva } from "@/lib/art17";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,18 +33,6 @@ function isSplitPayment(inv: SaleInvoice | PurchaseInvoice): boolean {
   const desc = (inv.descrizione || "").toLowerCase();
   const tipo = (inv.tipo || "").toLowerCase();
   return pag.includes("split") || desc.includes("split payment") || desc.includes("scissione") || tipo.includes("split");
-}
-
-/**
- * IVA teorica di una vendita in reverse charge / Art.17.
- * Riconosciuta quando l'imposta a livello fattura è 0 ma le righe contengono
- * un importo IVA scorporato. Restituisce la somma di righe[].imposta.
- */
-export function art17SalesIva(s: SaleInvoice): number {
-  if ((s.imposta || 0) !== 0) return 0;
-  if (!s.imponibile || s.imponibile <= 0) return 0;
-  if (!Array.isArray(s.righe) || s.righe.length === 0) return 0;
-  return s.righe.reduce((sum, r: any) => sum + Math.abs(Number(r?.imposta) || 0), 0);
 }
 
 const MONTH_LABELS = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
