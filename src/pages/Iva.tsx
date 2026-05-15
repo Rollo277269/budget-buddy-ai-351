@@ -153,44 +153,73 @@ function ClientQuarterIvaSection({ sales, year }: { sales: SaleInvoice[]; year: 
 function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; year: number }) {
   const [expanded, setExpanded] = useState(false);
 
-  const data = useMemo(() => {
-    const map = new Map<string, { cliente: string; t1: number; t2: number; t3: number; t4: number; total: number }>();
+  type Row = { cliente: string; tipo: "split" | "art17"; t1: number; t2: number; t3: number; t4: number; total: number };
+
+  const { rows, totals } = useMemo(() => {
+    const map = new Map<string, { split: Row; art17: Row }>();
     const yearSales = sales.filter((s) => {
       if (s.anno !== year) return false;
       return isSplitPayment(s) || art17SalesIva(s) > 0;
     });
 
+    const ensure = (cliente: string) => {
+      if (!map.has(cliente)) {
+        map.set(cliente, {
+          split: { cliente, tipo: "split", t1: 0, t2: 0, t3: 0, t4: 0, total: 0 },
+          art17: { cliente, tipo: "art17", t1: 0, t2: 0, t3: 0, t4: 0, total: 0 },
+        });
+      }
+      return map.get(cliente)!;
+    };
+
     for (const s of yearSales) {
       const parsed = parseMonthYear(s.data);
       if (!parsed) continue;
       const q = Math.floor((parsed.month - 1) / 3);
-      // Per le vendite split usa l'imposta in fattura;
-      // per le vendite Art.17 usa l'IVA teorica scorporata nelle righe.
-      const imposta = isSplitPayment(s)
-        ? Math.abs(s.imposta || 0)
-        : art17SalesIva(s);
       const cliente = s.cliente || "Sconosciuto";
+      const entry = ensure(cliente);
 
-      if (!map.has(cliente)) {
-        map.set(cliente, { cliente, t1: 0, t2: 0, t3: 0, t4: 0, total: 0 });
-      }
-      const entry = map.get(cliente)!;
-      if (q === 0) entry.t1 += imposta;
-      else if (q === 1) entry.t2 += imposta;
-      else if (q === 2) entry.t3 += imposta;
-      else entry.t4 += imposta;
-      entry.total += imposta;
+      const splitImposta = isSplitPayment(s) ? Math.abs(s.imposta || 0) : 0;
+      const art17Imposta = art17SalesIva(s);
+
+      const apply = (r: Row, v: number) => {
+        if (v <= 0) return;
+        if (q === 0) r.t1 += v;
+        else if (q === 1) r.t2 += v;
+        else if (q === 2) r.t3 += v;
+        else r.t4 += v;
+        r.total += v;
+      };
+      apply(entry.split, splitImposta);
+      apply(entry.art17, art17Imposta);
     }
 
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+    const out: Row[] = [];
+    const clients = Array.from(map.values()).sort(
+      (a, b) => (b.split.total + b.art17.total) - (a.split.total + a.art17.total)
+    );
+    for (const c of clients) {
+      if (c.split.total > 0) out.push(c.split);
+      if (c.art17.total > 0) out.push(c.art17);
+    }
+
+    const tot = {
+      splitT1: 0, splitT2: 0, splitT3: 0, splitT4: 0, splitTotal: 0,
+      art17T1: 0, art17T2: 0, art17T3: 0, art17T4: 0, art17Total: 0,
+    };
+    for (const r of out) {
+      if (r.tipo === "split") {
+        tot.splitT1 += r.t1; tot.splitT2 += r.t2; tot.splitT3 += r.t3; tot.splitT4 += r.t4; tot.splitTotal += r.total;
+      } else {
+        tot.art17T1 += r.t1; tot.art17T2 += r.t2; tot.art17T3 += r.t3; tot.art17T4 += r.t4; tot.art17Total += r.total;
+      }
+    }
+    return { rows: out, totals: tot };
   }, [sales, year]);
 
-  if (data.length === 0) return null;
+  if (rows.length === 0) return null;
 
-  const totals = data.reduce(
-    (acc, d) => ({ t1: acc.t1 + d.t1, t2: acc.t2 + d.t2, t3: acc.t3 + d.t3, t4: acc.t4 + d.t4, total: acc.total + d.total }),
-    { t1: 0, t2: 0, t3: 0, t4: 0, total: 0 }
-  );
+  const clientiCount = new Set(rows.map((r) => r.cliente)).size;
 
   return (
     <Card>
@@ -200,7 +229,7 @@ function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; yea
             <button className="flex items-center gap-2 w-full text-left">
               <ArrowLeftRight className="h-4 w-4 text-amber-600" />
               <CardTitle className="text-sm flex-1">IVA Split Payment / Art.17 per cliente — Dettaglio trimestrale {year}</CardTitle>
-              <Badge variant="secondary" className="text-[10px]">{data.length} clienti</Badge>
+              <Badge variant="secondary" className="text-[10px]">{clientiCount} clienti</Badge>
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
           </CollapsibleTrigger>
@@ -211,6 +240,7 @@ function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; yea
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Cliente</TableHead>
+                  <TableHead className="text-xs">Tipo</TableHead>
                   <TableHead className="text-xs text-right">T1</TableHead>
                   <TableHead className="text-xs text-right">T2</TableHead>
                   <TableHead className="text-xs text-right">T3</TableHead>
@@ -219,24 +249,50 @@ function SplitPaymentQuarterSection({ sales, year }: { sales: SaleInvoice[]; yea
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((d) => (
-                  <TableRow key={d.cliente}>
-                    <TableCell className="text-xs font-medium max-w-[200px] truncate" title={d.cliente}>{d.cliente}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.t1 > 0 ? formatCurrency(d.t1) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.t2 > 0 ? formatCurrency(d.t2) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.t3 > 0 ? formatCurrency(d.t3) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono text-amber-600">{d.t4 > 0 ? formatCurrency(d.t4) : "—"}</TableCell>
-                    <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(d.total)}</TableCell>
+                {rows.map((d, i) => {
+                  const isArt17 = d.tipo === "art17";
+                  const colorClass = isArt17 ? "text-sky-600" : "text-amber-600";
+                  const rowBg = isArt17 ? "bg-sky-500/5" : "";
+                  return (
+                    <TableRow key={`${d.cliente}-${d.tipo}-${i}`} className={rowBg}>
+                      <TableCell className="text-xs font-medium max-w-[200px] truncate" title={d.cliente}>{d.cliente}</TableCell>
+                      <TableCell className="text-xs">
+                        {isArt17 ? (
+                          <Badge variant="outline" className="text-[10px] border-sky-600 text-sky-700">Art.17 (credito)</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] border-amber-600 text-amber-700">Split (debito)</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className={`text-xs text-right font-mono ${colorClass}`}>{d.t1 > 0 ? formatCurrency(d.t1) : "—"}</TableCell>
+                      <TableCell className={`text-xs text-right font-mono ${colorClass}`}>{d.t2 > 0 ? formatCurrency(d.t2) : "—"}</TableCell>
+                      <TableCell className={`text-xs text-right font-mono ${colorClass}`}>{d.t3 > 0 ? formatCurrency(d.t3) : "—"}</TableCell>
+                      <TableCell className={`text-xs text-right font-mono ${colorClass}`}>{d.t4 > 0 ? formatCurrency(d.t4) : "—"}</TableCell>
+                      <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(d.total)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+                {totals.splitTotal > 0 && (
+                  <TableRow className="bg-amber-500/10 font-semibold">
+                    <TableCell className="text-xs">TOTALE Split (debito)</TableCell>
+                    <TableCell />
+                    <TableCell className="text-xs text-right font-mono text-amber-700">{formatCurrency(totals.splitT1)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-amber-700">{formatCurrency(totals.splitT2)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-amber-700">{formatCurrency(totals.splitT3)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-amber-700">{formatCurrency(totals.splitT4)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.splitTotal)}</TableCell>
                   </TableRow>
-                ))}
-                <TableRow className="bg-muted/50 font-semibold">
-                  <TableCell className="text-xs">TOTALE</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.t1)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.t2)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.t3)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono text-amber-600">{formatCurrency(totals.t4)}</TableCell>
-                  <TableCell className="text-xs text-right font-mono font-semibold">{formatCurrency(totals.total)}</TableCell>
-                </TableRow>
+                )}
+                {totals.art17Total > 0 && (
+                  <TableRow className="bg-sky-500/10 font-semibold">
+                    <TableCell className="text-xs">TOTALE Art.17 (credito)</TableCell>
+                    <TableCell />
+                    <TableCell className="text-xs text-right font-mono text-sky-700">{formatCurrency(totals.art17T1)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-sky-700">{formatCurrency(totals.art17T2)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-sky-700">{formatCurrency(totals.art17T3)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono text-sky-700">{formatCurrency(totals.art17T4)}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{formatCurrency(totals.art17Total)}</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
