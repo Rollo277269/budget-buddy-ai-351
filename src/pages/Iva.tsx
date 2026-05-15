@@ -39,7 +39,7 @@ function isSplitPayment(inv: SaleInvoice | PurchaseInvoice): boolean {
  * Riconosciuta quando l'imposta a livello fattura è 0 ma le righe contengono
  * un importo IVA scorporato. Restituisce la somma di righe[].imposta.
  */
-function art17SalesIva(s: SaleInvoice): number {
+export function art17SalesIva(s: SaleInvoice): number {
   if ((s.imposta || 0) !== 0) return 0;
   if (!s.imponibile || s.imponibile <= 0) return 0;
   if (!Array.isArray(s.righe) || s.righe.length === 0) return 0;
