@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { art17SalesIva } from "./Iva";
+import { art17SalesIva } from "@/lib/art17";
 
 const make = (overrides: any = {}): any => ({
   imposta: 0,
