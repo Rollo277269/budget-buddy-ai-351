@@ -500,6 +500,9 @@ export function CommessaDetailSheet({
     };
   }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice, ricavoMap.map, costoMap.map, documentiAcquisto]);
 
+  const [exportingZip, setExportingZip] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
+
   if (!commessa || !data) return null;
 
   const availableSales = allSales.filter((s) => !data.allLinkedSaleKeys.has(invoiceKey(s.anno, s.numero)));
