@@ -1246,11 +1246,13 @@ export function CommessaDetailSheet({
             <div className="pdf-footer-agis">
               <img src={logoAgis} alt="AGIS" />
             </div>
-            <span className="pdf-footer-left">Report generato da Gestione Commesse</span>
-            <span className="pdf-footer-center">Esportato il {new Date().toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-            <span className="pdf-footer-right pdf-page-number"></span>
+            <span className="pdf-footer-center">
+              Report generato da Gestione Commesse — {new Date().toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </span>
           </div>
 
+          {/* ═══════════════ PAGINA 1: Dati commessa + Avanzamento + Stato incassi/pagamenti ═══════════════ */}
+          <div className="pdf-page">
           <div className="pdf-header">
             <div className="pdf-header-logo">
               <img src={logoCssr} alt="CSSR" className="pdf-logo-cssr" />
@@ -1291,35 +1293,50 @@ export function CommessaDetailSheet({
             </section>
           )}
 
-          {/* KPI */}
-          <div className="pdf-kpi-grid">
-            <div className="pdf-kpi-card">
-              <p className="pdf-kpi-label">Totale Ricavi</p>
-              <p className="pdf-kpi-value is-positive">{formatCurrency(data.totalVendite)}</p>
-              <p className="pdf-kpi-sub">{data.linkedSales.length} fatture</p>
-            </div>
-            <div className="pdf-kpi-card">
-              <p className="pdf-kpi-label">Totale Costi</p>
-              <p className="pdf-kpi-value is-negative">{formatCurrency(data.totalAcquisti)}</p>
-              <p className="pdf-kpi-sub">{data.linkedPurchases.length} fatture</p>
-            </div>
-            <div className="pdf-kpi-card">
-              <p className="pdf-kpi-label">Saldo</p>
-              <p className={`pdf-kpi-value ${data.saldo >= 0 ? "is-positive" : "is-negative"}`}>{formatCurrency(data.saldo)}</p>
-              <p className="pdf-kpi-sub">{data.saldo >= 0 ? "Attivo" : "Passivo"}</p>
-            </div>
-            <div className="pdf-kpi-card">
-              <p className="pdf-kpi-label">Margine</p>
-              <p className={`pdf-kpi-value ${data.margine >= 0 ? "is-positive" : "is-negative"}`}>{data.margine.toFixed(1)}%</p>
-              <p className="pdf-kpi-sub">{data.importoContratto != null && !isNaN(data.importoContratto) ? `Fatturato: ${(data.percentualeFatturato || 0).toFixed(1)}% contratto` : ""}</p>
-            </div>
+          {/* Avanzamento Contratto */}
+          {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
+            <section className="pdf-section pdf-full-width">
+              <h2>Avanzamento Contratto</h2>
+              <div className="pdf-progress-wrap">
+                <div className="pdf-progress-info">
+                  <span>Lavori eseguiti (RC1): {formatCurrency(data.totalVenditeImponibileRC1)}</span>
+                  <span>Contratto: {formatCurrency(data.importoContratto)}</span>
+                </div>
+                <div className="pdf-progress-track">
+                  <div className="pdf-progress-fill" style={{ width: `${Math.min(data.percentualeFatturato || 0, 100)}%` }}></div>
+                </div>
+                <div className="pdf-progress-info">
+                  <span style={{ fontWeight: 700 }}>{(data.percentualeFatturato || 0).toFixed(1)}%</span>
+                  <span>Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibileRC1)}</span>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Stato Incassi / Pagamenti */}
+          <div className="pdf-table-grid">
+            <section className="pdf-section">
+              <h2>Stato Incassi (Vendite)</h2>
+              <table className="pdf-table"><tbody>
+                <tr><td>Incassato</td><td className="is-right is-positive">{formatCurrency(data.statusSales.pagata)}</td></tr>
+                <tr><td>Da incassare</td><td className="is-right is-negative">{formatCurrency(data.statusSales.nonPagata)}</td></tr>
+              </tbody></table>
+            </section>
+            <section className="pdf-section">
+              <h2>Stato Pagamenti (Acquisti)</h2>
+              <table className="pdf-table"><tbody>
+                <tr><td>Pagato</td><td className="is-right is-positive">{formatCurrency(data.statusPurchases.pagata)}</td></tr>
+                <tr><td>Da pagare</td><td className="is-right is-negative">{formatCurrency(data.statusPurchases.nonPagata)}</td></tr>
+              </tbody></table>
+            </section>
+          </div>
           </div>
 
-          {/* ── Grafici Analisi ── */}
-          {/* Andamento Mensile Vendite/Acquisti - Bar chart */}
+          {/* ═══════════════ PAGINA 2: Grafico andamento vendite/acquisti ═══════════════ */}
           {data.monthlyData.length > 0 && (() => {
             const maxMonth = Math.max(...data.monthlyData.map(m => Math.max(m.vendite, m.acquisti)), 1);
             return (
+              <div className="pdf-page">
               <section className="pdf-section pdf-full-width">
                 <h2>Grafico Andamento mensile Vendite/Acquisti</h2>
                 <div className="pdf-bar-chart">
@@ -1342,13 +1359,15 @@ export function CommessaDetailSheet({
                   </div>
                 </div>
               </section>
+              </div>
             );
           })()}
 
-          {/* Andamento Mensile Incassi/Pagamenti - Bar chart */}
+          {/* ═══════════════ PAGINA 3: Grafico andamento incassi/pagamenti ═══════════════ */}
           {data.monthlyData.length > 0 && (() => {
             const maxPayment = Math.max(...data.monthlyData.map(m => Math.max(m.incassato, m.pagato)), 1);
             return (
+              <div className="pdf-page">
               <section className="pdf-section pdf-full-width">
                 <h2>Grafico Andamento mensile Incassi/Pagamenti</h2>
                 <div className="pdf-bar-chart">
@@ -1371,10 +1390,11 @@ export function CommessaDetailSheet({
                   </div>
                 </div>
               </section>
+              </div>
             );
           })()}
 
-          {/* Centro Ricavo / Costo - Horizontal bars */}
+          {/* ═══════════════ PAGINA 4: Grafico + Riepilogo Centri Ricavo/Costo ═══════════════ */}
           {(ricavoRows.length > 0 || costoRows.length > 0) && (() => {
             const maxCentro = Math.max(
               ...ricavoRows.map(r => r.value),
@@ -1382,7 +1402,8 @@ export function CommessaDetailSheet({
               1
             );
             return (
-              <div className="pdf-table-grid">
+              <div className="pdf-page">
+                <div className="pdf-table-grid">
                 {ricavoRows.length > 0 && (
                   <section className="pdf-section">
                     <h2>Grafico Centri di Ricavo</h2>
@@ -1417,32 +1438,31 @@ export function CommessaDetailSheet({
                     </div>
                   </section>
                 )}
+                </div>
+                {/* Riepilogo Centri */}
+                <div className="pdf-table-grid">
+                  <section className="pdf-section">
+                    <h2>Riepilogo Centri di Ricavo</h2>
+                    <table className="pdf-table">
+                      <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                      <tbody>{ricavoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
+                    </table>
+                  </section>
+                  <section className="pdf-section">
+                    <h2>Riepilogo Centri di Costo</h2>
+                    <table className="pdf-table">
+                      <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                      <tbody>{costoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
+                    </table>
+                  </section>
+                </div>
               </div>
             );
           })()}
 
-          {/* Avanzamento Contratto - Progress bar */}
-          {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
-            <section className="pdf-section pdf-full-width">
-              <h2>Avanzamento Contratto</h2>
-              <div className="pdf-progress-wrap">
-                <div className="pdf-progress-info">
-                  <span>Lavori eseguiti (RC1): {formatCurrency(data.totalVenditeImponibileRC1)}</span>
-                  <span>Contratto: {formatCurrency(data.importoContratto)}</span>
-                </div>
-                <div className="pdf-progress-track">
-                  <div className="pdf-progress-fill" style={{ width: `${Math.min(data.percentualeFatturato || 0, 100)}%` }}></div>
-                </div>
-                <div className="pdf-progress-info">
-                  <span style={{ fontWeight: 700 }}>{(data.percentualeFatturato || 0).toFixed(1)}%</span>
-                  <span>Residuo: {formatCurrency(data.importoContratto - data.totalVenditeImponibileRC1)}</span>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Andamento Mensile */}
+          {/* ═══════════════ PAGINA 5: Andamento Mensile (tabella) ═══════════════ */}
           {data.monthlyData.length > 0 && (
+            <div className="pdf-page">
             <section className="pdf-section pdf-full-width">
               <h2>Andamento Mensile</h2>
               <table className="pdf-table">
@@ -1454,10 +1474,12 @@ export function CommessaDetailSheet({
                 </tbody>
               </table>
             </section>
+            </div>
           )}
 
-          {/* Fornitori */}
+          {/* ═══════════════ PAGINA 6: Ripartizione Fornitori ═══════════════ */}
           {data.supplierData.length > 0 && (
+            <div className="pdf-page">
             <section className="pdf-section pdf-full-width">
               <h2>Ripartizione Fornitori</h2>
               <table className="pdf-table">
@@ -1469,45 +1491,10 @@ export function CommessaDetailSheet({
                 </tbody>
               </table>
             </section>
+            </div>
           )}
 
-          {/* Stato Incassi / Pagamenti */}
-          <div className="pdf-table-grid">
-            <section className="pdf-section">
-              <h2>Stato Incassi (Vendite)</h2>
-              <table className="pdf-table"><tbody>
-                <tr><td>Incassato</td><td className="is-right is-positive">{formatCurrency(data.statusSales.pagata)}</td></tr>
-                <tr><td>Da incassare</td><td className="is-right is-negative">{formatCurrency(data.statusSales.nonPagata)}</td></tr>
-              </tbody></table>
-            </section>
-            <section className="pdf-section">
-              <h2>Stato Pagamenti (Acquisti)</h2>
-              <table className="pdf-table"><tbody>
-                <tr><td>Pagato</td><td className="is-right is-positive">{formatCurrency(data.statusPurchases.pagata)}</td></tr>
-                <tr><td>Da pagare</td><td className="is-right is-negative">{formatCurrency(data.statusPurchases.nonPagata)}</td></tr>
-              </tbody></table>
-            </section>
-          </div>
-
-          {/* Riepilogo Centri */}
-          <div className="pdf-table-grid">
-            <section className="pdf-section">
-              <h2>Riepilogo Centri di Ricavo</h2>
-              <table className="pdf-table">
-                <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
-                <tbody>{ricavoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
-              </table>
-            </section>
-            <section className="pdf-section">
-              <h2>Riepilogo Centri di Costo</h2>
-              <table className="pdf-table">
-                <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
-                <tbody>{costoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
-              </table>
-            </section>
-          </div>
-
-          {/* Elenco Vendite per Centro di Ricavo */}
+          {/* ═══════════════ PAGINA 7..N: Una pagina per ogni Centro di Ricavo ═══════════════ */}
           {(() => {
             const grouped = new Map<string, SaleInvoice[]>();
             data.linkedSales.forEach((s) => {
@@ -1517,7 +1504,8 @@ export function CommessaDetailSheet({
               grouped.get(label)!.push(s);
             });
             return Array.from(grouped.entries()).map(([centro, invoices]) => (
-              <section key={centro} className="pdf-section pdf-full-width">
+              <div key={centro} className="pdf-page">
+              <section className="pdf-section pdf-full-width">
                 <h2>Vendite — {centro}</h2>
                 <table className="pdf-table">
                   <thead><tr><th>N°</th><th>Data</th><th>Cliente</th><th>Descrizione</th><th>Stato</th><th className="is-right">Imponibile</th><th className="is-right">Totale</th></tr></thead>
@@ -1529,10 +1517,11 @@ export function CommessaDetailSheet({
                   </tbody>
                 </table>
               </section>
+              </div>
             ));
           })()}
 
-          {/* Elenco Acquisti per Centro di Costo */}
+          {/* ═══════════════ Pagine successive: Una pagina per ogni Centro di Costo ═══════════════ */}
           {(() => {
             const grouped = new Map<string, PurchaseInvoice[]>();
             data.linkedPurchases.forEach((p) => {
@@ -1542,7 +1531,8 @@ export function CommessaDetailSheet({
               grouped.get(label)!.push(p);
             });
             return Array.from(grouped.entries()).map(([centro, invoices]) => (
-              <section key={centro} className="pdf-section pdf-full-width">
+              <div key={centro} className="pdf-page">
+              <section className="pdf-section pdf-full-width">
                 <h2>Acquisti — {centro}</h2>
                 <table className="pdf-table">
                   <thead><tr><th>N°</th><th>Data</th><th>Fornitore</th><th>Descrizione</th><th>Stato</th><th className="is-right">Imponibile</th><th className="is-right">Totale</th></tr></thead>
@@ -1554,6 +1544,7 @@ export function CommessaDetailSheet({
                   </tbody>
                 </table>
               </section>
+              </div>
             ));
           })()}
         </div>
