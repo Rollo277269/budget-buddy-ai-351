@@ -23,7 +23,7 @@ interface MenuItem {
   icon: React.ElementType;
 }
 
-const defaultItems: MenuItem[] = [
+export const defaultItems: MenuItem[] = [
    { title: "Rubrica", url: "/", icon: LayoutDashboard },
   { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
   { title: "Vendite", url: "/vendite", icon: FileOutput },
