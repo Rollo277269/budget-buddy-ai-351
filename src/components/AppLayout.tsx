@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppSidebar, defaultItems as sidebarItems } from "@/components/AppSidebar";
 import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -54,20 +54,12 @@ function startWebVitalsWhenIdle() {
   else setTimeout(run, 2000);
 }
 
+const extraTitles: Record<string, string> = {
+  "/diagnostica": "Diagnostica Performance",
+};
 const pageTitles: Record<string, string> = {
-   "/": "Rubrica",
-  "/scadenzario": "Scadenzario",
-  "/vendite": "Vendite",
-  "/acquisti": "Acquisti",
-  "/schede-contabili": "Schede Contabili",
-  "/bilancio": "Bilancio",
-  "/banche": "Banche",
-  "/commesse": "Riepiloghi per CIG",
-  "/lista-commesse": "Commesse",
-  "/offerte": "Gare",
-  "/iva": "IVA",
-  "/strumenti": "Strumenti",
-  "/diagnostica": "Diagnostica Performance"
+  ...Object.fromEntries(sidebarItems.map((i) => [i.url, i.title])),
+  ...extraTitles,
 };
 
 function useDarkMode() {
