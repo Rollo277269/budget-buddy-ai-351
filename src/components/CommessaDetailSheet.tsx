@@ -2279,6 +2279,19 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
               </TableHeader>
               <TableBody>
                 {ordered.map((d, idx) => {
+                  if ((d as any).__placeholder) {
+                    return (
+                      <TableRow key={`pad-${idx}`} className="pointer-events-none">
+                        <TableCell className="px-1 w-[20px]">&nbsp;</TableCell>
+                        <TableCell className="text-xs">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="px-1">&nbsp;</TableCell>
+                      </TableRow>
+                    );
+                  }
                   const pct = total > 0 ? (d.value / total) * 100 : 0;
                   const isExpanded = expanded === d.name;
                   const groupInvoices = invoiceGroups.get(d.name) || [];
