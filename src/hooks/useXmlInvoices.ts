@@ -336,6 +336,53 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             invoiceKey = buildSalesXmlKey(match.anno, match.numero, match.suffisso);
             isMatched = true;
             alreadyMatchedKeys.add(invoiceKey);
+          } else if (xmlAnno && xmlNumero) {
+            // No match in fatture_vendita: auto-create the sale invoice from XML content
+            const suffisso = extractSuffisso(parsed.numero);
+            const candidateKey = buildSalesXmlKey(xmlAnno, xmlNumero, suffisso);
+            // Verify it really does not exist yet (race-safe check in DB)
+            const { data: existingSale } = await supabase
+              .from("fatture_vendita")
+              .select("id, anno, numero, suffisso")
+              .eq("anno", xmlAnno)
+              .eq("numero", xmlNumero) as any;
+            const dup = (existingSale || []).find((r: any) => (r.suffisso || "") === suffisso);
+            if (!dup) {
+              const imponibileTot = (parsed.riepilogoIVA || []).reduce((s, r) => s + (r.imponibile || 0), 0);
+              const impostaTot = (parsed.riepilogoIVA || []).reduce((s, r) => s + (r.imposta || 0), 0);
+              const isNC = isXmlCreditNote(parsed.tipoDocumento);
+              const descrizione = (parsed.linee || []).map(l => l.descrizione).filter(Boolean).slice(0, 3).join(" | ");
+              const scadenza = (parsed.pagamenti && parsed.pagamenti[0]?.dataScadenza) || "";
+              const segno = isNC ? -1 : 1;
+              const { error: createSaleErr } = await supabase
+                .from("fatture_vendita")
+                .insert({
+                  anno: xmlAnno,
+                  numero: xmlNumero,
+                  suffisso,
+                  data: parsed.data || "",
+                  cliente: parsed.cessionario.denominazione || "",
+                  partita_iva: parsed.cessionario.partitaIva || "",
+                  totale: segno * (parsed.importoTotale || 0),
+                  imponibile: segno * imponibileTot,
+                  imposta: segno * impostaTot,
+                  descrizione,
+                  cig: parsed.cig || "",
+                  cup: "",
+                  stato: "",
+                  scadenza,
+                  pagamento: parsed.pagamenti?.[0]?.modalita || "",
+                  tipo: isNC ? "Nota di credito" : "Fattura",
+                  righe: (parsed.linee || []) as any,
+                } as any);
+              if (createSaleErr) {
+                console.error("Auto-create sale invoice error:", createSaleErr);
+              } else {
+                invoiceKey = candidateKey;
+                isMatched = true;
+                alreadyMatchedKeys.add(invoiceKey);
+              }
+            }
           }
         } else {
           const purchaseMatch = findPurchaseMatch(
