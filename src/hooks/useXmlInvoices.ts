@@ -279,6 +279,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     let uploaded = 0;
     let matched = 0;
     let skipped = 0;
+    const autoCreated: { tipo: "vendita" | "acquisto"; anno: number; numero: number; suffisso?: string }[] = [];
     const total = files.length;
 
     // Track already-matched invoice keys to avoid double matching
@@ -374,7 +375,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
                   descrizione,
                   cig: parsed.cig || "",
                   cup: "",
-                  stato: "",
+                  stato: "Auto da XML",
                   scadenza,
                   pagamento: parsed.pagamenti?.[0]?.modalita || "",
                   tipo: isNC ? "Nota di credito" : "Fattura",
@@ -386,6 +387,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
                 invoiceKey = candidateKey;
                 isMatched = true;
                 alreadyMatchedKeys.add(invoiceKey);
+                autoCreated.push({ tipo: "vendita", anno: xmlAnno, numero: xmlNumero, suffisso });
               }
             }
           }
@@ -436,7 +438,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
                 descrizione,
                 cig: parsed.cig || "",
                 cup: "",
-                stato: "",
+                stato: "Auto da XML",
                 scadenza,
                 pagamento: parsed.pagamenti?.[0]?.modalita || "",
                 tipo: isNC ? "Nota di credito" : "Fattura",
@@ -449,6 +451,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
               matchedNumero = nextNumero;
               isMatched = true;
               alreadyMatchedKeys.add(invoiceKey);
+              autoCreated.push({ tipo: "acquisto", anno: xmlAnno, numero: nextNumero });
             }
           }
         }
@@ -506,9 +509,13 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     onProgress?.(total, total);
     const parts = [`${uploaded} XML caricati`, `${matched} associati`];
     if (skipped > 0) parts.push(`${skipped} già presenti`);
+    if (autoCreated.length > 0) {
+      const nums = autoCreated.map((a) => `${a.numero}${a.suffisso ? "/" + a.suffisso : ""}/${a.anno}`).join(", ");
+      parts.push(`${autoCreated.length} create da XML (prot. ${nums})`);
+    }
     toast.success(parts.join(", "));
     await fetchRecords();
-    return { uploaded, matched };
+    return { uploaded, matched, autoCreated };
   }, [invoices, fetchRecords, tipo, xmlRecords]);
 
   const deleteRecord = useCallback(async (id: string, storagePath: string) => {
