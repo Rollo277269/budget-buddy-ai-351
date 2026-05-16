@@ -54,6 +54,8 @@ import { XmlPickerSheet } from "@/components/XmlPickerSheet";
 import { XmlInvoiceRecord } from "@/hooks/useXmlInvoices";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
+import { exportFascicoloCommessa } from "@/lib/exportFascicolo";
+import { FolderArchive } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
   Legend, CartesianGrid, ComposedChart, Line, ReferenceLine,
@@ -498,6 +500,9 @@ export function CommessaDetailSheet({
     };
   }, [commessa, allSales, allPurchases, manualLinks, reconByInvoice, ricavoMap.map, costoMap.map, documentiAcquisto]);
 
+  const [exportingZip, setExportingZip] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
+
   if (!commessa || !data) return null;
 
   const availableSales = allSales.filter((s) => !data.allLinkedSaleKeys.has(invoiceKey(s.anno, s.numero)));
@@ -663,6 +668,51 @@ export function CommessaDetailSheet({
     window.print();
   };
 
+  const handleExportFascicolo = async () => {
+    if (exportingZip) return;
+    setExportingZip(true);
+    setExportProgress({ done: 0, total: 1, label: "Avvio…" });
+    const tid = toast.loading("Preparazione fascicolo…");
+    try {
+      // Use the broader set of expense PDFs linked by CIG (not only "Spesa commessa")
+      const extraDocsForZip = documentiAcquisto.filter(
+        (d) => d.cig && commessaCigsSet.has(d.cig)
+      );
+      await exportFascicoloCommessa({
+        commessa: {
+          numero: commessa.numero,
+          oggetto: commessa.oggetto,
+          cig: commessa.cig,
+          cigDerivato: commessa.cigDerivato,
+        },
+        linkedSales: data.linkedSales,
+        linkedPurchases: data.linkedPurchases,
+        ricavoMap: ricavoMap.map,
+        costoMap: costoMap.map,
+        centri,
+        extraDocs: extraDocsForZip,
+        xmlMapVendita,
+        xmlMapAcquisto,
+        fetchParsedVendita,
+        fetchParsedAcquisto,
+        onProgress: (done, total, label) => {
+          setExportProgress({ done, total, label });
+          toast.loading(
+            `Fascicolo: ${label || ""} (${done}/${total})`,
+            { id: tid }
+          );
+        },
+      });
+      toast.success("Fascicolo ZIP scaricato", { id: tid });
+    } catch (e: any) {
+      console.error("Errore export fascicolo:", e);
+      toast.error(`Errore durante l'export: ${e?.message || e}`, { id: tid });
+    } finally {
+      setExportingZip(false);
+      setExportProgress(null);
+    }
+  };
+
   return (
     <>
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); setPdfData(null); } }}>
@@ -682,6 +732,22 @@ export function CommessaDetailSheet({
               <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 no-print" title="Esporta report commessa in PDF">
                 <FileText className="h-3.5 w-3.5" />
                 Report
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportFascicolo}
+                disabled={exportingZip}
+                className="gap-1.5 no-print"
+                title="Esporta fascicolo ZIP con XML, PDF e CSV classificati per centro di costo/ricavo"
+              >
+                {exportingZip
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <FolderArchive className="h-3.5 w-3.5" />
+                }
+                {exportingZip
+                  ? (exportProgress ? `${exportProgress.done}/${exportProgress.total}` : "Esporto…")
+                  : "Esporta"}
               </Button>
               {isAdmin && onDeleteCommessa && commessa.cssrData?.id && (
                 <Button
