@@ -400,6 +400,51 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             matchedNumero = purchaseMatch.numero;
             isMatched = true;
             alreadyMatchedKeys.add(invoiceKey);
+          } else if (xmlAnno) {
+            // No match in fatture_acquisto: auto-create the purchase invoice from XML content.
+            // numero is an internal protocol number = max(numero)+1 for that year.
+            const { data: existingMax } = await supabase
+              .from("fatture_acquisto")
+              .select("numero")
+              .eq("anno", xmlAnno)
+              .order("numero", { ascending: false })
+              .limit(1);
+            const nextNumero = ((existingMax?.[0] as any)?.numero || 0) + 1;
+
+            const imponibileTot = (parsed.riepilogoIVA || []).reduce((s, r) => s + (r.imponibile || 0), 0);
+            const impostaTot = (parsed.riepilogoIVA || []).reduce((s, r) => s + (r.imposta || 0), 0);
+            const isNC = isXmlCreditNote(parsed.tipoDocumento);
+            const descrizione = (parsed.linee || []).map(l => l.descrizione).filter(Boolean).slice(0, 3).join(" | ");
+            const scadenza = (parsed.pagamenti && parsed.pagamenti[0]?.dataScadenza) || "";
+            const segno = isNC ? -1 : 1;
+            const { error: createPurchaseErr } = await supabase
+              .from("fatture_acquisto")
+              .insert({
+                anno: xmlAnno,
+                numero: nextNumero,
+                data: parsed.data || "",
+                fornitore: parsed.cedente.denominazione || "",
+                partita_iva: parsed.cedente.partitaIva || "",
+                totale: segno * (parsed.importoTotale || 0),
+                imponibile: segno * imponibileTot,
+                imposta: segno * impostaTot,
+                descrizione,
+                cig: parsed.cig || "",
+                cup: "",
+                stato: "",
+                scadenza,
+                pagamento: parsed.pagamenti?.[0]?.modalita || "",
+                tipo: isNC ? "Nota di credito" : "Fattura",
+              } as any);
+            if (createPurchaseErr) {
+              console.error("Auto-create purchase invoice error:", createPurchaseErr);
+            } else {
+              invoiceKey = `${xmlAnno}-${nextNumero}`;
+              matchedAnno = xmlAnno;
+              matchedNumero = nextNumero;
+              isMatched = true;
+              alreadyMatchedKeys.add(invoiceKey);
+            }
           }
         }
 
