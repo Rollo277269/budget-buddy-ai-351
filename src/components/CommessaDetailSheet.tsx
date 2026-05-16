@@ -2209,18 +2209,10 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
         const saldoIva = totalRicaviIva - totalCostiIva;
         const margine = totalRicaviImp > 0 ? (saldo / totalRicaviImp) * 100 : 0;
 
-        const orderedRicavo = ricavoOrder
-          ? [
-              ...ricavoOrder.map((n) => ricavoData.find((d) => d.name === n)).filter(Boolean) as typeof ricavoData,
-              ...ricavoData.filter((d) => !ricavoOrder.includes(d.name)),
-            ]
-          : ricavoData;
-        const orderedCosto = costoOrder
-          ? [
-              ...costoOrder.map((n) => costoData.find((d) => d.name === n)).filter(Boolean) as typeof costoData,
-              ...costoData.filter((d) => !costoOrder.includes(d.name)),
-            ]
-          : costoData;
+        // ── Allineamento orizzontale forzato (vedi alignCentriRows) ──
+        const alignedPair = alignCentriRows(ricavoData as any, costoData as any);
+        const orderedRicavo = alignedPair.ricavi as typeof ricavoData;
+        const orderedCosto = alignedPair.costi as typeof costoData;
 
         if (ricavoData.length > 0 && !ricavoOrder) {
           setTimeout(() => setRicavoOrder(ricavoData.map((d) => d.name)), 0);
