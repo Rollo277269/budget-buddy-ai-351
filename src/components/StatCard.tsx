@@ -12,7 +12,7 @@ const variantStyles = {
   income: "bg-income-bg border-income/20",
   expense: "bg-expense-bg border-expense/20",
   neutral: "bg-accent border-border",
-  balance: "bg-primary/5 border-primary/20",
+  balance: "bg-primary/5 border-primary/20 bg-slate-50",
 };
 
 const iconStyles = {
