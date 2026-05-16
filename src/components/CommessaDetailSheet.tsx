@@ -665,6 +665,54 @@ export function CommessaDetailSheet({
     window.print();
   };
 
+  const [exportingZip, setExportingZip] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
+
+  const handleExportFascicolo = async () => {
+    if (exportingZip) return;
+    setExportingZip(true);
+    setExportProgress({ done: 0, total: 1, label: "Avvio…" });
+    const tid = toast.loading("Preparazione fascicolo…");
+    try {
+      // Use the broader set of expense PDFs linked by CIG (not only "Spesa commessa")
+      const extraDocsForZip = documentiAcquisto.filter(
+        (d) => d.cig && commessaCigsSet.has(d.cig)
+      );
+      await exportFascicoloCommessa({
+        commessa: {
+          numero: commessa.numero,
+          oggetto: commessa.oggetto,
+          cig: commessa.cig,
+          cigDerivato: commessa.cigDerivato,
+        },
+        linkedSales: data.linkedSales,
+        linkedPurchases: data.linkedPurchases,
+        ricavoMap: ricavoMap.map,
+        costoMap: costoMap.map,
+        centri,
+        extraDocs: extraDocsForZip,
+        xmlMapVendita,
+        xmlMapAcquisto,
+        fetchParsedVendita,
+        fetchParsedAcquisto,
+        onProgress: (done, total, label) => {
+          setExportProgress({ done, total, label });
+          toast.loading(
+            `Fascicolo: ${label || ""} (${done}/${total})`,
+            { id: tid }
+          );
+        },
+      });
+      toast.success("Fascicolo ZIP scaricato", { id: tid });
+    } catch (e: any) {
+      console.error("Errore export fascicolo:", e);
+      toast.error(`Errore durante l'export: ${e?.message || e}`, { id: tid });
+    } finally {
+      setExportingZip(false);
+      setExportProgress(null);
+    }
+  };
+
   return (
     <>
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setAddMode(null); setSearchQuery(""); setPdfData(null); } }}>
