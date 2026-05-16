@@ -1352,8 +1352,8 @@ export function CommessaDetailSheet({
                 </div>
               )}
             </TabsContent>
-          </Tabs>
         </div>
+        </Tabs>
         </div>
 
         {/* Print-only professional report — must be direct child of DialogContent for CSS selectors */}
