@@ -1281,6 +1281,61 @@ export function CommessaDetailSheet({
             </div>
           </div>
 
+          {/* KPI Cards — stessa griglia visibile a video */}
+          <section className="pdf-section pdf-full-width pdf-kpi-section">
+            <div className="pdf-kpi-row">
+              <div className="pdf-kpi-card is-income">
+                <div className="pdf-kpi-label">Totale Vendite</div>
+                <div className="pdf-kpi-value">{formatCurrency(data.totalVenditeImponibile)}</div>
+                <div className="pdf-kpi-sub">Imp. • IVA incl. {formatCurrency(data.totalVendite)} • {data.linkedSales.length} fatture</div>
+              </div>
+              <div className="pdf-kpi-card is-expense">
+                <div className="pdf-kpi-label">Totale Acquisti</div>
+                <div className="pdf-kpi-value">{formatCurrency(data.totalAcquistiImponibile)}</div>
+                <div className="pdf-kpi-sub">Imp. • IVA incl. {formatCurrency(data.totalAcquisti)} • {data.linkedPurchases.length} fatture</div>
+              </div>
+              <div className={`pdf-kpi-card ${data.saldoImponibile >= 0 ? "is-income" : "is-expense"}`}>
+                <div className="pdf-kpi-label">Saldo</div>
+                <div className="pdf-kpi-value">{formatCurrency(data.saldoImponibile)}</div>
+                <div className="pdf-kpi-sub">{data.saldoImponibile >= 0 ? "Attivo" : "Passivo"}</div>
+              </div>
+              <div className={`pdf-kpi-card ${data.saldoIva >= 0 ? "is-expense" : "is-income"}`}>
+                <div className="pdf-kpi-label">Saldo IVA {data.saldoIva >= 0 ? "(a debito)" : "(a credito)"}</div>
+                <div className="pdf-kpi-value">{formatCurrency(Math.abs(data.saldoIva))}</div>
+                <div className="pdf-kpi-sub">{data.saldoIva >= 0 ? "Da versare" : "A credito"}</div>
+              </div>
+              <div className={`pdf-kpi-card ${data.margine >= 20 ? "is-income" : data.margine >= 0 ? "is-warn" : "is-expense"}`}>
+                <div className="pdf-kpi-label">Margine</div>
+                <div className="pdf-kpi-value">{data.margine.toFixed(1)}%</div>
+                <div className="pdf-kpi-sub">{data.margine >= 0 ? "Positivo" : "Negativo"}</div>
+              </div>
+              {data.importoContratto != null && !isNaN(data.importoContratto) && (
+                <div className="pdf-kpi-card is-primary">
+                  <div className="pdf-kpi-label">Importo Contratto</div>
+                  <div className="pdf-kpi-value">{formatCurrency(data.importoContratto)}</div>
+                  <div className="pdf-kpi-sub">{cssr?.stato || "—"}</div>
+                </div>
+              )}
+              {data.percentualeFatturato != null && (
+                <div className="pdf-kpi-card is-primary">
+                  <div className="pdf-kpi-label">Fatturato</div>
+                  <div className="pdf-kpi-value">{data.percentualeFatturato.toFixed(1)}%</div>
+                  <div className="pdf-kpi-sub">del contratto</div>
+                </div>
+              )}
+              <div className="pdf-kpi-card is-income">
+                <div className="pdf-kpi-label">Totale Incassato</div>
+                <div className="pdf-kpi-value">{formatCurrency(data.totalIncassato)}</div>
+                <div className="pdf-kpi-sub">{data.pctIncassato != null ? `${data.pctIncassato.toFixed(1)}% del fatturato vendite` : "—"}</div>
+              </div>
+              <div className="pdf-kpi-card is-expense">
+                <div className="pdf-kpi-label">Totale Pagato</div>
+                <div className="pdf-kpi-value">{formatCurrency(data.totalPagato)}</div>
+                <div className="pdf-kpi-sub">{data.pctPagato != null ? `${data.pctPagato.toFixed(1)}% del fatturato acquisti` : "—"}</div>
+              </div>
+            </div>
+          </section>
+
           {/* Dati Commessa */}
           {cssr && (
             <section className="pdf-section pdf-full-width">
