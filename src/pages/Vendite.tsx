@@ -284,9 +284,24 @@ const VenditePage = () => {
     if (files.length === 0) { toast.error("Seleziona file XML"); return; }
     setUploading(true);
     setUploadProgress({ done: 0, total: files.length });
-    await uploadXmlFiles(files, (done, total) => setUploadProgress({ done, total }));
+    const beforeCount = xmlRecordsRef.current.length;
+    const result = await uploadXmlFiles(files, (done, total) => setUploadProgress({ done, total }));
     setUploading(false);
     setUploadProgress(null);
+    if ((result?.uploaded ?? 0) > 0) {
+      setTimeout(() => {
+        if (xmlRecordsRef.current.length <= beforeCount) {
+          toast.warning("L'elenco XML non si è aggiornato", {
+            description: "Probabile cache locale obsoleta. Svuotala per ricaricare i dati.",
+            duration: 15000,
+            action: {
+              label: "Svuota cache",
+              onClick: async () => { await idbClearAll(); window.location.reload(); },
+            },
+          });
+        }
+      }, 4000);
+    }
   }, [uploadXmlFiles]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
