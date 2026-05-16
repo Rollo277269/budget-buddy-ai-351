@@ -191,21 +191,39 @@ export function DataTable<T extends Record<string, any>>({
 
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return filtered;
+    // Normalize various date string formats to YYYYMMDD for safe comparison.
+    // Supports: dd/mm/yyyy, dd-mm-yyyy, yyyy-mm-dd, yyyy/mm/dd (and 2-digit years → 20xx).
+    const toSortableDate = (s: string): string | null => {
+      if (!s) return null;
+      // ISO: yyyy-mm-dd or yyyy/mm/dd
+      const iso = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+      if (iso) return `${iso[1]}${iso[2].padStart(2, "0")}${iso[3].padStart(2, "0")}`;
+      // Italian: dd/mm/yyyy or dd-mm-yyyy (or 2-digit year)
+      const it = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (it) {
+        let y = parseInt(it[3]);
+        if (y < 100) y += 2000;
+        const m = parseInt(it[2]);
+        const d = parseInt(it[1]);
+        if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+        return `${y}${String(m).padStart(2, "0")}${String(d).padStart(2, "0")}`;
+      }
+      return null;
+    };
     return [...filtered].sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
       if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av;
       const as = String(av ?? "");
       const bs = String(bv ?? "");
-      // Handle dd/mm/yyyy date strings
-      const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-      const aMatch = as.match(dateRegex);
-      const bMatch = bs.match(dateRegex);
-      if (aMatch && bMatch) {
-        const aDate = `${aMatch[3]}${aMatch[2].padStart(2, "0")}${aMatch[1].padStart(2, "0")}`;
-        const bDate = `${bMatch[3]}${bMatch[2].padStart(2, "0")}${bMatch[1].padStart(2, "0")}`;
+      // Handle mixed date string formats (dd/mm/yyyy, yyyy-mm-dd, etc.)
+      const aDate = toSortableDate(as);
+      const bDate = toSortableDate(bs);
+      if (aDate && bDate) {
         return sortDir === "asc" ? aDate.localeCompare(bDate) : bDate.localeCompare(aDate);
       }
+      if (aDate && !bDate) return sortDir === "asc" ? 1 : -1;
+      if (!aDate && bDate) return sortDir === "asc" ? -1 : 1;
       return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
     });
   }, [filtered, sortKey, sortDir]);
