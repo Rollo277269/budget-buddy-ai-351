@@ -84,7 +84,7 @@ const OffertePage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+     <div className="p-6 space-y-6 bg-slate-500">
       <div>
         
         <p className="text-sm text-muted-foreground">

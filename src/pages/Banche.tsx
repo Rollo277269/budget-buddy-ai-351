@@ -681,7 +681,7 @@ const BanchePage = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 relative min-h-full" onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+     <div className="p-6 space-y-6 relative min-h-full bg-slate-500" onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
       {isDragging &&
       <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-xl backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 text-primary">
