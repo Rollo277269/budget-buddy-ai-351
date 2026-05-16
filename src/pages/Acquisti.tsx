@@ -217,10 +217,14 @@ const AcquistiPage = () => {
     if (files.length === 0) {toast.error("Seleziona file XML");return;}
     setUploading(true);
     setUploadProgress({ done: 0, total: files.length });
-    await uploadXmlFiles(files, (done, total) => setUploadProgress({ done, total }));
+    const result = await uploadXmlFiles(files, (done, total) => setUploadProgress({ done, total }));
     setUploading(false);
     setUploadProgress(null);
-  }, [uploadXmlFiles]);
+    if ((result?.uploaded ?? 0) > 0) {
+      // XML upload may have auto-created new purchase invoices: refresh the list
+      try { await refreshInvoices(); } catch {}
+    }
+  }, [uploadXmlFiles, refreshInvoices]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     await processXmlFiles(Array.from(e.target.files || []));
