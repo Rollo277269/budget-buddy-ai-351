@@ -968,7 +968,7 @@ const BanchePage = () => {
                     })()}
 
                     {/* Progress bar */}
-                    <div className="px-4 pt-3 pb-1">
+                     <div className="px-4 pt-3 pb-1 bg-slate-500">
                       <Progress value={percentuale} className="h-2" />
                     </div>
 
