@@ -678,6 +678,17 @@ export function CommessaDetailSheet({
       const extraDocsForZip = documentiAcquisto.filter(
         (d) => d.cig && commessaCigsSet.has(d.cig)
       );
+      // Genera il PDF del report (stesso del bottone "Report") da includere nello ZIP
+      toast.loading("Generazione PDF report…", { id: tid });
+      let reportPdfBlob: Blob | null = null;
+      try {
+        const { generateCommessaReportPdfBlob } = await import("@/lib/generateCommessaReportPdf");
+        reportPdfBlob = await generateCommessaReportPdfBlob((d, t, label) => {
+          toast.loading(`Report PDF: ${label || ""} (${d}/${t})`, { id: tid });
+        });
+      } catch (e) {
+        console.warn("Generazione PDF report fallita, proseguo senza:", e);
+      }
       await exportFascicoloCommessa({
         commessa: {
           numero: commessa.numero,
@@ -695,6 +706,7 @@ export function CommessaDetailSheet({
         xmlMapAcquisto,
         fetchParsedVendita,
         fetchParsedAcquisto,
+        reportPdfBlob,
         onProgress: (done, total, label) => {
           setExportProgress({ done, total, label });
           toast.loading(

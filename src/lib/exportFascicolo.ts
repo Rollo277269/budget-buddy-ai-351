@@ -61,6 +61,8 @@ export interface ExportFascicoloArgs {
   xmlMapAcquisto: Map<string, XmlInvoiceRecord>;
   fetchParsedVendita: (id: string) => Promise<any>;
   fetchParsedAcquisto: (id: string) => Promise<any>;
+  /** PDF del report commessa (stesso generato dal bottone "Report"). Verrà inserito nella root del fascicolo. */
+  reportPdfBlob?: Blob | null;
   onProgress?: (done: number, total: number, label?: string) => void;
 }
 
@@ -74,7 +76,7 @@ export async function exportFascicoloCommessa(args: ExportFascicoloArgs): Promis
   const {
     commessa, linkedSales, linkedPurchases, ricavoMap, costoMap,
     centri, extraDocs, xmlMapVendita, xmlMapAcquisto,
-    fetchParsedVendita, fetchParsedAcquisto, onProgress,
+    fetchParsedVendita, fetchParsedAcquisto, reportPdfBlob, onProgress,
   } = args;
 
   const zip = new JSZip();
@@ -309,6 +311,12 @@ export async function exportFascicoloCommessa(args: ExportFascicoloArgs): Promis
     `Saldo:         ${formatCurrency(totRicavi - totCosti)}`,
   ].join("\r\n");
   root.file("LEGGIMI.txt", readme);
+
+  // ── 6.b Report PDF (stesso del bottone "Report") ──
+  if (reportPdfBlob) {
+    const buf = await reportPdfBlob.arrayBuffer();
+    root.file(`Report_Commessa_${safeName(String(commessa.numero))}.pdf`, buf);
+  }
 
   tick("Generazione ZIP");
 
