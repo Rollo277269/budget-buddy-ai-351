@@ -207,13 +207,24 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     if (xmlCache[tipo] && !force) return xmlCache[tipo]!;
     if (xmlInflight[tipo] && !force) return xmlInflight[tipo]!;
     xmlInflight[tipo] = (async () => {
-      const { data, error } = await supabase
-        .from("fatture_xml" as any)
-        .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at, numero_documento")
-        .eq("tipo", tipo)
-        .order("created_at", { ascending: false });
-      if (error) { console.error("Error fetching XML records:", error); xmlInflight[tipo] = undefined; return xmlCache[tipo] ?? []; }
-      xmlCache[tipo] = (data || []).map((r: any) => ({ ...r, parsed_data: null, numero_documento: r.numero_documento || "" })) as unknown as XmlInvoiceRecord[];
+      // Paginated fetch via .range() to bypass Supabase default 1000-row limit
+      const PAGE = 1000;
+      const all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("fatture_xml" as any)
+          .select("id, file_name, storage_path, anno, numero, invoice_key, cedente_denominazione, cessionario_denominazione, data_fattura, importo_totale, matched, tipo, created_at, numero_documento")
+          .eq("tipo", tipo)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) { console.error("Error fetching XML records:", error); xmlInflight[tipo] = undefined; return xmlCache[tipo] ?? []; }
+        const batch = data || [];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
+      xmlCache[tipo] = all.map((r: any) => ({ ...r, parsed_data: null, numero_documento: r.numero_documento || "" })) as unknown as XmlInvoiceRecord[];
       xmlInflight[tipo] = undefined;
       (xmlSubs[tipo] ||= new Set()).forEach((s) => s(xmlCache[tipo]!));
       return xmlCache[tipo]!;
