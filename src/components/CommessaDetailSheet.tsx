@@ -733,6 +733,22 @@ export function CommessaDetailSheet({
                 <FileText className="h-3.5 w-3.5" />
                 Report
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportFascicolo}
+                disabled={exportingZip}
+                className="gap-1.5 no-print"
+                title="Esporta fascicolo ZIP con XML, PDF e CSV classificati per centro di costo/ricavo"
+              >
+                {exportingZip
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <FolderArchive className="h-3.5 w-3.5" />
+                }
+                {exportingZip
+                  ? (exportProgress ? `${exportProgress.done}/${exportProgress.total}` : "Esporto…")
+                  : "Esporta"}
+              </Button>
               {isAdmin && onDeleteCommessa && commessa.cssrData?.id && (
                 <Button
                   variant="destructive"
