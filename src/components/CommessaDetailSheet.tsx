@@ -246,7 +246,7 @@ export function CommessaDetailSheet({
 }: CommessaDetailSheetProps) {
   const [addMode, setAddMode] = useState<"vendita" | "acquisto" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [tabOrder, setTabOrder] = useState(["analisi", "vendite", "acquisti", "dati"]);
+  const [tabOrder, setTabOrder] = useState(["analisi", "ricavi-costi", "vendite", "acquisti", "dati"]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [pdfData, setPdfData] = useState<{ base64: string; fileName: string } | null>(null);
   const [editingExpense, setEditingExpense] = useState<PurchaseInvoice | null>(null);
@@ -891,6 +891,7 @@ export function CommessaDetailSheet({
               {tabOrder.map((tab, idx) => {
                 const tabMeta: Record<string, { icon: typeof BarChart3; label: string }> = {
                   analisi: { icon: BarChart3, label: "Analisi" },
+                  "ricavi-costi": { icon: PieChart, label: "Ricavi/Costi" },
                   vendite: { icon: ArrowUpRight, label: `Vendite (${data.linkedSales.length})` },
                   acquisti: { icon: ArrowDownRight, label: `Acquisti (${data.linkedPurchases.length})` },
                   dati: { icon: FileText, label: "Dati Commessa" },
@@ -1129,7 +1130,10 @@ export function CommessaDetailSheet({
                 </div>
               )}
 
-              {/* Centro Ricavo/Costo breakdown */}
+            </TabsContent>
+
+            {/* ── TAB: Ricavi/Costi ── */}
+            <TabsContent value="ricavi-costi" className="space-y-4">
               <CentroBreakdownCharts
                 linkedSales={data.linkedSales}
                 linkedPurchases={data.linkedPurchases}
