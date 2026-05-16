@@ -320,7 +320,7 @@ export default function BilancioPage() {
   const now = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="p-6 space-y-6 overflow-auto bg-slate-300">
+    <div className="p-6 space-y-6 overflow-auto bg-gray-500">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
