@@ -96,6 +96,108 @@ function saleImponibile(s: SaleInvoice): number {
   return isSaleCreditNote(s) ? -Math.abs(s.imponibile || 0) : (s.imponibile || 0);
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+ * Allineamento orizzontale Centri Ricavo ↔ Centri Costo
+ * Regola fissa hardcoded (codice → riga):
+ *   RC1 ↔ CC1
+ *   RC3 ↔ CC4
+ *   RC2 ↔ tutti gli altri costi (CC ≠ CC1, CC4)
+ *   RG2 ↔ da solo (nessun costo)
+ * Riempie con righe vuote (__placeholder) per pareggiare l'altezza.
+ * ────────────────────────────────────────────────────────────────────── */
+function getCentroCodice(name: string): string {
+  return (name || "").trim().split(/\s|-/)[0]?.toUpperCase() || "";
+}
+
+export interface AlignedCentroRow {
+  name: string;
+  value: number;
+  imponibile?: number;
+  iva?: number;
+  totale?: number;
+  __placeholder?: boolean;
+  [k: string]: any;
+}
+
+function placeholderRow(key: string): AlignedCentroRow {
+  return { name: `__pad_${key}`, value: 0, imponibile: 0, iva: 0, totale: 0, __placeholder: true };
+}
+
+export function alignCentriRows<T extends { name: string }>(
+  ricavi: T[],
+  costi: T[]
+): { ricavi: (T | AlignedCentroRow)[]; costi: (T | AlignedCentroRow)[] } {
+  const rMap = new Map<string, T>();
+  ricavi.forEach((r) => rMap.set(getCentroCodice(r.name), r));
+  const cMap = new Map<string, T>();
+  costi.forEach((c) => cMap.set(getCentroCodice(c.name), c));
+
+  const take = (map: Map<string, T>, code: string): T | null => {
+    const v = map.get(code);
+    if (v) { map.delete(code); return v; }
+    return null;
+  };
+
+  const rOut: (T | AlignedCentroRow)[] = [];
+  const cOut: (T | AlignedCentroRow)[] = [];
+
+  // Riga 1: RC1 ↔ CC1
+  const rc1 = take(rMap, "RC1");
+  const cc1 = take(cMap, "CC1");
+  if (rc1 || cc1) {
+    rOut.push(rc1 || placeholderRow("rc1") as any);
+    cOut.push(cc1 || placeholderRow("cc1") as any);
+  }
+
+  // Riga 2: RC3 ↔ CC4
+  const rc3 = take(rMap, "RC3");
+  const cc4 = take(cMap, "CC4");
+  if (rc3 || cc4) {
+    rOut.push(rc3 || placeholderRow("rc3") as any);
+    cOut.push(cc4 || placeholderRow("cc4") as any);
+  }
+
+  // Riga 3+: RC2 ↔ tutti gli altri costi (CC* rimanenti)
+  const rc2 = take(rMap, "RC2");
+  const altriCosti = Array.from(cMap.values()).filter((c) =>
+    getCentroCodice((c as any).name).startsWith("CC")
+  );
+  altriCosti.forEach((c) => cMap.delete(getCentroCodice((c as any).name)));
+
+  if (rc2 || altriCosti.length > 0) {
+    rOut.push(rc2 || placeholderRow("rc2") as any);
+    cOut.push(altriCosti[0] || placeholderRow("cc_other_0") as any);
+    for (let i = 1; i < altriCosti.length; i++) {
+      rOut.push(placeholderRow(`rc2_pad_${i}`) as any);
+      cOut.push(altriCosti[i]);
+    }
+  }
+
+  // Righe finali: ricavi extra non mappati (es. nuovi codici), ognuno con costo vuoto
+  const ricaviExtra = Array.from(rMap.values()).filter((r) => getCentroCodice((r as any).name) !== "RG2");
+  ricaviExtra.forEach((r) => rMap.delete(getCentroCodice((r as any).name)));
+  for (const r of ricaviExtra) {
+    rOut.push(r);
+    cOut.push(placeholderRow(`r_extra_${getCentroCodice((r as any).name)}`) as any);
+  }
+
+  // Costi residui non CC* (es. altri prefissi)
+  const costiResidui = Array.from(cMap.values());
+  for (const c of costiResidui) {
+    rOut.push(placeholderRow(`c_residuo_${getCentroCodice((c as any).name)}`) as any);
+    cOut.push(c);
+  }
+
+  // RG2 da solo, in fondo
+  const rg2 = take(rMap, "RG2");
+  if (rg2) {
+    rOut.push(rg2);
+    cOut.push(placeholderRow("rg2_alone") as any);
+  }
+
+  return { ricavi: rOut, costi: cOut };
+}
+
 interface Commessa {
   numero: string | number;
   oggetto: string;
@@ -1493,22 +1595,37 @@ export function CommessaDetailSheet({
                 )}
                 </div>
                 {/* Riepilogo Centri */}
-                <div className="pdf-table-grid">
-                  <section className="pdf-section">
-                    <h2>Riepilogo Centri di Ricavo</h2>
-                    <table className="pdf-table">
-                      <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
-                      <tbody>{ricavoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
-                    </table>
-                  </section>
-                  <section className="pdf-section">
-                    <h2>Riepilogo Centri di Costo</h2>
-                    <table className="pdf-table">
-                      <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
-                      <tbody>{costoRows.map((r: any) => (<tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>))}</tbody>
-                    </table>
-                  </section>
-                </div>
+                {(() => {
+                  const aligned = alignCentriRows(ricavoRows as any, costoRows as any);
+                  const emptyCell = <td className="is-right">&nbsp;</td>;
+                  const emptyName = <td>&nbsp;</td>;
+                  return (
+                    <div className="pdf-table-grid">
+                      <section className="pdf-section">
+                        <h2>Riepilogo Centri di Ricavo</h2>
+                        <table className="pdf-table">
+                          <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                          <tbody>{aligned.ricavi.map((r: any, i) => r.__placeholder ? (
+                            <tr key={`pad-r-${i}`}>{emptyName}{emptyCell}{emptyCell}{emptyCell}{emptyCell}</tr>
+                          ) : (
+                            <tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalRicaviPrint > 0 ? ((r.value / totalRicaviPrint) * 100).toFixed(1) : "0.0"}%</td></tr>
+                          ))}</tbody>
+                        </table>
+                      </section>
+                      <section className="pdf-section">
+                        <h2>Riepilogo Centri di Costo</h2>
+                        <table className="pdf-table">
+                          <thead><tr><th>Centro</th><th className="is-right">Imponibile</th><th className="is-right">IVA</th><th className="is-right">Totale</th><th className="is-right">%</th></tr></thead>
+                          <tbody>{aligned.costi.map((r: any, i) => r.__placeholder ? (
+                            <tr key={`pad-c-${i}`}>{emptyName}{emptyCell}{emptyCell}{emptyCell}{emptyCell}</tr>
+                          ) : (
+                            <tr key={r.name}><td>{r.name}</td><td className="is-right">{formatCurrency(r.imponibile ?? r.value)}</td><td className="is-right">{formatCurrency(r.iva ?? 0)}</td><td className="is-right">{formatCurrency(r.totale ?? r.value)}</td><td className="is-right">{totalCostiPrint > 0 ? ((r.value / totalCostiPrint) * 100).toFixed(1) : "0.0"}%</td></tr>
+                          ))}</tbody>
+                        </table>
+                      </section>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -2092,18 +2209,10 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
         const saldoIva = totalRicaviIva - totalCostiIva;
         const margine = totalRicaviImp > 0 ? (saldo / totalRicaviImp) * 100 : 0;
 
-        const orderedRicavo = ricavoOrder
-          ? [
-              ...ricavoOrder.map((n) => ricavoData.find((d) => d.name === n)).filter(Boolean) as typeof ricavoData,
-              ...ricavoData.filter((d) => !ricavoOrder.includes(d.name)),
-            ]
-          : ricavoData;
-        const orderedCosto = costoOrder
-          ? [
-              ...costoOrder.map((n) => costoData.find((d) => d.name === n)).filter(Boolean) as typeof costoData,
-              ...costoData.filter((d) => !costoOrder.includes(d.name)),
-            ]
-          : costoData;
+        // ── Allineamento orizzontale forzato (vedi alignCentriRows) ──
+        const alignedPair = alignCentriRows(ricavoData as any, costoData as any);
+        const orderedRicavo = alignedPair.ricavi as typeof ricavoData;
+        const orderedCosto = alignedPair.costi as typeof costoData;
 
         if (ricavoData.length > 0 && !ricavoOrder) {
           setTimeout(() => setRicavoOrder(ricavoData.map((d) => d.name)), 0);
@@ -2170,6 +2279,19 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
               </TableHeader>
               <TableBody>
                 {ordered.map((d, idx) => {
+                  if ((d as any).__placeholder) {
+                    return (
+                      <TableRow key={`pad-${idx}`} className="pointer-events-none">
+                        <TableCell className="px-1 w-[20px]">&nbsp;</TableCell>
+                        <TableCell className="text-xs">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="text-xs text-right">&nbsp;</TableCell>
+                        <TableCell className="px-1">&nbsp;</TableCell>
+                      </TableRow>
+                    );
+                  }
                   const pct = total > 0 ? (d.value / total) * 100 : 0;
                   const isExpanded = expanded === d.name;
                   const groupInvoices = invoiceGroups.get(d.name) || [];
