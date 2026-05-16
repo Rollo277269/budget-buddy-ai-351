@@ -182,6 +182,8 @@ const VenditePage = () => {
     return () => { cancelled = true; };
   }, [sales]);
   const { xmlRecords, xmlMap, uploadXmlFiles, deleteRecord, manualMatch, rematchAll, removeDuplicates, fetchParsedData, findXml, hasXml } = useXmlInvoices(allSales, "vendita");
+  const xmlRecordsRef = useRef(xmlRecords);
+  useEffect(() => { xmlRecordsRef.current = xmlRecords; }, [xmlRecords]);
 
   const [xmlFilterUnmatched, setXmlFilterUnmatched] = useState(false);
 
