@@ -902,7 +902,7 @@ function ExportImportSection() {
 
 const StrumentiPage = () => {
   return (
-    <div className="p-6 space-y-6 bg-gray-500">
+    <div className="p-6 space-y-6 bg-zinc-200">
 
       <Tabs defaultValue="conti" className="space-y-4">
         <TabsList className="grid w-full grid-cols-6 max-w-4xl">

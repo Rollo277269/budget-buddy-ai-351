@@ -90,7 +90,7 @@ const Index = () => {
 
   return (
     <div>
-      <div className="p-6 space-y-6 bg-gray-500">
+      <div className="p-6 space-y-6 bg-zinc-200">
         {/* Filters */}
         <div className="flex items-center justify-between gap-4 no-print">
           <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
