@@ -653,6 +653,9 @@ export function CommessaDetailSheet({
   const saldoPrint = totalRicaviPrint - totalCostiPrint;
   const marginePrint = totalRicaviPrint > 0 ? (saldoPrint / totalRicaviPrint) * 100 : 0;
 
+  const [exportingZip, setExportingZip] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
+
   const handleExportPdf = () => {
     document.body.classList.add("print-report", "print-report-dialog");
 
@@ -664,9 +667,6 @@ export function CommessaDetailSheet({
     window.addEventListener("afterprint", cleanup);
     window.print();
   };
-
-  const [exportingZip, setExportingZip] = useState(false);
-  const [exportProgress, setExportProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
 
   const handleExportFascicolo = async () => {
     if (exportingZip) return;
