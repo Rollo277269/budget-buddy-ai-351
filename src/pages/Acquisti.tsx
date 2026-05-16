@@ -43,6 +43,22 @@ function formatCreditAmount(value: number, isCreditNote: boolean): string {
   return isCreditNote ? `- ${formatted}` : formatted;
 }
 
+/** Normalize various date string formats to dd/mm/yyyy for display. */
+function normalizeDateDisplay(s: string | null | undefined): string {
+  if (!s) return "";
+  // ISO: yyyy-mm-dd (optionally with time)
+  const iso = String(s).match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (iso) return `${iso[3].padStart(2, "0")}/${iso[2].padStart(2, "0")}/${iso[1]}`;
+  // Italian: dd/mm/yyyy or dd-mm-yyyy (optionally 2-digit year)
+  const it = String(s).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (it) {
+    let y = parseInt(it[3]);
+    if (y < 100) y += 2000;
+    return `${it[1].padStart(2, "0")}/${it[2].padStart(2, "0")}/${y}`;
+  }
+  return String(s);
+}
+
 function StatusBadge({ stato }: {stato: string;}) {
   const s = stato.toLowerCase();
   if (s.includes("scadut"))
