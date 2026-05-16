@@ -43,6 +43,22 @@ function formatCreditAmount(value: number, isCreditNote: boolean): string {
   return isCreditNote ? `- ${formatted}` : formatted;
 }
 
+/** Normalize various date string formats to dd/mm/yyyy for display. */
+function normalizeDateDisplay(s: string | null | undefined): string {
+  if (!s) return "";
+  // ISO: yyyy-mm-dd (optionally with time)
+  const iso = String(s).match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (iso) return `${iso[3].padStart(2, "0")}/${iso[2].padStart(2, "0")}/${iso[1]}`;
+  // Italian: dd/mm/yyyy or dd-mm-yyyy (optionally 2-digit year)
+  const it = String(s).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (it) {
+    let y = parseInt(it[3]);
+    if (y < 100) y += 2000;
+    return `${it[1].padStart(2, "0")}/${it[2].padStart(2, "0")}/${y}`;
+  }
+  return String(s);
+}
+
 function StatusBadge({ stato }: {stato: string;}) {
   const s = stato.toLowerCase();
   if (s.includes("scadut"))
@@ -609,7 +625,7 @@ const AcquistiPage = () => {
       const numDoc = xml?.numero_documento;
       return numDoc ? <span className="font-mono text-xs text-primary">{numDoc}</span> : <span className="text-muted-foreground text-[11px]">—</span>;
     }, sortable: false },
-    { key: "data", label: "Data", render: (r) => <span className="text-xs">{r.data}</span>, sortable: true },
+    { key: "data", label: "Data", render: (r) => <span className="text-xs">{normalizeDateDisplay(r.data)}</span>, sortable: true },
     { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
     { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
     { key: "cig", label: "CIG", render: (r) => {
