@@ -24,7 +24,7 @@ interface MenuItem {
 }
 
 export const defaultItems: MenuItem[] = [
-   { title: "Rubrica", url: "/", icon: LayoutDashboard },
+  { title: "Cruscotto", url: "/", icon: LayoutDashboard },
   { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
   { title: "Vendite", url: "/vendite", icon: FileOutput },
   { title: "Acquisti", url: "/acquisti", icon: FileInput },
