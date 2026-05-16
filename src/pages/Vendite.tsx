@@ -73,19 +73,29 @@ function StatusBadge({ stato, paid, totale }: { stato: string; paid?: number; to
 
 const VenditePage = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { sales, allSales, allPurchases, loading, filters, setFilters, filterOptions, refresh: refreshInvoices } = useInvoiceData();
 
-  // Read centroRicavo from URL on mount
+  // Read centroRicavo/anno from URL only on first mount, then clear them
+  // so that resetting filters works (the URL params would otherwise re-apply).
+  const urlParamsApplied = useRef(false);
   useEffect(() => {
+    if (urlParamsApplied.current) return;
+    urlParamsApplied.current = true;
     const cr = searchParams.get("centroRicavo");
     const anno = searchParams.get("anno");
-    setFilters((f) => ({
-      ...f,
-      ...(cr ? { centroRicavo: cr } : {}),
-      ...(anno ? { anno } : {}),
-    }));
-  }, [searchParams, setFilters]);
+    if (cr || anno) {
+      setFilters((f) => ({
+        ...f,
+        ...(cr ? { centroRicavo: cr } : {}),
+        ...(anno ? { anno } : {}),
+      }));
+      const next = new URLSearchParams(searchParams);
+      next.delete("centroRicavo");
+      next.delete("anno");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setFilters, setSearchParams]);
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
   const [selectedCliente, setSelectedCliente] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
