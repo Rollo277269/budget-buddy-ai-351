@@ -1399,64 +1399,50 @@ export function CommessaDetailSheet({
           </div>
           </div>
 
-          {/* ═══════════════ PAGINA 2: Grafico andamento vendite/acquisti ═══════════════ */}
+          {/* ═══════════════ PAGINA 2: Grafici Recharts Vendite/Acquisti + Incassi/Pagamenti ═══════════════ */}
           {data.monthlyData.length > 0 && (() => {
-            const maxMonth = Math.max(...data.monthlyData.map(m => Math.max(m.vendite, m.acquisti)), 1);
+            const allValues = data.monthlyData.flatMap(m => [
+              m.vendite, m.acquisti, m.saldo,
+              m.incassato, m.pagato, m.saldoCassa,
+            ]);
+            const sharedMin = Math.min(0, ...allValues);
+            const sharedMax = Math.max(0, ...allValues);
+            const sharedDomain: [number, number] = [sharedMin, sharedMax];
+            const chartWidth = 540;
+            const chartHeight = 340;
             return (
               <div className="pdf-page">
-              <section className="pdf-section pdf-full-width">
-                <h2>Grafico Andamento mensile Vendite/Acquisti</h2>
-                <div className="pdf-bar-chart">
-                  {data.monthlyData.map((m) => (
-                    <div key={m.mese} className="pdf-bar-row">
-                      <span className="pdf-bar-label">{m.mese}</span>
-                      <div className="pdf-bar-tracks">
-                        <div className="pdf-bar is-positive" style={{ width: `${(m.vendite / maxMonth) * 100}%` }}>
-                          <span className="pdf-bar-value">{formatCurrency(m.vendite)}</span>
-                        </div>
-                        <div className="pdf-bar is-negative" style={{ width: `${(m.acquisti / maxMonth) * 100}%` }}>
-                          <span className="pdf-bar-value">{formatCurrency(m.acquisti)}</span>
-                        </div>
-                      </div>
+                <section className="pdf-section pdf-full-width">
+                  <h2>Andamento mensile</h2>
+                  <div className="pdf-charts-grid">
+                    <div className="pdf-chart-card">
+                      <h3>Vendite / Acquisti</h3>
+                      <ComposedChart width={chartWidth} height={chartHeight} data={data.monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="mese" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={sharedDomain} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={0} stroke="#000" strokeWidth={1.5} />
+                        <Bar dataKey="vendite" name="Vendite" fill="#15803d" maxBarSize={18} />
+                        <Bar dataKey="acquisti" name="Acquisti" fill="#dc2626" maxBarSize={18} />
+                        <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#1e3a5f" strokeWidth={2} dot={{ r: 2 }} />
+                      </ComposedChart>
                     </div>
-                  ))}
-                  <div className="pdf-bar-legend">
-                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive"></span>Vendite</span>
-                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative"></span>Acquisti</span>
-                  </div>
-                </div>
-              </section>
-              </div>
-            );
-          })()}
-
-          {/* ═══════════════ PAGINA 3: Grafico andamento incassi/pagamenti ═══════════════ */}
-          {data.monthlyData.length > 0 && (() => {
-            const maxPayment = Math.max(...data.monthlyData.map(m => Math.max(m.incassato, m.pagato)), 1);
-            return (
-              <div className="pdf-page">
-              <section className="pdf-section pdf-full-width">
-                <h2>Grafico Andamento mensile Incassi/Pagamenti</h2>
-                <div className="pdf-bar-chart">
-                  {data.monthlyData.map((m) => (
-                    <div key={m.mese} className="pdf-bar-row">
-                      <span className="pdf-bar-label">{m.mese}</span>
-                      <div className="pdf-bar-tracks">
-                        <div className="pdf-bar is-positive" style={{ width: `${(m.incassato / maxPayment) * 100}%` }}>
-                          <span className="pdf-bar-value">{formatCurrency(m.incassato)}</span>
-                        </div>
-                        <div className="pdf-bar is-negative" style={{ width: `${(m.pagato / maxPayment) * 100}%` }}>
-                          <span className="pdf-bar-value">{formatCurrency(m.pagato)}</span>
-                        </div>
-                      </div>
+                    <div className="pdf-chart-card">
+                      <h3>Incassi / Pagamenti</h3>
+                      <ComposedChart width={chartWidth} height={chartHeight} data={data.monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="mese" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={sharedDomain} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={0} stroke="#000" strokeWidth={1.5} />
+                        <Bar dataKey="incassato" name="Incassato" fill="#15803d" maxBarSize={18} />
+                        <Bar dataKey="pagato" name="Pagato" fill="#dc2626" maxBarSize={18} />
+                        <Line type="monotone" dataKey="saldoCassa" name="Saldo Cassa" stroke="#1e3a5f" strokeWidth={2} dot={{ r: 2 }} />
+                      </ComposedChart>
                     </div>
-                  ))}
-                  <div className="pdf-bar-legend">
-                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-positive"></span>Incassato</span>
-                    <span className="pdf-legend-item"><span className="pdf-legend-swatch is-negative"></span>Pagato</span>
                   </div>
-                </div>
-              </section>
+                </section>
               </div>
             );
           })()}
