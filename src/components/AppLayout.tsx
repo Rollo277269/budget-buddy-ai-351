@@ -55,7 +55,7 @@ function startWebVitalsWhenIdle() {
 }
 
 const pageTitles: Record<string, string> = {
-  "/": "Cruscotto",
+   "/": "Rubrica",
   "/scadenzario": "Scadenzario",
   "/vendite": "Vendite",
   "/acquisti": "Acquisti",
@@ -134,7 +134,7 @@ function SidebarHoverWrapper({ children, locked }: { children: React.ReactNode; 
 
 export function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
-  const title = pageTitles[location.pathname] || "Cruscotto";
+   const title = pageTitles[location.pathname] || "Rubrica";
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");

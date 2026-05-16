@@ -345,12 +345,12 @@ export function RitaAssistant() {
 
 function getPageName(path: string): string {
   const map: Record<string, string> = {
-    "/": "Dashboard",
+     "/": "Rubrica",
     "/vendite": "Vendite",
     "/acquisti": "Acquisti",
     "/commesse": "Riepiloghi per CIG",
     "/lista-commesse": "Lista Commesse",
-    "/offerte": "Cruscotto",
+     "/offerte": "Gare",
     "/schede-contabili": "Schede Contabili",
     "/bilancio": "Bilancio",
     "/scadenzario": "Scadenzario",
