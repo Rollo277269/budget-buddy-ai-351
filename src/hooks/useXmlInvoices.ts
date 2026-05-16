@@ -253,7 +253,21 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     (xmlSubs[tipo] ||= new Set()).add(cb);
     if (xmlCache[tipo]) { setXmlRecords(xmlCache[tipo]!); setLoading(false); }
     else loadOnce().then((r) => { setXmlRecords(r); setLoading(false); });
-    return () => { xmlSubs[tipo]?.delete(cb); };
+
+    // Realtime: auto-refresh on any INSERT/DELETE on fatture_xml for this tipo
+    const channel = supabase
+      .channel(`fatture_xml_${tipo}_${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fatture_xml", filter: `tipo=eq.${tipo}` },
+        () => { loadOnce(true).catch(() => {}); }
+      )
+      .subscribe();
+
+    return () => {
+      xmlSubs[tipo]?.delete(cb);
+      supabase.removeChannel(channel);
+    };
   }, [tipo, loadOnce]);
 
   const uploadXmlFiles = useCallback(async (files: File[], onProgress?: (done: number, total: number) => void) => {
@@ -370,6 +384,11 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
 
         uploaded++;
         if (isMatched) matched++;
+
+        // Incremental UI refresh every 20 files so the user sees progress live
+        if (uploaded > 0 && uploaded % 20 === 0) {
+          fetchRecords().catch(() => {});
+        }
 
         // If XML has CIG, update the matched invoice's CIG if it's empty
         if (parsed.cig && isMatched && matchedAnno && matchedNumero) {
