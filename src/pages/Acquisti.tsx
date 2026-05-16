@@ -61,6 +61,8 @@ function normalizeDateDisplay(s: string | null | undefined): string {
 
 function StatusBadge({ stato }: {stato: string;}) {
   const s = stato.toLowerCase();
+  if (s.includes("auto da xml"))
+  return <Badge className="text-[10px] font-medium bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] border border-[hsl(var(--primary))]/30 hover:bg-[hsl(var(--primary))]/15" title="Fattura creata automaticamente dal contenuto del file XML">⚡ Auto XML</Badge>;
   if (s.includes("scadut"))
   return <Badge variant="destructive" className="text-[10px] font-medium">{stato}</Badge>;
   if (s.includes("scadere"))
