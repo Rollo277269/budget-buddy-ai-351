@@ -1085,7 +1085,7 @@ const VenditePage = () => {
         </div>
 
         {/* ── Schede: Ricevute e Documenti / Fatture XML ── */}
-        <div className="px-4 pt-3">
+         <div className="px-4 pt-3 bg-slate-500">
           <Tabs defaultValue="xml" className="w-full">
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="xml" className="text-xs gap-1.5">
