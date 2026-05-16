@@ -119,7 +119,7 @@ export default function DiagnosticaPage() {
   const recent = rows.slice(0, 30);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-500">
+    <div className="p-6 space-y-6 bg-zinc-200">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">
