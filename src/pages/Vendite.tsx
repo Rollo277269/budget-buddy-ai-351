@@ -289,6 +289,10 @@ const VenditePage = () => {
     setUploading(false);
     setUploadProgress(null);
     if ((result?.uploaded ?? 0) > 0) {
+      // Refresh sales list because XML upload may have auto-created new sale invoices
+      try { await refreshInvoices(); } catch {}
+    }
+    if ((result?.uploaded ?? 0) > 0) {
       setTimeout(() => {
         if (xmlRecordsRef.current.length <= beforeCount) {
           toast.warning("L'elenco XML non si è aggiornato", {
@@ -302,7 +306,7 @@ const VenditePage = () => {
         }
       }, 4000);
     }
-  }, [uploadXmlFiles]);
+  }, [uploadXmlFiles, refreshInvoices]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     await processXmlFiles(Array.from(e.target.files || []));
