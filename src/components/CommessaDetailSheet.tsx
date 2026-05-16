@@ -884,6 +884,28 @@ export function CommessaDetailSheet({
           <DialogDescription className="text-sm">{commessa.oggetto}</DialogDescription>
         </DialogHeader>
 
+        <Tabs defaultValue="analisi" className="flex-1 flex flex-col overflow-hidden">
+          {/* Tabs row appena sotto l'intestazione */}
+          <div className="px-6 pt-3 pb-2 border-b shrink-0 bg-background">
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabOrder.length}, 1fr)` }}>
+              {tabOrder.map((tab) => {
+                const tabMeta: Record<string, { icon: typeof BarChart3; label: string }> = {
+                  analisi: { icon: BarChart3, label: "Analisi" },
+                  vendite: { icon: ArrowUpRight, label: `Vendite (${data.linkedSales.length})` },
+                  acquisti: { icon: ArrowDownRight, label: `Acquisti (${data.linkedPurchases.length})` },
+                  dati: { icon: FileText, label: "Dati Commessa" },
+                };
+                const meta = tabMeta[tab];
+                const Icon = meta.icon;
+                return (
+                  <TabsTrigger key={tab} value={tab} className="gap-1.5 text-xs">
+                    <Icon className="h-3.5 w-3.5" />{meta.label}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
+
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 screen-report">
           {/* KPI Row */}
