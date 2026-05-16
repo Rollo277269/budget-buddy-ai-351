@@ -1100,7 +1100,7 @@ export function CommessaDetailSheet({
 
               {/* Contract progress if available */}
               {data.importoContratto != null && !isNaN(data.importoContratto) && data.importoContratto > 0 && (
-                <div className="rounded-xl border bg-card p-5 space-y-3">
+     <div className="rounded-xl border bg-card p-5 space-y-4 bg-slate-500">
                   <h3 className="text-sm font-semibold flex items-center gap-2">
                     <Target className="h-4 w-4 text-muted-foreground" />
                     Avanzamento Contratto
