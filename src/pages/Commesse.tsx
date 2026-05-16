@@ -47,7 +47,7 @@ const CommessePage = () => {
   } : null;
 
   return (
-     <div className="p-6 space-y-6 bg-slate-500">
+    <div className="p-6 space-y-6 bg-slate-300">
       <FilterBar filters={filters} onFiltersChange={setFilters} options={filterOptions} />
       <div className="space-y-3">
         <h2 className="text-sm font-semibold">Dettaglio per CIG (Gara / Commessa)</h2>
