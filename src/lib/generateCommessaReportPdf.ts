@@ -130,6 +130,32 @@ export async function generateCommessaReportPdfBlob(
     body.print-capture .pdf-report .pdf-progress-fill { height: 100%; background: linear-gradient(90deg,#1e3a5f,#3b82f6); }
     body.print-capture .pdf-report .pdf-table-total td { font-weight: 700; background: #eef2f7; border-top: 2px solid #1e3a5f; }
     body.print-capture .pdf-report .pdf-desc-cell { max-width: 250px; }
+    body.print-capture .pdf-report .pdf-kpi-row {
+      display: grid; grid-template-columns: repeat(9, minmax(0, 1fr));
+      gap: 6px; margin-bottom: 14px;
+    }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card {
+      border: 1px solid #d0d5dd; border-radius: 5px; padding: 6px 8px;
+      background: #ffffff; border-left-width: 3px;
+    }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-income { border-left-color: #15803d; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-expense { border-left-color: #dc2626; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-primary { border-left-color: #1e3a5f; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-warn { border-left-color: #d97706; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-label {
+      font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #6b7280; font-weight: 600;
+    }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-value {
+      margin: 2px 0 0; font-size: 12px; font-weight: 700; font-family: monospace;
+    }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-income .pdf-kpi-value { color: #15803d; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-expense .pdf-kpi-value { color: #dc2626; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-primary .pdf-kpi-value { color: #1e3a5f; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-card.is-warn .pdf-kpi-value { color: #d97706; }
+    body.print-capture .pdf-report .pdf-kpi-row .pdf-kpi-sub {
+      margin: 1px 0 0; font-size: 7px; color: #9ca3af; line-height: 1.2;
+    }
   `;
   document.head.appendChild(styleEl);
 
