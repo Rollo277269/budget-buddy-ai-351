@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, SaleInvoiceRiga, parseExcelSales, seedSalesFromExcel, invalidateInvoiceCache, getIssuedInvoiceRows } from "@/hooks/useInvoiceData";
 import { parseFatturaPA } from "@/lib/fatturaPA";
+import { idbClearAll } from "@/lib/idbCache";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
@@ -1156,6 +1157,19 @@ const VenditePage = () => {
                         <RefreshCw className="h-3 w-3 mr-1" />Riassocia
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px]"
+                      title="Svuota la cache locale e ricarica i dati dal database"
+                      onClick={async () => {
+                        if (!confirm("Svuotare la cache locale e ricaricare la pagina?")) return;
+                        await idbClearAll();
+                        window.location.reload();
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />Svuota cache
+                    </Button>
                     <Button size="sm" variant="outline" className="h-6 text-[10px]" title="Aggiorna dati fatture da XML associati (CIG, scadenza, P.IVA, CUP)" onClick={handleEnrichFromXml} disabled={enriching || xmlRecords.filter(r => r.matched).length === 0}>
                       {enriching ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1" />}
                       {enriching ? "Aggiornamento..." : selectedInvoiceKeys.size > 0 ? `Aggiorna da XML (${selectedInvoiceKeys.size})` : selectedXmlIds.size > 0 ? `Aggiorna da XML (${selectedXmlIds.size})` : "Aggiorna da XML"}
