@@ -146,16 +146,19 @@ function findPurchaseMatch(
 
   let bestMatch: InvoiceWithKey | null = null;
   let bestScore = 0;
+  let bestHasAmount = false;
 
   for (const inv of invoices) {
     const key = `${inv.anno}-${inv.numero}`;
     if (alreadyMatchedKeys.has(key)) continue;
 
     let score = 0;
+    let hasAmount = false;
 
     // Amount match (exact within 2 cents)
     if (inv.totale && Math.abs(inv.totale - xmlImporto) < 0.02) {
       score += 40;
+      hasAmount = true;
     }
 
     // Supplier name match
@@ -184,11 +187,13 @@ function findPurchaseMatch(
     if (score > bestScore) {
       bestScore = score;
       bestMatch = inv;
+      bestHasAmount = hasAmount;
     }
   }
 
-  // Require at least amount match (40) or name+year+CIG (60) to consider it valid
-  return bestScore >= 40 ? bestMatch : null;
+  // Amount match is mandatory: two invoices from the same supplier/year would
+  // otherwise collide. Without amount we prefer to auto-create a new record.
+  return bestHasAmount && bestScore >= 40 ? bestMatch : null;
 }
 
 // ── Module-scope cache (per tipo) ──
