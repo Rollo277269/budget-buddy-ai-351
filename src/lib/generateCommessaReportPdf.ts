@@ -78,6 +78,17 @@ export async function generateCommessaReportPdfBlob(
     body.print-capture .pdf-report .pdf-table-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;
     }
+    body.print-capture .pdf-report .pdf-charts-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px; background: white;
+    }
+    body.print-capture .pdf-report .pdf-chart-card {
+      border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: white;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    body.print-capture .pdf-report .pdf-chart-card h3 {
+      margin: 0 0 6px 0; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.4px; color: #1e3a5f; align-self: flex-start;
+    }
     body.print-capture .pdf-report .pdf-data-grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
     }
