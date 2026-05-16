@@ -885,10 +885,10 @@ export function CommessaDetailSheet({
         </DialogHeader>
 
         <Tabs defaultValue="analisi" className="flex-1 flex flex-col overflow-hidden">
-          {/* Tabs row appena sotto l'intestazione */}
+          {/* Tabs row appena sotto l'intestazione (sticky, non scorre) */}
           <div className="px-6 pt-3 pb-2 border-b shrink-0 bg-background">
             <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabOrder.length}, 1fr)` }}>
-              {tabOrder.map((tab) => {
+              {tabOrder.map((tab, idx) => {
                 const tabMeta: Record<string, { icon: typeof BarChart3; label: string }> = {
                   analisi: { icon: BarChart3, label: "Analisi" },
                   vendite: { icon: ArrowUpRight, label: `Vendite (${data.linkedSales.length})` },
@@ -898,7 +898,27 @@ export function CommessaDetailSheet({
                 const meta = tabMeta[tab];
                 const Icon = meta.icon;
                 return (
-                  <TabsTrigger key={tab} value={tab} className="gap-1.5 text-xs">
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    className={`text-xs gap-1.5 cursor-grab active:cursor-grabbing ${dragIdx === idx ? "opacity-50" : ""}`}
+                    draggable
+                    onDragStart={(e) => { setDragIdx(idx); e.dataTransfer.effectAllowed = "move"; }}
+                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragIdx !== null && dragIdx !== idx) {
+                        setTabOrder((prev) => {
+                          const next = [...prev];
+                          const [moved] = next.splice(dragIdx, 1);
+                          next.splice(idx, 0, moved);
+                          return next;
+                        });
+                      }
+                      setDragIdx(null);
+                    }}
+                    onDragEnd={() => setDragIdx(null)}
+                  >
                     <Icon className="h-3.5 w-3.5" />{meta.label}
                   </TabsTrigger>
                 );
