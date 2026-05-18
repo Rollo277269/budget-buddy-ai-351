@@ -375,6 +375,8 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             invoiceKey = buildSalesXmlKey(match.anno, match.numero, match.suffisso);
             isMatched = true;
             alreadyMatchedKeys.add(invoiceKey);
+            // Backfill righe della fattura con le linee dell'XML, se mancano
+            await syncSaleRigheFromXml(match.anno, match.numero, match.suffisso, parsed.linee);
           } else if (xmlAnno && xmlNumero) {
             // No match in fatture_vendita: auto-create the sale invoice from XML content
             const suffisso = extractSuffisso(parsed.numero);
