@@ -602,6 +602,15 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       .from("fatture_xml" as any)
       .update({ invoice_key: invoiceKey, anno, numero, matched: true } as any)
       .eq("id", xmlId);
+    if (tipo === "vendita") {
+      const { data: xmlRow } = await supabase
+        .from("fatture_xml" as any)
+        .select("parsed_data")
+        .eq("id", xmlId)
+        .maybeSingle();
+      const linee = (xmlRow as any)?.parsed_data?.linee;
+      await syncSaleRigheFromXml(anno, numero, suffisso, linee);
+    }
     await fetchRecords();
     toast.success(`Associato a fattura ${numero}${suffisso ? '/' + suffisso : ''}/${anno}`);
   }, [fetchRecords, tipo]);
