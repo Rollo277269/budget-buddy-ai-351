@@ -79,6 +79,39 @@ function isInvoiceCreditNote(tipo: string | undefined): boolean {
 }
 
 /**
+ * Sincronizza le righe dettagliate di una fattura di vendita con le linee dell'XML
+ * associato. Aggiorna solo se le righe attualmente memorizzate sono vuote o legacy
+ * (mancano di prezzoTotale). Idempotente.
+ */
+async function syncSaleRigheFromXml(
+  anno: number,
+  numero: number,
+  suffisso: string | undefined,
+  linee: any[] | undefined | null
+) {
+  if (!Array.isArray(linee) || linee.length === 0) return;
+  let query = supabase
+    .from("fatture_vendita")
+    .select("id, righe")
+    .eq("anno", anno)
+    .eq("numero", numero);
+  query = query.eq("suffisso", suffisso || "");
+  const { data } = await query;
+  const rows = (data || []) as any[];
+  for (const row of rows) {
+    const existing = Array.isArray(row.righe) ? row.righe : [];
+    const hasRichRows =
+      existing.length > 0 &&
+      existing.some((r: any) => r && Object.prototype.hasOwnProperty.call(r, "prezzoTotale"));
+    if (hasRichRows) continue;
+    await supabase
+      .from("fatture_vendita")
+      .update({ righe: linee as any } as any)
+      .eq("id", row.id);
+  }
+}
+
+/**
  * Match a vendita XML to the correct invoice, using suffisso and cessionario name
  * to disambiguate when multiple invoices share the same anno+numero.
  */
