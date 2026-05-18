@@ -81,13 +81,24 @@ function useDarkMode() {
 function useFullscreen() {
   const [isFs, setIsFs] = useState(!!document.fullscreenElement);
   useEffect(() => {
-    const handler = () => setIsFs(!!document.fullscreenElement);
+    const handler = () => {
+      const active = !!document.fullscreenElement;
+      setIsFs(active);
+      // Remember user's fullscreen preference so we can restore it on next gesture
+      // after a browser-initiated exit (e.g. some route changes or focus losses).
+      if (active) sessionStorage.setItem("fs-pref", "1");
+    };
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
   const toggle = useCallback(() => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen();
+    if (document.fullscreenElement) {
+      sessionStorage.removeItem("fs-pref");
+      document.exitFullscreen();
+    } else {
+      sessionStorage.setItem("fs-pref", "1");
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
   }, []);
   return { isFs, toggle };
 }
@@ -130,6 +141,27 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
+
+  // If the user previously enabled fullscreen but the browser dropped it
+  // (e.g. after a navigation/focus change), restore it on the next user gesture.
+  useEffect(() => {
+    if (!location) return;
+    if (sessionStorage.getItem("fs-pref") !== "1") return;
+    if (document.fullscreenElement) return;
+    const restore = () => {
+      window.removeEventListener("pointerdown", restore);
+      window.removeEventListener("keydown", restore);
+      if (sessionStorage.getItem("fs-pref") === "1" && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    };
+    window.addEventListener("pointerdown", restore, { once: true });
+    window.addEventListener("keydown", restore, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", restore);
+      window.removeEventListener("keydown", restore);
+    };
+  }, [location.pathname]);
 
   // Hydrate IDB cache immediately, then schedule fresh-data prefetch when idle.
   useEffect(() => {
