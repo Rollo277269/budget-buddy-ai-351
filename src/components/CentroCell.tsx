@@ -27,7 +27,7 @@ export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRe
   return (
     <div className="flex items-center gap-0.5">
       <Select value={assigned || ""} onValueChange={(v) => onAssign(invoiceKey, v)}>
-        <SelectTrigger className="h-7 text-[11px] w-[130px] font-mono">
+        <SelectTrigger className="h-7 text-[11px] w-[130px] font-mono justify-start [&>span]:text-left [&>span]:flex-1">
           <SelectValue placeholder="—" />
         </SelectTrigger>
         <SelectContent>
