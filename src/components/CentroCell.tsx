@@ -24,6 +24,11 @@ export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRe
     return <span className="text-xs text-muted-foreground">—</span>;
   }
 
+  const disabled = importo == null || Number(importo) === 0;
+  if (disabled) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
   return (
     <div className="flex items-center gap-0.5">
       <Select value={assigned || ""} onValueChange={(v) => onAssign(invoiceKey, v)}>
