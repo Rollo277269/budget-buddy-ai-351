@@ -14,7 +14,9 @@ interface CentroCellProps {
 }
 
 export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRemove, importo }: CentroCellProps) {
-  const filtered = centri.filter((c) => c.tipo === tipo).sort((a, b) => a.descrizione.localeCompare(b.descrizione));
+  const filtered = centri
+    .filter((c) => c.tipo === tipo)
+    .sort((a, b) => a.codice.localeCompare(b.codice, "it", { sensitivity: "base" }));
   const assigned = centroMap[invoiceKey];
 
 
