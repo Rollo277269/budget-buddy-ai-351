@@ -584,7 +584,20 @@ export function useInvoiceData() {
 
   const normalizedSales = useMemo(() => {
     return sales.map((invoice) => {
-      const righe = Array.isArray(invoice.righe) ? invoice.righe : [];
+      const rawRighe = Array.isArray(invoice.righe) ? invoice.righe : [];
+
+      // Normalizza righe in formato FatturaPA (prezzoTotale/aliquotaIVA) → {imponibile, imposta, totale}
+      // così che le righe importate dall'XML mostrino i veri importi anziché 0.
+      const righe = rawRighe.map((r: any) => {
+        const hasNew = parseNumber(r.imponibile) !== 0 || parseNumber(r.totale) !== 0;
+        const prezzoTot = parseNumber(r.prezzoTotale);
+        if (hasNew || prezzoTot === 0) return r as SaleInvoiceRiga;
+        const aliquota = parseNumber(r.aliquotaIVA) / 100;
+        const imponibile = prezzoTot;
+        const imposta = Math.round(imponibile * aliquota * 100) / 100;
+        const totale = Math.round((imponibile + imposta) * 100) / 100;
+        return { ...r, imponibile, imposta, totale } as SaleInvoiceRiga;
+      });
 
       // Fallback CIG/CUP: se l'header non ha CIG/CUP, ereditali dalla prima riga che ne contiene uno.
       // Tipicamente l'ultima riga "Gara/Oggetto" della fattura emessa contiene CIG/CUP estratti dal parser.
