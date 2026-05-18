@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchCentriFromDb } from "@/hooks/useCentri";
+import { fetchCentriFromDb, useCentriData } from "@/hooks/useCentri";
 import { NamingRule } from "@/hooks/useNamingRules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Loader2, FileText, Check, X, Sparkles, Receipt } from "lucide-react";
 import { toast } from "sonner";
 
@@ -73,6 +74,10 @@ interface Props {
 
 export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpenseAdded }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { centriCosto } = useCentriData();
+  const sortedCentriCosto = [...centriCosto].sort((a, b) =>
+    a.codice.localeCompare(b.codice, "it", { sensitivity: "base" })
+  );
   const [processing, setProcessing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -455,7 +460,23 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
             </div>
             <div className="space-y-1">
               <Label className="text-[11px]">Centro di costo</Label>
-              <Input value={formData.centro_costo} onChange={(e) => updateField("centro_costo", e.target.value)} className="h-8 text-xs" />
+              <Select
+                value={formData.centro_costo || "none"}
+                onValueChange={(v) => updateField("centro_costo", v === "none" ? "" : v)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Seleziona..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" className="text-xs">— Nessuno —</SelectItem>
+                  {sortedCentriCosto.map((c) => (
+                    <SelectItem key={c.codice} value={c.codice} className="text-xs">
+                      <span className="font-mono">{c.codice}</span>
+                      <span className="text-muted-foreground ml-1">— {c.descrizione}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px]">Nome file</Label>
