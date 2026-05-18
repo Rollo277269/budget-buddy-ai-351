@@ -673,6 +673,10 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             .eq("id", record.id);
           matchedCount++;
         }
+        if (tipo === "vendita") {
+          const linee = (record as any)?.parsed_data?.linee;
+          await syncSaleRigheFromXml(match.anno, match.numero, match.suffisso, linee);
+        }
       }
     }
 
