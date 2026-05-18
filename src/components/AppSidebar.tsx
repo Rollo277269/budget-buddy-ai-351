@@ -154,7 +154,7 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
                       {!collapsed && (
                         <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab" />
                       )}
-                      <item.icon className={collapsed ? "h-6 w-6" : "h-4 w-4"} />
+                      <item.icon className={collapsed ? "h-7 w-7" : "h-4 w-4"} />
                       <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
