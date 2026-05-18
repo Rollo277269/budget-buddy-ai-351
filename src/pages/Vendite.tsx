@@ -39,7 +39,8 @@ function isNotaCredito(r: SaleInvoice): boolean {
 }
 
 function formatCreditAmount(value: number, isCreditNote: boolean): string {
-  const formatted = formatCurrency(Math.abs(value));
+  const n = Number(value) || 0;
+  const formatted = formatCurrency(Math.abs(n));
   return isCreditNote ? `- ${formatted}` : formatted;
 }
 
