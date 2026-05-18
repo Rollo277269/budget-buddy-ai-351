@@ -79,6 +79,39 @@ function isInvoiceCreditNote(tipo: string | undefined): boolean {
 }
 
 /**
+ * Sincronizza le righe dettagliate di una fattura di vendita con le linee dell'XML
+ * associato. Aggiorna solo se le righe attualmente memorizzate sono vuote o legacy
+ * (mancano di prezzoTotale). Idempotente.
+ */
+async function syncSaleRigheFromXml(
+  anno: number,
+  numero: number,
+  suffisso: string | undefined,
+  linee: any[] | undefined | null
+) {
+  if (!Array.isArray(linee) || linee.length === 0) return;
+  let query = supabase
+    .from("fatture_vendita")
+    .select("id, righe")
+    .eq("anno", anno)
+    .eq("numero", numero);
+  query = query.eq("suffisso", suffisso || "");
+  const { data } = await query;
+  const rows = (data || []) as any[];
+  for (const row of rows) {
+    const existing = Array.isArray(row.righe) ? row.righe : [];
+    const hasRichRows =
+      existing.length > 0 &&
+      existing.some((r: any) => r && Object.prototype.hasOwnProperty.call(r, "prezzoTotale"));
+    if (hasRichRows) continue;
+    await supabase
+      .from("fatture_vendita")
+      .update({ righe: linee as any } as any)
+      .eq("id", row.id);
+  }
+}
+
+/**
  * Match a vendita XML to the correct invoice, using suffisso and cessionario name
  * to disambiguate when multiple invoices share the same anno+numero.
  */
@@ -342,6 +375,8 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             invoiceKey = buildSalesXmlKey(match.anno, match.numero, match.suffisso);
             isMatched = true;
             alreadyMatchedKeys.add(invoiceKey);
+            // Backfill righe della fattura con le linee dell'XML, se mancano
+            await syncSaleRigheFromXml(match.anno, match.numero, match.suffisso, parsed.linee);
           } else if (xmlAnno && xmlNumero) {
             // No match in fatture_vendita: auto-create the sale invoice from XML content
             const suffisso = extractSuffisso(parsed.numero);
@@ -567,6 +602,15 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       .from("fatture_xml" as any)
       .update({ invoice_key: invoiceKey, anno, numero, matched: true } as any)
       .eq("id", xmlId);
+    if (tipo === "vendita") {
+      const { data: xmlRow } = await supabase
+        .from("fatture_xml" as any)
+        .select("parsed_data")
+        .eq("id", xmlId)
+        .maybeSingle();
+      const linee = (xmlRow as any)?.parsed_data?.linee;
+      await syncSaleRigheFromXml(anno, numero, suffisso, linee);
+    }
     await fetchRecords();
     toast.success(`Associato a fattura ${numero}${suffisso ? '/' + suffisso : ''}/${anno}`);
   }, [fetchRecords, tipo]);
@@ -628,6 +672,10 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             } as any)
             .eq("id", record.id);
           matchedCount++;
+        }
+        if (tipo === "vendita") {
+          const linee = (record as any)?.parsed_data?.linee;
+          await syncSaleRigheFromXml(match.anno, match.numero, match.suffisso, linee);
         }
       }
     }
