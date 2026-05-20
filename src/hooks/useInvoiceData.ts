@@ -200,6 +200,7 @@ export function parseExcelPurchases(rows: any[]): PurchaseInvoice[] {
       cig: extractCIG(desc) || extractCIGFromRow(r), cup: extractCUP(desc),
       stato: String(r[46] || ""), scadenza: String(r[11] || ""),
       pagamento: String(r[12] || ""),
+      righe: [],
     });
   }
   return invoices;
