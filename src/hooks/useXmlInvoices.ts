@@ -642,6 +642,14 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         .maybeSingle();
       const linee = (xmlRow as any)?.parsed_data?.linee;
       await syncSaleRigheFromXml(anno, numero, suffisso, linee);
+    } else {
+      const { data: xmlRow } = await supabase
+        .from("fatture_xml" as any)
+        .select("parsed_data")
+        .eq("id", xmlId)
+        .maybeSingle();
+      const linee = (xmlRow as any)?.parsed_data?.linee;
+      await syncPurchaseRigheFromXml(anno, numero, linee);
     }
     await fetchRecords();
     toast.success(`Associato a fattura ${numero}${suffisso ? '/' + suffisso : ''}/${anno}`);
