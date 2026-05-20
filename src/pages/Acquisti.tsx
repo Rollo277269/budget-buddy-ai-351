@@ -869,7 +869,49 @@ const AcquistiPage = () => {
     },
     {
       key: "centroCosto", label: "Centro Costo", filterable: true,
-      render: (r) => <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="costo" centri={centri} centroMap={costoMap.map} onAssign={costoMap.assign} onRemove={costoMap.remove} importo={r.totale} />
+      filterValue: (r) => {
+        const codes = new Set<string>();
+        if (r.righe && r.righe.length > 1) {
+          r.righe.forEach((_: any, idx: number) => {
+            const c = costoMap.map[`${r.anno}-${r.numero}-${idx}`];
+            if (c) codes.add(c);
+          });
+        }
+        if (codes.size === 0) {
+          const headerCode = costoMap.map[`${r.anno}-${r.numero}`];
+          if (headerCode) codes.add(headerCode);
+        }
+        return Array.from(codes).join(", ") || "";
+      },
+      render: (r) => {
+        const codes = new Set<string>();
+        if (r.righe && r.righe.length > 1) {
+          r.righe.forEach((_: any, idx: number) => {
+            const c = costoMap.map[`${r.anno}-${r.numero}-${idx}`];
+            if (c) codes.add(c);
+          });
+        }
+        const hasRowAssignments = codes.size > 0;
+        if (!hasRowAssignments) {
+          const headerCode = costoMap.map[`${r.anno}-${r.numero}`];
+          if (headerCode) codes.add(headerCode);
+        }
+        if (hasRowAssignments || codes.size > 1) {
+          return (
+            <div className="flex flex-wrap gap-0.5">
+              {Array.from(codes).map((code) => {
+                const centro = centri.find((c) => c.codice === code && c.tipo === "costo");
+                return (
+                  <Badge key={code} variant="outline" className="px-1 py-0 font-thin text-xs font-sans">
+                    {code}{centro ? ` - ${centro.descrizione.slice(0, 15)}` : ""}
+                  </Badge>
+                );
+              })}
+            </div>
+          );
+        }
+        return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="costo" centri={centri} centroMap={costoMap.map} onAssign={costoMap.assign} onRemove={costoMap.remove} importo={r.totale} />;
+      }
     },
     { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
     { key: "dataScadenza", label: "Data Scadenza", render: (r) => {
