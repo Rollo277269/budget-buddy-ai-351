@@ -716,6 +716,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         if (tipo === "vendita") {
           const linee = (record as any)?.parsed_data?.linee;
           await syncSaleRigheFromXml(match.anno, match.numero, match.suffisso, linee);
+        } else {
+          const linee = (record as any)?.parsed_data?.linee;
+          await syncPurchaseRigheFromXml(match.anno, match.numero, linee);
         }
       }
     }
