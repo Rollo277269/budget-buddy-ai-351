@@ -306,6 +306,7 @@ export type Database = {
           numero: number
           pagamento: string
           partita_iva: string
+          righe: Json
           ritenute: number
           scadenza: string
           stato: string
@@ -327,6 +328,7 @@ export type Database = {
           numero: number
           pagamento?: string
           partita_iva?: string
+          righe?: Json
           ritenute?: number
           scadenza?: string
           stato?: string
@@ -348,6 +350,7 @@ export type Database = {
           numero?: number
           pagamento?: string
           partita_iva?: string
+          righe?: Json
           ritenute?: number
           scadenza?: string
           stato?: string
