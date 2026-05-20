@@ -1172,6 +1172,64 @@ const AcquistiPage = () => {
                         xml && !nc && !selected ? "bg-success/5" : "",
                       ].filter(Boolean).join(" ");
                     }}
+                    expandable={(r) => (r.righe?.length || 0) > 1}
+                    renderExpandedContent={(r) => (
+                      <div className="px-4 py-2 overflow-hidden" style={{ maxWidth: "calc(100vw - 120px)" }}>
+                        <Table style={{ tableLayout: "fixed", width: "100%" }}>
+                          <colgroup>
+                            <col style={{ width: "40px" }} />
+                            <col style={{ minWidth: 0 }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "80px" }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "140px" }} />
+                          </colgroup>
+                          <TableHeader>
+                            <TableRow className="border-b border-border/50">
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Riga</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Descrizione</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Imponibile</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">IVA</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Totale</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">CIG</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Centro Costo</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {getIssuedInvoiceRows(r.righe).map(({ riga, idx }, displayIdx) => {
+                              const nc = isNotaCredito(r);
+                              const amtClass = nc ? "text-destructive" : "";
+                              const headerSenzaIva = Number(r.imposta || 0) === 0;
+                              const rigaImposta = headerSenzaIva ? 0 : riga.imposta;
+                              const rigaTotale = headerSenzaIva ? riga.imponibile : riga.totale;
+                              const rigaCig = riga.cig || r.cig || "";
+                              return (
+                                <TableRow key={idx} className="border-b border-border/30">
+                                  <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{displayIdx + 1}</TableCell>
+                                  <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5 overflow-hidden" style={{ overflowWrap: "anywhere" }}>{riga.descrizione || "—"}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(rigaImposta, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(rigaTotale, nc)}</TableCell>
+                                  <TableCell className="text-[11px] font-mono py-1.5">{rigaCig || "—"}</TableCell>
+                                  <TableCell className="py-1.5">
+                                    <CentroCell
+                                      invoiceKey={`${r.anno}-${r.numero}-${idx}`}
+                                      tipo="costo"
+                                      centri={centri}
+                                      centroMap={costoMap.map}
+                                      onAssign={costoMap.assign}
+                                      onRemove={costoMap.remove}
+                                      importo={rigaTotale}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
                   />
                 </div>
               </div>
