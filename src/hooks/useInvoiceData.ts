@@ -251,7 +251,7 @@ async function loadPurchasesFromDb(minYear?: number, exactYear?: number): Promis
   while (true) {
     let q = supabase
       .from("fatture_acquisto" as any)
-      .select("tipo,anno,numero,data,fornitore,partita_iva,totale,imponibile,imposta,cassa,ritenute,descrizione,cig,cup,stato,scadenza,pagamento")
+      .select("tipo,anno,numero,data,fornitore,partita_iva,totale,imponibile,imposta,cassa,ritenute,descrizione,cig,cup,stato,scadenza,pagamento,righe")
       .order("anno", { ascending: true })
       .order("numero", { ascending: true })
       .range(from, from + PAGE - 1);
@@ -271,6 +271,7 @@ async function loadPurchasesFromDb(minYear?: number, exactYear?: number): Promis
     cassa: Number(d.cassa || 0), ritenute: Number(d.ritenute || 0),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
     stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
+    righe: (typeof d.righe === "string" ? JSON.parse(d.righe) : d.righe || []) as SaleInvoiceRiga[],
   }));
 }
 
