@@ -112,6 +112,35 @@ async function syncSaleRigheFromXml(
 }
 
 /**
+ * Idem per le fatture passive: popola `righe` con le linee dell'XML associato
+ * se le righe esistenti sono vuote o legacy (mancano di prezzoTotale).
+ */
+async function syncPurchaseRigheFromXml(
+  anno: number,
+  numero: number,
+  linee: any[] | undefined | null
+) {
+  if (!Array.isArray(linee) || linee.length === 0) return;
+  const { data } = await supabase
+    .from("fatture_acquisto")
+    .select("id, righe")
+    .eq("anno", anno)
+    .eq("numero", numero);
+  const rows = (data || []) as any[];
+  for (const row of rows) {
+    const existing = Array.isArray(row.righe) ? row.righe : [];
+    const hasRichRows =
+      existing.length > 0 &&
+      existing.some((r: any) => r && Object.prototype.hasOwnProperty.call(r, "prezzoTotale"));
+    if (hasRichRows) continue;
+    await supabase
+      .from("fatture_acquisto")
+      .update({ righe: linee as any } as any)
+      .eq("id", row.id);
+  }
+}
+
+/**
  * Match a vendita XML to the correct invoice, using suffisso and cessionario name
  * to disambiguate when multiple invoices share the same anno+numero.
  */
