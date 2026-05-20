@@ -653,20 +653,39 @@ export function useInvoiceData() {
     });
   }, [sales]);
 
+  // Normalizza le righe delle fatture passive importate da XML (prezzoTotale/aliquotaIVA → imponibile/imposta/totale)
+  const normalizedPurchases = useMemo(() => {
+    return purchases.map((invoice) => {
+      const rawRighe = Array.isArray(invoice.righe) ? invoice.righe : [];
+      if (rawRighe.length === 0) return invoice;
+      const righe = rawRighe.map((r: any) => {
+        const hasNew = parseNumber(r.imponibile) !== 0 || parseNumber(r.totale) !== 0;
+        const prezzoTot = parseNumber(r.prezzoTotale);
+        if (hasNew || prezzoTot === 0) return r as SaleInvoiceRiga;
+        const aliquota = parseNumber(r.aliquotaIVA) / 100;
+        const imponibile = prezzoTot;
+        const imposta = Math.round(imponibile * aliquota * 100) / 100;
+        const totale = Math.round((imponibile + imposta) * 100) / 100;
+        return { ...r, imponibile, imposta, totale } as SaleInvoiceRiga;
+      });
+      return { ...invoice, righe };
+    });
+  }, [purchases]);
+
   const filterOptions = useMemo(() => {
     const years = new Set<number>(allYears);
     const clients = new Set<string>();
     const suppliers = new Set<string>();
     const cigs = new Set<string>();
     normalizedSales.forEach((s) => { if (s.anno) years.add(s.anno); if (s.cliente) clients.add(s.cliente); if (s.cig) cigs.add(s.cig); });
-    purchases.forEach((p) => { if (p.anno) years.add(p.anno); if (p.fornitore) suppliers.add(p.fornitore); if (p.cig) cigs.add(p.cig); });
+    normalizedPurchases.forEach((p) => { if (p.anno) years.add(p.anno); if (p.fornitore) suppliers.add(p.fornitore); if (p.cig) cigs.add(p.cig); });
     return {
       years: Array.from(years).filter(y => !isNaN(y)).sort((a, b) => b - a),
       clients: Array.from(clients).filter(Boolean).sort(),
       suppliers: Array.from(suppliers).filter(Boolean).sort(),
       cigs: Array.from(cigs).filter(Boolean).sort(),
     };
-  }, [normalizedSales, purchases, allYears]);
+  }, [normalizedSales, normalizedPurchases, allYears]);
 
   const filteredSales = useMemo(() => {
     return normalizedSales.filter((s) => {
@@ -678,19 +697,19 @@ export function useInvoiceData() {
   }, [normalizedSales, filters]);
 
   const filteredPurchases = useMemo(() => {
-    return purchases.filter((p) => {
+    return normalizedPurchases.filter((p) => {
       if (filters.anno && p.anno !== parseInt(filters.anno)) return false;
       if (filters.fornitore && p.fornitore !== filters.fornitore) return false;
       if (filters.cig && p.cig !== filters.cig) return false;
       return true;
     });
-  }, [purchases, filters]);
+  }, [normalizedPurchases, filters]);
 
   return {
     sales: filteredSales,
     purchases: filteredPurchases,
     allSales: normalizedSales,
-    allPurchases: purchases,
+    allPurchases: normalizedPurchases,
     loading,
     filters,
     setFilters,
