@@ -63,6 +63,7 @@ export interface PurchaseInvoice {
   stato: string;
   scadenza: string;
   pagamento: string;
+  righe: SaleInvoiceRiga[];
 }
 
 function parseNumber(val: any): number {
