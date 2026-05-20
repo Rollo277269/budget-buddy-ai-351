@@ -471,6 +471,8 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             matchedNumero = purchaseMatch.numero;
             isMatched = true;
             alreadyMatchedKeys.add(invoiceKey);
+            // Backfill righe della fattura passiva con le linee dell'XML, se mancano
+            await syncPurchaseRigheFromXml(purchaseMatch.anno, purchaseMatch.numero, parsed.linee);
           } else if (xmlAnno) {
             // No match in fatture_acquisto: auto-create the purchase invoice from XML content.
             // numero is an internal protocol number = max(numero)+1 for that year.
@@ -506,6 +508,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
                 scadenza,
                 pagamento: parsed.pagamenti?.[0]?.modalita || "",
                 tipo: isNC ? "Nota di credito" : "Fattura",
+                righe: (parsed.linee || []) as any,
               } as any);
             if (createPurchaseErr) {
               console.error("Auto-create purchase invoice error:", createPurchaseErr);
