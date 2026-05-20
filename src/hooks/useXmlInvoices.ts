@@ -112,6 +112,35 @@ async function syncSaleRigheFromXml(
 }
 
 /**
+ * Idem per le fatture passive: popola `righe` con le linee dell'XML associato
+ * se le righe esistenti sono vuote o legacy (mancano di prezzoTotale).
+ */
+async function syncPurchaseRigheFromXml(
+  anno: number,
+  numero: number,
+  linee: any[] | undefined | null
+) {
+  if (!Array.isArray(linee) || linee.length === 0) return;
+  const { data } = await supabase
+    .from("fatture_acquisto")
+    .select("id, righe")
+    .eq("anno", anno)
+    .eq("numero", numero);
+  const rows = (data || []) as any[];
+  for (const row of rows) {
+    const existing = Array.isArray(row.righe) ? row.righe : [];
+    const hasRichRows =
+      existing.length > 0 &&
+      existing.some((r: any) => r && Object.prototype.hasOwnProperty.call(r, "prezzoTotale"));
+    if (hasRichRows) continue;
+    await supabase
+      .from("fatture_acquisto")
+      .update({ righe: linee as any } as any)
+      .eq("id", row.id);
+  }
+}
+
+/**
  * Match a vendita XML to the correct invoice, using suffisso and cessionario name
  * to disambiguate when multiple invoices share the same anno+numero.
  */
@@ -442,6 +471,8 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             matchedNumero = purchaseMatch.numero;
             isMatched = true;
             alreadyMatchedKeys.add(invoiceKey);
+            // Backfill righe della fattura passiva con le linee dell'XML, se mancano
+            await syncPurchaseRigheFromXml(purchaseMatch.anno, purchaseMatch.numero, parsed.linee);
           } else if (xmlAnno) {
             // No match in fatture_acquisto: auto-create the purchase invoice from XML content.
             // numero is an internal protocol number = max(numero)+1 for that year.
@@ -477,6 +508,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
                 scadenza,
                 pagamento: parsed.pagamenti?.[0]?.modalita || "",
                 tipo: isNC ? "Nota di credito" : "Fattura",
+                righe: (parsed.linee || []) as any,
               } as any);
             if (createPurchaseErr) {
               console.error("Auto-create purchase invoice error:", createPurchaseErr);
@@ -610,6 +642,14 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         .maybeSingle();
       const linee = (xmlRow as any)?.parsed_data?.linee;
       await syncSaleRigheFromXml(anno, numero, suffisso, linee);
+    } else {
+      const { data: xmlRow } = await supabase
+        .from("fatture_xml" as any)
+        .select("parsed_data")
+        .eq("id", xmlId)
+        .maybeSingle();
+      const linee = (xmlRow as any)?.parsed_data?.linee;
+      await syncPurchaseRigheFromXml(anno, numero, linee);
     }
     await fetchRecords();
     toast.success(`Associato a fattura ${numero}${suffisso ? '/' + suffisso : ''}/${anno}`);
@@ -676,6 +716,9 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         if (tipo === "vendita") {
           const linee = (record as any)?.parsed_data?.linee;
           await syncSaleRigheFromXml(match.anno, match.numero, match.suffisso, linee);
+        } else {
+          const linee = (record as any)?.parsed_data?.linee;
+          await syncPurchaseRigheFromXml(match.anno, match.numero, linee);
         }
       }
     }

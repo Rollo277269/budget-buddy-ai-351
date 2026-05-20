@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useInvoiceData, PurchaseInvoice, parseExcelPurchases, seedPurchasesFromExcel, invalidateInvoiceCache } from "@/hooks/useInvoiceData";
+import { useInvoiceData, PurchaseInvoice, parseExcelPurchases, seedPurchasesFromExcel, invalidateInvoiceCache, getIssuedInvoiceRows } from "@/hooks/useInvoiceData";
 import { parseFatturaPA } from "@/lib/fatturaPA";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
@@ -671,9 +671,54 @@ const AcquistiPage = () => {
           — <Pencil className="h-3 w-3 opacity-50" />
         </span>;
     }, sortable: true, filterable: true },
-    { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imponibile) : r.imponibile), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
+    { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
+      const sum = rows.reduce((s, r) => {
+        const sign = isNotaCredito(r) ? -1 : 1;
+        if (!filters.centroCosto) return s + sign * Math.abs(r.imponibile);
+        const headerKey = `${r.anno}-${r.numero}`;
+        const headerMatch = costoMap.map[headerKey] === filters.centroCosto;
+        const righe = r.righe || [];
+        const matchingCount = righe.filter((_: any, idx: number) => costoMap.map[`${headerKey}-${idx}`] === filters.centroCosto).length;
+        const hasRowAssignments = righe.some((_: any, idx: number) => !!costoMap.map[`${headerKey}-${idx}`]);
+        if ((matchingCount === righe.length && righe.length > 0) || (headerMatch && !hasRowAssignments)) {
+          return s + sign * Math.abs(r.imponibile);
+        }
+        if (matchingCount > 0) {
+          let rowSum = 0;
+          righe.forEach((riga: any, idx: number) => {
+            if (costoMap.map[`${headerKey}-${idx}`] === filters.centroCosto) rowSum += riga.imponibile;
+          });
+          return s + sign * Math.abs(rowSum);
+        }
+        return s + sign * Math.abs(r.imponibile);
+      }, 0);
+      return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>;
+    } },
     { key: "cassa", label: "Cassa", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{r.cassa ? formatCreditAmount(r.cassa, nc) : "—"}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.cassa || 0) : (r.cassa || 0)), 0); return sum ? <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span> : null; } },
-    { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.imposta) : r.imposta), 0); return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>; } },
+    { key: "imposta", label: "IVA", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imposta, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
+      const sum = rows.reduce((s, r) => {
+        const sign = isNotaCredito(r) ? -1 : 1;
+        if (!filters.centroCosto) return s + sign * Math.abs(r.imposta);
+        const headerKey = `${r.anno}-${r.numero}`;
+        const headerMatch = costoMap.map[headerKey] === filters.centroCosto;
+        const righe = r.righe || [];
+        const matchingCount = righe.filter((_: any, idx: number) => costoMap.map[`${headerKey}-${idx}`] === filters.centroCosto).length;
+        const hasRowAssignments = righe.some((_: any, idx: number) => !!costoMap.map[`${headerKey}-${idx}`]);
+        if ((matchingCount === righe.length && righe.length > 0) || (headerMatch && !hasRowAssignments)) {
+          return s + sign * Math.abs(r.imposta);
+        }
+        if (matchingCount > 0) {
+          if (Number(r.imposta || 0) === 0) return s;
+          let rowSum = 0;
+          righe.forEach((riga: any, idx: number) => {
+            if (costoMap.map[`${headerKey}-${idx}`] === filters.centroCosto) rowSum += riga.imposta;
+          });
+          return s + sign * Math.abs(rowSum);
+        }
+        return s + sign * Math.abs(r.imposta);
+      }, 0);
+      return <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span>;
+    } },
     { key: "percIva", label: "% IVA", sortable: true, filterable: true, defaultHidden: false, align: "right",
       render: (r) => {
         // Per i professionisti l'IVA è calcolata su (imponibile + cassa previdenziale)
@@ -731,7 +776,32 @@ const AcquistiPage = () => {
       },
     },
     { key: "ritenute", label: "Ritenute", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{r.ritenute ? formatCreditAmount(r.ritenute, nc) : "—"}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.ritenute || 0) : (r.ritenute || 0)), 0); return sum ? <span className="text-[11px] font-mono font-semibold text-right block">{formatCurrency(sum)}</span> : null; } },
-    { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => { const sum = rows.reduce((s, r) => s + (isNotaCredito(r) ? -Math.abs(r.totale) : r.totale), 0); return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>; } },
+    { key: "totale", label: "Totale", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono font-semibold text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.totale, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
+      const sum = rows.reduce((s, r) => {
+        const sign = isNotaCredito(r) ? -1 : 1;
+        if (!filters.centroCosto) return s + sign * Math.abs(r.totale);
+        const headerKey = `${r.anno}-${r.numero}`;
+        const headerMatch = costoMap.map[headerKey] === filters.centroCosto;
+        const righe = r.righe || [];
+        const matchingCount = righe.filter((_: any, idx: number) => costoMap.map[`${headerKey}-${idx}`] === filters.centroCosto).length;
+        const hasRowAssignments = righe.some((_: any, idx: number) => !!costoMap.map[`${headerKey}-${idx}`]);
+        if ((matchingCount === righe.length && righe.length > 0) || (headerMatch && !hasRowAssignments)) {
+          return s + sign * Math.abs(r.totale);
+        }
+        if (matchingCount > 0) {
+          const headerSenzaIva = Number(r.imposta || 0) === 0;
+          let rowSum = 0;
+          righe.forEach((riga: any, idx: number) => {
+            if (costoMap.map[`${headerKey}-${idx}`] === filters.centroCosto) {
+              rowSum += headerSenzaIva ? (riga.imponibile || 0) : (riga.totale || 0);
+            }
+          });
+          return s + sign * Math.abs(rowSum);
+        }
+        return s + sign * Math.abs(r.totale);
+      }, 0);
+      return <span className="text-[11px] font-mono font-bold text-right block">{formatCurrency(sum)}</span>;
+    } },
     { key: "stato", label: "Stato", render: (r) => <StatusBadge stato={r.stato} />, sortable: true, filterable: true },
     { key: "importoPagato", label: "Importo Pagato", align: "right", sortable: true, defaultHidden: false, render: (r) => {
       const k = `${r.anno}-${r.numero}`;
@@ -799,7 +869,49 @@ const AcquistiPage = () => {
     },
     {
       key: "centroCosto", label: "Centro Costo", filterable: true,
-      render: (r) => <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="costo" centri={centri} centroMap={costoMap.map} onAssign={costoMap.assign} onRemove={costoMap.remove} importo={r.totale} />
+      filterValue: (r) => {
+        const codes = new Set<string>();
+        if (r.righe && r.righe.length > 1) {
+          r.righe.forEach((_: any, idx: number) => {
+            const c = costoMap.map[`${r.anno}-${r.numero}-${idx}`];
+            if (c) codes.add(c);
+          });
+        }
+        if (codes.size === 0) {
+          const headerCode = costoMap.map[`${r.anno}-${r.numero}`];
+          if (headerCode) codes.add(headerCode);
+        }
+        return Array.from(codes).join(", ") || "";
+      },
+      render: (r) => {
+        const codes = new Set<string>();
+        if (r.righe && r.righe.length > 1) {
+          r.righe.forEach((_: any, idx: number) => {
+            const c = costoMap.map[`${r.anno}-${r.numero}-${idx}`];
+            if (c) codes.add(c);
+          });
+        }
+        const hasRowAssignments = codes.size > 0;
+        if (!hasRowAssignments) {
+          const headerCode = costoMap.map[`${r.anno}-${r.numero}`];
+          if (headerCode) codes.add(headerCode);
+        }
+        if (hasRowAssignments || codes.size > 1) {
+          return (
+            <div className="flex flex-wrap gap-0.5">
+              {Array.from(codes).map((code) => {
+                const centro = centri.find((c) => c.codice === code && c.tipo === "costo");
+                return (
+                  <Badge key={code} variant="outline" className="px-1 py-0 font-thin text-xs font-sans">
+                    {code}{centro ? ` - ${centro.descrizione.slice(0, 15)}` : ""}
+                  </Badge>
+                );
+              })}
+            </div>
+          );
+        }
+        return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="costo" centri={centri} centroMap={costoMap.map} onAssign={costoMap.assign} onRemove={costoMap.remove} importo={r.totale} />;
+      }
     },
     { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
     { key: "dataScadenza", label: "Data Scadenza", render: (r) => {
@@ -821,7 +933,7 @@ const AcquistiPage = () => {
     { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span>, defaultHidden: true },
     { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true }],
 
-    [centri, costoMap.map, costoMap.assign, ricavoMap.map, ricavoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap, displayedPurchases, selectedInvoiceKeys, toggleAllInvoices, toggleInvoiceSelection]
+    [centri, costoMap.map, costoMap.assign, costoMap.remove, ricavoMap.map, ricavoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap, displayedPurchases, selectedInvoiceKeys, toggleAllInvoices, toggleInvoiceSelection, filters.centroCosto, editingCigKey, editingCigValue, refreshInvoices, xmlRecords, setXmlPickerInvoice]
   );
 
   const xmlDuplicateCount = useMemo(() => {
@@ -1060,6 +1172,64 @@ const AcquistiPage = () => {
                         xml && !nc && !selected ? "bg-success/5" : "",
                       ].filter(Boolean).join(" ");
                     }}
+                    expandable={(r) => (r.righe?.length || 0) > 1}
+                    renderExpandedContent={(r) => (
+                      <div className="px-4 py-2 overflow-hidden" style={{ maxWidth: "calc(100vw - 120px)" }}>
+                        <Table style={{ tableLayout: "fixed", width: "100%" }}>
+                          <colgroup>
+                            <col style={{ width: "40px" }} />
+                            <col style={{ minWidth: 0 }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "80px" }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "100px" }} />
+                            <col style={{ width: "140px" }} />
+                          </colgroup>
+                          <TableHeader>
+                            <TableRow className="border-b border-border/50">
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Riga</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Descrizione</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Imponibile</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">IVA</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Totale</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">CIG</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Centro Costo</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {getIssuedInvoiceRows(r.righe).map(({ riga, idx }, displayIdx) => {
+                              const nc = isNotaCredito(r);
+                              const amtClass = nc ? "text-destructive" : "";
+                              const headerSenzaIva = Number(r.imposta || 0) === 0;
+                              const rigaImposta = headerSenzaIva ? 0 : riga.imposta;
+                              const rigaTotale = headerSenzaIva ? riga.imponibile : riga.totale;
+                              const rigaCig = riga.cig || r.cig || "";
+                              return (
+                                <TableRow key={idx} className="border-b border-border/30">
+                                  <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{displayIdx + 1}</TableCell>
+                                  <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5 overflow-hidden" style={{ overflowWrap: "anywhere" }}>{riga.descrizione || "—"}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(riga.imponibile, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono text-right py-1.5 ${amtClass}`}>{formatCreditAmount(rigaImposta, nc)}</TableCell>
+                                  <TableCell className={`text-[11px] font-mono font-semibold text-right py-1.5 ${amtClass}`}>{formatCreditAmount(rigaTotale, nc)}</TableCell>
+                                  <TableCell className="text-[11px] font-mono py-1.5">{rigaCig || "—"}</TableCell>
+                                  <TableCell className="py-1.5">
+                                    <CentroCell
+                                      invoiceKey={`${r.anno}-${r.numero}-${idx}`}
+                                      tipo="costo"
+                                      centri={centri}
+                                      centroMap={costoMap.map}
+                                      onAssign={costoMap.assign}
+                                      onRemove={costoMap.remove}
+                                      importo={rigaTotale}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
                   />
                 </div>
               </div>
