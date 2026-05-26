@@ -30,6 +30,7 @@ import { Loader2, Sparkles, FileText, CheckCircle2, FileDown, FileCode2, Link2, 
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { PortaliFiscaliMenu } from "@/components/PortaliFiscaliMenu";
 
 import { formatCurrency } from "@/lib/format";
 
