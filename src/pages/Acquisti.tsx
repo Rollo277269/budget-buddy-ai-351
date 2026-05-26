@@ -8,6 +8,7 @@ import { useXmlInvoices } from "@/hooks/useXmlInvoices";
 import { CentroCell } from "@/components/CentroCell";
 import { FilterBar } from "@/components/FilterBar";
 import { ReorderableToolbar, type ReorderableItem } from "@/components/ReorderableToolbar";
+import { PortaliFiscaliMenu } from "@/components/PortaliFiscaliMenu";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
 import { parsePaymentTerms, formatDateIT } from "@/lib/paymentTerms";
@@ -1075,6 +1076,11 @@ const AcquistiPage = () => {
                     ),
                   });
                 }
+                items.push({
+                  id: "portali",
+                  label: "Portali fiscali",
+                  node: <PortaliFiscaliMenu tipo="acquisto" />,
+                });
                 return items;
               })()}
             />
