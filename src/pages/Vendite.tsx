@@ -1062,6 +1062,8 @@ const VenditePage = () => {
                   {classifying ? "AI..." : `AI (${unclassifiedCount})`}
                 </Button>
               )}
+
+              <PortaliFiscaliMenu tipo="vendita" />
             </div>
           </div>
 
