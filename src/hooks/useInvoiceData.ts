@@ -77,6 +77,11 @@ function parseNumber(val: any): number {
 function formatDate(val: any): string {
   if (!val) return "";
   if (typeof val === "string" && val.includes("/")) return val;
+  if (typeof val === "string") {
+    // ISO yyyy-mm-dd (eventualmente con orario) → dd/mm/yyyy
+    const iso = val.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  }
   const serial = parseFloat(String(val));
   if (!isNaN(serial) && serial > 30000) {
     const d = new Date((serial - 25569) * 86400 * 1000);
