@@ -270,12 +270,12 @@ async function loadPurchasesFromDb(minYear?: number, exactYear?: number): Promis
     from += PAGE;
   }
   return allRows.map((d: any) => ({
-    tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
+    tipo: d.tipo, anno: d.anno, numero: d.numero, data: formatDate(d.data),
     fornitore: d.fornitore, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     cassa: Number(d.cassa || 0), ritenute: Number(d.ritenute || 0),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
-    stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
+    stato: d.stato, scadenza: formatDate(d.scadenza), pagamento: d.pagamento,
     righe: (typeof d.righe === "string" ? JSON.parse(d.righe) : d.righe || []) as SaleInvoiceRiga[],
   }));
 }
