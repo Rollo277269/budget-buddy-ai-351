@@ -240,11 +240,11 @@ async function loadSalesFromDb(minYear?: number, exactYear?: number): Promise<Sa
     from += PAGE;
   }
   return allRows.map((d: any) => ({
-    tipo: d.tipo, anno: d.anno, numero: d.numero, suffisso: d.suffisso || "", data: d.data,
+    tipo: d.tipo, anno: d.anno, numero: d.numero, suffisso: d.suffisso || "", data: formatDate(d.data),
     cliente: d.cliente, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
-    stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
+    stato: d.stato, scadenza: formatDate(d.scadenza), pagamento: d.pagamento,
     righe: (typeof d.righe === "string" ? JSON.parse(d.righe) : d.righe || []) as SaleInvoiceRiga[],
   }));
 }
