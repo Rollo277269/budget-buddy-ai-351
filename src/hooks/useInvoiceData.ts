@@ -77,6 +77,11 @@ function parseNumber(val: any): number {
 function formatDate(val: any): string {
   if (!val) return "";
   if (typeof val === "string" && val.includes("/")) return val;
+  if (typeof val === "string") {
+    // ISO yyyy-mm-dd (eventualmente con orario) → dd/mm/yyyy
+    const iso = val.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  }
   const serial = parseFloat(String(val));
   if (!isNaN(serial) && serial > 30000) {
     const d = new Date((serial - 25569) * 86400 * 1000);
@@ -235,11 +240,11 @@ async function loadSalesFromDb(minYear?: number, exactYear?: number): Promise<Sa
     from += PAGE;
   }
   return allRows.map((d: any) => ({
-    tipo: d.tipo, anno: d.anno, numero: d.numero, suffisso: d.suffisso || "", data: d.data,
+    tipo: d.tipo, anno: d.anno, numero: d.numero, suffisso: d.suffisso || "", data: formatDate(d.data),
     cliente: d.cliente, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
-    stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
+    stato: d.stato, scadenza: formatDate(d.scadenza), pagamento: d.pagamento,
     righe: (typeof d.righe === "string" ? JSON.parse(d.righe) : d.righe || []) as SaleInvoiceRiga[],
   }));
 }
@@ -265,12 +270,12 @@ async function loadPurchasesFromDb(minYear?: number, exactYear?: number): Promis
     from += PAGE;
   }
   return allRows.map((d: any) => ({
-    tipo: d.tipo, anno: d.anno, numero: d.numero, data: d.data,
+    tipo: d.tipo, anno: d.anno, numero: d.numero, data: formatDate(d.data),
     fornitore: d.fornitore, partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     cassa: Number(d.cassa || 0), ritenute: Number(d.ritenute || 0),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
-    stato: d.stato, scadenza: d.scadenza, pagamento: d.pagamento,
+    stato: d.stato, scadenza: formatDate(d.scadenza), pagamento: d.pagamento,
     righe: (typeof d.righe === "string" ? JSON.parse(d.righe) : d.righe || []) as SaleInvoiceRiga[],
   }));
 }
