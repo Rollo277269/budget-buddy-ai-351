@@ -151,6 +151,46 @@ export function useRubrica() {
     [fetchContatti]
   );
 
+  // Unisce più contatti fornitori in uno solo: rinomina il fornitore in tutte le
+  // tabelle delle fatture/documenti d'acquisto e cancella i contatti duplicati.
+  const mergeContatti = useCallback(
+    async (masterId: string, mergeIds: string[]) => {
+      const master = contatti.find((c) => c.id === masterId);
+      if (!master) {
+        toast.error("Contatto principale non trovato");
+        return;
+      }
+      const toMerge = contatti.filter((c) => mergeIds.includes(c.id) && c.id !== masterId);
+      if (toMerge.length === 0) {
+        toast.info("Nessun contatto da unire");
+        return;
+      }
+      const masterName = master.denominazione;
+      let updatedRows = 0;
+      for (const c of toMerge) {
+        const oldName = c.denominazione;
+        if (!oldName || oldName === masterName) continue;
+        // Aggiorna nome fornitore in tutte le tabelle acquisti
+        const results = await Promise.all([
+          supabase.from("fatture_acquisto").update({ fornitore: masterName }).eq("fornitore", oldName).select("id"),
+          supabase.from("documenti_acquisto").update({ fornitore: masterName }).eq("fornitore", oldName).select("id"),
+          supabase.from("fatture_xml").update({ cedente_denominazione: masterName }).eq("cedente_denominazione", oldName).neq("tipo", "vendita").select("id"),
+        ]);
+        results.forEach((r) => { if (r.data) updatedRows += r.data.length; });
+      }
+      // Cancella i contatti uniti
+      const idsToDelete = toMerge.map((c) => c.id);
+      const { error: delErr } = await supabase.from("rubrica" as any).delete().in("id", idsToDelete);
+      if (delErr) {
+        toast.error("Errore eliminazione duplicati");
+        return;
+      }
+      toast.success(`Uniti ${toMerge.length} contatti in "${masterName}" (${updatedRows} righe aggiornate)`);
+      await fetchContatti();
+    },
+    [contatti, fetchContatti]
+  );
+
   const importFromInvoices = useCallback(async () => {
     const [salesRes, purchasesRes, xmlRes, docsRes] = await Promise.all([
       supabase.from("fatture_vendita").select("cliente, partita_iva"),
@@ -257,5 +297,5 @@ export function useRubrica() {
     return inserted;
   }, [contatti, fetchContatti]);
 
-  return { contatti, loading, saveContatto, deleteContatto, importFromInvoices, refetch: fetchContatti };
+  return { contatti, loading, saveContatto, deleteContatto, mergeContatti, importFromInvoices, refetch: fetchContatti };
 }
