@@ -1096,17 +1096,17 @@ function FornitoreCellEditor({ value, options, open, onOpenChange, onPick, onFre
                   key={o.id}
                   value={o.denominazione}
                   onSelect={() => onPick(o.denominazione)}
-                  className="text-xs"
+                  className="text-xs justify-start text-left"
                 >
-                  <Check className={`mr-2 h-3 w-3 ${value === o.denominazione ? "opacity-100" : "opacity-0"}`} />
-                  <span className="truncate">{o.denominazione}</span>
+                  <span className="truncate flex-1 text-left">{o.denominazione}</span>
+                  {value === o.denominazione && <Check className="ml-2 h-3 w-3 shrink-0 opacity-70" />}
                 </CommandItem>
               ))}
               {query.trim() && !exactMatch && filtered.length > 0 && (
                 <CommandItem
                   value={`__new__${query}`}
                   onSelect={() => onFreeText(query)}
-                  className="text-xs text-primary"
+                  className="text-xs text-primary justify-start text-left"
                 >
                   <Plus className="mr-2 h-3 w-3" />
                   Aggiungi "{query.trim()}"
