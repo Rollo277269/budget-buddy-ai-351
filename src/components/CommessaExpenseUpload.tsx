@@ -325,6 +325,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         numero: String(nextNumero),
         tipo_documento: formData.tipo_documento || "",
         data_scadenza: isoScadenza,
+        importo_garantito: formData.importo_garantito ?? null,
       } as any);
 
       // 4. Assign centro costo
@@ -364,9 +365,9 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [storagePath]);
 
-  const updateField = (field: keyof ExpenseFormData, value: string | number) => {
+  const updateField = (field: keyof ExpenseFormData, value: string | number | null) => {
     if (!formData) return;
-    const updated = { ...formData, [field]: value };
+    const updated = { ...formData, [field]: value as any };
     setFormData(updated);
     // Rebuild renamed file name on change
     setRenamedFileName(buildRenamedFileName(updated, selectedFile?.name || ""));
@@ -499,6 +500,22 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
               <Label className="text-[11px]">Nome file</Label>
               <Input value={renamedFileName} onChange={(e) => setRenamedFileName(e.target.value)} className="h-8 text-xs font-mono" />
             </div>
+            {(formData.tipo_documento === "Polizza" || (formData.importo_garantito ?? 0) > 0) && (
+              <div className="space-y-1">
+                <Label className="text-[11px]">Importo garantito (€)</Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.importo_garantito ?? ""}
+                    onChange={(e) => updateField("importo_garantito", e.target.value === "" ? null : parseFloat(e.target.value))}
+                    placeholder="Somma assicurata / massimale"
+                    className="h-8 text-xs font-mono pr-7"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">€</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <Separator />
