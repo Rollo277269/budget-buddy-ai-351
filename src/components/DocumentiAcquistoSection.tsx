@@ -522,6 +522,71 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Ask: typed name doesn't exist in rubrica → create it? */}
+      <AlertDialog open={!!newFornitoreAsk} onOpenChange={(o) => { if (!o) setNewFornitoreAsk(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Nuovo {fornitoreLabel}</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Il {fornitoreLabel} <span className="font-medium text-foreground">"{newFornitoreAsk?.name}"</span> non è presente in rubrica.
+                </p>
+                <p>Vuoi aggiungerlo alla rubrica e assegnarlo a questo documento?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmNewFornitore}>Aggiungi in rubrica</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Ask: typed name is similar to existing rubrica entries → pick one or create new */}
+      <AlertDialog open={!!similarFornitoreAsk} onOpenChange={(o) => { if (!o) setSimilarFornitoreAsk(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{fornitoreLabel.charAt(0).toUpperCase() + fornitoreLabel.slice(1)} simile già in rubrica</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Hai scritto <span className="font-medium text-foreground">"{similarFornitoreAsk?.typed}"</span>. Forse intendevi uno di questi?
+                </p>
+                <div className="space-y-1 max-h-[240px] overflow-y-auto">
+                  {similarFornitoreAsk?.suggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="w-full text-left text-xs px-2 py-1.5 rounded border bg-card hover:bg-accent hover:border-primary/40 transition-colors"
+                      onClick={() => {
+                        const ask = similarFornitoreAsk;
+                        setSimilarFornitoreAsk(null);
+                        if (ask) handleFornitorePicked(ask.docId, s.denominazione);
+                      }}
+                    >
+                      {s.denominazione}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const ask = similarFornitoreAsk;
+                setSimilarFornitoreAsk(null);
+                if (ask) setNewFornitoreAsk({ docId: ask.docId, name: ask.typed });
+              }}
+            >
+              Aggiungi come nuovo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 
