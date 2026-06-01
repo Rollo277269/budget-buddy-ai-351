@@ -23,6 +23,7 @@ const ScadenzarioPage = lazy(() => import("./pages/Scadenzario"));
 const IvaPage = lazy(() => import("./pages/Iva"));
 const RubricaPage = lazy(() => import("./pages/Rubrica"));
 const DiagnosticaPage = lazy(() => import("./pages/Diagnostica"));
+const PolizzePage = lazy(() => import("./pages/Polizze"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => {
               <Route path="/iva" element={<IvaPage />} />
               <Route path="/rubrica" element={<RubricaPage />} />
               <Route path="/diagnostica" element={<DiagnosticaPage />} />
+              <Route path="/polizze" element={<PolizzePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
