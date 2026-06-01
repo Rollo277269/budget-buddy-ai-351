@@ -152,49 +152,61 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Righe fattura ({righe.length})
               </h3>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-border/50">
-                    <TableHead className="text-[10px] font-semibold text-muted-foreground w-8">#</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-muted-foreground">Descrizione</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Imponibile</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">IVA</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Totale</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-muted-foreground">CIG</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-muted-foreground">
-                      Centro {centroTipo === "ricavo" ? "Ricavo" : "Costo"}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {righe.map(({ riga, idx }, displayIdx) => {
-                    const rigaImposta = headerSenzaIva ? 0 : Number(riga.imposta || 0);
-                    const rigaTotale = headerSenzaIva ? Number(riga.imponibile || 0) : Number(riga.totale || 0);
-                    const rigaCig = riga.cig || invoice.cig || "";
-                    return (
-                      <TableRow key={idx} className="border-b border-border/30">
-                        <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{displayIdx + 1}</TableCell>
-                        <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5" style={{ overflowWrap: "anywhere" }}>{riga.descrizione || "—"}</TableCell>
-                        <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(Number(riga.imponibile || 0))}</TableCell>
-                        <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(rigaImposta)}</TableCell>
-                        <TableCell className="text-[11px] font-mono font-semibold text-right py-1.5">{formatCurrency(rigaTotale)}</TableCell>
-                        <TableCell className="text-[11px] font-mono py-1.5">{rigaCig || "—"}</TableCell>
-                        <TableCell className="py-1.5">
-                          <CentroCell
-                            invoiceKey={`${invoice.anno}-${invoice.numero}-${idx}`}
-                            tipo={centroTipo}
-                            centri={centri}
-                            centroMap={centroMap.map}
-                            onAssign={centroMap.assign}
-                            onRemove={centroMap.remove}
-                            importo={rigaTotale}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-hidden rounded-md border border-border">
+                <table className="w-full table-fixed border-collapse text-xs">
+                  <colgroup>
+                    <col style={{ width: "32px" }} />
+                    <col />
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "70px" }} />
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "160px" }} />
+                  </colgroup>
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="border border-border px-2 py-1.5 text-left text-[10px] font-semibold text-muted-foreground">#</th>
+                      <th className="border border-border px-2 py-1.5 text-left text-[10px] font-semibold text-muted-foreground">Descrizione</th>
+                      <th className="border border-border px-2 py-1.5 text-right text-[10px] font-semibold text-muted-foreground">Imponibile</th>
+                      <th className="border border-border px-2 py-1.5 text-right text-[10px] font-semibold text-muted-foreground">IVA</th>
+                      <th className="border border-border px-2 py-1.5 text-right text-[10px] font-semibold text-muted-foreground">Totale</th>
+                      <th className="border border-border px-2 py-1.5 text-left text-[10px] font-semibold text-muted-foreground">CIG</th>
+                      <th className="border border-border px-2 py-1.5 text-left text-[10px] font-semibold text-muted-foreground">
+                        Centro {centroTipo === "ricavo" ? "Ricavo" : "Costo"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {righe.map(({ riga, idx }, displayIdx) => {
+                      const rigaImposta = headerSenzaIva ? 0 : Number(riga.imposta || 0);
+                      const rigaTotale = headerSenzaIva ? Number(riga.imponibile || 0) : Number(riga.totale || 0);
+                      const rigaCig = riga.cig || invoice.cig || "";
+                      const wrap: React.CSSProperties = { overflowWrap: "anywhere", wordBreak: "break-word", whiteSpace: "normal" };
+                      return (
+                        <tr key={idx} className="align-top">
+                          <td className="border border-border px-2 py-1.5 text-[11px] font-mono text-muted-foreground" style={wrap}>{displayIdx + 1}</td>
+                          <td className="border border-border px-2 py-1.5 text-[11px] leading-snug" style={wrap}>{riga.descrizione || "—"}</td>
+                          <td className="border border-border px-2 py-1.5 text-[11px] font-mono text-right" style={wrap}>{formatCurrency(Number(riga.imponibile || 0))}</td>
+                          <td className="border border-border px-2 py-1.5 text-[11px] font-mono text-right" style={wrap}>{formatCurrency(rigaImposta)}</td>
+                          <td className="border border-border px-2 py-1.5 text-[11px] font-mono font-semibold text-right" style={wrap}>{formatCurrency(rigaTotale)}</td>
+                          <td className="border border-border px-2 py-1.5 text-[11px] font-mono" style={wrap}>{rigaCig || "—"}</td>
+                          <td className="border border-border px-2 py-1.5" style={wrap}>
+                            <CentroCell
+                              invoiceKey={`${invoice.anno}-${invoice.numero}-${idx}`}
+                              tipo={centroTipo}
+                              centri={centri}
+                              centroMap={centroMap.map}
+                              onAssign={centroMap.assign}
+                              onRemove={centroMap.remove}
+                              importo={rigaTotale}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
