@@ -620,7 +620,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
           ))}
         </TableBody>
       </Table>
-    </ScrollArea>
+    </div>
   );
 
   const mainPanel = (isTableOnly: boolean) => (
