@@ -2,9 +2,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
+import { SaleInvoice, PurchaseInvoice, getIssuedInvoiceRows } from "@/hooks/useInvoiceData";
 import { FileText, ArrowLeft } from "lucide-react";
 import { BankMovementSuggestions } from "@/components/BankMovementSuggestions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CentroCell } from "@/components/CentroCell";
+import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 
 type Invoice = SaleInvoice | PurchaseInvoice;
 
@@ -41,6 +44,18 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
   const counterpart = type === "vendita"
     ? (invoice as SaleInvoice).cliente
     : (invoice as PurchaseInvoice).fornitore;
+
+  const { centri } = useCentriData();
+  const centroTipo: "costo" | "ricavo" = type === "vendita" ? "ricavo" : "costo";
+  const centroContext: "vendite" | "acquisti" = type === "vendita" ? "vendite" : "acquisti";
+  const centroMap = useCentroMap(centroTipo, centroContext);
+
+  const righeRaw = Array.isArray((invoice as any).righe) ? (invoice as any).righe : [];
+  const righe = type === "vendita"
+    ? getIssuedInvoiceRows(righeRaw)
+    : righeRaw.map((riga: any, idx: number) => ({ riga, idx }));
+  const headerKey = `${invoice.anno}-${invoice.numero}`;
+  const headerSenzaIva = Number(invoice.imposta || 0) === 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -110,7 +125,78 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
                 {invoice.descrizione}
               </span>
             } />
+            {righe.length <= 1 && (
+              <>
+                <Separator />
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    Centro {centroTipo === "ricavo" ? "Ricavo" : "Costo"}
+                  </span>
+                  <CentroCell
+                    invoiceKey={headerKey}
+                    tipo={centroTipo}
+                    centri={centri}
+                    centroMap={centroMap.map}
+                    onAssign={centroMap.assign}
+                    onRemove={centroMap.remove}
+                    importo={invoice.totale}
+                  />
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Invoice rows */}
+          {righe.length > 1 && (
+            <div className="rounded-xl border bg-card p-4">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Righe fattura ({righe.length})
+              </h3>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/50">
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground w-8">#</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground">Descrizione</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Imponibile</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">IVA</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Totale</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground">CIG</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-muted-foreground">
+                      Centro {centroTipo === "ricavo" ? "Ricavo" : "Costo"}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {righe.map(({ riga, idx }, displayIdx) => {
+                    const rigaImposta = headerSenzaIva ? 0 : Number(riga.imposta || 0);
+                    const rigaTotale = headerSenzaIva ? Number(riga.imponibile || 0) : Number(riga.totale || 0);
+                    const rigaCig = riga.cig || invoice.cig || "";
+                    return (
+                      <TableRow key={idx} className="border-b border-border/30">
+                        <TableCell className="text-[11px] font-mono text-muted-foreground py-1.5">{displayIdx + 1}</TableCell>
+                        <TableCell className="text-[11px] whitespace-normal break-words leading-snug py-1.5" style={{ overflowWrap: "anywhere" }}>{riga.descrizione || "—"}</TableCell>
+                        <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(Number(riga.imponibile || 0))}</TableCell>
+                        <TableCell className="text-[11px] font-mono text-right py-1.5">{formatCurrency(rigaImposta)}</TableCell>
+                        <TableCell className="text-[11px] font-mono font-semibold text-right py-1.5">{formatCurrency(rigaTotale)}</TableCell>
+                        <TableCell className="text-[11px] font-mono py-1.5">{rigaCig || "—"}</TableCell>
+                        <TableCell className="py-1.5">
+                          <CentroCell
+                            invoiceKey={`${invoice.anno}-${invoice.numero}-${idx}`}
+                            tipo={centroTipo}
+                            centri={centri}
+                            centroMap={centroMap.map}
+                            onAssign={centroMap.assign}
+                            onRemove={centroMap.remove}
+                            importo={rigaTotale}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
           {/* Bank movement reconciliation suggestions */}
           <BankMovementSuggestions invoice={invoice} type={type} />
