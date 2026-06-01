@@ -141,29 +141,10 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
                 {invoice.descrizione}
               </span>
             } />
-            {righe.length <= 1 && (
-              <>
-                <Separator />
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    Centro {centroTipo === "ricavo" ? "Ricavo" : "Costo"}
-                  </span>
-                  <CentroCell
-                    invoiceKey={headerKey}
-                    tipo={centroTipo}
-                    centri={centri}
-                    centroMap={centroMap.map}
-                    onAssign={centroMap.assign}
-                    onRemove={centroMap.remove}
-                    importo={invoice.totale}
-                  />
-                </div>
-              </>
-            )}
           </div>
 
           {/* Invoice rows */}
-          {righe.length > 1 && (
+          {righe.length >= 1 && (
             <div className="rounded-xl border bg-card p-4">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Righe fattura ({righe.length})
