@@ -115,6 +115,35 @@ export function DocumentoAiReviewDialog({ open, prepared, centri, tipo, onConfir
               />
             </div>
 
+            <div className="space-y-1">
+              <Label className="text-[11px]">Tipo documento</Label>
+              <Select
+                value={form.tipo_documento || "Altro"}
+                onValueChange={(v) => update("tipo_documento", v)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["Fattura", "Polizza", "Bollo", "ANAC", "Ricevuta", "Nota Spese", "Altro"].map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {form.tipo_documento === "Polizza" && (
+              <div className="space-y-1">
+                <Label className="text-[11px]">Scadenza polizza (DD/MM/YYYY)</Label>
+                <Input
+                  value={form.data_scadenza}
+                  onChange={(e) => update("data_scadenza", e.target.value)}
+                  placeholder="GG/MM/AAAA"
+                  className="h-9 text-sm font-mono"
+                />
+              </div>
+            )}
+
             <div className="col-span-2 space-y-1">
               <Label className="text-[11px]">{tipo === "vendita" ? "Centro Ricavo" : "Centro Costo"}</Label>
               <Select
