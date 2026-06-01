@@ -648,6 +648,56 @@ export default function RubricaPage() {
           })()}
         </SheetContent>
       </Sheet>
+
+      {/* Merge dialog */}
+      <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Unisci contatti fornitori</DialogTitle>
+            <DialogDescription>
+              Scegli il contatto principale. Tutti gli altri verranno eliminati e i loro
+              nomi sostituiti nelle fatture d'acquisto, ricevute e documenti XML.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {selectedContatti.map((c) => {
+              const checked = mergeMasterId === c.id;
+              return (
+                <label
+                  key={c.id}
+                  className={`flex items-start gap-3 rounded-md border p-2 cursor-pointer transition-colors ${
+                    checked ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="merge-master"
+                    className="mt-1"
+                    checked={checked}
+                    onChange={() => setMergeMasterId(c.id)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{c.denominazione}</p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {c.partita_iva || "senza P.IVA"}
+                      {c.email ? ` · ${c.email}` : ""}
+                    </p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setMergeOpen(false)} disabled={merging}>
+              Annulla
+            </Button>
+            <Button size="sm" onClick={handleMergeConfirm} disabled={merging || !mergeMasterId}>
+              <Merge className="h-3.5 w-3.5 mr-1" />
+              {merging ? "Unione..." : "Unisci"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
