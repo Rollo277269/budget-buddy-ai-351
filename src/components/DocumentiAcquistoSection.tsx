@@ -357,17 +357,31 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const handleReclassify = useCallback(async (doc: DocumentoAcquisto) => {
     setReclassifying(doc.id);
     try {
-      const { data, error } = await supabase.storage
-        .from("documenti-acquisto")
-        .download(doc.storage_path);
-      if (error || !data) { toast.error("Errore download PDF"); return; }
-      const buf = await data.arrayBuffer();
-      const text = await extractTextFromPdfBuffer(buf);
+      let text = "";
+      // 1) Try to re-extract fresh text from the stored PDF
+      try {
+        const { data, error } = await supabase.storage
+          .from("documenti-acquisto")
+          .download(doc.storage_path);
+        if (error || !data) throw error || new Error("Download vuoto");
+        const buf = await data.arrayBuffer();
+        text = await extractTextFromPdfBuffer(buf);
+      } catch (extractErr) {
+        console.warn("PDF re-extract failed, falling back to parsed_text:", extractErr);
+      }
+      // 2) Fallback to text saved at first upload
+      if (!text || text.trim().length < 10) text = doc.parsed_text || "";
+      if (!text || text.trim().length < 10) {
+        toast.error("Impossibile leggere il testo dal PDF (potrebbe essere una scansione senza OCR)");
+        return;
+      }
       const prepared = await reclassifyExisting(doc, text);
       if (prepared) setReclassifyItem({ id: doc.id, prepared });
+      else toast.error("L'AI non ha restituito risultati");
     } catch (err) {
       console.error("Reclassify error:", err);
-      toast.error("Errore rilettura AI");
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Errore rilettura AI: ${msg}`);
     } finally {
       setReclassifying(null);
     }
