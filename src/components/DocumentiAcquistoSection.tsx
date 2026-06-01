@@ -354,6 +354,35 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     setEditingValue("");
   }, []);
 
+  const handleReclassify = useCallback(async (doc: DocumentoAcquisto) => {
+    setReclassifying(doc.id);
+    try {
+      const { data, error } = await supabase.storage
+        .from("documenti-acquisto")
+        .download(doc.storage_path);
+      if (error || !data) { toast.error("Errore download PDF"); return; }
+      const buf = await data.arrayBuffer();
+      const text = await extractTextFromPdfBuffer(buf);
+      const prepared = await reclassifyExisting(doc, text);
+      if (prepared) setReclassifyItem({ id: doc.id, prepared });
+    } catch (err) {
+      console.error("Reclassify error:", err);
+      toast.error("Errore rilettura AI");
+    } finally {
+      setReclassifying(null);
+    }
+  }, [reclassifyExisting]);
+
+  const handleReclassifyConfirm = useCallback(async (edited: PreparedDocumento) => {
+    if (!reclassifyItem) return;
+    await updateDocumentoFromPrepared(reclassifyItem.id, edited);
+    setReclassifyItem(null);
+  }, [reclassifyItem, updateDocumentoFromPrepared]);
+
+  const handleReclassifyCancel = useCallback(() => {
+    setReclassifyItem(null);
+  }, []);
+
   const currentDuplicate = duplicateQueue[0];
   const reviewDialogEl = (
     <>
@@ -364,6 +393,14 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
         tipo={tipo}
         onConfirm={handleReviewConfirm}
         onCancel={handleReviewCancel}
+      />
+      <DocumentoAiReviewDialog
+        open={!!reclassifyItem}
+        prepared={reclassifyItem?.prepared ?? null}
+        centri={centri}
+        tipo={tipo}
+        onConfirm={handleReclassifyConfirm}
+        onCancel={handleReclassifyCancel}
       />
       <AlertDialog open={!!currentDuplicate}>
         <AlertDialogContent>
