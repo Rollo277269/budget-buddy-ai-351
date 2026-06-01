@@ -294,14 +294,15 @@ export default function Polizze() {
                     <TableHead className="text-[11px] h-8 px-2">Data doc.</TableHead>
                     <TableHead className="text-[11px] h-8 px-2">Scadenza</TableHead>
                     <TableHead className="text-[11px] h-8 px-2">Stato</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2 text-right">Importo</TableHead>
+                    <TableHead className="text-[11px] h-8 px-2 text-right">Premio</TableHead>
+                    <TableHead className="text-[11px] h-8 px-2 text-right">Importo garantito</TableHead>
                     <TableHead className="text-[11px] h-8 px-2 w-[100px]">Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-xs text-muted-foreground py-8">
+                      <TableCell colSpan={10} className="text-center text-xs text-muted-foreground py-8">
                         Nessuna polizza trovata. Carica un PDF di polizza in <Link to="/acquisti" className="text-primary underline">Acquisti → Ricevute</Link> o nel dettaglio di una commessa.
                       </TableCell>
                     </TableRow>
@@ -328,6 +329,7 @@ export default function Polizze() {
                           </TableCell>
                           <TableCell className="text-xs px-2 py-1.5"><CountdownBadge date={d._date} /></TableCell>
                           <TableCell className="text-xs px-2 py-1.5 text-right font-mono">{d.importo != null ? formatCurrency(d.importo) : "—"}</TableCell>
+                          <TableCell className="text-xs px-2 py-1.5 text-right font-mono text-muted-foreground">{(d as any).importo_garantito != null ? formatCurrency((d as any).importo_garantito) : "—"}</TableCell>
                           <TableCell className="px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <Button size="icon" variant="ghost" className="h-6 w-6" title="Apri PDF" onClick={() => openPdf(d)}>
