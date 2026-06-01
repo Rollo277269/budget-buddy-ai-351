@@ -132,9 +132,9 @@ export function DocumentoAiReviewDialog({ open, prepared, centri, tipo, onConfir
               </Select>
             </div>
 
-            {form.tipo_documento === "Polizza" && (
+            {(form.tipo_documento === "Polizza" || form.data_scadenza) && (
               <div className="space-y-1">
-                <Label className="text-[11px]">Scadenza polizza (DD/MM/YYYY)</Label>
+                <Label className="text-[11px]">Scadenza (DD/MM/YYYY)</Label>
                 <Input
                   value={form.data_scadenza}
                   onChange={(e) => update("data_scadenza", e.target.value)}
