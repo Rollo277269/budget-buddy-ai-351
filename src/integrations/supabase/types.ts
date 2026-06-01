@@ -246,6 +246,7 @@ export type Database = {
           cig: string
           created_at: string | null
           data_documento: string | null
+          data_scadenza: string
           descrizione: string | null
           file_name: string
           fornitore: string | null
@@ -255,6 +256,7 @@ export type Database = {
           parsed_text: string | null
           storage_path: string
           tipo: string
+          tipo_documento: string
         }
         Insert: {
           ai_summary?: string | null
@@ -262,6 +264,7 @@ export type Database = {
           cig?: string
           created_at?: string | null
           data_documento?: string | null
+          data_scadenza?: string
           descrizione?: string | null
           file_name: string
           fornitore?: string | null
@@ -271,6 +274,7 @@ export type Database = {
           parsed_text?: string | null
           storage_path: string
           tipo?: string
+          tipo_documento?: string
         }
         Update: {
           ai_summary?: string | null
@@ -278,6 +282,7 @@ export type Database = {
           cig?: string
           created_at?: string | null
           data_documento?: string | null
+          data_scadenza?: string
           descrizione?: string | null
           file_name?: string
           fornitore?: string | null
@@ -287,6 +292,7 @@ export type Database = {
           parsed_text?: string | null
           storage_path?: string
           tipo?: string
+          tipo_documento?: string
         }
         Relationships: []
       }
