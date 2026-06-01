@@ -57,9 +57,10 @@ Rispondi SOLO con la funzione tool.`;
                     numero: { type: "string", description: "Numero identificativo del documento (es. numero polizza, numero ricevuta, numero contratto). Stringa vuota se non trovato." },
                     fornitore: { type: "string", description: "Nome del fornitore o emittente. Stringa vuota se non trovato." },
                     centro_costo: { type: "string", description: "Codice del centro di costo suggerito. Stringa vuota se non determinabile." },
+                    cig: { type: "string", description: "Codice CIG (Codice Identificativo di Gara) se presente nel documento. È un codice alfanumerico di esattamente 10 caratteri (lettere maiuscole e numeri). Cerca diciture come 'CIG', 'Codice CIG', 'C.I.G.'. Stringa vuota se non trovato o se non ha esattamente 10 caratteri." },
                     summary: { type: "string", description: "Riassunto del contenuto del documento in 1-2 frasi." },
                   },
-                  required: ["descrizione", "importo", "data_documento", "numero", "fornitore", "centro_costo", "summary"],
+                  required: ["descrizione", "importo", "data_documento", "numero", "fornitore", "centro_costo", "cig", "summary"],
                   additionalProperties: false,
                 },
               },
@@ -87,7 +88,7 @@ Rispondi SOLO con la funzione tool.`;
       });
     }
 
-    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", numero: "", fornitore: "", centro_costo: "", summary: "" }),
+    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", numero: "", fornitore: "", centro_costo: "", cig: "", summary: "" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("parse-documento error:", e);
