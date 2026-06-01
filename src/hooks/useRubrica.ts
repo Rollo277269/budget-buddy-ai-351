@@ -167,16 +167,41 @@ export function useRubrica() {
       }
       const masterName = master.denominazione;
       let updatedRows = 0;
+      // Escape wildcards di LIKE per match esatto ma case-insensitive
+      const escLike = (s: string) => s.replace(/[\\%_]/g, (m) => "\\" + m);
+      // Esegue update case-insensitive: trova gli id che matchano (anche con
+      // differenze di maiuscole/minuscole) e li aggiorna in blocco.
+      const renameIn = async (
+        table: "fatture_acquisto" | "documenti_acquisto" | "fatture_xml",
+        column: "fornitore" | "cedente_denominazione",
+        oldName: string,
+        extraFilter?: (q: any) => any
+      ) => {
+        let selectQ: any = supabase.from(table).select("id").ilike(column, escLike(oldName));
+        if (extraFilter) selectQ = extraFilter(selectQ);
+        const { data: rows, error: selErr } = await selectQ;
+        if (selErr || !rows || rows.length === 0) return 0;
+        const ids = rows.map((r: any) => r.id);
+        const { error: updErr } = await supabase
+          .from(table)
+          .update({ [column]: masterName } as any)
+          .in("id", ids);
+        if (updErr) {
+          console.error(`merge update ${table} failed`, updErr);
+          return 0;
+        }
+        return ids.length;
+      };
+
       for (const c of toMerge) {
-        const oldName = c.denominazione;
-        if (!oldName || oldName === masterName) continue;
-        // Aggiorna nome fornitore in tutte le tabelle acquisti
-        const results = await Promise.all([
-          supabase.from("fatture_acquisto").update({ fornitore: masterName }).eq("fornitore", oldName).select("id"),
-          supabase.from("documenti_acquisto").update({ fornitore: masterName }).eq("fornitore", oldName).select("id"),
-          supabase.from("fatture_xml").update({ cedente_denominazione: masterName }).eq("cedente_denominazione", oldName).neq("tipo", "vendita").select("id"),
+        const oldName = c.denominazione?.trim();
+        if (!oldName) continue;
+        const counts = await Promise.all([
+          renameIn("fatture_acquisto", "fornitore", oldName),
+          renameIn("documenti_acquisto", "fornitore", oldName),
+          renameIn("fatture_xml", "cedente_denominazione", oldName, (q) => q.neq("tipo", "vendita")),
         ]);
-        results.forEach((r) => { if (r.data) updatedRows += r.data.length; });
+        updatedRows += counts.reduce((a, b) => a + b, 0);
       }
       // Cancella i contatti uniti
       const idsToDelete = toMerge.map((c) => c.id);
