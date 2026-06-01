@@ -308,6 +308,9 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         centro_costo: formData.centro_costo,
         parsed_text: extractedText.substring(0, 10000),
         ai_summary: `Spesa commessa ${commessaNumero} (CIG: ${cig})`,
+        cig: cig || "",
+        tipo: "acquisto",
+        numero: String(nextNumero),
       } as any);
 
       // 4. Assign centro costo
