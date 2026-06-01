@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users, PanelLeftClose, PanelLeft, Lock, Unlock } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users, PanelLeftClose, PanelLeft, Lock, Unlock, ShieldCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useLayoutEditMode } from "@/hooks/useLayoutEditMode";
@@ -26,6 +26,7 @@ interface MenuItem {
 export const defaultItems: MenuItem[] = [
   { title: "Cruscotto", url: "/", icon: LayoutDashboard },
   { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
+  { title: "Polizze", url: "/polizze", icon: ShieldCheck },
   { title: "Vendite", url: "/vendite", icon: FileOutput },
   { title: "Acquisti", url: "/acquisti", icon: FileInput },
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
