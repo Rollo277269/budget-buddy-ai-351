@@ -189,7 +189,7 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
                           <td className="border border-border px-2 py-1.5 text-[11px] font-mono" style={wrap}>{rigaCig || "—"}</td>
                           <td className="border border-border px-2 py-1.5" style={wrap}>
                             <CentroCell
-                              invoiceKey={`${invoice.anno}-${invoice.numero}-${idx}`}
+                              invoiceKey={useHeaderKey ? headerKey : `${invoice.anno}-${invoice.numero}-${idx}`}
                               tipo={centroTipo}
                               centri={centri}
                               centroMap={centroMap.map}
