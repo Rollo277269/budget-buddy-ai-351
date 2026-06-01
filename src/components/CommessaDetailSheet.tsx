@@ -679,7 +679,10 @@ export function CommessaDetailSheet({
         const righe = Array.isArray(s.righe) ? s.righe : [];
         const fatturaCodice = map[`${s.anno}-${s.numero}`] || "";
         const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!map[`${s.anno}-${s.numero}-${idx}`]);
-        if (hasRowAssignments) {
+        const rowsImpSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.imponibile || 0)), 0);
+        const rowsTotSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.totale || 0)), 0);
+        const rowsAllZero = rowsImpSum === 0 && rowsTotSum === 0;
+        if (hasRowAssignments && !rowsAllZero) {
           // Se l'header ha IVA=0 (reverse charge / split / esente), l'IVA teorica
           // delle righe XML non deve essere considerata: totale riga = imponibile.
           const headerSenzaIva = Number(s.imposta || 0) === 0;
