@@ -51,11 +51,27 @@ export function InvoiceDetailSheet({ invoice, open, onOpenChange, type }: Invoic
   const centroMap = useCentroMap(centroTipo, centroContext);
 
   const righeRaw = Array.isArray((invoice as any).righe) ? (invoice as any).righe : [];
-  const righe = type === "vendita"
+  const righeParsed = type === "vendita"
     ? getIssuedInvoiceRows(righeRaw)
     : righeRaw.map((riga: any, idx: number) => ({ riga, idx }));
   const headerKey = `${invoice.anno}-${invoice.numero}`;
   const headerSenzaIva = Number(invoice.imposta || 0) === 0;
+
+  // Always show "Righe fattura" table: if no rows, synthesize one from header
+  const righe = righeParsed.length > 0
+    ? righeParsed
+    : [{
+        riga: {
+          descrizione: invoice.descrizione || "—",
+          imponibile: Number(invoice.imponibile || 0),
+          imposta: Number(invoice.imposta || 0),
+          totale: Number(invoice.totale || 0),
+          cig: invoice.cig || "",
+        },
+        idx: 0,
+      }];
+  // When there's only one row, reuse headerKey so existing header-level assignments persist
+  const useHeaderKey = righe.length === 1;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
