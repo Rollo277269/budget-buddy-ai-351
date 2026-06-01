@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
@@ -8,17 +8,21 @@ import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScadenzarioCalendar } from "@/components/ScadenzarioCalendar";
-import { AlertTriangle, Clock, CheckCircle2, Landmark, CalendarDays, List } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle2, Landmark, CalendarDays, List, ShieldCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 function parseDate(d: string): Date | null {
   if (!d) return null;
+  // ISO YYYY-MM-DD
+  const iso = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return new Date(parseInt(iso[1]), parseInt(iso[2]) - 1, parseInt(iso[3]));
   const parts = d.split("/");
   if (parts.length === 3) return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
   return null;
 }
 
 interface ScadenzaRow {
-  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale";
+  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale" | "polizza";
   numero: string;
   soggetto: string;
   totale: number;
@@ -43,6 +47,7 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
     render: (r) => {
       if (r.tipo === "credito_fiscale") return <Badge className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-[10px]"><Landmark className="h-3 w-3 mr-1" />Cred. Fiscale</Badge>;
       if (r.tipo === "finanziamento") return <Badge className="bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] text-[10px]"><Landmark className="h-3 w-3 mr-1" />Rata</Badge>;
+      if (r.tipo === "polizza") return <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><ShieldCheck className="h-3 w-3 mr-1" />Polizza</Badge>;
       return <Badge variant={r.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">{r.tipo === "credito" ? "Credito" : "Debito"}</Badge>;
     }
   },
@@ -58,7 +63,7 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
   },
   {
     key: "totale", label: "Importo", sortable: true, align: "right",
-    render: (r) => <span className={`text-xs font-mono font-medium ${r.tipo === "credito" ? "text-income" : "text-expense"}`}>{formatCurrency(r.totale)}</span>
+    render: (r) => <span className={`text-xs font-mono font-medium ${r.tipo === "credito" ? "text-income" : r.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense"}`}>{formatCurrency(r.totale)}</span>
   },
   { key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> },
 ];
@@ -67,6 +72,23 @@ export default function ScadenzarioPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
   const { rate, loading: loadingRate } = useRateFinanziamento();
   const { conti } = useContiCorrenti();
+  const [polizze, setPolizze] = useState<Array<{ id: string; fornitore: string; descrizione: string; importo: number; data_scadenza: string; cig: string; numero: string }>>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("documenti_acquisto" as any)
+        .select("id, fornitore, descrizione, importo, data_scadenza, cig, numero, tipo_documento")
+        .eq("tipo_documento", "Polizza")
+        .not("data_scadenza", "is", null)
+        .neq("data_scadenza", "");
+      setPolizze(((data as any[]) || []).map((d) => ({
+        id: d.id, fornitore: d.fornitore || "", descrizione: d.descrizione || "",
+        importo: Number(d.importo) || 0, data_scadenza: d.data_scadenza || "",
+        cig: d.cig || "", numero: d.numero || "",
+      })));
+    })();
+  }, []);
 
   const contiMap = new Map(conti.filter(c => c.tipo === "finanziamento" || c.tipo === "crediti_fiscali").map(c => [c.id, c]));
 
@@ -124,6 +146,25 @@ export default function ScadenzarioPage() {
           cig: "",
         });
       }
+    });
+
+    // Add polizze scadenze
+    polizze.forEach((p) => {
+      const d = parseDate(p.data_scadenza);
+      if (!d) return;
+      const days = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const stato: ScadenzaRow["stato"] = days < 0 ? "scaduta" : days <= 30 ? "in_scadenza" : "regolare";
+      result.push({
+        tipo: "polizza",
+        numero: p.numero ? `Pol. ${p.numero}` : "Polizza",
+        soggetto: p.fornitore || p.descrizione || "Polizza",
+        totale: p.importo,
+        scadenza: p.data_scadenza,
+        scadenzaDate: d,
+        giorniRimasti: days,
+        stato,
+        cig: p.cig,
+      });
     });
 
     return result.sort((a, b) => a.giorniRimasti - b.giorniRimasti);
