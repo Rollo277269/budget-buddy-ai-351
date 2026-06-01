@@ -667,16 +667,18 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
               )}
               {visibleCols.has("fornitore") && (
                 <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
-                  {editingCell?.id === doc.id && editingCell?.field === "fornitore" ? (
-                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
-                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
-                      className="h-6 text-[10px] w-[140px]" autoFocus />
-                  ) : (
-                    <span className="truncate max-w-[140px] cursor-text hover:text-primary transition-colors"
-                      onClick={() => startEditing(doc.id, "fornitore", doc.fornitore || "")}>
-                      {doc.fornitore || "—"}
-                    </span>
-                  )}
+                  <FornitoreCellEditor
+                    value={doc.fornitore || ""}
+                    options={rubricaOptions}
+                    open={editingCell?.id === doc.id && editingCell?.field === "fornitore"}
+                    onOpenChange={(o) => {
+                      if (o) startEditing(doc.id, "fornitore", doc.fornitore || "");
+                      else { setEditingCell(null); setEditingValue("") }
+                    }}
+                    onPick={(name) => handleFornitorePicked(doc.id, name)}
+                    onFreeText={(t) => handleFornitoreFreeText(doc.id, t)}
+                    placeholder={tipo === "vendita" ? "Seleziona cliente" : "Seleziona fornitore"}
+                  />
                 </TableCell>
               )}
               {visibleCols.has("data") && (
