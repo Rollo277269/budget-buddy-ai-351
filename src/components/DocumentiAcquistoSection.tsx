@@ -124,6 +124,80 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editingValue, setEditingValue] = useState("");
 
+  // Fornitore picker: dialog asking the user whether to add a new supplier to rubrica
+  const [newFornitoreAsk, setNewFornitoreAsk] = useState<{ docId: string; name: string } | null>(null);
+  // Fornitore picker: dialog showing similar existing contacts when the typed name doesn't match exactly
+  const [similarFornitoreAsk, setSimilarFornitoreAsk] = useState<{
+    docId: string;
+    typed: string;
+    suggestions: { id: string; denominazione: string }[];
+  } | null>(null);
+
+  const fornitoreLabel = tipo === "vendita" ? "cliente" : "fornitore";
+  const rubricaOptions = useMemo(() => {
+    // For acquisti: prefer fornitori + soci; for vendite: clienti + soci.
+    const allowed = tipo === "vendita" ? ["cliente", "socio"] : ["fornitore", "socio"];
+    const filtered = rubricaContatti.filter((c) => allowed.includes((c.tipo || "").toLowerCase()));
+    // Fallback: if no contacts match the expected tipo, show all so the picker isn't empty.
+    return (filtered.length > 0 ? filtered : rubricaContatti).slice().sort((a, b) =>
+      a.denominazione.localeCompare(b.denominazione)
+    );
+  }, [rubricaContatti, tipo]);
+
+  const handleFornitorePicked = useCallback(async (docId: string, denominazione: string) => {
+    await updateField(docId, "fornitore", denominazione || null);
+    setEditingCell(null);
+    setEditingValue("");
+  }, [updateField]);
+
+  const handleConfirmNewFornitore = useCallback(async () => {
+    if (!newFornitoreAsk) return;
+    const { docId, name } = newFornitoreAsk;
+    await saveContattoRubrica({
+      id: "",
+      denominazione: name,
+      tipo: tipo === "vendita" ? "cliente" : "fornitore",
+      partita_iva: "",
+      email: "",
+      pec: "",
+      codice_sdi: "",
+      telefono: "",
+      indirizzo: "",
+      note: "",
+      sede_legale: { ...emptyIndirizzo },
+      sede_operativa: { ...emptyIndirizzo },
+    });
+    setNewFornitoreAsk(null);
+    await handleFornitorePicked(docId, name);
+  }, [newFornitoreAsk, saveContattoRubrica, tipo, handleFornitorePicked]);
+
+  // When the user types a name that doesn't exactly match any rubrica entry,
+  // look for fuzzy/substring matches and, if found, offer them; otherwise propose creation.
+  const handleFornitoreFreeText = useCallback((docId: string, typed: string) => {
+    const t = typed.trim();
+    if (!t) {
+      setEditingCell(null);
+      setEditingValue("");
+      return;
+    }
+    const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+    const exact = rubricaOptions.find((c) => norm(c.denominazione) === norm(t));
+    if (exact) {
+      handleFornitorePicked(docId, exact.denominazione);
+      return;
+    }
+    const nt = norm(t);
+    const suggestions = rubricaOptions.filter((c) => {
+      const n = norm(c.denominazione);
+      return n.includes(nt) || nt.includes(n);
+    }).slice(0, 8);
+    if (suggestions.length > 0) {
+      setSimilarFornitoreAsk({ docId, typed: t, suggestions: suggestions.map((c) => ({ id: c.id, denominazione: c.denominazione })) });
+    } else {
+      setNewFornitoreAsk({ docId, name: t });
+    }
+  }, [rubricaOptions, handleFornitorePicked]);
+
   const centroLookup = useMemo(() => new Map(centri.map(c => [c.codice, c.descrizione])), [centri]);
 
   const toggleCol = (key: ColumnKey) => {
