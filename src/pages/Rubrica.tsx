@@ -485,6 +485,20 @@ export default function RubricaPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[36px]">
+                    <Checkbox
+                      checked={filtered.length > 0 && filtered.every((c) => selected.has(c.id))}
+                      onCheckedChange={(v) => {
+                        setSelected((prev) => {
+                          const next = new Set(prev);
+                          if (v) filtered.forEach((c) => next.add(c.id));
+                          else filtered.forEach((c) => next.delete(c.id));
+                          return next;
+                        });
+                      }}
+                      aria-label="Seleziona tutti"
+                    />
+                  </TableHead>
                   {([
                     ["denominazione", "Denominazione"],
                     ["tipo", "Tipo"],
@@ -517,8 +531,16 @@ export default function RubricaPage() {
                   const displayTipo = filterTipo && tipos.includes(filterTipo) ? filterTipo : (tipos.includes("socio") ? "socio" : tipos[0] || "cliente");
                   const info = TIPO_LABELS[displayTipo] || TIPO_LABELS.cliente;
                   const Icon = info.icon;
+                  const isSel = selected.has(c.id);
                   return (
-                    <TableRow key={c.id} className="group cursor-pointer hover:bg-muted/30" onClick={() => setDetailContact(c)}>
+                    <TableRow key={c.id} className={`group cursor-pointer hover:bg-muted/30 ${isSel ? "bg-primary/5" : ""}`} onClick={() => setDetailContact(c)}>
+                      <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={isSel}
+                          onCheckedChange={() => toggleSelect(c.id)}
+                          aria-label={`Seleziona ${c.denominazione}`}
+                        />
+                      </TableCell>
                       <TableCell className="text-sm font-medium py-2">{c.denominazione}</TableCell>
                       <TableCell className="py-2">
                         <Badge variant={info.variant} className="text-[10px] gap-1">
