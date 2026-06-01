@@ -288,6 +288,7 @@ export default function Polizze() {
                 <TableHeader>
                   <TableRow className="h-8">
                     <TableHead className="text-[11px] h-8 px-2">Fornitore</TableHead>
+                    <TableHead className="text-[11px] h-8 px-2">N° polizza</TableHead>
                     <TableHead className="text-[11px] h-8 px-2">Descrizione</TableHead>
                     <TableHead className="text-[11px] h-8 px-2">CIG</TableHead>
                     <TableHead className="text-[11px] h-8 px-2">Centro</TableHead>
@@ -302,7 +303,7 @@ export default function Polizze() {
                 <TableBody>
                   {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center text-xs text-muted-foreground py-8">
+                      <TableCell colSpan={11} className="text-center text-xs text-muted-foreground py-8">
                         Nessuna polizza trovata. Carica un PDF di polizza in <Link to="/acquisti" className="text-primary underline">Acquisti → Ricevute</Link> o nel dettaglio di una commessa.
                       </TableCell>
                     </TableRow>
@@ -312,6 +313,7 @@ export default function Polizze() {
                       return (
                         <TableRow key={d.id} className="hover:bg-muted/40">
                           <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>
+                          <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>
                           <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>
                           <TableCell className="text-xs px-2 py-1.5 font-mono">
                             {d.cig ? (
