@@ -64,6 +64,7 @@ interface ExpenseFormData {
   centro_costo: string;
   tipo_documento: string;
   data_scadenza?: string;
+  importo_garantito?: number | null;
 }
 
 interface Props {
@@ -168,7 +169,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         toast.error("Errore analisi AI, compila manualmente");
         aiResult = {
           fornitore: "", descrizione: file.name, importo_totale: 0,
-          imponibile: 0, imposta: 0, data_documento: "", centro_costo: "", tipo_documento: "Altro", data_scadenza: "",
+          imponibile: 0, imposta: 0, data_documento: "", centro_costo: "", tipo_documento: "Altro", data_scadenza: "", importo_garantito: null,
         };
       } else {
         aiResult = {
@@ -177,6 +178,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
           imposta: data.imposta || 0, data_documento: data.data_documento || "",
           centro_costo: data.centro_costo || "", tipo_documento: data.tipo_documento || "Altro",
           data_scadenza: data.data_scadenza || "",
+          importo_garantito: data.importo_garantito ? Number(data.importo_garantito) : null,
         };
       }
 
