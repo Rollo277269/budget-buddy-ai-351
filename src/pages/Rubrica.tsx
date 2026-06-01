@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil, ArrowUp, ArrowDown, ArrowUpDown, MapPin, Building2 } from "lucide-react";
+import { Plus, Trash2, Save, Download, Search, Users, UserCheck, UserCog, Handshake, X, Pencil, ArrowUp, ArrowDown, ArrowUpDown, MapPin, Building2, Merge } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type SortKey = "denominazione" | "tipo" | "partita_iva" | "email" | "telefono" | "note";
@@ -129,7 +131,7 @@ function AddressDisplay({ label, icon: Icon, addr }: AddressDisplayProps) {
 }
 
 export default function RubricaPage() {
-  const { contatti, loading, saveContatto, deleteContatto, importFromInvoices } = useRubrica();
+  const { contatti, loading, saveContatto, deleteContatto, importFromInvoices, mergeContatti } = useRubrica();
   const [editing, setEditing] = useState<ContattoRubrica | null>(null);
   const [detailContact, setDetailContact] = useState<ContattoRubrica | null>(null);
   const [search, setSearch] = useState("");
@@ -137,6 +139,18 @@ export default function RubricaPage() {
   const [importing, setImporting] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("denominazione");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeMasterId, setMergeMasterId] = useState<string>("");
+  const [merging, setMerging] = useState(false);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
 
   const toggleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -206,6 +220,38 @@ export default function RubricaPage() {
     }
   }, [importFromInvoices]);
 
+  const selectedContatti = useMemo(
+    () => contatti.filter((c) => selected.has(c.id)),
+    [contatti, selected]
+  );
+
+  const openMergeDialog = useCallback(() => {
+    if (selected.size < 2) {
+      toast.info("Seleziona almeno 2 contatti da unire");
+      return;
+    }
+    // Default master: prefer one with most metadata (P.IVA), else first by name
+    const sel = contatti.filter((c) => selected.has(c.id));
+    const best = [...sel].sort((a, b) => {
+      const score = (c: ContattoRubrica) => (c.partita_iva ? 2 : 0) + (c.email ? 1 : 0);
+      return score(b) - score(a) || a.denominazione.localeCompare(b.denominazione);
+    })[0];
+    setMergeMasterId(best?.id || "");
+    setMergeOpen(true);
+  }, [contatti, selected]);
+
+  const handleMergeConfirm = useCallback(async () => {
+    if (!mergeMasterId) return;
+    setMerging(true);
+    try {
+      await mergeContatti(mergeMasterId, Array.from(selected));
+      setMergeOpen(false);
+      setSelected(new Set());
+    } finally {
+      setMerging(false);
+    }
+  }, [mergeMasterId, mergeContatti, selected]);
+
   const openEdit = useCallback((c: ContattoRubrica) => {
     setDetailContact(null);
     setEditing({
@@ -224,6 +270,18 @@ export default function RubricaPage() {
           <h1 className="text-xl font-bold tracking-tight">Rubrica</h1>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {selected.size >= 2 && (
+            <Button variant="default" size="sm" onClick={openMergeDialog}>
+              <Merge className="h-3.5 w-3.5 mr-1" />
+              Unisci {selected.size} contatti
+            </Button>
+          )}
+          {selected.size > 0 && (
+            <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+              <X className="h-3.5 w-3.5 mr-1" />
+              Deseleziona
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handleImport} disabled={importing}>
             <Download className="h-3.5 w-3.5 mr-1" />
             {importing ? "Importazione..." : "Importa da fatture"}
