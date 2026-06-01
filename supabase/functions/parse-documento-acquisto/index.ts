@@ -58,9 +58,11 @@ Rispondi SOLO con la funzione tool.`;
                     fornitore: { type: "string", description: "Nome del fornitore o emittente. Stringa vuota se non trovato." },
                     centro_costo: { type: "string", description: "Codice del centro di costo suggerito. Stringa vuota se non determinabile." },
                     cig: { type: "string", description: "Codice CIG (Codice Identificativo di Gara) se presente nel documento. È un codice alfanumerico di esattamente 10 caratteri (lettere maiuscole e numeri). Cerca diciture come 'CIG', 'Codice CIG', 'C.I.G.'. Stringa vuota se non trovato o se non ha esattamente 10 caratteri." },
+                    tipo_documento: { type: "string", description: "Tipologia del documento. Uno tra: 'Polizza', 'Bollo', 'ANAC', 'Fattura', 'Ricevuta', 'Nota Spese', 'Altro'. Usa 'Polizza' per polizze fideiussorie, polizze RC, polizze assicurative di qualunque tipo." },
+                    data_scadenza: { type: "string", description: "Data di scadenza del documento in formato DD/MM/YYYY. SOLO per polizze: cerca diciture come 'Scadenza', 'Valida fino al', 'Data scadenza', 'Fine copertura', 'Termine validità', 'Scade il'. Stringa vuota se il documento non è una polizza o se la scadenza non è leggibile." },
                     summary: { type: "string", description: "Riassunto del contenuto del documento in 1-2 frasi." },
                   },
-                  required: ["descrizione", "importo", "data_documento", "numero", "fornitore", "centro_costo", "cig", "summary"],
+                  required: ["descrizione", "importo", "data_documento", "numero", "fornitore", "centro_costo", "cig", "tipo_documento", "data_scadenza", "summary"],
                   additionalProperties: false,
                 },
               },
@@ -88,7 +90,7 @@ Rispondi SOLO con la funzione tool.`;
       });
     }
 
-    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", numero: "", fornitore: "", centro_costo: "", cig: "", summary: "" }),
+    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", numero: "", fornitore: "", centro_costo: "", cig: "", tipo_documento: "", data_scadenza: "", summary: "" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("parse-documento error:", e);
