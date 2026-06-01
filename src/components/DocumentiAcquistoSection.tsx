@@ -86,6 +86,7 @@ interface Props {
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
   const { documenti, loading, prepareDocumento, finalizeDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField, reclassifyExisting, updateDocumentoFromPrepared } = useDocumentiAcquisto(tipo);
+  const { contatti: rubricaContatti, saveContatto: saveContattoRubrica } = useRubrica();
 
   // AI review queue state
   const [reviewQueue, setReviewQueue] = useState<PreparedDocumento[]>([]);
