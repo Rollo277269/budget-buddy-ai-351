@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import { useDocumentiAcquisto, DocumentoAcquisto, PreparedDocumento } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
+import { useRubrica, emptyIndirizzo } from "@/hooks/useRubrica";
 import { DocumentoAiReviewDialog } from "@/components/DocumentoAiReviewDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/format";
-import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Columns3, Sparkles } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Columns3, Sparkles, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -84,6 +86,7 @@ interface Props {
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
   const { documenti, loading, prepareDocumento, finalizeDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField, reclassifyExisting, updateDocumentoFromPrepared } = useDocumentiAcquisto(tipo);
+  const { contatti: rubricaContatti, saveContatto: saveContattoRubrica } = useRubrica();
 
   // AI review queue state
   const [reviewQueue, setReviewQueue] = useState<PreparedDocumento[]>([]);
@@ -120,6 +123,80 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
   // Inline editing state: { docId, field }
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editingValue, setEditingValue] = useState("");
+
+  // Fornitore picker: dialog asking the user whether to add a new supplier to rubrica
+  const [newFornitoreAsk, setNewFornitoreAsk] = useState<{ docId: string; name: string } | null>(null);
+  // Fornitore picker: dialog showing similar existing contacts when the typed name doesn't match exactly
+  const [similarFornitoreAsk, setSimilarFornitoreAsk] = useState<{
+    docId: string;
+    typed: string;
+    suggestions: { id: string; denominazione: string }[];
+  } | null>(null);
+
+  const fornitoreLabel = tipo === "vendita" ? "cliente" : "fornitore";
+  const rubricaOptions = useMemo(() => {
+    // For acquisti: prefer fornitori + soci; for vendite: clienti + soci.
+    const allowed = tipo === "vendita" ? ["cliente", "socio"] : ["fornitore", "socio"];
+    const filtered = rubricaContatti.filter((c) => allowed.includes((c.tipo || "").toLowerCase()));
+    // Fallback: if no contacts match the expected tipo, show all so the picker isn't empty.
+    return (filtered.length > 0 ? filtered : rubricaContatti).slice().sort((a, b) =>
+      a.denominazione.localeCompare(b.denominazione)
+    );
+  }, [rubricaContatti, tipo]);
+
+  const handleFornitorePicked = useCallback(async (docId: string, denominazione: string) => {
+    await updateField(docId, "fornitore", denominazione || null);
+    setEditingCell(null);
+    setEditingValue("");
+  }, [updateField]);
+
+  const handleConfirmNewFornitore = useCallback(async () => {
+    if (!newFornitoreAsk) return;
+    const { docId, name } = newFornitoreAsk;
+    await saveContattoRubrica({
+      id: "",
+      denominazione: name,
+      tipo: tipo === "vendita" ? "cliente" : "fornitore",
+      partita_iva: "",
+      email: "",
+      pec: "",
+      codice_sdi: "",
+      telefono: "",
+      indirizzo: "",
+      note: "",
+      sede_legale: { ...emptyIndirizzo },
+      sede_operativa: { ...emptyIndirizzo },
+    });
+    setNewFornitoreAsk(null);
+    await handleFornitorePicked(docId, name);
+  }, [newFornitoreAsk, saveContattoRubrica, tipo, handleFornitorePicked]);
+
+  // When the user types a name that doesn't exactly match any rubrica entry,
+  // look for fuzzy/substring matches and, if found, offer them; otherwise propose creation.
+  const handleFornitoreFreeText = useCallback((docId: string, typed: string) => {
+    const t = typed.trim();
+    if (!t) {
+      setEditingCell(null);
+      setEditingValue("");
+      return;
+    }
+    const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+    const exact = rubricaOptions.find((c) => norm(c.denominazione) === norm(t));
+    if (exact) {
+      handleFornitorePicked(docId, exact.denominazione);
+      return;
+    }
+    const nt = norm(t);
+    const suggestions = rubricaOptions.filter((c) => {
+      const n = norm(c.denominazione);
+      return n.includes(nt) || nt.includes(n);
+    }).slice(0, 8);
+    if (suggestions.length > 0) {
+      setSimilarFornitoreAsk({ docId, typed: t, suggestions: suggestions.map((c) => ({ id: c.id, denominazione: c.denominazione })) });
+    } else {
+      setNewFornitoreAsk({ docId, name: t });
+    }
+  }, [rubricaOptions, handleFornitorePicked]);
 
   const centroLookup = useMemo(() => new Map(centri.map(c => [c.codice, c.descrizione])), [centri]);
 
@@ -445,6 +522,71 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Ask: typed name doesn't exist in rubrica → create it? */}
+      <AlertDialog open={!!newFornitoreAsk} onOpenChange={(o) => { if (!o) setNewFornitoreAsk(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Nuovo {fornitoreLabel}</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Il {fornitoreLabel} <span className="font-medium text-foreground">"{newFornitoreAsk?.name}"</span> non è presente in rubrica.
+                </p>
+                <p>Vuoi aggiungerlo alla rubrica e assegnarlo a questo documento?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmNewFornitore}>Aggiungi in rubrica</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Ask: typed name is similar to existing rubrica entries → pick one or create new */}
+      <AlertDialog open={!!similarFornitoreAsk} onOpenChange={(o) => { if (!o) setSimilarFornitoreAsk(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{fornitoreLabel.charAt(0).toUpperCase() + fornitoreLabel.slice(1)} simile già in rubrica</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Hai scritto <span className="font-medium text-foreground">"{similarFornitoreAsk?.typed}"</span>. Forse intendevi uno di questi?
+                </p>
+                <div className="space-y-1 max-h-[240px] overflow-y-auto">
+                  {similarFornitoreAsk?.suggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="w-full text-left text-xs px-2 py-1.5 rounded border bg-card hover:bg-accent hover:border-primary/40 transition-colors"
+                      onClick={() => {
+                        const ask = similarFornitoreAsk;
+                        setSimilarFornitoreAsk(null);
+                        if (ask) handleFornitorePicked(ask.docId, s.denominazione);
+                      }}
+                    >
+                      {s.denominazione}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const ask = similarFornitoreAsk;
+                setSimilarFornitoreAsk(null);
+                if (ask) setNewFornitoreAsk({ docId: ask.docId, name: ask.typed });
+              }}
+            >
+              Aggiungi come nuovo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 
@@ -590,16 +732,18 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
               )}
               {visibleCols.has("fornitore") && (
                 <TableCell className="text-xs py-1.5" onClick={(e) => e.stopPropagation()}>
-                  {editingCell?.id === doc.id && editingCell?.field === "fornitore" ? (
-                    <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
-                      onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
-                      className="h-6 text-[10px] w-[140px]" autoFocus />
-                  ) : (
-                    <span className="truncate max-w-[140px] cursor-text hover:text-primary transition-colors"
-                      onClick={() => startEditing(doc.id, "fornitore", doc.fornitore || "")}>
-                      {doc.fornitore || "—"}
-                    </span>
-                  )}
+                  <FornitoreCellEditor
+                    value={doc.fornitore || ""}
+                    options={rubricaOptions}
+                    open={editingCell?.id === doc.id && editingCell?.field === "fornitore"}
+                    onOpenChange={(o) => {
+                      if (o) startEditing(doc.id, "fornitore", doc.fornitore || "");
+                      else { setEditingCell(null); setEditingValue("") }
+                    }}
+                    onPick={(name) => handleFornitorePicked(doc.id, name)}
+                    onFreeText={(t) => handleFornitoreFreeText(doc.id, t)}
+                    placeholder={tipo === "vendita" ? "Seleziona cliente" : "Seleziona fornitore"}
+                  />
                 </TableCell>
               )}
               {visibleCols.has("data") && (
@@ -873,5 +1017,105 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-xs font-medium text-right max-w-[60%]">{value || "—"}</span>
     </div>
+  );
+}
+
+interface FornitoreCellEditorProps {
+  value: string;
+  options: { id: string; denominazione: string }[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPick: (denominazione: string) => void;
+  onFreeText: (typed: string) => void;
+  placeholder: string;
+}
+
+function FornitoreCellEditor({ value, options, open, onOpenChange, onPick, onFreeText, placeholder }: FornitoreCellEditorProps) {
+  const [query, setQuery] = useState("");
+  // Reset query when opening
+  const handleOpenChange = useCallback((o: boolean) => {
+    if (o) setQuery("");
+    onOpenChange(o);
+  }, [onOpenChange]);
+
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const filtered = useMemo(() => {
+    const q = norm(query);
+    if (!q) return options.slice(0, 200);
+    return options.filter((o) => norm(o.denominazione).includes(q)).slice(0, 200);
+  }, [options, query]);
+  const exactMatch = useMemo(
+    () => options.find((o) => norm(o.denominazione) === norm(query)),
+    [options, query]
+  );
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="truncate max-w-[160px] text-left cursor-pointer hover:text-primary transition-colors"
+          title={value || placeholder}
+        >
+          {value || <span className="text-muted-foreground">—</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={placeholder}
+            value={query}
+            onValueChange={setQuery}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && filtered.length === 0 && query.trim()) {
+                e.preventDefault();
+                onFreeText(query);
+              }
+            }}
+          />
+          <CommandList>
+            <CommandEmpty>
+              <div className="py-2 px-2 space-y-2">
+                <p className="text-xs text-muted-foreground">Nessun contatto trovato.</p>
+                {query.trim() && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-7 text-xs"
+                    onClick={() => onFreeText(query)}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Aggiungi "{query.trim()}"
+                  </Button>
+                )}
+              </div>
+            </CommandEmpty>
+            <CommandGroup>
+              {filtered.map((o) => (
+                <CommandItem
+                  key={o.id}
+                  value={o.denominazione}
+                  onSelect={() => onPick(o.denominazione)}
+                  className="text-xs"
+                >
+                  <Check className={`mr-2 h-3 w-3 ${value === o.denominazione ? "opacity-100" : "opacity-0"}`} />
+                  <span className="truncate">{o.denominazione}</span>
+                </CommandItem>
+              ))}
+              {query.trim() && !exactMatch && filtered.length > 0 && (
+                <CommandItem
+                  value={`__new__${query}`}
+                  onSelect={() => onFreeText(query)}
+                  className="text-xs text-primary"
+                >
+                  <Plus className="mr-2 h-3 w-3" />
+                  Aggiungi "{query.trim()}"
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
