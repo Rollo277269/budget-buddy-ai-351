@@ -60,9 +60,10 @@ Rispondi SOLO con la funzione tool.`;
                     cig: { type: "string", description: "Codice CIG (Codice Identificativo di Gara) se presente nel documento. È un codice alfanumerico di esattamente 10 caratteri (lettere maiuscole e numeri). Cerca diciture come 'CIG', 'Codice CIG', 'C.I.G.'. Stringa vuota se non trovato o se non ha esattamente 10 caratteri." },
                     tipo_documento: { type: "string", description: "Tipologia del documento. Uno tra: 'Polizza', 'Bollo', 'ANAC', 'Fattura', 'Ricevuta', 'Nota Spese', 'Altro'. Usa 'Polizza' per polizze fideiussorie, polizze RC, polizze assicurative di qualunque tipo, INCLUSE ricevute/quietanze di pagamento di rate successive di una polizza (anche se intitolate 'Ricevuta' o 'Quietanza', se si riferiscono a una polizza assicurativa classifica come 'Polizza')." },
                     data_scadenza: { type: "string", description: "OBBLIGATORIO per polizze (incluse quietanze/ricevute di pagamento rate polizza): data di scadenza della copertura/rata in formato DD/MM/YYYY. Cerca SEMPRE diciture come 'Scadenza', 'Scade il', 'Valida fino al', 'Data scadenza', 'Fine copertura', 'Termine validità', 'Periodo di copertura ... al', 'Prossima scadenza', 'Scadenza rata', 'Copertura fino al'. Una stessa polizza può avere quietanze successive con scadenze diverse: estrai la scadenza specifica della rata/quietanza in oggetto. Stringa vuota SOLO se il documento non è una polizza o la scadenza è veramente assente." },
+                    importo_garantito: { type: "number", description: "SOLO per polizze, fideiussioni, garanzie: importo garantito / somma assicurata / massimale / capitale garantito (la cifra coperta dalla garanzia, NON il costo). Cerca 'Somma assicurata', 'Massimale', 'Importo garantito', 'Capitale garantito', 'Importo della garanzia', 'Massimale assicurato'. 0 se non è una polizza/garanzia o se non leggibile." },
                     summary: { type: "string", description: "Riassunto del contenuto del documento in 1-2 frasi." },
                   },
-                  required: ["descrizione", "importo", "data_documento", "numero", "fornitore", "centro_costo", "cig", "tipo_documento", "data_scadenza", "summary"],
+                  required: ["descrizione", "importo", "data_documento", "numero", "fornitore", "centro_costo", "cig", "tipo_documento", "data_scadenza", "importo_garantito", "summary"],
                   additionalProperties: false,
                 },
               },
@@ -90,7 +91,7 @@ Rispondi SOLO con la funzione tool.`;
       });
     }
 
-    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", numero: "", fornitore: "", centro_costo: "", cig: "", tipo_documento: "", data_scadenza: "", summary: "" }),
+    return new Response(JSON.stringify({ descrizione: "", importo: 0, data_documento: "", numero: "", fornitore: "", centro_costo: "", cig: "", tipo_documento: "", data_scadenza: "", importo_garantito: 0, summary: "" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("parse-documento error:", e);

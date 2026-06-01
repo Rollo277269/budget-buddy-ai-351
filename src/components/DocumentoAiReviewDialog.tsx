@@ -144,6 +144,20 @@ export function DocumentoAiReviewDialog({ open, prepared, centri, tipo, onConfir
               </div>
             )}
 
+            {(form.tipo_documento === "Polizza" || (form.importo_garantito ?? 0) > 0) && (
+              <div className="space-y-1">
+                <Label className="text-[11px]">Importo garantito (€)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.importo_garantito ?? ""}
+                  onChange={(e) => update("importo_garantito", e.target.value === "" ? null : Number(e.target.value))}
+                  placeholder="Somma assicurata / massimale"
+                  className="h-9 text-sm font-mono"
+                />
+              </div>
+            )}
+
             <div className="col-span-2 space-y-1">
               <Label className="text-[11px]">{tipo === "vendita" ? "Centro Ricavo" : "Centro Costo"}</Label>
               <Select

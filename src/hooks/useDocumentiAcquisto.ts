@@ -19,6 +19,7 @@ export interface DocumentoAcquisto {
   created_at: string | null;
   tipo_documento?: string | null;
   data_scadenza?: string | null;
+  importo_garantito?: number | null;
 }
 
 export interface PreparedDocumento {
@@ -36,6 +37,7 @@ export interface PreparedDocumento {
   tipo: "acquisto" | "vendita";
   tipo_documento: string;
   data_scadenza: string;
+  importo_garantito: number | null;
 }
 
 // ── Module-scope cache (per tipo) ──
@@ -151,6 +153,7 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
         tipo,
         tipo_documento: aiData.tipo_documento || "",
         data_scadenza: aiData.data_scadenza || "",
+        importo_garantito: aiData.importo_garantito ? Number(aiData.importo_garantito) : null,
       },
     };
   }, [tipo]);
@@ -183,6 +186,7 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
         tipo: prepared.tipo,
         tipo_documento: prepared.tipo_documento || "",
         data_scadenza: isoScadenza,
+        importo_garantito: prepared.importo_garantito,
       } as any);
 
     if (insertError) {
