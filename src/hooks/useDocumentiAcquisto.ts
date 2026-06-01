@@ -246,6 +246,79 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
     await fetchDocumenti();
   }, [fetchDocumenti]);
 
+  /** Re-run AI parsing on an existing document using fresh PDF text. */
+  const reclassifyExisting = useCallback(async (
+    doc: DocumentoAcquisto,
+    extractedText: string,
+  ): Promise<PreparedDocumento | null> => {
+    let aiData: any = {};
+    try {
+      const centri = await fetchCentriFromDb();
+      const { data, error } = await supabase.functions.invoke("parse-documento-acquisto", {
+        body: { text: extractedText, centri },
+      });
+      if (!error && data) aiData = data;
+    } catch (e) {
+      console.error("AI re-parse error:", e);
+      toast.error("Errore rilettura AI");
+      return null;
+    }
+    return {
+      file_name: doc.file_name,
+      storage_path: doc.storage_path,
+      descrizione: aiData.descrizione || doc.descrizione || doc.file_name,
+      importo: aiData.importo ?? doc.importo ?? null,
+      data_documento: aiData.data_documento || doc.data_documento || "",
+      numero: aiData.numero || doc.numero || "",
+      fornitore: aiData.fornitore || doc.fornitore || "",
+      centro_costo: aiData.centro_costo || doc.centro_costo || "",
+      cig: aiData.cig || doc.cig || "",
+      parsed_text: extractedText.substring(0, 10000),
+      ai_summary: aiData.summary || doc.ai_summary || "",
+      tipo,
+      tipo_documento: aiData.tipo_documento || doc.tipo_documento || "",
+      data_scadenza: aiData.data_scadenza || doc.data_scadenza || "",
+      importo_garantito: aiData.importo_garantito != null ? Number(aiData.importo_garantito) : (doc.importo_garantito ?? null),
+    };
+  }, [tipo]);
+
+  /** Update an existing document row with values from a prepared (reclassified) payload. */
+  const updateDocumentoFromPrepared = useCallback(async (id: string, prepared: PreparedDocumento) => {
+    const isoScadenza = (() => {
+      const s = (prepared.data_scadenza || "").trim();
+      if (!s) return "";
+      const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+      if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      return s;
+    })();
+    const { error } = await supabase
+      .from("documenti_acquisto" as any)
+      .update({
+        descrizione: prepared.descrizione || prepared.file_name,
+        importo: prepared.importo,
+        data_documento: prepared.data_documento || null,
+        numero: prepared.numero || "",
+        fornitore: prepared.fornitore || null,
+        centro_costo: prepared.centro_costo || null,
+        cig: prepared.cig || "",
+        parsed_text: prepared.parsed_text,
+        ai_summary: prepared.ai_summary || null,
+        tipo_documento: prepared.tipo_documento || "",
+        data_scadenza: isoScadenza,
+        importo_garantito: prepared.importo_garantito,
+      } as any)
+      .eq("id", id);
+    if (error) {
+      console.error("Update error:", error);
+      toast.error(`Errore aggiornamento ${prepared.file_name}`);
+      return false;
+    }
+    toast.success(`Documento "${prepared.descrizione || prepared.file_name}" aggiornato`);
+    await fetchDocumenti();
+    return true;
+  }, [fetchDocumenti]);
+
   return {
     documenti,
     loading,
@@ -256,6 +329,8 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
     updateCentroCosto,
     updateCig,
     updateField,
+    reclassifyExisting,
+    updateDocumentoFromPrepared,
     refresh: fetchDocumenti,
   };
 }
