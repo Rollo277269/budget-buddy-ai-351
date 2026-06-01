@@ -52,7 +52,7 @@ Rispondi SOLO con la funzione tool.`;
                   type: "object",
                   properties: {
                     descrizione: { type: "string", description: "Breve descrizione del documento (es. 'Acquisto marche da bollo', 'Canone affitto gennaio 2024')" },
-                    importo: { type: "number", description: "Importo totale del documento. 0 se non trovato." },
+                    importo: { type: "number", description: "Importo effettivamente pagato (costo del documento) in EUR. ATTENZIONE per le POLIZZE: NON usare mai 'Somma assicurata', 'Massimale', 'Importo garantito', 'Capitale garantito' (che è la cifra coperta dalla polizza, non il costo). Usa SOLO il PREMIO pagato: cerca 'Premio', 'Premio imponibile', 'Premio totale', 'Premio lordo', 'Totale da pagare', 'Importo rata', 'Importo quietanza'. 0 se non trovato." },
                     data_documento: { type: "string", description: "Data del documento in formato DD/MM/YYYY. Stringa vuota se non trovata." },
                     numero: { type: "string", description: "Numero identificativo del documento (es. numero polizza, numero ricevuta, numero contratto). Stringa vuota se non trovato." },
                     fornitore: { type: "string", description: "Nome del fornitore o emittente. Stringa vuota se non trovato." },
