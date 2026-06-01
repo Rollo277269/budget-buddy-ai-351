@@ -70,7 +70,7 @@ export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRe
               <CommandEmpty className="text-xs py-3 text-center">Nessun risultato.</CommandEmpty>
               <CommandGroup>
                 {filtered.map((c) => {
-                  const searchValue = `${c.codice} ${c.descrizione} ${c.parole_chiave_matching || ""}`;
+                  const searchValue = `${c.codice} ${c.descrizione} ${(c as any).paroleChiaveMatching || ""}`;
                   return (
                     <CommandItem
                       key={c.codice}
