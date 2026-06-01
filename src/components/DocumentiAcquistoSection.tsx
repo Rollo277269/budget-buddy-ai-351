@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import { useDocumentiAcquisto, DocumentoAcquisto, PreparedDocumento } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
+import { useRubrica, emptyIndirizzo } from "@/hooks/useRubrica";
 import { DocumentoAiReviewDialog } from "@/components/DocumentoAiReviewDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/format";
-import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Columns3, Sparkles } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Columns3, Sparkles, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
