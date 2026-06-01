@@ -2,12 +2,12 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, AlertTriangle, Clock, Landmark } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle, Clock, Landmark, ShieldCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface CalendarEvent {
-  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale";
+  tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale" | "polizza";
   numero: string;
   soggetto: string;
   totale: number;
@@ -52,7 +52,9 @@ function EventDot({ event }: { event: CalendarEvent }) {
       ? "bg-primary"
       : event.tipo === "finanziamento"
         ? "bg-accent-foreground"
-        : "bg-expense";
+        : event.tipo === "polizza"
+          ? "bg-[hsl(var(--warning))]"
+          : "bg-expense";
   return (
     <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", color)} title={`${event.soggetto} — ${formatCurrency(event.totale)}`} />
   );
@@ -70,11 +72,12 @@ function EventCard({ event }: { event: CalendarEvent }) {
     )}>
       <div className="flex items-center gap-1">
         {(event.tipo === "finanziamento" || event.tipo === "credito_fiscale") && <Landmark className="h-2.5 w-2.5 shrink-0" />}
-        {isOverdue && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
-        {isWarning && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && !isOverdue && <Clock className="h-2.5 w-2.5 shrink-0" />}
+        {event.tipo === "polizza" && <ShieldCheck className="h-2.5 w-2.5 shrink-0" />}
+        {isOverdue && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && event.tipo !== "polizza" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
+        {isWarning && event.tipo !== "finanziamento" && event.tipo !== "credito_fiscale" && event.tipo !== "polizza" && !isOverdue && <Clock className="h-2.5 w-2.5 shrink-0" />}
         <span className="truncate font-medium">{event.soggetto}</span>
       </div>
-      <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : "text-expense")}>
+      <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : event.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense")}>
         {formatCurrency(event.totale)}
       </span>
     </div>
@@ -345,6 +348,8 @@ export function ScadenzarioCalendar({ events }: Props) {
                               <Badge className="bg-primary text-primary-foreground text-[10px]">Cred. Fiscale</Badge>
                             ) : ev.tipo === "finanziamento" ? (
                               <Badge className="bg-accent text-accent-foreground text-[10px]">Rata</Badge>
+                            ) : ev.tipo === "polizza" ? (
+                              <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]">Polizza</Badge>
                             ) : (
                               <Badge variant={ev.tipo === "credito" ? "secondary" : "outline"} className="text-[10px]">
                                 {ev.tipo === "credito" ? "Credito" : "Debito"}
@@ -356,7 +361,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                             </div>
                           </div>
                           <div className="text-right shrink-0 ml-2">
-                            <p className={cn("text-xs font-mono font-semibold", ev.tipo === "credito" ? "text-income" : "text-expense")}>
+                            <p className={cn("text-xs font-mono font-semibold", ev.tipo === "credito" ? "text-income" : ev.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense")}>
                               {formatCurrency(ev.totale)}
                             </p>
                             {ev.stato === "scaduta" && <span className="text-[9px] text-destructive">Scaduta</span>}
