@@ -661,6 +661,9 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                   <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza PDF" onClick={(e) => { e.stopPropagation(); openPdf(doc); }}>
                     <FileDown className="h-3 w-3" />
                   </Button>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Rileggi e riclassifica con AI" disabled={reclassifying === doc.id} onClick={(e) => { e.stopPropagation(); handleReclassify(doc); }}>
+                    {reclassifying === doc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 text-primary" />}
+                  </Button>
                   <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza dettaglio" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
                     <Eye className="h-3 w-3" />
                   </Button>
