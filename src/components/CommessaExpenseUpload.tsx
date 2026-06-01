@@ -63,6 +63,7 @@ interface ExpenseFormData {
   data_documento: string;
   centro_costo: string;
   tipo_documento: string;
+  data_scadenza?: string;
 }
 
 interface Props {
@@ -167,7 +168,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         toast.error("Errore analisi AI, compila manualmente");
         aiResult = {
           fornitore: "", descrizione: file.name, importo_totale: 0,
-          imponibile: 0, imposta: 0, data_documento: "", centro_costo: "", tipo_documento: "Altro",
+          imponibile: 0, imposta: 0, data_documento: "", centro_costo: "", tipo_documento: "Altro", data_scadenza: "",
         };
       } else {
         aiResult = {
@@ -175,6 +176,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
           importo_totale: data.importo_totale || 0, imponibile: data.imponibile || 0,
           imposta: data.imposta || 0, data_documento: data.data_documento || "",
           centro_costo: data.centro_costo || "", tipo_documento: data.tipo_documento || "Altro",
+          data_scadenza: data.data_scadenza || "",
         };
       }
 
@@ -300,6 +302,14 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
       } as any);
 
       // 3. Save in documenti_acquisto
+      const isoScadenza = (() => {
+        const s = (formData.data_scadenza || "").trim();
+        if (!s) return "";
+        const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+        if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        return s;
+      })();
       await supabase.from("documenti_acquisto" as any).insert({
         file_name: finalFileName || selectedFile.name,
         storage_path: finalStoragePath,
@@ -311,6 +321,8 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         cig: cig || "",
         tipo: "acquisto",
         numero: String(nextNumero),
+        tipo_documento: formData.tipo_documento || "",
+        data_scadenza: isoScadenza,
       } as any);
 
       // 4. Assign centro costo
