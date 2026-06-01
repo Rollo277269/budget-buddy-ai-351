@@ -1019,3 +1019,103 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
     </div>
   );
 }
+
+interface FornitoreCellEditorProps {
+  value: string;
+  options: { id: string; denominazione: string }[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPick: (denominazione: string) => void;
+  onFreeText: (typed: string) => void;
+  placeholder: string;
+}
+
+function FornitoreCellEditor({ value, options, open, onOpenChange, onPick, onFreeText, placeholder }: FornitoreCellEditorProps) {
+  const [query, setQuery] = useState("");
+  // Reset query when opening
+  const handleOpenChange = useCallback((o: boolean) => {
+    if (o) setQuery("");
+    onOpenChange(o);
+  }, [onOpenChange]);
+
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const filtered = useMemo(() => {
+    const q = norm(query);
+    if (!q) return options.slice(0, 200);
+    return options.filter((o) => norm(o.denominazione).includes(q)).slice(0, 200);
+  }, [options, query]);
+  const exactMatch = useMemo(
+    () => options.find((o) => norm(o.denominazione) === norm(query)),
+    [options, query]
+  );
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="truncate max-w-[160px] text-left cursor-pointer hover:text-primary transition-colors"
+          title={value || placeholder}
+        >
+          {value || <span className="text-muted-foreground">—</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={placeholder}
+            value={query}
+            onValueChange={setQuery}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && filtered.length === 0 && query.trim()) {
+                e.preventDefault();
+                onFreeText(query);
+              }
+            }}
+          />
+          <CommandList>
+            <CommandEmpty>
+              <div className="py-2 px-2 space-y-2">
+                <p className="text-xs text-muted-foreground">Nessun contatto trovato.</p>
+                {query.trim() && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-7 text-xs"
+                    onClick={() => onFreeText(query)}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Aggiungi "{query.trim()}"
+                  </Button>
+                )}
+              </div>
+            </CommandEmpty>
+            <CommandGroup>
+              {filtered.map((o) => (
+                <CommandItem
+                  key={o.id}
+                  value={o.denominazione}
+                  onSelect={() => onPick(o.denominazione)}
+                  className="text-xs"
+                >
+                  <Check className={`mr-2 h-3 w-3 ${value === o.denominazione ? "opacity-100" : "opacity-0"}`} />
+                  <span className="truncate">{o.denominazione}</span>
+                </CommandItem>
+              ))}
+              {query.trim() && !exactMatch && filtered.length > 0 && (
+                <CommandItem
+                  value={`__new__${query}`}
+                  onSelect={() => onFreeText(query)}
+                  className="text-xs text-primary"
+                >
+                  <Plus className="mr-2 h-3 w-3" />
+                  Aggiungi "{query.trim()}"
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
