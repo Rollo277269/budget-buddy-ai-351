@@ -2036,7 +2036,12 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       const righe = Array.isArray(s.righe) ? s.righe : [];
       const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
       const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
-      if (hasRowAssignments) {
+      // Se le righe XML hanno tutti gli importi a zero (header-only SAL/FatturaPA),
+      // la distribuzione per riga produrrebbe 0: fallback a classificazione di intera fattura.
+      const rowsImpSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.imponibile || 0)), 0);
+      const rowsTotSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.totale || 0)), 0);
+      const rowsAllZero = rowsImpSum === 0 && rowsTotSum === 0;
+      if (hasRowAssignments && !rowsAllZero) {
         // Header IVA=0 (reverse charge / split / esente): IVA teorica delle righe XML non considerata.
         const headerSenzaIva = Number(s.imposta || 0) === 0;
         righe.forEach((riga, idx) => {
