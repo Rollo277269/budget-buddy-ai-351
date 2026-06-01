@@ -17,6 +17,8 @@ export interface DocumentoAcquisto {
   parsed_text: string | null;
   ai_summary: string | null;
   created_at: string | null;
+  tipo_documento?: string | null;
+  data_scadenza?: string | null;
 }
 
 export interface PreparedDocumento {
@@ -32,6 +34,8 @@ export interface PreparedDocumento {
   parsed_text: string;
   ai_summary: string;
   tipo: "acquisto" | "vendita";
+  tipo_documento: string;
+  data_scadenza: string;
 }
 
 // ── Module-scope cache (per tipo) ──
