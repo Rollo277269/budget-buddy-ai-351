@@ -149,12 +149,23 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
         parsed_text: extractedText.substring(0, 10000),
         ai_summary: aiData.summary || "",
         tipo,
+        tipo_documento: aiData.tipo_documento || "",
+        data_scadenza: aiData.data_scadenza || "",
       },
     };
   }, [tipo]);
 
   /** Insert the prepared document (after user confirmation/edit). */
   const finalizeDocumento = useCallback(async (prepared: PreparedDocumento) => {
+    // Normalize DD/MM/YYYY -> YYYY-MM-DD for data_scadenza (better sorting)
+    const isoScadenza = (() => {
+      const s = (prepared.data_scadenza || "").trim();
+      if (!s) return "";
+      const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+      if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      return s;
+    })();
     const { error: insertError } = await supabase
       .from("documenti_acquisto" as any)
       .insert({
@@ -170,6 +181,8 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
         parsed_text: prepared.parsed_text,
         ai_summary: prepared.ai_summary || null,
         tipo: prepared.tipo,
+        tipo_documento: prepared.tipo_documento || "",
+        data_scadenza: isoScadenza,
       } as any);
 
     if (insertError) {
