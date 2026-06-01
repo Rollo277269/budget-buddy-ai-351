@@ -15,7 +15,7 @@ import { PdfViewerPanel } from "@/components/PdfViewerPanel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/format";
-import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Columns3 } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Receipt, Eye, Search, FileDown, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Columns3, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,6 +29,18 @@ async function extractTextFromPdf(file: File): Promise<string> {
   const pdfjsLib = await getPdfjs();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = "";
+  for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((item: any) => item.str).join(" ") + "\n";
+  }
+  return text;
+}
+
+async function extractTextFromPdfBuffer(buf: ArrayBuffer): Promise<string> {
+  const pdfjsLib = await getPdfjs();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   let text = "";
   for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
     const page = await pdf.getPage(i);
@@ -71,11 +83,15 @@ interface Props {
 }
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
-  const { documenti, loading, prepareDocumento, finalizeDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField } = useDocumentiAcquisto(tipo);
+  const { documenti, loading, prepareDocumento, finalizeDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField, reclassifyExisting, updateDocumentoFromPrepared } = useDocumentiAcquisto(tipo);
 
   // AI review queue state
   const [reviewQueue, setReviewQueue] = useState<PreparedDocumento[]>([]);
   const [reviewOpen, setReviewOpen] = useState(false);
+
+  // Re-classification state (single document at a time)
+  const [reclassifying, setReclassifying] = useState<string | null>(null);
+  const [reclassifyItem, setReclassifyItem] = useState<{ id: string; prepared: PreparedDocumento } | null>(null);
   const { centriCosto, centriRicavo } = useCentriData();
   const centri = tipo === "vendita" ? centriRicavo : centriCosto;
   const ALL_COLUMNS = useMemo(() => buildColumns(tipo), [tipo]);
@@ -338,6 +354,35 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
     setEditingValue("");
   }, []);
 
+  const handleReclassify = useCallback(async (doc: DocumentoAcquisto) => {
+    setReclassifying(doc.id);
+    try {
+      const { data, error } = await supabase.storage
+        .from("documenti-acquisto")
+        .download(doc.storage_path);
+      if (error || !data) { toast.error("Errore download PDF"); return; }
+      const buf = await data.arrayBuffer();
+      const text = await extractTextFromPdfBuffer(buf);
+      const prepared = await reclassifyExisting(doc, text);
+      if (prepared) setReclassifyItem({ id: doc.id, prepared });
+    } catch (err) {
+      console.error("Reclassify error:", err);
+      toast.error("Errore rilettura AI");
+    } finally {
+      setReclassifying(null);
+    }
+  }, [reclassifyExisting]);
+
+  const handleReclassifyConfirm = useCallback(async (edited: PreparedDocumento) => {
+    if (!reclassifyItem) return;
+    await updateDocumentoFromPrepared(reclassifyItem.id, edited);
+    setReclassifyItem(null);
+  }, [reclassifyItem, updateDocumentoFromPrepared]);
+
+  const handleReclassifyCancel = useCallback(() => {
+    setReclassifyItem(null);
+  }, []);
+
   const currentDuplicate = duplicateQueue[0];
   const reviewDialogEl = (
     <>
@@ -348,6 +393,14 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
         tipo={tipo}
         onConfirm={handleReviewConfirm}
         onCancel={handleReviewCancel}
+      />
+      <DocumentoAiReviewDialog
+        open={!!reclassifyItem}
+        prepared={reclassifyItem?.prepared ?? null}
+        centri={centri}
+        tipo={tipo}
+        onConfirm={handleReclassifyConfirm}
+        onCancel={handleReclassifyCancel}
       />
       <AlertDialog open={!!currentDuplicate}>
         <AlertDialogContent>
@@ -607,6 +660,9 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza PDF" onClick={(e) => { e.stopPropagation(); openPdf(doc); }}>
                     <FileDown className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Rileggi e riclassifica con AI" disabled={reclassifying === doc.id} onClick={(e) => { e.stopPropagation(); handleReclassify(doc); }}>
+                    {reclassifying === doc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 text-primary" />}
                   </Button>
                   <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizza dettaglio" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); }}>
                     <Eye className="h-3 w-3" />
