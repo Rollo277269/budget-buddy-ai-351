@@ -83,11 +83,15 @@ interface Props {
 }
 
 export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tipo = "acquisto" }: Props) {
-  const { documenti, loading, prepareDocumento, finalizeDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField } = useDocumentiAcquisto(tipo);
+  const { documenti, loading, prepareDocumento, finalizeDocumento, deleteDocumento, updateCentroCosto, updateCig, updateField, reclassifyExisting, updateDocumentoFromPrepared } = useDocumentiAcquisto(tipo);
 
   // AI review queue state
   const [reviewQueue, setReviewQueue] = useState<PreparedDocumento[]>([]);
   const [reviewOpen, setReviewOpen] = useState(false);
+
+  // Re-classification state (single document at a time)
+  const [reclassifying, setReclassifying] = useState<string | null>(null);
+  const [reclassifyItem, setReclassifyItem] = useState<{ id: string; prepared: PreparedDocumento } | null>(null);
   const { centriCosto, centriRicavo } = useCentriData();
   const centri = tipo === "vendita" ? centriRicavo : centriCosto;
   const ALL_COLUMNS = useMemo(() => buildColumns(tipo), [tipo]);
