@@ -257,10 +257,20 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
       const { data, error } = await supabase.functions.invoke("parse-documento-acquisto", {
         body: { text: extractedText, centri },
       });
-      if (!error && data) aiData = data;
+      if (error) {
+        console.error("AI re-parse invoke error:", error);
+        toast.error(`Errore AI: ${error.message || "gateway non raggiungibile"}`);
+        return null;
+      }
+      if (data?.error) {
+        console.error("AI re-parse server error:", data.error);
+        toast.error(`Errore AI: ${data.error}`);
+        return null;
+      }
+      if (data) aiData = data;
     } catch (e) {
-      console.error("AI re-parse error:", e);
-      toast.error("Errore rilettura AI");
+      console.error("AI re-parse exception:", e);
+      toast.error(`Errore rilettura AI: ${e instanceof Error ? e.message : "sconosciuto"}`);
       return null;
     }
     return {
