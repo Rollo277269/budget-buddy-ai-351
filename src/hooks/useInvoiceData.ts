@@ -627,6 +627,26 @@ export function useInvoiceData() {
 
       const sumRowsImponibile = righe.reduce((sum, riga) => sum + parseNumber(riga.imponibile), 0);
       const sumRowsTotale = righe.reduce((sum, riga) => sum + parseNumber(riga.totale), 0);
+
+      // Caso FatturaPA "SAL": righe puramente descrittive con importi a 0 e header con totale > 0.
+      // Riversa i totali header sull'ultima riga descrittiva così che l'espanso mostri valori reali
+      // e il CentroCell sia abilitabile.
+      const headerTotale = parseNumber(headerEnriched.totale);
+      if (sumRowsTotale === 0 && sumRowsImponibile === 0 && headerTotale !== 0) {
+        const lastIdx = righe.length - 1;
+        const newRighe = righe.map((riga, i) =>
+          i === lastIdx
+            ? {
+                ...riga,
+                imponibile: parseNumber(headerEnriched.imponibile),
+                imposta: parseNumber(headerEnriched.imposta),
+                totale: headerTotale,
+              }
+            : riga
+        );
+        return { ...headerEnriched, righe: newRighe };
+      }
+
       const hasLegacyRowAmounts =
         Math.abs(sumRowsTotale - headerEnriched.imponibile) < 0.05 &&
         Math.abs(sumRowsImponibile - headerEnriched.imponibile) > 0.05;
@@ -673,6 +693,24 @@ export function useInvoiceData() {
         const totale = Math.round((imponibile + imposta) * 100) / 100;
         return { ...r, imponibile, imposta, totale } as SaleInvoiceRiga;
       });
+
+      const sumRowsImponibile = righe.reduce((sum, r) => sum + parseNumber(r.imponibile), 0);
+      const sumRowsTotale = righe.reduce((sum, r) => sum + parseNumber(r.totale), 0);
+      const headerTotale = parseNumber(invoice.totale);
+      if (sumRowsTotale === 0 && sumRowsImponibile === 0 && headerTotale !== 0) {
+        const lastIdx = righe.length - 1;
+        const newRighe = righe.map((riga, i) =>
+          i === lastIdx
+            ? {
+                ...riga,
+                imponibile: parseNumber(invoice.imponibile),
+                imposta: parseNumber(invoice.imposta),
+                totale: headerTotale,
+              }
+            : riga
+        );
+        return { ...invoice, righe: newRighe };
+      }
       return { ...invoice, righe };
     });
   }, [purchases]);
