@@ -61,8 +61,8 @@ Rispondi SOLO con la funzione tool.`;
                   properties: {
                     fornitore: { type: "string", description: "Nome del fornitore o emittente" },
                     descrizione: { type: "string", description: "Breve descrizione della spesa" },
-                    importo_totale: { type: "number", description: "Importo totale IVA inclusa. 0 se non trovato." },
-                    imponibile: { type: "number", description: "Imponibile senza IVA. Se non distinguibile, uguale al totale." },
+                    importo_totale: { type: "number", description: "Importo totale IVA inclusa effettivamente pagato. ATTENZIONE per le POLIZZE: NON usare mai 'Somma assicurata', 'Massimale', 'Importo garantito', 'Capitale garantito' (è la cifra coperta, non il costo). Usa SOLO il PREMIO pagato: cerca 'Premio', 'Premio totale', 'Premio lordo', 'Totale da pagare', 'Importo rata', 'Importo quietanza'. 0 se non trovato." },
+                    imponibile: { type: "number", description: "Imponibile senza IVA/imposte. Per polizze: premio imponibile (al netto di imposte assicurative). Se non distinguibile, uguale al totale." },
                     imposta: { type: "number", description: "Importo IVA. 0 se non trovato o esente." },
                     data_documento: { type: "string", description: "Data del documento in formato DD/MM/YYYY. Vuoto se non trovata." },
                     centro_costo: { type: "string", description: "Codice del centro di costo suggerito. Vuoto se non determinabile." },
