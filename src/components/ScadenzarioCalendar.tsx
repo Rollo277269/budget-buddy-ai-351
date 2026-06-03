@@ -405,5 +405,94 @@ export function ScadenzarioCalendar({ events }: Props) {
         )}
       </CardContent>
     </Card>
+    <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+      <DialogContent className="sm:max-w-md">
+        {selected && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                {selected.soggetto}
+              </DialogTitle>
+              <DialogDescription>
+                Dettaglio scadenza
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Tipo</span>
+                <span className="font-medium">
+                  {selected.tipo === "credito" && "Credito (fattura vendita)"}
+                  {selected.tipo === "debito" && "Debito (fattura acquisto)"}
+                  {selected.tipo === "finanziamento" && "Rata finanziamento"}
+                  {selected.tipo === "credito_fiscale" && "Credito fiscale"}
+                  {selected.tipo === "polizza" && "Polizza"}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Numero / Riferimento</span>
+                <span className="font-mono text-xs">{selected.numero}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Scadenza</span>
+                <span className="font-medium">{selected.scadenza || "—"}</span>
+              </div>
+              {typeof selected.giorniRimasti === "number" && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Giorni</span>
+                  <span className={cn(
+                    "font-mono",
+                    selected.giorniRimasti < 0 ? "text-destructive" :
+                    selected.giorniRimasti <= 30 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"
+                  )}>
+                    {selected.giorniRimasti < 0 ? `${Math.abs(selected.giorniRimasti)}g fa` : `tra ${selected.giorniRimasti}g`}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Importo</span>
+                <span className={cn(
+                  "font-mono font-semibold",
+                  selected.tipo === "credito" ? "text-income" :
+                  selected.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense"
+                )}>
+                  {formatCurrency(selected.totale)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Stato</span>
+                {selected.stato === "scaduta" ? (
+                  <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Scaduta</Badge>
+                ) : selected.stato === "in_scadenza" ? (
+                  <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><Clock className="h-3 w-3 mr-1" />In scadenza</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px]">Regolare</Badge>
+                )}
+              </div>
+              {selected.cig && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">CIG</span>
+                  <span className="font-mono text-xs">{selected.cig}</span>
+                </div>
+              )}
+              {selected.descrizione && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-1">Descrizione</p>
+                  <p className="text-xs">{selected.descrizione}</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setSelected(null)}>Chiudi</Button>
+              <Button size="sm" onClick={() => goToDocument(selected)}>
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                Apri documento
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
