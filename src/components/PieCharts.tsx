@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { useMemo } from "react";
 
 import { formatCurrency } from "@/lib/format";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 
 const COLORS_SALES = [
   "hsl(152 60% 36%)", "hsl(152 50% 46%)", "hsl(180 45% 40%)",
