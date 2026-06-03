@@ -164,14 +164,36 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
     let nonClassificato = 0;
 
     sales.forEach((s) => {
-      const key = `${s.anno}-${s.numero}`;
-      const codice = mapRaw[key];
-      if (codice) {
-        const centro = centri.find((c) => c.codice === codice);
-        const label = centro ? `${centro.codice} - ${centro.descrizione}` : codice;
-        totals[label] = (totals[label] || 0) + s.totale;
+      const headerKey = `${s.anno}-${s.numero}`;
+      const headerCodice = mapRaw[headerKey];
+      const labelFor = (codice: string) => {
+        const c = centri.find((x) => x.codice === codice);
+        return c ? `${c.codice} - ${c.descrizione}` : codice;
+      };
+      // Reverse-charge: imponibile=0 ma totale != 0
+      const baseAmount = (s.imponibile ?? 0) !== 0 ? s.imponibile : s.totale;
+
+      if (headerCodice) {
+        const lbl = labelFor(headerCodice);
+        totals[lbl] = (totals[lbl] || 0) + baseAmount;
+        return;
+      }
+
+      const righe: any[] = Array.isArray((s as any).righe) ? (s as any).righe : [];
+      if (righe.length > 0) {
+        righe.forEach((r, idx) => {
+          const amt = (r?.imponibile ?? r?.totale ?? 0) || 0;
+          if (amt === 0) return;
+          const code = mapRaw[`${headerKey}-${idx}`];
+          if (code) {
+            const lbl = labelFor(code);
+            totals[lbl] = (totals[lbl] || 0) + amt;
+          } else {
+            nonClassificato += amt;
+          }
+        });
       } else {
-        nonClassificato += s.totale;
+        nonClassificato += baseAmount;
       }
     });
 
