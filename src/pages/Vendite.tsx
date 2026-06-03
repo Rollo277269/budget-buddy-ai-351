@@ -6,6 +6,8 @@ import { idbClearAll } from "@/lib/idbCache";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
+import { useCssrCommesse } from "@/hooks/useCssrCommesse";
+import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { CentroCell } from "@/components/CentroCell";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
