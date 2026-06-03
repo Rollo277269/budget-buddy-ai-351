@@ -35,7 +35,7 @@ export function StatCard({ title, value, subtitle, icon: Icon, variant }: StatCa
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className={`text-2xl font-bold tracking-tight font-mono ${valueStyles[variant]}`}>
+          <p className={`text-xl font-bold tracking-tight font-mono ${valueStyles[variant]}`}>
             {value}
           </p>
           {subtitle && (
