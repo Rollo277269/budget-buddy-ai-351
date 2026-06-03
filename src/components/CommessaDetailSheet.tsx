@@ -2131,9 +2131,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
       const hasRowAssignments = righe.length >= 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
       const labels = new Set<string>();
-      const rowsImpSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.imponibile || 0)), 0);
-      const rowsTotSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.totale || 0)), 0);
-      const rowsAllZero = rowsImpSum === 0 && rowsTotSum === 0;
+      const rowsAllZero = !righe.some(saleRowHasAmount);
       if (hasRowAssignments && !rowsAllZero) {
         righe.forEach((_, idx) => {
           const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
