@@ -213,14 +213,14 @@ const ListaCommessePage = () => {
           <ToggleGroupItem value="tutte" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
             Tutte <span className="ml-1 text-muted-foreground">({rows.length})</span>
           </ToggleGroupItem>
-          <ToggleGroupItem value="in_corso" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
-            In corso <span className="ml-1 text-muted-foreground">({statoCounts.in_corso})</span>
+          <ToggleGroupItem value="in_corso" className="text-xs px-3 py-1.5 bg-yellow-100 text-yellow-900 hover:bg-yellow-200 data-[state=on]:bg-yellow-400 data-[state=on]:text-yellow-950 data-[state=on]:shadow-sm rounded-md">
+            In corso <span className="ml-1 opacity-70">({statoCounts.in_corso})</span>
           </ToggleGroupItem>
-          <ToggleGroupItem value="completata" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
-            Completate <span className="ml-1 text-muted-foreground">({statoCounts.completata})</span>
+          <ToggleGroupItem value="completata" className="text-xs px-3 py-1.5 bg-green-100 text-green-900 hover:bg-green-200 data-[state=on]:bg-green-500 data-[state=on]:text-white data-[state=on]:shadow-sm rounded-md">
+            Completate <span className="ml-1 opacity-70">({statoCounts.completata})</span>
           </ToggleGroupItem>
-          <ToggleGroupItem value="da_iniziare" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
-            Da iniziare <span className="ml-1 text-muted-foreground">({statoCounts.da_iniziare})</span>
+          <ToggleGroupItem value="da_iniziare" className="text-xs px-3 py-1.5 bg-red-100 text-red-900 hover:bg-red-200 data-[state=on]:bg-red-500 data-[state=on]:text-white data-[state=on]:shadow-sm rounded-md">
+            Da iniziare <span className="ml-1 opacity-70">({statoCounts.da_iniziare})</span>
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
