@@ -38,7 +38,7 @@ import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
   Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil, Trash2, Loader2, Scale
-} from "lucide-react";
+, Info } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
