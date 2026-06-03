@@ -1121,7 +1121,7 @@ const VenditePage = () => {
         {/* ── Schede: Ricevute e Documenti / Fatture XML ── */}
         <div className="px-4 pt-3 bg-white">
           <Tabs defaultValue="xml" className="w-full">
-            <TabsList className="w-full grid grid-cols-2">
+            <TabsList className="w-full grid grid-cols-2 bg-white">
               <TabsTrigger value="xml" className="text-xs gap-1.5">
                 <FileCode2 className="h-3.5 w-3.5" />
                 Fatture XML
