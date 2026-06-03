@@ -271,7 +271,7 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
   );
 });
 
-export const NonClassificatoList = React.memo(function NonClassificatoList({ sales }: { sales: SaleInvoice[] }) {
+export const NonClassificatoList = React.memo(function NonClassificatoList({ sales, onRowClick }: { sales: SaleInvoice[]; onRowClick?: (invoice: SaleInvoice) => void }) {
   const [centri, setCentri] = useState<CentroCR[]>([]);
   const [mapRaw, setMapRaw] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
@@ -283,7 +283,7 @@ export const NonClassificatoList = React.memo(function NonClassificatoList({ sal
 
   const rows = useMemo(() => {
     if (centri.length === 0) return [];
-    const out: { anno: number; numero: number; idx: number | null; cliente: string; importo: number; motivo: string }[] = [];
+    const out: { anno: number; numero: number; idx: number | null; cliente: string; importo: number; motivo: string; invoice: SaleInvoice }[] = [];
     sales.forEach((s) => {
       const headerKey = `${s.anno}-${s.numero}`;
       if (mapRaw[headerKey]) return;
@@ -291,7 +291,7 @@ export const NonClassificatoList = React.memo(function NonClassificatoList({ sal
       const baseAmount = (s.imponibile ?? 0) !== 0 ? s.imponibile : s.totale;
       if (righe.length === 0) {
         if (baseAmount === 0) return;
-        out.push({ anno: s.anno, numero: s.numero, idx: null, cliente: s.cliente || "—", importo: baseAmount, motivo: "Fattura senza righe e nessun centro assegnato in testata" });
+        out.push({ anno: s.anno, numero: s.numero, idx: null, cliente: s.cliente || "—", importo: baseAmount, motivo: "Fattura senza righe e nessun centro assegnato in testata", invoice: s });
         return;
       }
       righe.forEach((r, idx) => {
@@ -305,6 +305,7 @@ export const NonClassificatoList = React.memo(function NonClassificatoList({ sal
           cliente: s.cliente || "—",
           importo: amt,
           motivo: "Nessun centro assegnato né alla riga né alla testata",
+          invoice: s,
         });
       });
     });
@@ -339,7 +340,11 @@ export const NonClassificatoList = React.memo(function NonClassificatoList({ sal
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i} className="border-b last:border-b-0 hover:bg-muted/40">
+                <tr
+                  key={i}
+                  className={`border-b last:border-b-0 hover:bg-muted/40 ${onRowClick ? "cursor-pointer" : ""}`}
+                  onClick={() => onRowClick?.(r.invoice)}
+                >
                   <td className="px-2 py-1 font-mono">{r.anno}</td>
                   <td className="px-2 py-1 font-mono">{r.numero}</td>
                   <td className="px-2 py-1 font-mono">{r.idx === null ? "—" : r.idx}</td>
