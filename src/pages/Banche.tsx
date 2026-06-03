@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useCallback, useEffect, DragEvent } from "react";
 import { Landmark, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Search, FileText, Trash2, CreditCard, Settings, RefreshCw, ChevronDown, Banknote, Pencil  } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useBankData, BankMovement, MatchedInvoice, scoreMatch, DuplicateInfo } from "@/hooks/useBankData";
@@ -501,6 +502,7 @@ const BanchePage = () => {
 
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some((c) => c.id === activeAccountId);
+  const isOverview = !hasValidAccount && activeAccountId !== "all";
 
   const accountStats = useMemo(() => {
     const map = new Map<string, {entrate: number;uscite: number;saldo: number;movimenti: number;}>();
@@ -692,9 +694,27 @@ const BanchePage = () => {
         </div>
       }
 
+      {isOverview && conti.length > 0 && (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-lg font-semibold">Conti</h1>
+            <p className="text-xs text-muted-foreground">Seleziona un conto per visualizzare movimenti, filtri e riepilogo.</p>
+          </div>
+          <Link to="/strumenti">
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-1" />Gestisci conti
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {!isOverview && (
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div />
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setActiveAccountId("default")} title="Torna a tutti i conti">
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" />Tutti i conti
+          </Button>
           {/* Account selector */}
           <Select value={activeAccountId} onValueChange={setActiveAccountId}>
             <SelectTrigger className={`w-[220px] h-9 text-xs ${!hasValidAccount && movements.length === 0 ? "border-primary ring-1 ring-primary/30" : ""}`}>
@@ -752,8 +772,9 @@ const BanchePage = () => {
           </Button>
         </div>
       </div>
+      )}
 
-      {movements.length === 0 && !isLoading && conti.length === 0 &&
+      {isOverview && !isLoading && conti.length === 0 &&
       <div className="w-full flex flex-col items-center justify-center h-32 rounded-lg border-2 border-dashed bg-card text-muted-foreground">
           <Landmark className="h-8 w-8 mb-2 opacity-30" />
           <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
@@ -765,7 +786,7 @@ const BanchePage = () => {
         </div>
       }
 
-      {movements.length === 0 && !isLoading && conti.length > 0 &&
+      {!isOverview && movements.length === 0 && !isLoading && conti.length > 0 &&
       <button
         type="button"
         className={`w-full flex items-center justify-center gap-3 h-24 rounded-lg border-2 border-dashed transition-colors cursor-pointer ${
@@ -802,11 +823,10 @@ const BanchePage = () => {
       }
 
       {/* Account balances */}
-      {conti.length > 0 && rawMovements.length > 0 &&
+      {conti.length > 0 && (isOverview || rawMovements.length > 0) &&
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {conti.filter((c) => !activeAccountId || c.id === activeAccountId).map((c) => {
-          const st = accountStats.get(c.id);
-          if (!st) return null;
+          {conti.filter((c) => isOverview || activeAccountId === "all" || c.id === activeAccountId).map((c) => {
+          const st = accountStats.get(c.id) || { entrate: 0, uscite: 0, saldo: 0, movimenti: 0 };
           return (
             <Card
               key={c.id}
@@ -837,7 +857,7 @@ const BanchePage = () => {
       }
 
       {/* Finanziamenti section */}
-      {contiFinanziamento.length > 0 && allRate.length > 0 && (
+      {!isOverview && contiFinanziamento.length > 0 && allRate.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <Banknote className="h-4 w-4" /> Prestiti e Finanziamenti
@@ -1037,7 +1057,7 @@ const BanchePage = () => {
         </div>
       }
 
-      {movements.length > 0 && !isLoading &&
+      {!isOverview && movements.length > 0 && !isLoading &&
       <>
           {/* Stats cards (in alto) */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
