@@ -40,6 +40,30 @@ export const defaultItems: MenuItem[] = [
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
 
+// Prefetch lazy page chunks on hover so navigation feels instant.
+const pagePrefetchers: Record<string, () => Promise<unknown>> = {
+  "/": () => import("@/pages/Index"),
+  "/scadenzario": () => import("@/pages/Scadenzario"),
+  "/polizze": () => import("@/pages/Polizze"),
+  "/vendite": () => import("@/pages/Vendite"),
+  "/acquisti": () => import("@/pages/Acquisti"),
+  "/schede-contabili": () => import("@/pages/SchedeContabili"),
+  "/rubrica": () => import("@/pages/Rubrica"),
+  "/bilancio": () => import("@/pages/Bilancio"),
+  "/iva": () => import("@/pages/Iva"),
+  "/banche": () => import("@/pages/Banche"),
+  "/lista-commesse": () => import("@/pages/ListaCommesse"),
+  "/offerte": () => import("@/pages/Offerte"),
+  "/commesse": () => import("@/pages/Commesse"),
+  "/strumenti": () => import("@/pages/Strumenti"),
+};
+const prefetched = new Set<string>();
+function prefetchPage(url: string) {
+  if (prefetched.has(url)) return;
+  prefetched.add(url);
+  pagePrefetchers[url]?.().catch(() => prefetched.delete(url));
+}
+
 const STORAGE_KEY = "sidebar-menu-order";
 
 function loadOrder(): MenuItem[] {
@@ -106,7 +130,7 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
   }, []);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="z-40">
       <SidebarHeader className="flex flex-row items-center gap-1 px-2 pt-3 pb-1">
         <Button
           variant="ghost"
@@ -151,6 +175,8 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
                       end={item.url === "/"}
                       className="hover:bg-sidebar-accent group"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      onMouseEnter={() => prefetchPage(item.url)}
+                      onFocus={() => prefetchPage(item.url)}
                     >
                       {!collapsed && (
                         <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab" />
