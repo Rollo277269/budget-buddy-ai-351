@@ -419,7 +419,7 @@ export function DataTable<T extends Record<string, any>>({
            <TableHeader className="sticky top-0 z-10 bg-card">
             {activeColumns.some((c) => c.summaryRender) && (
               <TableRow className="border-b border-border bg-muted/50">
-                {expandable && <TableHead className="w-8 text-xs py-1" />}
+                {expandable && <TableHead className="w-8 text-xs py-1 bg-white" />}
                 {activeColumns.map((col) => (
                   <TableHead
                     key={`sum-${col.key}`}
