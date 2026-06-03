@@ -694,9 +694,27 @@ const BanchePage = () => {
         </div>
       }
 
+      {isOverview && conti.length > 0 && (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-lg font-semibold">Conti</h1>
+            <p className="text-xs text-muted-foreground">Seleziona un conto per visualizzare movimenti, filtri e riepilogo.</p>
+          </div>
+          <Link to="/strumenti">
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-1" />Gestisci conti
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {!isOverview && (
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div />
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setActiveAccountId("default")} title="Torna a tutti i conti">
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" />Tutti i conti
+          </Button>
           {/* Account selector */}
           <Select value={activeAccountId} onValueChange={setActiveAccountId}>
             <SelectTrigger className={`w-[220px] h-9 text-xs ${!hasValidAccount && movements.length === 0 ? "border-primary ring-1 ring-primary/30" : ""}`}>
@@ -754,8 +772,9 @@ const BanchePage = () => {
           </Button>
         </div>
       </div>
+      )}
 
-      {movements.length === 0 && !isLoading && conti.length === 0 &&
+      {isOverview && !isLoading && conti.length === 0 &&
       <div className="w-full flex flex-col items-center justify-center h-32 rounded-lg border-2 border-dashed bg-card text-muted-foreground">
           <Landmark className="h-8 w-8 mb-2 opacity-30" />
           <p className="text-sm font-medium">Configura prima un conto corrente o una carta</p>
@@ -767,7 +786,7 @@ const BanchePage = () => {
         </div>
       }
 
-      {movements.length === 0 && !isLoading && conti.length > 0 &&
+      {!isOverview && movements.length === 0 && !isLoading && conti.length > 0 &&
       <button
         type="button"
         className={`w-full flex items-center justify-center gap-3 h-24 rounded-lg border-2 border-dashed transition-colors cursor-pointer ${
