@@ -2038,7 +2038,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       const sign = isSaleCreditNote(s) ? -1 : 1;
       const righe = Array.isArray(s.righe) ? s.righe : [];
       const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
-      const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
+      const hasRowAssignments = righe.length >= 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
       // Se le righe XML hanno tutti gli importi a zero (header-only SAL/FatturaPA),
       // la distribuzione per riga produrrebbe 0: fallback a classificazione di intera fattura.
       const rowsImpSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.imponibile || 0)), 0);
@@ -2115,7 +2115,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
     linkedSales.forEach((s) => {
       const righe = Array.isArray(s.righe) ? s.righe : [];
       const fatturaCodice = ricavoMap[`${s.anno}-${s.numero}`] || "";
-      const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
+      const hasRowAssignments = righe.length >= 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
       const labels = new Set<string>();
       const rowsImpSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.imponibile || 0)), 0);
       const rowsTotSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.totale || 0)), 0);
