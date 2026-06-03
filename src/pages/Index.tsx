@@ -4,7 +4,7 @@ import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { StatCard } from "@/components/StatCard";
 import { FilterBar } from "@/components/FilterBar";
 import { MonthlyChart } from "@/components/SummaryChart";
-import { ClientPieChart, SupplierPieChart, CentroRicavoChart } from "@/components/PieCharts";
+import { ClientPieChart, SupplierPieChart, CentroRicavoChart, NonClassificatoList } from "@/components/PieCharts";
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
 import { BankReconciliationSummary } from "@/components/BankReconciliationSummary";
@@ -129,6 +129,7 @@ const Index = () => {
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">Ricavi per Centro di Ricavo</h2>
           <CentroRicavoChart sales={sales} />
+          <NonClassificatoList sales={sales} />
         </div>
 
         {/* Bank Reconciliation Summary */}
