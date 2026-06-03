@@ -687,6 +687,21 @@ const AcquistiPage = () => {
           — <Pencil className="h-3 w-3 opacity-50" />
         </span>;
     }, sortable: true, filterable: true },
+    { key: "commessa", label: "Commessa", sortable: true, filterable: true,
+      filterValue: (r) => getCommessaNumero(r) || "",
+      render: (r) => {
+        const num = getCommessaNumero(r);
+        if (!num) return <span className="text-[11px] text-muted-foreground">—</span>;
+        return (
+          <span
+            className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+            onClick={(e) => { e.stopPropagation(); navigate(`/?cig=${encodeURIComponent(r.cig || commessaLinkByInvoice.get(`${r.anno}-${r.numero}`) || "")}`); }}
+          >
+            {num}
+          </span>
+        );
+      },
+    },
     { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
       const sum = rows.reduce((s, r) => {
         const sign = isNotaCredito(r) ? -1 : 1;
