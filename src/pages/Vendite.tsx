@@ -1244,7 +1244,7 @@ const VenditePage = () => {
                   </div>
                 </div>
                 {/* Main invoices table */}
-                <div className="pt-2">
+                <div className="pt-2 bg-white">
                   <DataTable<SaleInvoice>
                     tableId="vendite"
                     toolbarPortalRef={toolbarPortalRef}
