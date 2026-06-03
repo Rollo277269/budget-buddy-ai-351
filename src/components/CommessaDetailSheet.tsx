@@ -2329,15 +2329,16 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                            <span className="inline-flex items-center gap-1">
                              {d.name}
                              {d.name === "Non classificato" && (
-                               <Info
-                                 className="h-3 w-3 text-muted-foreground/70 cursor-help"
-                                 aria-label="Perché compare 'Non classificato'?"
+                               <span
+                                 className="inline-flex"
                                  title={
                                    tipo === "ricavo"
                                      ? "Sono raggruppate qui le fatture (o le singole righe XML) senza centro di ricavo assegnato né in testata né in riga. Espandi per assegnarlo."
                                      : "Sono raggruppate qui le fatture senza centro di costo assegnato in testata. Espandi per assegnarlo."
                                  }
-                               />
+                               >
+                                 <Info className="h-3 w-3 text-muted-foreground/70 cursor-help" aria-label="Perché compare 'Non classificato'?" />
+                               </span>
                              )}
                            </span>
                          </TableCell>
@@ -2403,7 +2404,9 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                <span className="text-muted-foreground ml-2">{counterpart}</span>
                                <Eye className="h-3 w-3 inline ml-1.5 text-muted-foreground/50" />
                                 {unclassReason && (
-                                  <Info className="h-3 w-3 inline ml-1.5 text-amber-500 cursor-help" aria-label={unclassReason} />
+                                  <span title={unclassReason} className="inline-flex ml-1.5 align-middle">
+                                    <Info className="h-3 w-3 text-amber-500 cursor-help" aria-label={unclassReason} />
+                                  </span>
                                 )}
                              </TableCell>
                              <TableCell className="text-[11px] font-mono text-right">{formatCurrency(sign * Math.abs(rowImp))}</TableCell>
