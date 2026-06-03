@@ -267,29 +267,65 @@ export default function Polizze() {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Banner riassuntivo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard label="Polizze totali" value={counts.totale} icon={<ShieldCheck className="h-4 w-4" />} />
-        <SummaryCard label="Scadute" value={counts.scaduto} variant="destructive" icon={<ShieldAlert className="h-4 w-4" />} />
-        <SummaryCard label={`In scadenza ≤ ${REMINDER_DAYS}gg`} value={counts.imminenti} variant="warning" icon={<AlertCircle className="h-4 w-4" />} />
-        <SummaryCard label="Senza scadenza nota" value={counts.senza} variant="muted" icon={<FileText className="h-4 w-4" />} />
+      {/* Banner riassuntivo — clickable filters */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <SummaryCard label="Polizze totali" value={counts.totale} icon={<ShieldCheck className="h-4 w-4" />}
+          active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+        <SummaryCard label="Scadute" value={counts.scaduto} variant="destructive" icon={<ShieldAlert className="h-4 w-4" />}
+          active={statusFilter === "scaduto"} onClick={() => setStatusFilter(statusFilter === "scaduto" ? "all" : "scaduto")} />
+        <SummaryCard label={`In scadenza ≤ ${REMINDER_DAYS}gg`} value={counts.imminenti} variant="warning" icon={<AlertCircle className="h-4 w-4" />}
+          active={statusFilter === "imminenti"} onClick={() => setStatusFilter(statusFilter === "imminenti" ? "all" : "imminenti")} />
+        <SummaryCard label="Future" value={counts.future} icon={<ShieldCheck className="h-4 w-4" />}
+          active={statusFilter === "future"} onClick={() => setStatusFilter(statusFilter === "future" ? "all" : "future")} />
+        <SummaryCard label="Senza scadenza nota" value={counts.senza} variant="muted" icon={<FileText className="h-4 w-4" />}
+          active={statusFilter === "senza"} onClick={() => setStatusFilter(statusFilter === "senza" ? "all" : "senza")} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {/* TABLE */}
-        <Card className="xl:col-span-2">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <CardTitle className="text-base flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 Elenco polizze
+                {statusFilter !== "all" && (
+                  <Badge variant="outline" className="text-[10px] gap-1">
+                    Filtro: {statusFilter === "scaduto" ? "Scadute" : statusFilter === "imminenti" ? `≤ ${REMINDER_DAYS}gg` : statusFilter === "future" ? "Future" : "Senza scadenza"}
+                    <button className="ml-1 hover:text-foreground" onClick={() => setStatusFilter("all")}>×</button>
+                  </Badge>
+                )}
               </CardTitle>
-              <Input
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Cerca fornitore, CIG, descrizione…"
-                className="h-8 w-64 text-xs"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder="Cerca fornitore, CIG, descrizione…"
+                  className="h-8 w-64 text-xs"
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                      <Columns3 className="h-3.5 w-3.5" /> Colonne
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="text-xs">Colonne visibili</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {ALL_COLS.map((c) => (
+                      <DropdownMenuCheckboxItem
+                        key={c.key}
+                        checked={visibleCols.has(c.key)}
+                        onCheckedChange={() => toggleCol(c.key)}
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-xs"
+                      >
+                        {c.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-2">
               <TabsList className="h-7">
@@ -305,23 +341,23 @@ export default function Polizze() {
               <Table>
                 <TableHeader>
                   <TableRow className="h-8">
-                    <TableHead className="text-[11px] h-8 px-2">Fornitore</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2">N° polizza</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2">Descrizione</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2">CIG</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2">Centro</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2">Data doc.</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2">Scadenza</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2">Stato</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2 text-right">Premio</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2 text-right">Importo garantito</TableHead>
-                    <TableHead className="text-[11px] h-8 px-2 w-[100px]">Azioni</TableHead>
+                    {isVisible("fornitore") && <TableHead className="text-[11px] h-8 px-2">Fornitore</TableHead>}
+                    {isVisible("numero") && <TableHead className="text-[11px] h-8 px-2">N° polizza</TableHead>}
+                    {isVisible("descrizione") && <TableHead className="text-[11px] h-8 px-2">Descrizione</TableHead>}
+                    {isVisible("cig") && <TableHead className="text-[11px] h-8 px-2">CIG</TableHead>}
+                    {isVisible("centro") && <TableHead className="text-[11px] h-8 px-2">Centro</TableHead>}
+                    {isVisible("data_doc") && <TableHead className="text-[11px] h-8 px-2">Data doc.</TableHead>}
+                    {isVisible("scadenza") && <TableHead className="text-[11px] h-8 px-2">Scadenza</TableHead>}
+                    {isVisible("stato") && <TableHead className="text-[11px] h-8 px-2">Stato</TableHead>}
+                    {isVisible("premio") && <TableHead className="text-[11px] h-8 px-2 text-right">Premio</TableHead>}
+                    {isVisible("garantito") && <TableHead className="text-[11px] h-8 px-2 text-right">Importo garantito</TableHead>}
+                    {isVisible("azioni") && <TableHead className="text-[11px] h-8 px-2 w-[100px]">Azioni</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center text-xs text-muted-foreground py-8">
+                      <TableCell colSpan={visibleCols.size || 1} className="text-center text-xs text-muted-foreground py-8">
                         Nessuna polizza trovata. Carica un PDF di polizza in <Link to="/acquisti" className="text-primary underline">Acquisti → Ricevute</Link> o nel dettaglio di una commessa.
                       </TableCell>
                     </TableRow>
@@ -330,27 +366,27 @@ export default function Polizze() {
                       const centroDesc = d.centro_costo ? centroLabel.get(d.centro_costo) : null;
                       return (
                         <TableRow key={d.id} className="hover:bg-muted/40">
-                          <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>
-                          <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>
-                          <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>
-                          <TableCell className="text-xs px-2 py-1.5 font-mono">
+                          {isVisible("fornitore") && <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>}
+                          {isVisible("numero") && <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>}
+                          {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
+                          {isVisible("cig") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             {d.cig ? (
                               <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{d.cig}</Link>
                             ) : "—"}
-                          </TableCell>
-                          <TableCell className="text-xs px-2 py-1.5">
+                          </TableCell>}
+                          {isVisible("centro") && <TableCell className="text-xs px-2 py-1.5">
                             {d.centro_costo ? (
                               <span className="font-mono">{d.centro_costo}{centroDesc ? <span className="text-muted-foreground"> – {centroDesc}</span> : null}</span>
                             ) : "—"}
-                          </TableCell>
-                          <TableCell className="text-xs px-2 py-1.5">{d.data_documento || "—"}</TableCell>
-                          <TableCell className="text-xs px-2 py-1.5">
+                          </TableCell>}
+                          {isVisible("data_doc") && <TableCell className="text-xs px-2 py-1.5">{d.data_documento || "—"}</TableCell>}
+                          {isVisible("scadenza") && <TableCell className="text-xs px-2 py-1.5">
                             <ScadenzaCell value={d._date} onChange={(date) => handleManualDate(d.id, date)} />
-                          </TableCell>
-                          <TableCell className="text-xs px-2 py-1.5"><CountdownBadge date={d._date} /></TableCell>
-                          <TableCell className="text-xs px-2 py-1.5 text-right font-mono">{d.importo != null ? formatCurrency(d.importo) : "—"}</TableCell>
-                          <TableCell className="text-xs px-2 py-1.5 text-right font-mono text-muted-foreground">{(d as any).importo_garantito != null ? formatCurrency((d as any).importo_garantito) : "—"}</TableCell>
-                          <TableCell className="px-2 py-1.5">
+                          </TableCell>}
+                          {isVisible("stato") && <TableCell className="text-xs px-2 py-1.5"><StatoLabel date={d._date} /></TableCell>}
+                          {isVisible("premio") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono">{d.importo != null ? formatCurrency(d.importo) : "—"}</TableCell>}
+                          {isVisible("garantito") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono text-muted-foreground">{(d as any).importo_garantito != null ? formatCurrency((d as any).importo_garantito) : "—"}</TableCell>}
+                          {isVisible("azioni") && <TableCell className="px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <Button size="icon" variant="ghost" className="h-6 w-6" title="Apri PDF" onClick={() => openPdf(d)}>
                                 <ExternalLink className="h-3 w-3" />
@@ -368,85 +404,13 @@ export default function Polizze() {
                                 </Button>
                               )}
                             </div>
-                          </TableCell>
+                          </TableCell>}
                         </TableRow>
                       );
                     })
                   )}
                 </TableBody>
               </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* CALENDAR */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              Calendario scadenze
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              modifiers={calendarModifiers}
-              modifiersClassNames={{
-                expired: "bg-destructive text-destructive-foreground font-bold rounded-md",
-                imminent: "bg-amber-500 text-white font-bold rounded-md",
-                future: "bg-primary/15 text-primary font-medium rounded-md",
-              }}
-              className="pointer-events-auto rounded-md border p-2 mx-auto"
-            />
-
-            <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-              <LegendDot className="bg-destructive" /> Scaduta
-              <LegendDot className="bg-amber-500" /> ≤ {REMINDER_DAYS} giorni
-              <LegendDot className="bg-primary/40" /> Futura
-            </div>
-
-            {selectedDate && (
-              <div className="border rounded-md p-2 bg-muted/30">
-                <div className="text-[11px] font-medium mb-1">
-                  {formatIt(selectedDate)} — {selectedDayItems.length} polizz{selectedDayItems.length === 1 ? "a" : "e"}
-                </div>
-                {selectedDayItems.length === 0 ? (
-                  <div className="text-[11px] text-muted-foreground">Nessuna scadenza in questa data.</div>
-                ) : (
-                  <ul className="space-y-1">
-                    {selectedDayItems.map((d) => (
-                      <li key={d.id} className="text-[11px] flex items-center justify-between gap-2">
-                        <span className="truncate" title={d.descrizione || ""}>{d.fornitore || "—"} · {d.descrizione || ""}</span>
-                        <CountdownBadge date={d._date} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            <div>
-              <div className="text-[11px] font-medium mb-1 mt-2">Prossime scadenze (60gg)</div>
-              {upcoming60.length === 0 ? (
-                <div className="text-[11px] text-muted-foreground">Nessuna scadenza imminente.</div>
-              ) : (
-                <ul className="space-y-1 max-h-[300px] overflow-auto pr-1">
-                  {upcoming60.map((d) => (
-                    <li key={d.id} className="text-[11px] flex items-center justify-between gap-2 border-b border-border/40 py-1">
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium" title={d.descrizione || ""}>{d.fornitore || "—"}</div>
-                        <div className="truncate text-muted-foreground">{d.descrizione || ""}</div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-mono">{formatIt(d._date!)}</div>
-                        <CountdownBadge date={d._date} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
           </CardContent>
         </Card>
