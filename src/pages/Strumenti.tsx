@@ -3,6 +3,7 @@ import { Settings, Landmark, FileText, Plus, Trash2, Save, Building2, Pencil, Ch
 import { BankLogo } from "@/components/BankLogo";
 import { CigIntegrityCheck } from "@/components/CigIntegrityCheck";
 import { CigCoherenceCheck } from "@/components/CigCoherenceCheck";
+import { XmlClassificationCheck } from "@/components/XmlClassificationCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -905,7 +906,7 @@ const StrumentiPage = () => {
     <div className="p-6 space-y-6 bg-white">
 
       <Tabs defaultValue="conti" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+        <TabsList className="grid w-full grid-cols-7 max-w-5xl">
           <TabsTrigger value="conti" className="text-xs">
             <Landmark className="h-3.5 w-3.5 mr-1.5" />Conti Correnti
           </TabsTrigger>
@@ -923,6 +924,9 @@ const StrumentiPage = () => {
           </TabsTrigger>
           <TabsTrigger value="coerenza" className="text-xs">
             <ScanSearch className="h-3.5 w-3.5 mr-1.5" />Coerenza CIG
+          </TabsTrigger>
+          <TabsTrigger value="xml-class" className="text-xs">
+            <ScanSearch className="h-3.5 w-3.5 mr-1.5" />Classif. XML
           </TabsTrigger>
         </TabsList>
 
@@ -943,6 +947,9 @@ const StrumentiPage = () => {
         </TabsContent>
         <TabsContent value="coerenza">
           <CigCoherenceCheck />
+        </TabsContent>
+        <TabsContent value="xml-class">
+          <XmlClassificationCheck />
         </TabsContent>
       </Tabs>
 
