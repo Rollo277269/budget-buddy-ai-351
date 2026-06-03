@@ -455,6 +455,17 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
               <Input value={formData.descrizione} onChange={(e) => updateField("descrizione", e.target.value)} className="h-8 text-xs" />
             </div>
             <div className="space-y-1">
+              <Label className="text-[11px]">
+                Numero {formData.tipo_documento === "Polizza" ? "polizza" : "documento"}
+              </Label>
+              <Input
+                value={formData.numero_documento}
+                onChange={(e) => updateField("numero_documento", e.target.value)}
+                placeholder={formData.tipo_documento === "Polizza" ? "Es. 123456789" : "N° documento"}
+                className="h-8 text-xs font-mono"
+              />
+            </div>
+            <div className="space-y-1">
               <Label className="text-[11px]">Totale (€)</Label>
               <div className="relative">
                 <Input type="number" step="0.01" value={formData.importo_totale} onChange={(e) => updateField("importo_totale", parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono pr-7" />
