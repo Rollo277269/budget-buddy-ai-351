@@ -222,6 +222,7 @@ export function ScadenzarioCalendar({ events }: Props) {
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         {/* Toolbar */}
