@@ -9,6 +9,33 @@ import { formatCurrency } from "@/lib/format";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 
+async function fetchCentroAssignmentMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const map: Record<string, string> = {};
+  const pageSize = 1000;
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("centro_assignments" as any)
+      .select("invoice_key, centro_codice")
+      .eq("tipo", tipo)
+      .eq("context", context)
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.error("Error loading centro assignments:", error);
+      break;
+    }
+
+    for (const d of (data as any[] || [])) map[d.invoice_key] = d.centro_codice;
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return map;
+}
+
 const COLORS_SALES = [
   "hsl(152 60% 36%)", "hsl(152 50% 46%)", "hsl(180 45% 40%)",
   "hsl(200 50% 45%)", "hsl(220 50% 50%)", "hsl(240 40% 55%)",
@@ -150,13 +177,7 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
 
   useEffect(() => {
     fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.from("centro_assignments" as any).select("invoice_key, centro_codice").eq("tipo", "ricavo").eq("context", "vendite").then(({ data }) => {
-        const m: Record<string, string> = {};
-        for (const d of (data as any[] || [])) m[d.invoice_key] = d.centro_codice;
-        setMapRaw(m);
-      });
-    });
+    fetchCentroAssignmentMap("ricavo", "vendite").then(setMapRaw);
   }, []);
 
   const data = useMemo(() => {
@@ -257,13 +278,7 @@ export const NonClassificatoList = React.memo(function NonClassificatoList({ sal
 
   useEffect(() => {
     fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.from("centro_assignments" as any).select("invoice_key, centro_codice").eq("tipo", "ricavo").eq("context", "vendite").then(({ data }) => {
-        const m: Record<string, string> = {};
-        for (const d of (data as any[] || [])) m[d.invoice_key] = d.centro_codice;
-        setMapRaw(m);
-      });
-    });
+    fetchCentroAssignmentMap("ricavo", "vendite").then(setMapRaw);
   }, []);
 
   const rows = useMemo(() => {
