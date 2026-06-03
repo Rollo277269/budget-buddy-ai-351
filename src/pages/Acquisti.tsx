@@ -93,6 +93,19 @@ const AcquistiPage = () => {
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const costoMap = useCentroMap("costo", "acquisti");
   const ricavoMap = useCentroMap("ricavo", "acquisti");
+  const { byCig: commesseByCig } = useCssrCommesse();
+  const { links: commessaLinks } = useCommessaLinks();
+  const commessaLinkByInvoice = useMemo(() => {
+    const m = new Map<string, string>();
+    commessaLinks.filter((l) => l.invoiceType === "acquisto").forEach((l) => m.set(l.invoiceKey, l.cig));
+    return m;
+  }, [commessaLinks]);
+  const getCommessaNumero = useCallback((r: PurchaseInvoice): string => {
+    const cig = r.cig || commessaLinkByInvoice.get(`${r.anno}-${r.numero}`) || "";
+    if (!cig) return "";
+    const c = commesseByCig.get(cig);
+    return c?.commessa_consortile || "";
+  }, [commesseByCig, commessaLinkByInvoice]);
   const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
