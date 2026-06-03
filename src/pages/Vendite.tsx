@@ -6,6 +6,8 @@ import { idbClearAll } from "@/lib/idbCache";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { useCentriData, useCentroMap } from "@/hooks/useCentri";
 import { useXmlInvoices, buildSalesXmlKey } from "@/hooks/useXmlInvoices";
+import { useCssrCommesse } from "@/hooks/useCssrCommesse";
+import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { CentroCell } from "@/components/CentroCell";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, ColumnDef } from "@/components/DataTable";
@@ -105,6 +107,19 @@ const VenditePage = () => {
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "vendite");
+  const { byCig: commesseByCig } = useCssrCommesse();
+  const { links: commessaLinks } = useCommessaLinks();
+  const commessaLinkByInvoice = useMemo(() => {
+    const m = new Map<string, string>();
+    commessaLinks.filter((l) => l.invoiceType === "vendita").forEach((l) => m.set(l.invoiceKey, l.cig));
+    return m;
+  }, [commessaLinks]);
+  const getCommessaNumero = useCallback((r: SaleInvoice): string => {
+    const cig = r.cig || commessaLinkByInvoice.get(`${r.anno}-${r.numero}`) || "";
+    if (!cig) return "";
+    const c = commesseByCig.get(cig);
+    return c?.commessa_consortile || "";
+  }, [commesseByCig, commessaLinkByInvoice]);
   const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -599,6 +614,21 @@ const VenditePage = () => {
             — <Pencil className="h-3 w-3 opacity-50" />
           </span>;
       }, sortable: true, filterable: true },
+      { key: "commessa", label: "Commessa", sortable: true, filterable: true,
+        filterValue: (r) => getCommessaNumero(r) || "",
+        render: (r) => {
+          const num = getCommessaNumero(r);
+          if (!num) return <span className="text-[11px] text-muted-foreground">—</span>;
+          return (
+            <span
+              className="font-mono text-[11px] text-primary underline decoration-dotted cursor-pointer hover:text-primary/80"
+              onClick={(e) => { e.stopPropagation(); navigate(`/?cig=${encodeURIComponent(r.cig || commessaLinkByInvoice.get(`${r.anno}-${r.numero}`) || "")}`); }}
+            >
+              {num}
+            </span>
+          );
+        },
+      },
       { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
       { key: "imponibile", label: "Imponibile", render: (r) => { const nc = isNotaCredito(r); return <span className={`text-xs font-mono text-right block ${nc ? "text-destructive" : ""}`}>{formatCreditAmount(r.imponibile, nc)}</span>; }, sortable: true, align: "right", summaryRender: (rows) => {
         const sum = rows.reduce((s, r) => {
@@ -862,7 +892,7 @@ const VenditePage = () => {
       { key: "descrizione", label: "Descrizione", render: (r) => <span className="text-xs max-w-[300px] whitespace-normal break-words block leading-snug py-1">{r.descrizione || "—"}</span>, defaultHidden: true },
       { key: "partitaIva", label: "P.IVA", render: (r) => <span className="font-mono text-[11px]">{r.partitaIva || "—"}</span>, defaultHidden: true },
     ],
-    [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap, displayedSales, selectedInvoiceKeys, toggleAllInvoices, toggleInvoiceSelection, filters.centroRicavo]
+    [centri, ricavoMap.map, ricavoMap.assign, costoMap.map, costoMap.assign, findXml, hasXml, navigate, openXmlSheet, openPdf, reconMap, displayedSales, selectedInvoiceKeys, toggleAllInvoices, toggleInvoiceSelection, filters.centroRicavo, getCommessaNumero, commessaLinkByInvoice]
   );
 
   // Count duplicates by file_name (must be before early return to preserve hooks order)
