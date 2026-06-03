@@ -112,6 +112,8 @@ export function DataTable<T extends Record<string, any>>({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(600);
+  const headerRowRef = useRef<HTMLTableRowElement>(null);
+  const [measuredWidths, setMeasuredWidths] = useState<Record<string, number>>({});
 
   const handleResizeStart = useCallback((key: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -232,6 +234,24 @@ export function DataTable<T extends Record<string, any>>({
     const colMap = new Map(columns.map((c) => [c.key, c]));
     return columnOrder.filter((key) => visibleColumns.has(key) && colMap.has(key)).map((key) => colMap.get(key)!);
   }, [columns, columnOrder, visibleColumns]);
+
+  // Measure header column widths once so virtual scrolling doesn't reflow them.
+  useEffect(() => {
+    const row = headerRowRef.current;
+    if (!row) return;
+    const ths = Array.from(row.children) as HTMLElement[];
+    const next: Record<string, number> = {};
+    const offset = expandable ? 1 : 0;
+    activeColumns.forEach((col, i) => {
+      const th = ths[i + offset];
+      if (th) next[col.key] = Math.round(th.getBoundingClientRect().width);
+    });
+    setMeasuredWidths((prev) => {
+      const keys = Object.keys(next);
+      const same = keys.length === Object.keys(prev).length && keys.every((k) => prev[k] === next[k]);
+      return same ? prev : next;
+    });
+  }, [activeColumns, columnWidths, expandable, sorted.length]);
 
   const hasActiveFilters = Object.values(columnFilters).some(Boolean) || !!globalSearch;
   const isReordered = useMemo(() => {
@@ -388,7 +408,14 @@ export function DataTable<T extends Record<string, any>>({
         style={{ position: 'relative' }}
         onScroll={useVirtual ? handleScroll : undefined}
       >
-        <Table>
+        <Table style={{ tableLayout: 'fixed' }}>
+          <colgroup>
+            {expandable && <col style={{ width: 32 }} />}
+            {activeColumns.map((col) => {
+              const w = columnWidths[col.key] ?? measuredWidths[col.key] ?? col.defaultWidth;
+              return <col key={col.key} style={w ? { width: w } : undefined} />;
+            })}
+          </colgroup>
            <TableHeader className="sticky top-0 z-10 bg-card">
             {activeColumns.some((c) => c.summaryRender) && (
               <TableRow className="border-b border-border bg-muted/50">
@@ -404,7 +431,7 @@ export function DataTable<T extends Record<string, any>>({
                 ))}
               </TableRow>
             )}
-            <TableRow className="shadow-[0_2px_0_0_hsl(var(--border))] border-b-2 border-border">
+            <TableRow ref={headerRowRef} className="shadow-[0_2px_0_0_hsl(var(--border))] border-b-2 border-border">
               {expandable && <TableHead className="w-8 text-xs" />}
               {activeColumns.map((col) => (
                 <TableHead
