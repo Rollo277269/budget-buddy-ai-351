@@ -10,6 +10,8 @@ import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
 import { BankReconciliationSummary } from "@/components/BankReconciliationSummary";
 import { YearSummaryTable } from "@/components/YearSummaryTable";
 import { CommessaDetailSheet } from "@/components/CommessaDetailSheet";
+import { InvoiceDetailSheet } from "@/components/InvoiceDetailSheet";
+import type { SaleInvoice } from "@/hooks/useInvoiceData";
 import { formatCurrency } from "@/lib/format";
 import {
   TrendingUp,
@@ -38,6 +40,7 @@ const Index = () => {
   const { links, addLink, removeLink, refresh: refreshLinks } = useCommessaLinks();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCig, setSelectedCig] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
 
   useEffect(() => {
     const cigParam = searchParams.get("cig");
@@ -129,7 +132,7 @@ const Index = () => {
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">Ricavi per Centro di Ricavo</h2>
           <CentroRicavoChart sales={sales} />
-          <NonClassificatoList sales={sales} />
+          <NonClassificatoList sales={sales} onRowClick={(inv) => setSelectedInvoice(inv)} />
         </div>
 
         {/* Bank Reconciliation Summary */}
@@ -163,6 +166,13 @@ const Index = () => {
         onAddLink={addLink}
         onRemoveLink={removeLink}
         onExpenseAdded={refreshLinks}
+      />
+
+      <InvoiceDetailSheet
+        invoice={selectedInvoice}
+        open={!!selectedInvoice}
+        onOpenChange={(open) => !open && setSelectedInvoice(null)}
+        type="vendita"
       />
     </div>
   );
