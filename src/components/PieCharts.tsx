@@ -181,7 +181,6 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
 
       const righe: any[] = Array.isArray((s as any).righe) ? (s as any).righe : [];
       if (righe.length > 0) {
-        let assigned = 0;
         righe.forEach((r, idx) => {
           const amt = (r?.imponibile ?? r?.totale ?? 0) || 0;
           if (amt === 0) return;
@@ -189,14 +188,10 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
           if (code) {
             const lbl = labelFor(code);
             totals[lbl] = (totals[lbl] || 0) + amt;
-            assigned += amt;
           } else {
             nonClassificato += amt;
           }
         });
-        // Riconcilia eventuale differenza fra somma righe e imponibile fattura
-        const diff = baseAmount - (assigned + (baseAmount - assigned));
-        if (diff) nonClassificato += diff;
       } else {
         nonClassificato += baseAmount;
       }
