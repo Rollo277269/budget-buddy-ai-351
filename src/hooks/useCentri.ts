@@ -181,6 +181,11 @@ export async function updateCentroCodeInAssignments(oldCodice: string, newCodice
   Object.keys(assignmentMapCache).forEach((k) => delete assignmentMapCache[k]);
 }
 
+/** Invalidate all in-memory caches for centro_assignments. */
+export function invalidateCentroAssignmentsCache() {
+  Object.keys(assignmentMapCache).forEach((k) => delete assignmentMapCache[k]);
+}
+
 export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
   const ck = `${tipo}|${context}`;
   const [map, setMap] = useState<Record<string, string>>(assignmentMapCache[ck] ?? {});
