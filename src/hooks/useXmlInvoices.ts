@@ -762,7 +762,10 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       const nums = autoCreated.map((a) => `${a.numero}${a.suffisso ? "/" + a.suffisso : ""}/${a.anno}`).join(", ");
       parts.push(`${autoCreated.length} create da XML (prot. ${nums})`);
     }
-    if (centroAssigned > 0) parts.push(`${centroAssigned} centri assegnati`);
+    if (centroAssigned > 0) {
+      parts.push(`${centroAssigned} centri assegnati`);
+      invalidateCentroAssignmentsCache();
+    }
     toast.success(parts.join(", "));
     await fetchRecords();
     return { uploaded, matched, autoCreated };
