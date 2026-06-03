@@ -651,7 +651,7 @@ export function useInvoiceData() {
         Math.abs(sumRowsTotale - headerEnriched.imponibile) < 0.05 &&
         Math.abs(sumRowsImponibile - headerEnriched.imponibile) > 0.05;
 
-      if (!hasLegacyRowAmounts) return headerEnriched;
+      if (!hasLegacyRowAmounts) return { ...headerEnriched, righe };
 
       return {
         ...headerEnriched,
