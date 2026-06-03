@@ -1057,7 +1057,7 @@ const BanchePage = () => {
         </div>
       }
 
-      {movements.length > 0 && !isLoading &&
+      {!isOverview && movements.length > 0 && !isLoading &&
       <>
           {/* Stats cards (in alto) */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
