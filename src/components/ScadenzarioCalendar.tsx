@@ -349,15 +349,28 @@ export function ScadenzarioCalendar({ events }: Props) {
                   {HOURS.map((h, i) => (
                     <div key={h} style={{ top: i * HOUR_HEIGHT, height: HOUR_HEIGHT }} className="absolute left-0 right-0 border-b" />
                   ))}
-                  {getEventsForDay(currentDate).map((ev, i) => {
-                    const hour = eventHour(ev);
-                    const top = (hour - HOUR_START) * HOUR_HEIGHT;
-                    if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return null;
-                    const hh = String(Math.floor(hour)).padStart(2, "0");
-                    const mm = String(Math.round((hour % 1) * 60)).padStart(2, "0");
-                    return (
-                      <div key={i} className="absolute left-2 right-2" style={{ top }}>
-                        <button
+                  {(() => {
+                    const evs = getEventsForDay(currentDate);
+                    const buckets = new Map<number, typeof evs>();
+                    evs.forEach((ev) => {
+                      const hour = eventHour(ev);
+                      const key = Math.floor(hour);
+                      if (!buckets.has(key)) buckets.set(key, [] as any);
+                      buckets.get(key)!.push(ev);
+                    });
+                    const nodes: JSX.Element[] = [];
+                    buckets.forEach((list, key) => {
+                      const top = (key - HOUR_START) * HOUR_HEIGHT;
+                      if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return;
+                      nodes.push(
+                        <div key={key} className="absolute left-2 right-2 flex flex-col gap-1" style={{ top }}>
+                          {list.map((ev, i) => {
+                            const hour = eventHour(ev);
+                            const hh = String(Math.floor(hour)).padStart(2, "0");
+                            const mm = String(Math.round((hour % 1) * 60)).padStart(2, "0");
+                            return (
+                              <button
+                                key={i}
                           type="button"
                           onClick={() => openEvent(ev)}
                           className={cn(
@@ -392,10 +405,14 @@ export function ScadenzarioCalendar({ events }: Props) {
                             {ev.stato === "scaduta" && <span className="text-[9px] text-destructive">Scaduta</span>}
                             {ev.stato === "in_scadenza" && <span className="text-[9px] text-[hsl(var(--warning))]">In scadenza</span>}
                           </div>
-                        </button>
-                      </div>
-                    );
-                  })}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    });
+                    return nodes;
+                  })()}
                   {getEventsForDay(currentDate).length === 0 && (
                     <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">Nessuna scadenza per questa giornata</p>
                   )}
