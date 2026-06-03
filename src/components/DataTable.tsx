@@ -523,7 +523,7 @@ export function DataTable<T extends Record<string, any>>({
                         {activeColumns.map((col) => (
                           <TableCell
                             key={col.key}
-                            className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""}`}
+                            className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""} bg-white`}
                             style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
                           >
                             {col.render(row)}
