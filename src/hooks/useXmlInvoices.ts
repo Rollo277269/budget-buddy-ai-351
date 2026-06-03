@@ -398,6 +398,19 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       if (r.matched && r.invoice_key) alreadyMatchedKeys.add(r.invoice_key);
     });
 
+    // Track imported/matched invoices for post-upload AI centro classification
+    type ImportedInv = {
+      invoiceKey: string;
+      anno: number;
+      numero: number;
+      suffisso?: string;
+      label: string;
+      totale: number;
+      descrizione: string;
+      cig: string;
+    };
+    const importedForCentro: ImportedInv[] = [];
+
     // Build a set of existing file names for dedup
     const existingFileNames = new Map<string, XmlInvoiceRecord>();
     xmlRecords.forEach((r) => {
