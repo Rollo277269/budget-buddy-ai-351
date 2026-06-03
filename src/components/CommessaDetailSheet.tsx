@@ -709,6 +709,7 @@ export function CommessaDetailSheet({
           // delle righe XML non deve essere considerata: totale riga = imponibile.
           const headerSenzaIva = Number(s.imposta || 0) === 0;
           righe.forEach((riga, idx) => {
+            if (!saleRowHasAmount(riga)) return;
             const codiceRiga = map[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice || "Non classificato";
             if (isExcludedFromCommessa(codiceRiga)) return;
             const labelRiga = codiceRiga === "Non classificato" ? codiceRiga : `${codiceRiga} - ${centroLabelMap.get(codiceRiga) || ""}`;
@@ -2065,6 +2066,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
         // Header IVA=0 (reverse charge / split / esente): IVA teorica delle righe XML non considerata.
         const headerSenzaIva = Number(s.imposta || 0) === 0;
         righe.forEach((riga, idx) => {
+          if (!saleRowHasAmount(riga)) return;
           const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
           if (isExcludedFromCommessa(codiceRiga)) return;
           const labelRiga = codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato";
@@ -2133,7 +2135,8 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       const labels = new Set<string>();
       const rowsAllZero = !righe.some(saleRowHasAmount);
       if (hasRowAssignments && !rowsAllZero) {
-        righe.forEach((_, idx) => {
+        righe.forEach((riga, idx) => {
+          if (!saleRowHasAmount(riga)) return;
           const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
           if (isExcludedFromCommessa(codiceRiga)) return;
           labels.add(codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato");
