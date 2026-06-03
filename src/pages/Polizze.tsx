@@ -111,7 +111,23 @@ export default function Polizze() {
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "gara" | "commessa" | "altre">("all");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => {
+    try {
+      const saved = localStorage.getItem(COLS_STORAGE_KEY);
+      if (saved) return new Set(JSON.parse(saved) as ColKey[]);
+    } catch {}
+    return new Set(ALL_COLS.map((c) => c.key));
+  });
+  const isVisible = useCallback((k: ColKey) => visibleCols.has(k), [visibleCols]);
+  const toggleCol = useCallback((k: ColKey) => {
+    setVisibleCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      try { localStorage.setItem(COLS_STORAGE_KEY, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     document.title = "Polizze | Scadenze";
@@ -143,6 +159,17 @@ export default function Polizze() {
     const q = filter.trim().toLowerCase();
     return enriched.filter((d) => {
       if (activeTab !== "all" && d._cat !== activeTab) return false;
+      if (statusFilter !== "all") {
+        if (statusFilter === "senza") {
+          if (d._date) return false;
+        } else {
+          if (!d._date) return false;
+          const days = d._days!;
+          if (statusFilter === "scaduto" && days >= 0) return false;
+          if (statusFilter === "imminenti" && (days < 0 || days > REMINDER_DAYS)) return false;
+          if (statusFilter === "future" && days <= REMINDER_DAYS) return false;
+        }
+      }
       if (!q) return true;
       return (
         (d.fornitore || "").toLowerCase().includes(q) ||
@@ -152,7 +179,7 @@ export default function Polizze() {
         (d.numero || "").toLowerCase().includes(q)
       );
     });
-  }, [enriched, filter, activeTab]);
+  }, [enriched, filter, activeTab, statusFilter]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
