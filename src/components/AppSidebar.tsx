@@ -140,7 +140,7 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
 
   return (
     <Sidebar collapsible="icon" className="z-40">
-      <SidebarHeader className="flex flex-row items-center gap-1 px-2 pt-3 pb-1">
+      <SidebarHeader className="flex flex-row items-center gap-1 px-2 pt-3 pb-1 bg-white">
         <Button
           variant="ghost"
           size="icon"
