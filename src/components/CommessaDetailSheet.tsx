@@ -836,7 +836,7 @@ export function CommessaDetailSheet({
       <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-row overflow-hidden p-0 border-none">
         <div className={`flex flex-col ${pdfData ? "w-1/2" : "w-full"} transition-all overflow-hidden`}>
         {/* Header */}
-        <DialogHeader className="flex flex-col space-y-1.5 text-center sm:text-left px-6 pt-4 pb-3 border-b shrink-0 bg-slate-400">
+        <DialogHeader className="flex flex-col space-y-1.5 text-center sm:text-left px-6 pt-4 pb-3 border-b shrink-0 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-wrap">
               <DialogTitle className="flex items-center gap-2 text-xl">
