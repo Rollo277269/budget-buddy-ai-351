@@ -875,7 +875,26 @@ const VenditePage = () => {
               </div>
             );
           }
-          return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="ricavo" centri={centri} centroMap={ricavoMap.map} onAssign={ricavoMap.assign} onRemove={ricavoMap.remove} importo={r.totale} />;
+          return <CentroCell
+            invoiceKey={`${r.anno}-${r.numero}`}
+            tipo="ricavo"
+            centri={centri}
+            centroMap={ricavoMap.map}
+            onAssign={(key, codice) => {
+              ricavoMap.assign(key, codice);
+              // Propaga il centro di ricavo a tutte le righe della fattura
+              const headerSenzaIva = Number(r.imposta || 0) === 0;
+              const righe = Array.isArray(r.righe) ? r.righe : [];
+              righe.forEach((riga: any, idx: number) => {
+                const rigaTotale = headerSenzaIva ? Number(riga?.imponibile || 0) : Number(riga?.totale || 0);
+                const rigaImp = Number(riga?.imponibile || 0);
+                if (rigaTotale === 0 && rigaImp === 0) return;
+                ricavoMap.assign(`${r.anno}-${r.numero}-${idx}`, codice);
+              });
+            }}
+            onRemove={ricavoMap.remove}
+            importo={r.totale}
+          />;
         },
       },
       { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
