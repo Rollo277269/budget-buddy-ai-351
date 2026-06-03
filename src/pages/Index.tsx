@@ -41,6 +41,7 @@ const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCig, setSelectedCig] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
+  const [nonClassRefreshKey, setNonClassRefreshKey] = useState(0);
 
   useEffect(() => {
     const cigParam = searchParams.get("cig");
@@ -132,7 +133,7 @@ const Index = () => {
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">Ricavi per Centro di Ricavo</h2>
           <CentroRicavoChart sales={sales} />
-          <NonClassificatoList sales={sales} onRowClick={(inv) => setSelectedInvoice(inv)} />
+          <NonClassificatoList sales={sales} onRowClick={(inv) => setSelectedInvoice(inv)} refreshKey={nonClassRefreshKey} />
         </div>
 
         {/* Bank Reconciliation Summary */}
@@ -171,7 +172,12 @@ const Index = () => {
       <InvoiceDetailSheet
         invoice={selectedInvoice}
         open={!!selectedInvoice}
-        onOpenChange={(open) => !open && setSelectedInvoice(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedInvoice(null);
+            setNonClassRefreshKey((k) => k + 1);
+          }
+        }}
         type="vendita"
       />
     </div>
