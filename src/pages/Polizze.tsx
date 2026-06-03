@@ -203,33 +203,6 @@ export default function Polizze() {
     return { totale: enriched.length, scaduto, imminenti, future, senza };
   }, [enriched]);
 
-  // Calendar modifiers
-  const calendarModifiers = useMemo(() => {
-    const expired: Date[] = [];
-    const imminent: Date[] = [];
-    const future: Date[] = [];
-    enriched.forEach((d) => {
-      if (!d._date) return;
-      const days = d._days!;
-      if (days < 0) expired.push(d._date);
-      else if (days <= REMINDER_DAYS) imminent.push(d._date);
-      else future.push(d._date);
-    });
-    return { expired, imminent, future };
-  }, [enriched]);
-
-  const upcoming60 = useMemo(() => {
-    return enriched
-      .filter((d) => d._date && d._days! >= -30 && d._days! <= 60)
-      .sort((a, b) => a._date!.getTime() - b._date!.getTime());
-  }, [enriched]);
-
-  const selectedDayItems = useMemo(() => {
-    if (!selectedDate) return [];
-    const iso = toIso(selectedDate);
-    return enriched.filter((d) => d._date && toIso(d._date) === iso);
-  }, [selectedDate, enriched]);
-
   // ── actions ──
   const handleExtractScadenza = useCallback(async (doc: DocumentoAcquisto) => {
     if (!doc.parsed_text) {
