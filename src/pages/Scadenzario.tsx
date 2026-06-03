@@ -185,7 +185,7 @@ export default function ScadenzarioPage() {
   }
 
   return (
-    <div className="p-6 space-y-4 bg-white">
+    <div className="p-6 space-y-4 bg-white py-0">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card>
           <CardContent className="p-4">
