@@ -36,7 +36,7 @@ export const defaultItems: MenuItem[] = [
   { title: "Conti", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: Briefcase },
   { title: "Gare", url: "/offerte", icon: Gavel },
-  { title: "Riepiloghi per CIG", url: "/commesse", icon: FolderKanban },
+  { title: "Riepilogo CIG", url: "/commesse", icon: FolderKanban },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
 

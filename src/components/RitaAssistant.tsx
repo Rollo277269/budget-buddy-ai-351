@@ -348,7 +348,7 @@ function getPageName(path: string): string {
      "/": "Rubrica",
     "/vendite": "Vendite",
     "/acquisti": "Acquisti",
-    "/commesse": "Riepiloghi per CIG",
+    "/commesse": "Riepilogo CIG",
     "/lista-commesse": "Lista Commesse",
      "/offerte": "Gare",
     "/schede-contabili": "Schede Contabili",
