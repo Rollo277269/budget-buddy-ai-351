@@ -132,7 +132,7 @@ const Index = () => {
         {/* Centro Ricavo Chart */}
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">Ricavi per Centro di Ricavo</h2>
-          <CentroRicavoChart sales={sales} />
+          <CentroRicavoChart sales={sales} refreshKey={nonClassRefreshKey} />
           <NonClassificatoList sales={sales} onRowClick={(inv) => setSelectedInvoice(inv)} refreshKey={nonClassRefreshKey} />
         </div>
 
