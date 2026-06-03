@@ -254,6 +254,17 @@ export function XmlClassificationCheck() {
               Riclassifica tutti ({issues.length})
             </Button>
           )}
+          {issues !== null && issues.length > 0 && (
+            <Button
+              onClick={applyDelete}
+              disabled={deleting || selected.size === 0}
+              size="sm"
+              variant="destructive"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Elimina selezionati ({selected.size})
+            </Button>
+          )}
           {selfNames.length > 0 && (
             <div className="text-xs text-muted-foreground">
               Azienda riconosciuta:&nbsp;
