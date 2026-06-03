@@ -502,6 +502,7 @@ const BanchePage = () => {
 
 
   const hasValidAccount = activeAccountId !== "default" && activeAccountId !== "all" && conti.some((c) => c.id === activeAccountId);
+  const isOverview = !hasValidAccount && activeAccountId !== "all";
 
   const accountStats = useMemo(() => {
     const map = new Map<string, {entrate: number;uscite: number;saldo: number;movimenti: number;}>();
