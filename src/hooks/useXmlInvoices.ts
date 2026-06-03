@@ -48,6 +48,53 @@ function normalizeStr(s: string): string {
   return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+/**
+ * Build a case-insensitive denomination map by merging existing names from
+ * rubrica (highest priority), fatture_vendita.cliente and fatture_acquisto.fornitore.
+ * Key: lowercased+trimmed name. Value: canonical form to use going forward.
+ * Rubrica wins; otherwise the most frequent existing form wins.
+ */
+async function buildDenominazioneMap(): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const counts = new Map<string, Map<string, number>>(); // lowerKey -> form -> count
+
+  const bump = (raw: string | null | undefined, weight = 1) => {
+    const name = (raw || "").trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (!counts.has(key)) counts.set(key, new Map());
+    const inner = counts.get(key)!;
+    inner.set(name, (inner.get(name) || 0) + weight);
+  };
+
+  try {
+    const [{ data: rub }, { data: ven }, { data: acq }] = await Promise.all([
+      supabase.from("rubrica").select("denominazione"),
+      supabase.from("fatture_vendita").select("cliente"),
+      supabase.from("fatture_acquisto").select("fornitore"),
+    ]);
+    (ven || []).forEach((r: any) => bump(r.cliente, 1));
+    (acq || []).forEach((r: any) => bump(r.fornitore, 1));
+    // Rubrica gets a heavy weight so it always wins as canonical form
+    (rub || []).forEach((r: any) => bump(r.denominazione, 100000));
+  } catch (e) {
+    console.warn("buildDenominazioneMap failed:", e);
+  }
+
+  counts.forEach((forms, key) => {
+    let best = ""; let bestCount = -1;
+    forms.forEach((c, form) => { if (c > bestCount) { bestCount = c; best = form; } });
+    if (best) map.set(key, best);
+  });
+  return map;
+}
+
+function canonicalizeName(raw: string | null | undefined, map: Map<string, string>): string {
+  const name = (raw || "").trim();
+  if (!name) return "";
+  return map.get(name.toLowerCase()) || name;
+}
+
 /** Split a name into normalized words for order-independent matching */
 function nameWords(s: string): string[] {
   return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(Boolean);
