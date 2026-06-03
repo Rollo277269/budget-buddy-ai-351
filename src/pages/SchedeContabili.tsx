@@ -916,8 +916,16 @@ function SchedaDetail({
 
     const totals: Record<string, number> = {};
     for (const inv of invoices) {
-      const key = `${inv.numero}-${inv.anno}`;
-      const codice = centroMap[key];
+      const headerKey = `${inv.anno}-${inv.numero}`;
+      // Prefer per-row assignment if present; fall back to header assignment.
+      let codice: string | undefined = centroMap[headerKey];
+      const righe = (inv as any).righe as any[] | undefined;
+      if (righe && righe.length > 0) {
+        for (let idx = 0; idx < righe.length; idx++) {
+          const rowCodice = centroMap[`${headerKey}-${idx}`];
+          if (rowCodice) { codice = rowCodice; break; }
+        }
+      }
       const label = codice
         ? (centri.find((c) => c.codice === codice)?.descrizione || codice)
         : "Non assegnato";
