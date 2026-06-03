@@ -271,7 +271,7 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
   );
 });
 
-export const NonClassificatoList = React.memo(function NonClassificatoList({ sales, onRowClick }: { sales: SaleInvoice[]; onRowClick?: (invoice: SaleInvoice) => void }) {
+export const NonClassificatoList = React.memo(function NonClassificatoList({ sales, onRowClick, refreshKey = 0 }: { sales: SaleInvoice[]; onRowClick?: (invoice: SaleInvoice) => void; refreshKey?: number }) {
   const [centri, setCentri] = useState<CentroCR[]>([]);
   const [mapRaw, setMapRaw] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
@@ -279,7 +279,7 @@ export const NonClassificatoList = React.memo(function NonClassificatoList({ sal
   useEffect(() => {
     fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
     fetchCentroAssignmentMap("ricavo", "vendite").then(setMapRaw);
-  }, []);
+  }, [refreshKey]);
 
   const rows = useMemo(() => {
     if (centri.length === 0) return [];
