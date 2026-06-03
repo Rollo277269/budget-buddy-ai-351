@@ -2060,9 +2060,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
       const hasRowAssignments = righe.length >= 1 && righe.some((_, idx) => !!ricavoMap[`${s.anno}-${s.numero}-${idx}`]);
       // Se le righe XML hanno tutti gli importi a zero (header-only SAL/FatturaPA),
       // la distribuzione per riga produrrebbe 0: fallback a classificazione di intera fattura.
-      const rowsImpSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.imponibile || 0)), 0);
-      const rowsTotSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.totale || 0)), 0);
-      const rowsAllZero = rowsImpSum === 0 && rowsTotSum === 0;
+      const rowsAllZero = !righe.some(saleRowHasAmount);
       if (hasRowAssignments && !rowsAllZero) {
         // Header IVA=0 (reverse charge / split / esente): IVA teorica delle righe XML non considerata.
         const headerSenzaIva = Number(s.imposta || 0) === 0;
@@ -2070,13 +2068,10 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
           const codiceRiga = ricavoMap[`${s.anno}-${s.numero}-${idx}`] || fatturaCodice;
           if (isExcludedFromCommessa(codiceRiga)) return;
           const labelRiga = codiceRiga ? `${codiceRiga} - ${centroLookup.get(codiceRiga) || ""}` : "Non classificato";
-          const impR = sign * Math.abs(riga.imponibile || 0);
-          const totR = headerSenzaIva
-            ? sign * Math.abs(riga.imponibile || 0)
-            : sign * Math.abs(riga.totale || 0);
-          const ivaR = headerSenzaIva
-            ? 0
-            : sign * Math.abs((riga.totale || 0) - (riga.imponibile || 0));
+          const amounts = saleRowBaseAmounts(riga, headerSenzaIva);
+          const impR = sign * Math.abs(amounts.imponibile);
+          const totR = sign * Math.abs(amounts.totale);
+          const ivaR = sign * Math.abs(amounts.iva);
           const eR = map.get(labelRiga) || { imponibile: 0, iva: 0, totale: 0 };
           eR.imponibile += impR; eR.iva += ivaR; eR.totale += totR;
           map.set(labelRiga, eR);
