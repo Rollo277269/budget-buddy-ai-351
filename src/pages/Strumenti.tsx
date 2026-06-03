@@ -3,6 +3,7 @@ import { Settings, Landmark, FileText, Plus, Trash2, Save, Building2, Pencil, Ch
 import { BankLogo } from "@/components/BankLogo";
 import { CigIntegrityCheck } from "@/components/CigIntegrityCheck";
 import { CigCoherenceCheck } from "@/components/CigCoherenceCheck";
+import { XmlClassificationCheck } from "@/components/XmlClassificationCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
