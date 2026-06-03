@@ -171,14 +171,14 @@ const COLORS_CENTRI = [
   "hsl(0 50% 50%)",
 ];
 
-export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }: { sales: SaleInvoice[] }) {
+export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales, refreshKey = 0 }: { sales: SaleInvoice[]; refreshKey?: number }) {
   const [centri, setCentri] = useState<CentroCR[]>([]);
   const [mapRaw, setMapRaw] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
     fetchCentroAssignmentMap("ricavo", "vendite").then(setMapRaw);
-  }, []);
+  }, [refreshKey]);
 
   const data = useMemo(() => {
     if (centri.length === 0) return [];
