@@ -207,16 +207,27 @@ export function ScadenzarioCalendar({ events }: Props) {
         {HOURS.map((h, i) => (
           <div key={h} style={{ top: i * HOUR_HEIGHT, height: HOUR_HEIGHT }} className="absolute left-0 right-0 border-b" />
         ))}
-        {dayEvents.map((ev, j) => {
-          const hour = eventHour(ev);
-          const top = (hour - HOUR_START) * HOUR_HEIGHT;
-          if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return null;
-          return (
-            <div key={j} className="absolute left-0.5 right-0.5" style={{ top }}>
-              <EventCard event={ev} onClick={() => openEvent(ev)} />
-            </div>
-          );
-        })}
+        {(() => {
+          const buckets = new Map<number, CalendarEvent[]>();
+          dayEvents.forEach((ev) => {
+            const key = Math.floor(eventHour(ev));
+            if (!buckets.has(key)) buckets.set(key, []);
+            buckets.get(key)!.push(ev);
+          });
+          const nodes: JSX.Element[] = [];
+          buckets.forEach((list, key) => {
+            const top = (key - HOUR_START) * HOUR_HEIGHT;
+            if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return;
+            nodes.push(
+              <div key={key} className="absolute left-0.5 right-0.5 flex flex-col gap-0.5" style={{ top }}>
+                {list.map((ev, i) => (
+                  <EventCard key={i} event={ev} onClick={() => openEvent(ev)} />
+                ))}
+              </div>
+            );
+          });
+          return nodes;
+        })()}
       </div>
     );
   };
