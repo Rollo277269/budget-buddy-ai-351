@@ -678,7 +678,7 @@ export function CommessaDetailSheet({
         const s = item as SaleInvoice;
         const righe = Array.isArray(s.righe) ? s.righe : [];
         const fatturaCodice = map[`${s.anno}-${s.numero}`] || "";
-        const hasRowAssignments = righe.length > 1 && righe.some((_, idx) => !!map[`${s.anno}-${s.numero}-${idx}`]);
+        const hasRowAssignments = righe.length >= 1 && righe.some((_, idx) => !!map[`${s.anno}-${s.numero}-${idx}`]);
         const rowsImpSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.imponibile || 0)), 0);
         const rowsTotSum = righe.reduce((acc, r: any) => acc + Math.abs(Number(r?.totale || 0)), 0);
         const rowsAllZero = rowsImpSum === 0 && rowsTotSum === 0;
