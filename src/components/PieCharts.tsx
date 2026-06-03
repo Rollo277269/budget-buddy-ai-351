@@ -249,3 +249,94 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales }
     </ResponsiveContainer>
   );
 });
+
+export const NonClassificatoList = React.memo(function NonClassificatoList({ sales }: { sales: SaleInvoice[] }) {
+  const [centri, setCentri] = useState<CentroCR[]>([]);
+  const [mapRaw, setMapRaw] = useState<Record<string, string>>({});
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.from("centro_assignments" as any).select("invoice_key, centro_codice").eq("tipo", "ricavo").eq("context", "vendite").then(({ data }) => {
+        const m: Record<string, string> = {};
+        for (const d of (data as any[] || [])) m[d.invoice_key] = d.centro_codice;
+        setMapRaw(m);
+      });
+    });
+  }, []);
+
+  const rows = useMemo(() => {
+    if (centri.length === 0) return [];
+    const out: { anno: number; numero: number; idx: number | null; cliente: string; importo: number; motivo: string }[] = [];
+    sales.forEach((s) => {
+      const headerKey = `${s.anno}-${s.numero}`;
+      if (mapRaw[headerKey]) return;
+      const righe: any[] = Array.isArray((s as any).righe) ? (s as any).righe : [];
+      const baseAmount = (s.imponibile ?? 0) !== 0 ? s.imponibile : s.totale;
+      if (righe.length === 0) {
+        if (baseAmount === 0) return;
+        out.push({ anno: s.anno, numero: s.numero, idx: null, cliente: s.cliente || "—", importo: baseAmount, motivo: "Fattura senza righe e nessun centro assegnato in testata" });
+        return;
+      }
+      righe.forEach((r, idx) => {
+        const amt = (r?.imponibile ?? r?.totale ?? 0) || 0;
+        if (amt === 0) return;
+        if (mapRaw[`${headerKey}-${idx}`]) return;
+        out.push({
+          anno: s.anno,
+          numero: s.numero,
+          idx,
+          cliente: s.cliente || "—",
+          importo: amt,
+          motivo: "Nessun centro assegnato né alla riga né alla testata",
+        });
+      });
+    });
+    return out.sort((a, b) => b.importo - a.importo);
+  }, [sales, centri, mapRaw]);
+
+  if (rows.length === 0) return null;
+
+  const total = rows.reduce((a, r) => a + r.importo, 0);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="mt-4 rounded-lg border bg-muted/30">
+      <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium hover:bg-muted/50">
+        <span>
+          Righe "Non classificato": <span className="font-mono">{rows.length}</span> — totale{" "}
+          <span className="font-mono">{formatCurrency(total)}</span>
+        </span>
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="max-h-80 overflow-auto">
+          <table className="w-full text-xs">
+            <thead className="sticky top-0 bg-card border-b">
+              <tr className="text-left text-muted-foreground">
+                <th className="px-2 py-1 font-medium">Anno</th>
+                <th className="px-2 py-1 font-medium">Numero</th>
+                <th className="px-2 py-1 font-medium">Riga</th>
+                <th className="px-2 py-1 font-medium">Cliente</th>
+                <th className="px-2 py-1 font-medium text-right">Importo</th>
+                <th className="px-2 py-1 font-medium">Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} className="border-b last:border-b-0 hover:bg-muted/40">
+                  <td className="px-2 py-1 font-mono">{r.anno}</td>
+                  <td className="px-2 py-1 font-mono">{r.numero}</td>
+                  <td className="px-2 py-1 font-mono">{r.idx === null ? "—" : r.idx}</td>
+                  <td className="px-2 py-1 truncate max-w-[260px]">{r.cliente}</td>
+                  <td className="px-2 py-1 font-mono text-right">{formatCurrency(r.importo)}</td>
+                  <td className="px-2 py-1 text-muted-foreground">{r.motivo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+});
