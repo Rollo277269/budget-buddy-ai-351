@@ -100,15 +100,15 @@ export function ScadenzarioCalendar({ events }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
-  const navigate = useNavigate();
+  const router = useNavigate();
 
   const openEvent = (ev: CalendarEvent) => setSelected(ev);
 
   const goToDocument = (ev: CalendarEvent) => {
-    if (ev.tipo === "credito") navigate("/vendite");
-    else if (ev.tipo === "debito") navigate("/acquisti");
-    else if (ev.tipo === "polizza") navigate("/polizze");
-    else if (ev.tipo === "finanziamento" || ev.tipo === "credito_fiscale") navigate("/banche");
+    if (ev.tipo === "credito") router("/vendite");
+    else if (ev.tipo === "debito") router("/acquisti");
+    else if (ev.tipo === "polizza") router("/polizze");
+    else if (ev.tipo === "finanziamento" || ev.tipo === "credito_fiscale") router("/banche");
     setSelected(null);
   };
 
