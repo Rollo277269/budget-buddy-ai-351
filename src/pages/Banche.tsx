@@ -841,9 +841,9 @@ const BanchePage = () => {
         );
       })()}
 
-      {conti.length > 0 && (isOverview || rawMovements.length > 0) &&
+      {isOverview && conti.length > 0 &&
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {conti.filter((c) => isOverview || activeAccountId === "all" || c.id === activeAccountId).map((c) => {
+          {conti.map((c) => {
           const st = accountStats.get(c.id) || { entrate: 0, uscite: 0, saldo: 0, movimenti: 0 };
           return (
             <Card
