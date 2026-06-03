@@ -2,9 +2,11 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, AlertTriangle, Clock, Landmark, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle, Clock, Landmark, ShieldCheck, ExternalLink, FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 export interface CalendarEvent {
   tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale" | "polizza";
@@ -14,6 +16,9 @@ export interface CalendarEvent {
   scadenza: string;
   scadenzaDate: Date | null;
   stato: "scaduta" | "in_scadenza" | "regolare";
+  cig?: string;
+  descrizione?: string;
+  giorniRimasti?: number;
 }
 
 type ViewMode = "month" | "week" | "day";
@@ -60,12 +65,15 @@ function EventDot({ event }: { event: CalendarEvent }) {
   );
 }
 
-function EventCard({ event }: { event: CalendarEvent }) {
+function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => void }) {
   const isOverdue = event.stato === "scaduta";
   const isWarning = event.stato === "in_scadenza";
   return (
-    <div className={cn(
-      "text-[10px] leading-tight px-1.5 py-1 rounded border truncate",
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      className={cn(
+      "w-full text-left text-[10px] leading-tight px-1.5 py-1 rounded border truncate cursor-pointer hover:ring-1 hover:ring-primary/40 hover:shadow-sm transition",
       isOverdue ? "bg-destructive/10 border-destructive/30 text-destructive" :
       isWarning ? "bg-[hsl(var(--warning))]/10 border-[hsl(var(--warning))]/30" :
       "bg-muted/50 border-border"
@@ -80,7 +88,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
       <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : event.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense")}>
         {formatCurrency(event.totale)}
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -91,6 +99,18 @@ interface Props {
 export function ScadenzarioCalendar({ events }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const navigate = useNavigate();
+
+  const openEvent = (ev: CalendarEvent) => setSelected(ev);
+
+  const goToDocument = (ev: CalendarEvent) => {
+    if (ev.tipo === "credito") navigate("/vendite");
+    else if (ev.tipo === "debito") navigate("/acquisti");
+    else if (ev.tipo === "polizza") navigate("/polizze");
+    else if (ev.tipo === "finanziamento" || ev.tipo === "credito_fiscale") navigate("/banche");
+    setSelected(null);
+  };
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
