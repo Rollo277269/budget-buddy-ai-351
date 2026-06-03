@@ -823,6 +823,24 @@ const BanchePage = () => {
       }
 
       {/* Account balances */}
+      {isOverview && conti.length > 0 && (() => {
+        const totale = conti.reduce((sum, c) => sum + (accountStats.get(c.id)?.saldo || 0), 0);
+        return (
+          <Card className="border-primary/40 bg-primary/5">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Landmark className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold uppercase tracking-wider">Totale Disponibilità</span>
+                <Badge variant="outline" className="text-[10px]">{conti.length} conti</Badge>
+              </div>
+              <div className={`text-2xl font-bold font-mono ${totale >= 0 ? "text-income" : "text-expense"}`}>
+                {formatCurrency(totale)}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {conti.length > 0 && (isOverview || rawMovements.length > 0) &&
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {conti.filter((c) => isOverview || activeAccountId === "all" || c.id === activeAccountId).map((c) => {
