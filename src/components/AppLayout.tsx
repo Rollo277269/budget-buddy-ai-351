@@ -142,50 +142,10 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { isFs, toggle: toggleFs } = useFullscreen();
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
 
-  // If the user previously enabled fullscreen but the browser dropped it
-  // (e.g. after a navigation/focus change), restore it on the next user gesture.
-  useEffect(() => {
-    if (!location) return;
-    if (sessionStorage.getItem("fs-pref") !== "1") return;
-    if (document.fullscreenElement) return;
-    const restore = () => {
-      window.removeEventListener("pointerdown", restore);
-      window.removeEventListener("keydown", restore);
-      if (sessionStorage.getItem("fs-pref") === "1" && !document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-    };
-    window.addEventListener("pointerdown", restore, { once: true });
-    window.addEventListener("keydown", restore, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", restore);
-      window.removeEventListener("keydown", restore);
-    };
-  }, [location.pathname]);
-
   // Hydrate IDB cache immediately, then schedule fresh-data prefetch when idle.
   useEffect(() => {
     hydratePersistentCache().then(() => schedulePrefetch());
     startWebVitalsWhenIdle();
-  }, []);
-
-  // Auto-enter fullscreen on first user interaction (browsers require a user gesture).
-  useEffect(() => {
-    if (sessionStorage.getItem("fs-auto-done") === "1") return;
-    const tryFs = () => {
-      sessionStorage.setItem("fs-auto-done", "1");
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-      window.removeEventListener("pointerdown", tryFs);
-      window.removeEventListener("keydown", tryFs);
-    };
-    window.addEventListener("pointerdown", tryFs, { once: true });
-    window.addEventListener("keydown", tryFs, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", tryFs);
-      window.removeEventListener("keydown", tryFs);
-    };
   }, []);
 
   const toggleLock = useCallback(() => {
