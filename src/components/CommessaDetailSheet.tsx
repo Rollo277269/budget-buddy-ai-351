@@ -96,6 +96,30 @@ function saleImponibile(s: SaleInvoice): number {
   return isSaleCreditNote(s) ? -Math.abs(s.imponibile || 0) : (s.imponibile || 0);
 }
 
+function rowAmount(value: unknown): number {
+  if (value == null || value === "") return 0;
+  if (typeof value === "number") return value;
+  const n = parseFloat(String(value).replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function saleRowBaseAmounts(riga: any, headerSenzaIva: boolean) {
+  const imponibile = rowAmount(riga?.imponibile ?? riga?.prezzoTotale ?? riga?.prezzo_totale ?? 0);
+  const declaredTotale = rowAmount(riga?.totale ?? riga?.importoTotale ?? riga?.importo_totale ?? 0);
+  let iva = rowAmount(riga?.imposta ?? riga?.iva ?? 0);
+  if (!headerSenzaIva && !iva) {
+    const aliquota = rowAmount(riga?.aliquotaIVA ?? riga?.aliquota_iva ?? riga?.aliquota ?? 0);
+    iva = aliquota ? imponibile * (aliquota / 100) : Math.max(declaredTotale - imponibile, 0);
+  }
+  const totale = headerSenzaIva ? imponibile : (declaredTotale || imponibile + iva);
+  return { imponibile, iva: headerSenzaIva ? 0 : iva, totale };
+}
+
+function saleRowHasAmount(riga: any): boolean {
+  const amounts = saleRowBaseAmounts(riga, false);
+  return Math.abs(amounts.imponibile) > 0 || Math.abs(amounts.iva) > 0 || Math.abs(amounts.totale) > 0;
+}
+
 /* ──────────────────────────────────────────────────────────────────────
  * Allineamento orizzontale Centri Ricavo ↔ Centri Costo
  * Regola fissa hardcoded (codice → riga):
