@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScanSearch, AlertTriangle, Check, Loader2, ArrowRight, Trash2 } from "lucide-react";
+import { ScanSearch, AlertTriangle, Check, Loader2, ArrowRight, Trash2, Wand2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ export function XmlClassificationCheck() {
   const [issues, setIssues] = useState<XmlIssue[] | null>(null);
   const [fixing, setFixing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [bulkFixing, setBulkFixing] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selfNames, setSelfNames] = useState<string[]>([]);
 
@@ -173,6 +174,43 @@ export function XmlClassificationCheck() {
     }
   };
 
+  // Bulk reclassify ALL flagged issues in one shot, batched per target tipo.
+  const applyReclassifyAll = async () => {
+    if (!issues || issues.length === 0) return;
+    const toAcq = issues.filter((i) => i.expectedTipo === "acquisto").map((i) => i.id);
+    const toVen = issues.filter((i) => i.expectedTipo === "vendita").map((i) => i.id);
+    const msg = [
+      toVen.length ? `${toVen.length} → vendita` : "",
+      toAcq.length ? `${toAcq.length} → acquisto` : "",
+    ].filter(Boolean).join("  •  ");
+    if (!confirm(`Riclassificare in massa tutti i ${issues.length} XML segnalati?\n${msg}`)) return;
+    setBulkFixing(true);
+    try {
+      let fixed = 0;
+      // Update in chunks to avoid huge `in()` lists.
+      const chunk = 200;
+      const update = async (ids: string[], tipo: "acquisto" | "vendita") => {
+        for (let i = 0; i < ids.length; i += chunk) {
+          const slice = ids.slice(i, i + chunk);
+          const { error } = await supabase
+            .from("fatture_xml")
+            .update({ tipo, matched: false })
+            .in("id", slice);
+          if (error) throw error;
+          fixed += slice.length;
+        }
+      };
+      if (toVen.length) await update(toVen, "vendita");
+      if (toAcq.length) await update(toAcq, "acquisto");
+      toast.success(`${fixed} XML riclassificati`);
+      await runCheck();
+    } catch (e: any) {
+      toast.error("Errore durante la riclassificazione: " + e.message);
+    } finally {
+      setBulkFixing(false);
+    }
+  };
+
   const applyDelete = async () => {
     if (!issues) return;
     const toDel = issues.filter((i) => selected.has(i.id));
@@ -210,6 +248,12 @@ export function XmlClassificationCheck() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ScanSearch className="h-4 w-4 mr-2" />}
             Avvia verifica
           </Button>
+          {issues !== null && issues.length > 0 && (
+            <Button onClick={applyReclassifyAll} disabled={bulkFixing} size="sm">
+              {bulkFixing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
+              Riclassifica tutti ({issues.length})
+            </Button>
+          )}
           {selfNames.length > 0 && (
             <div className="text-xs text-muted-foreground">
               Azienda riconosciuta:&nbsp;
@@ -219,6 +263,19 @@ export function XmlClassificationCheck() {
             </div>
           )}
         </div>
+
+        {issues !== null && issues.length > 0 && (() => {
+          const toVen = issues.filter((i) => i.expectedTipo === "vendita").length;
+          const toAcq = issues.filter((i) => i.expectedTipo === "acquisto").length;
+          return (
+            <div className="text-xs text-muted-foreground border rounded-md p-2 bg-muted/30">
+              Anteprima riclassificazione:&nbsp;
+              {toVen > 0 && <><strong>{toVen}</strong> XML da Acquisto → Vendita</>}
+              {toVen > 0 && toAcq > 0 && <>&nbsp;·&nbsp;</>}
+              {toAcq > 0 && <><strong>{toAcq}</strong> XML da Vendita → Acquisto</>}
+            </div>
+          );
+        })()}
 
         {issues !== null && issues.length === 0 && (
           <div className="flex items-center gap-2 text-sm text-primary">
