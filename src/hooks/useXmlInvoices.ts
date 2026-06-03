@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseFatturaPA, extractInvoiceNumber, extractInvoiceYear, FatturaPAData } from "@/lib/fatturaPA";
 import { toast } from "sonner";
+import { fetchCentriFromDb } from "@/hooks/useCentri";
 
 export interface XmlInvoiceRecord {
   id: string;
