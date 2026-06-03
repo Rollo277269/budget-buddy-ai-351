@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, CalendarDays } from "lucide-react";
+import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentiAcquisto, type DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
@@ -12,11 +12,29 @@ import { Calendar } from "@/components/ui/calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const REMINDER_DAYS = 10;
+
+type StatusFilter = "all" | "scaduto" | "imminenti" | "future" | "senza";
+type ColKey = "fornitore" | "numero" | "descrizione" | "cig" | "centro" | "data_doc" | "scadenza" | "stato" | "premio" | "garantito" | "azioni";
+const ALL_COLS: { key: ColKey; label: string }[] = [
+  { key: "fornitore", label: "Fornitore" },
+  { key: "numero", label: "N° polizza" },
+  { key: "descrizione", label: "Descrizione" },
+  { key: "cig", label: "CIG" },
+  { key: "centro", label: "Centro" },
+  { key: "data_doc", label: "Data doc." },
+  { key: "scadenza", label: "Scadenza" },
+  { key: "stato", label: "Stato" },
+  { key: "premio", label: "Premio" },
+  { key: "garantito", label: "Importo garantito" },
+  { key: "azioni", label: "Azioni" },
+];
+const COLS_STORAGE_KEY = "polizze-visible-cols";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function parseIsoOrItDate(s: string | null | undefined): Date | null {
