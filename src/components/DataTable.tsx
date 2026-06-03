@@ -408,7 +408,7 @@ export function DataTable<T extends Record<string, any>>({
         style={{ position: 'relative' }}
         onScroll={useVirtual ? handleScroll : undefined}
       >
-        <Table style={{ tableLayout: 'fixed' }}>
+        <Table style={Object.keys(measuredWidths).length ? { tableLayout: 'fixed' } : undefined}>
           <colgroup>
             {expandable && <col style={{ width: 32 }} />}
             {activeColumns.map((col) => {
