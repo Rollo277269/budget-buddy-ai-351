@@ -213,7 +213,7 @@ export function ScadenzarioCalendar({ events }: Props) {
           if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return null;
           return (
             <div key={j} className="absolute left-0.5 right-0.5" style={{ top }}>
-              <EventCard event={ev} />
+              <EventCard event={ev} onClick={() => openEvent(ev)} />
             </div>
           );
         })}
@@ -294,7 +294,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                     </div>
                     <div className="space-y-0.5">
                       {dayEvents.slice(0, 3).map((ev, i) => (
-                        <EventCard key={i} event={ev} />
+                        <EventCard key={i} event={ev} onClick={() => openEvent(ev)} />
                       ))}
                       {dayEvents.length > 3 && (
                         <span className="text-muted-foreground text-[9px] pl-1">+{dayEvents.length - 3} altre</span>
@@ -356,8 +356,12 @@ export function ScadenzarioCalendar({ events }: Props) {
                     const mm = String(Math.round((hour % 1) * 60)).padStart(2, "0");
                     return (
                       <div key={i} className="absolute left-2 right-2" style={{ top }}>
-                        <div className={cn(
+                        <button
+                          type="button"
+                          onClick={() => openEvent(ev)}
+                          className={cn(
                           "flex items-center justify-between p-2 rounded-md border",
+                          "w-full text-left hover:ring-1 hover:ring-primary/40 hover:shadow-sm transition",
                           ev.stato === "scaduta" ? "bg-destructive/5 border-destructive/20" :
                           ev.stato === "in_scadenza" ? "bg-[hsl(var(--warning))]/5 border-[hsl(var(--warning))]/20" :
                           "bg-card"
@@ -387,7 +391,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                             {ev.stato === "scaduta" && <span className="text-[9px] text-destructive">Scaduta</span>}
                             {ev.stato === "in_scadenza" && <span className="text-[9px] text-[hsl(var(--warning))]">In scadenza</span>}
                           </div>
-                        </div>
+                        </button>
                       </div>
                     );
                   })}
