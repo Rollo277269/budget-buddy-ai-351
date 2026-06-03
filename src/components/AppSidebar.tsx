@@ -73,9 +73,18 @@ function loadOrder(): MenuItem[] {
     const urls: string[] = JSON.parse(saved);
     const map = new Map(defaultItems.map((i) => [i.url, i]));
     const ordered = urls.map((u) => map.get(u)).filter(Boolean) as MenuItem[];
-    // append any new items not in saved order
-    defaultItems.forEach((i) => {
-      if (!ordered.find((o) => o.url === i.url)) ordered.push(i);
+    // insert any new items at their default position (next to their default neighbor)
+    defaultItems.forEach((i, defaultIdx) => {
+      if (ordered.find((o) => o.url === i.url)) return;
+      // find the previous default item that is already present, insert after it
+      let insertAt = ordered.length;
+      for (let k = defaultIdx - 1; k >= 0; k--) {
+        const prevUrl = defaultItems[k].url;
+        const pos = ordered.findIndex((o) => o.url === prevUrl);
+        if (pos !== -1) { insertAt = pos + 1; break; }
+        if (k === 0) insertAt = 0;
+      }
+      ordered.splice(insertAt, 0, i);
     });
     return ordered;
   } catch {
