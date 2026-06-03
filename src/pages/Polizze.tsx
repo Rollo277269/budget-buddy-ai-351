@@ -421,19 +421,23 @@ export default function Polizze() {
 
 // ── small components ───────────────────────────────────────────────────────
 function SummaryCard({
-  label, value, icon, variant,
+  label, value, icon, variant, active, onClick,
 }: {
   label: string;
   value: number;
   icon?: React.ReactNode;
   variant?: "destructive" | "warning" | "muted";
+  active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <Card className={cn(
+      onClick && "cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5",
+      active && "ring-2 ring-primary",
       variant === "destructive" && "border-destructive/40 bg-destructive/5",
       variant === "warning" && "border-amber-500/40 bg-amber-500/5",
       variant === "muted" && "bg-muted/30",
-    )}>
+    )} onClick={onClick}>
       <CardContent className="p-3 flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
@@ -454,6 +458,21 @@ function SummaryCard({
 
 function LegendDot({ className }: { className?: string }) {
   return <span className={cn("inline-block h-2 w-2 rounded-full", className)} />;
+}
+
+function StatoLabel({ date }: { date: Date | null }) {
+  if (!date) return <Badge variant="outline" className="text-[10px]">Senza scadenza</Badge>;
+  const days = daysUntil(date);
+  if (days < 0) {
+    return <Badge variant="destructive" className="text-[10px] gap-1 uppercase font-semibold"><ShieldAlert className="h-3 w-3" />Scaduta da {Math.abs(days)}g</Badge>;
+  }
+  if (days === 0) {
+    return <Badge className="text-[10px] gap-1 bg-destructive text-destructive-foreground uppercase font-semibold"><AlertCircle className="h-3 w-3" />Scade oggi</Badge>;
+  }
+  if (days <= REMINDER_DAYS) {
+    return <Badge className="text-[10px] gap-1 bg-amber-500 hover:bg-amber-500 text-white uppercase font-semibold"><AlertCircle className="h-3 w-3" />In scadenza ({days}g)</Badge>;
+  }
+  return <Badge variant="secondary" className="text-[10px] gap-1"><ShieldCheck className="h-3 w-3" />Attiva (tra {days}g)</Badge>;
 }
 
 function ScadenzaCell({ value, onChange }: { value: Date | null; onChange: (d: Date | undefined) => void }) {
