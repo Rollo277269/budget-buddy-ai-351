@@ -436,7 +436,7 @@ export function DataTable<T extends Record<string, any>>({
               {activeColumns.map((col) => (
                 <TableHead
                   key={col.key}
-                  className={`text-xs relative select-none ${col.align === "right" ? "text-right" : ""} ${dragOverCol === col.key ? "bg-accent" : ""}`}
+                  className={`text-xs relative select-none ${col.align === "right" ? "text-right" : ""} ${dragOverCol === col.key ? "bg-accent" : "bg-white"}`}
                   style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : col.defaultWidth ? { width: col.defaultWidth, minWidth: col.minWidth || 60 } : undefined}
                   draggable
                   onDragStart={() => handleDragStart(col.key)}
