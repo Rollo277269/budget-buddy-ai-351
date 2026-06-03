@@ -128,7 +128,7 @@ function SidebarHoverWrapper({ children, locked }: { children: React.ReactNode; 
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="shrink-0"
+      className="shrink-0 relative z-40"
     >
       {children}
     </div>
