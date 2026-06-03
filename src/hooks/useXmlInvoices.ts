@@ -647,6 +647,28 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
             .eq("numero", matchedNumero)
             .or("cig.is.null,cig.eq.");
         }
+
+        // Track this imported/matched invoice for AI centro classification
+        if (isMatched && invoiceKey && matchedAnno && matchedNumero) {
+          const imponibileTot = (parsed.riepilogoIVA || []).reduce((s, r) => s + (r.imponibile || 0), 0);
+          const impostaTot = (parsed.riepilogoIVA || []).reduce((s, r) => s + (r.imposta || 0), 0);
+          const totaleAbs = parsed.importoTotale || (imponibileTot + impostaTot) || 0;
+          const descr = (parsed.linee || []).map((l) => l.descrizione).filter(Boolean).slice(0, 5).join(" | ");
+          const label = tipo === "vendita"
+            ? (parsed.cessionario?.denominazione || "")
+            : (parsed.cedente?.denominazione || "");
+          const suffisso = tipo === "vendita" ? extractSuffisso(parsed.numero) : undefined;
+          importedForCentro.push({
+            invoiceKey,
+            anno: matchedAnno,
+            numero: matchedNumero,
+            suffisso,
+            label,
+            totale: totaleAbs,
+            descrizione: descr,
+            cig: parsed.cig || "",
+          });
+        }
       } catch (e) {
         console.error(`Error processing ${file.name}:`, e);
         toast.error(`Errore elaborazione ${file.name}`);
@@ -654,12 +676,93 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
     }
 
     onProgress?.(total, total);
+
+    // ── AI auto-classification of centro di costo/ricavo per le fatture appena importate ──
+    let centroAssigned = 0;
+    try {
+      if (importedForCentro.length > 0) {
+        const centri = await fetchCentriFromDb();
+        const centroTipo: "costo" | "ricavo" = tipo === "vendita" ? "ricavo" : "costo";
+        const context: "vendite" | "acquisti" = tipo === "vendita" ? "vendite" : "acquisti";
+        const centriOfType = (centri || []).filter((c) => c.tipo === centroTipo);
+        if (centriOfType.length > 0) {
+          // Load existing assignments for this context to skip already-assigned invoices
+          const existingAssignments = new Set<string>();
+          {
+            let from = 0;
+            const PAGE = 1000;
+            while (true) {
+              const { data, error } = await supabase
+                .from("centro_assignments" as any)
+                .select("invoice_key")
+                .eq("tipo", centroTipo)
+                .eq("context", context)
+                .range(from, from + PAGE - 1);
+              if (error || !data || data.length === 0) break;
+              for (const d of (data as any[])) existingAssignments.add(d.invoice_key);
+              if (data.length < PAGE) break;
+              from += PAGE;
+            }
+          }
+          const toClassify = importedForCentro.filter(
+            (inv) => inv.totale !== 0 && !existingAssignments.has(inv.invoiceKey)
+          );
+          const validCodes = new Set(centriOfType.map((c) => c.codice));
+          const soggettoField = tipo === "vendita" ? "cliente" : "fornitore";
+          const BATCH = 20;
+          for (let i = 0; i < toClassify.length; i += BATCH) {
+            const batch = toClassify.slice(i, i + BATCH);
+            try {
+              const { data, error } = await supabase.functions.invoke("classify-centro-ricavo", {
+                body: {
+                  invoices: batch.map((b) => ({
+                    _classifyId: b.invoiceKey,
+                    anno: b.anno,
+                    numero: b.numero,
+                    [soggettoField]: b.label,
+                    totale: b.totale,
+                    descrizione: b.descrizione,
+                    cig: b.cig,
+                  })),
+                  centri: centriOfType,
+                  tipo: centroTipo,
+                  tipoFattura: tipo === "vendita" ? "vendita" : "acquisto",
+                  useClassifyId: true,
+                },
+              });
+              if (error) { console.warn("classify-centro-ricavo error:", error); continue; }
+              const classifications: { id: string; codice: string }[] = (data as any)?.classifications || [];
+              const rows = classifications
+                .filter((c) => c.codice && c.codice !== "N/A" && validCodes.has(c.codice))
+                .map((c) => ({
+                  invoice_key: c.id,
+                  tipo: centroTipo,
+                  context,
+                  centro_codice: c.codice,
+                }));
+              if (rows.length > 0) {
+                const { error: upErr } = await supabase
+                  .from("centro_assignments" as any)
+                  .upsert(rows as any, { onConflict: "invoice_key,tipo,context" });
+                if (!upErr) centroAssigned += rows.length;
+              }
+            } catch (e) {
+              console.warn("classify batch failed:", e);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Centro auto-classification failed:", e);
+    }
+
     const parts = [`${uploaded} XML caricati`, `${matched} associati`];
     if (skipped > 0) parts.push(`${skipped} già presenti`);
     if (autoCreated.length > 0) {
       const nums = autoCreated.map((a) => `${a.numero}${a.suffisso ? "/" + a.suffisso : ""}/${a.anno}`).join(", ");
       parts.push(`${autoCreated.length} create da XML (prot. ${nums})`);
     }
+    if (centroAssigned > 0) parts.push(`${centroAssigned} centri assegnati`);
     toast.success(parts.join(", "));
     await fetchRecords();
     return { uploaded, matched, autoCreated };
