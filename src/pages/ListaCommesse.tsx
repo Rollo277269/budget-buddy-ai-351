@@ -210,7 +210,7 @@ const ListaCommessePage = () => {
     <div className="p-6 space-y-4 bg-white py-0">
       <div className="flex items-center gap-4 flex-wrap">
         <ToggleGroup type="single" value={statoFilter} onValueChange={(v) => v && setStatoFilter(v as StatoFilter)} className="bg-muted rounded-lg p-1 bg-white">
-          <ToggleGroupItem value="tutte" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+          <ToggleGroupItem value="tutte" className="text-xs px-3 py-1.5 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md bg-slate-300">
             Tutte <span className="ml-1 text-muted-foreground">({rows.length})</span>
           </ToggleGroupItem>
           <ToggleGroupItem value="in_corso" className="text-xs px-3 py-1.5 bg-yellow-100 text-yellow-900 hover:bg-yellow-200 data-[state=on]:bg-yellow-400 data-[state=on]:text-yellow-950 data-[state=on]:shadow-sm rounded-md">
