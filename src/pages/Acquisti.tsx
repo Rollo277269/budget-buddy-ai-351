@@ -941,7 +941,26 @@ const AcquistiPage = () => {
             </div>
           );
         }
-        return <CentroCell invoiceKey={`${r.anno}-${r.numero}`} tipo="costo" centri={centri} centroMap={costoMap.map} onAssign={costoMap.assign} onRemove={costoMap.remove} importo={r.totale} />;
+        return <CentroCell
+          invoiceKey={`${r.anno}-${r.numero}`}
+          tipo="costo"
+          centri={centri}
+          centroMap={costoMap.map}
+          onAssign={(key, codice) => {
+            costoMap.assign(key, codice);
+            // Propaga il centro di costo a tutte le righe della fattura
+            const headerSenzaIva = (r.imposta || 0) === 0 && (r.imponibile || 0) > 0 && (r.totale || 0) === (r.imponibile || 0);
+            const righe = Array.isArray(r.righe) ? r.righe : [];
+            righe.forEach((riga: any, idx: number) => {
+              const rigaTotale = headerSenzaIva ? (riga?.imponibile || 0) : (riga?.totale || 0);
+              const rigaImp = Number(riga?.imponibile || 0);
+              if (Number(rigaTotale) === 0 && rigaImp === 0) return;
+              costoMap.assign(`${r.anno}-${r.numero}-${idx}`, codice);
+            });
+          }}
+          onRemove={costoMap.remove}
+          importo={r.totale}
+        />;
       }
     },
     { key: "scadenza", label: "Scadenza", render: (r) => <span className="text-xs">{r.scadenza || "—"}</span>, sortable: true, defaultHidden: true },
