@@ -38,7 +38,7 @@ import {
   Link2, Link2Off, Plus, Search, X, Building2, Calendar, FileText, User,
   TrendingUp, TrendingDown, BarChart3, PieChart, Receipt, ArrowUpRight, ArrowDownRight,
   Percent, Target, AlertTriangle, SlidersHorizontal, Eye, EyeOff, FileSearch, CheckCircle2, Pencil, Trash2, Loader2, Scale
-} from "lucide-react";
+, Info } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -2324,8 +2324,24 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                         onDrop={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) handleDrop(dragIdx, idx, setOrder, data, storageKey); setDragIdx(null); }}
                         onDragEnd={() => setDragIdx(null)}
                       >
-                        <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
-                        <TableCell className="text-xs">{d.name}</TableCell>
+                         <TableCell className="text-muted-foreground px-1 w-[20px]">⠿</TableCell>
+                         <TableCell className="text-xs">
+                           <span className="inline-flex items-center gap-1">
+                             {d.name}
+                             {d.name === "Non classificato" && (
+                               <span
+                                 className="inline-flex"
+                                 title={
+                                   tipo === "ricavo"
+                                     ? "Sono raggruppate qui le fatture (o le singole righe XML) senza centro di ricavo assegnato né in testata né in riga. Espandi per assegnarlo."
+                                     : "Sono raggruppate qui le fatture senza centro di costo assegnato in testata. Espandi per assegnarlo."
+                                 }
+                               >
+                                 <Info className="h-3 w-3 text-muted-foreground/70 cursor-help" aria-label="Perché compare 'Non classificato'?" />
+                               </span>
+                             )}
+                           </span>
+                         </TableCell>
                         <TableCell className="text-xs font-mono text-right">{formatCurrency(d.imponibile)}</TableCell>
                         <TableCell className="text-xs font-mono text-right text-muted-foreground">{formatCurrency(d.iva)}</TableCell>
                         <TableCell className="text-xs font-mono text-right font-semibold">{formatCurrency(d.totale)}</TableCell>
@@ -2341,9 +2357,28 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                           </Button>
                         </TableCell>
                       </TableRow>
-                      {isExpanded && groupInvoices.map((inv) => {
+                       {isExpanded && groupInvoices.map((inv) => {
                         const key = `${inv.anno}-${inv.numero}`;
                         const counterpart = "cliente" in inv ? (inv as SaleInvoice).cliente : (inv as PurchaseInvoice).fornitore;
+                         // Compute "Non classificato" reason for this invoice
+                         let unclassReason = "";
+                         if (d.name === "Non classificato") {
+                           if (tipo === "ricavo") {
+                             const s = inv as SaleInvoice;
+                             const righe = Array.isArray(s.righe) ? s.righe : [];
+                             const headerCodice = centroMapObj[`${s.anno}-${s.numero}`] || "";
+                             const assignedRows = righe.filter((_, i) => !!centroMapObj[`${s.anno}-${s.numero}-${i}`]).length;
+                             if (!headerCodice && assignedRows === 0) {
+                               unclassReason = "Nessun centro assegnato: né in testata né nelle righe della fattura.";
+                             } else if (!headerCodice && assignedRows > 0 && assignedRows < righe.length) {
+                               unclassReason = `Solo ${assignedRows} di ${righe.length} righe risultano classificate; le restanti sono prive di centro.`;
+                             } else if (!headerCodice) {
+                               unclassReason = "Centro mancante in testata.";
+                             }
+                           } else {
+                             unclassReason = "Nessun centro di costo assegnato in testata sulla fattura.";
+                           }
+                         }
                         const rowImp = tipo === "costo"
                           ? ((inv as PurchaseInvoice).imponibile || 0) + ((inv as PurchaseInvoice).cassa || 0)
                           : ((inv as SaleInvoice).imponibile || 0);
@@ -2353,10 +2388,11 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                           : ((inv as SaleInvoice).totale || 0);
                         const isCN = (((inv as any).tipo || "") + "").toLowerCase().includes("nota di credito");
                         const sign = isCN ? -1 : 1;
-                        return (
+                         return (
                           <TableRow
                             key={`detail-${key}`}
                             className="bg-muted/10 cursor-pointer hover:bg-muted/30 transition-colors"
+                             title={unclassReason || undefined}
                             onClick={() => setSelectedInvoice({
                               invoice: inv,
                               type: tipo === "ricavo" ? "vendita" : "acquisto"
@@ -2367,6 +2403,11 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                <span className="font-mono">{inv.numero}/{inv.anno}</span>
                                <span className="text-muted-foreground ml-2">{counterpart}</span>
                                <Eye className="h-3 w-3 inline ml-1.5 text-muted-foreground/50" />
+                                {unclassReason && (
+                                  <span title={unclassReason} className="inline-flex ml-1.5 align-middle">
+                                    <Info className="h-3 w-3 text-amber-500 cursor-help" aria-label={unclassReason} />
+                                  </span>
+                                )}
                              </TableCell>
                              <TableCell className="text-[11px] font-mono text-right">{formatCurrency(sign * Math.abs(rowImp))}</TableCell>
                              <TableCell className="text-[11px] font-mono text-right text-muted-foreground">{formatCurrency(sign * Math.abs(rowIva))}</TableCell>
