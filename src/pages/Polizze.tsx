@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -112,6 +113,7 @@ export default function Polizze() {
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "gara" | "commessa" | "altre">("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => {
     try {
       const saved = localStorage.getItem(COLS_STORAGE_KEY);
@@ -159,6 +161,10 @@ export default function Polizze() {
     const q = filter.trim().toLowerCase();
     return enriched.filter((d) => {
       if (activeTab !== "all" && d._cat !== activeTab) return false;
+      if (yearFilter !== "all") {
+        if (!d._date) return false;
+        if (String(d._date.getFullYear()) !== yearFilter) return false;
+      }
       if (statusFilter !== "all") {
         if (statusFilter === "senza") {
           if (d._date) return false;
@@ -179,7 +185,13 @@ export default function Polizze() {
         (d.numero || "").toLowerCase().includes(q)
       );
     });
-  }, [enriched, filter, activeTab, statusFilter]);
+  }, [enriched, filter, activeTab, statusFilter, yearFilter]);
+
+  const yearOptions = useMemo(() => {
+    const years = new Set<number>();
+    enriched.forEach((d) => { if (d._date) years.add(d._date.getFullYear()); });
+    return [...years].sort((a, b) => b - a);
+  }, [enriched]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -303,6 +315,29 @@ export default function Polizze() {
                   placeholder="Cerca fornitore, CIG, descrizione…"
                   className="h-8 w-64 text-xs"
                 />
+                <Select value={yearFilter} onValueChange={setYearFilter}>
+                  <SelectTrigger className="h-8 w-[110px] text-xs">
+                    <SelectValue placeholder="Anno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">Tutti gli anni</SelectItem>
+                    {yearOptions.map((y) => (
+                      <SelectItem key={y} value={String(y)} className="text-xs">{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                  <SelectTrigger className="h-8 w-[150px] text-xs">
+                    <SelectValue placeholder="Stato" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">Tutti gli stati</SelectItem>
+                    <SelectItem value="scaduto" className="text-xs">Scadute</SelectItem>
+                    <SelectItem value="imminenti" className="text-xs">In scadenza ≤ {REMINDER_DAYS}gg</SelectItem>
+                    <SelectItem value="future" className="text-xs">Future</SelectItem>
+                    <SelectItem value="senza" className="text-xs">Senza scadenza</SelectItem>
+                  </SelectContent>
+                </Select>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
