@@ -2,9 +2,11 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, AlertTriangle, Clock, Landmark, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle, Clock, Landmark, ShieldCheck, ExternalLink, FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 export interface CalendarEvent {
   tipo: "credito" | "debito" | "finanziamento" | "credito_fiscale" | "polizza";
@@ -14,6 +16,9 @@ export interface CalendarEvent {
   scadenza: string;
   scadenzaDate: Date | null;
   stato: "scaduta" | "in_scadenza" | "regolare";
+  cig?: string;
+  descrizione?: string;
+  giorniRimasti?: number;
 }
 
 type ViewMode = "month" | "week" | "day";
@@ -60,12 +65,15 @@ function EventDot({ event }: { event: CalendarEvent }) {
   );
 }
 
-function EventCard({ event }: { event: CalendarEvent }) {
+function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => void }) {
   const isOverdue = event.stato === "scaduta";
   const isWarning = event.stato === "in_scadenza";
   return (
-    <div className={cn(
-      "text-[10px] leading-tight px-1.5 py-1 rounded border truncate",
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      className={cn(
+      "w-full text-left text-[10px] leading-tight px-1.5 py-1 rounded border truncate cursor-pointer hover:ring-1 hover:ring-primary/40 hover:shadow-sm transition",
       isOverdue ? "bg-destructive/10 border-destructive/30 text-destructive" :
       isWarning ? "bg-[hsl(var(--warning))]/10 border-[hsl(var(--warning))]/30" :
       "bg-muted/50 border-border"
@@ -80,7 +88,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
       <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : event.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense")}>
         {formatCurrency(event.totale)}
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -91,6 +99,18 @@ interface Props {
 export function ScadenzarioCalendar({ events }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const router = useNavigate();
+
+  const openEvent = (ev: CalendarEvent) => setSelected(ev);
+
+  const goToDocument = (ev: CalendarEvent) => {
+    if (ev.tipo === "credito") router("/vendite");
+    else if (ev.tipo === "debito") router("/acquisti");
+    else if (ev.tipo === "polizza") router("/polizze");
+    else if (ev.tipo === "finanziamento" || ev.tipo === "credito_fiscale") router("/banche");
+    setSelected(null);
+  };
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -193,7 +213,7 @@ export function ScadenzarioCalendar({ events }: Props) {
           if (top < 0 || top > (HOURS.length - 1) * HOUR_HEIGHT + 8) return null;
           return (
             <div key={j} className="absolute left-0.5 right-0.5" style={{ top }}>
-              <EventCard event={ev} />
+              <EventCard event={ev} onClick={() => openEvent(ev)} />
             </div>
           );
         })}
@@ -202,6 +222,7 @@ export function ScadenzarioCalendar({ events }: Props) {
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         {/* Toolbar */}
@@ -274,7 +295,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                     </div>
                     <div className="space-y-0.5">
                       {dayEvents.slice(0, 3).map((ev, i) => (
-                        <EventCard key={i} event={ev} />
+                        <EventCard key={i} event={ev} onClick={() => openEvent(ev)} />
                       ))}
                       {dayEvents.length > 3 && (
                         <span className="text-muted-foreground text-[9px] pl-1">+{dayEvents.length - 3} altre</span>
@@ -336,8 +357,12 @@ export function ScadenzarioCalendar({ events }: Props) {
                     const mm = String(Math.round((hour % 1) * 60)).padStart(2, "0");
                     return (
                       <div key={i} className="absolute left-2 right-2" style={{ top }}>
-                        <div className={cn(
+                        <button
+                          type="button"
+                          onClick={() => openEvent(ev)}
+                          className={cn(
                           "flex items-center justify-between p-2 rounded-md border",
+                          "w-full text-left hover:ring-1 hover:ring-primary/40 hover:shadow-sm transition",
                           ev.stato === "scaduta" ? "bg-destructive/5 border-destructive/20" :
                           ev.stato === "in_scadenza" ? "bg-[hsl(var(--warning))]/5 border-[hsl(var(--warning))]/20" :
                           "bg-card"
@@ -367,7 +392,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                             {ev.stato === "scaduta" && <span className="text-[9px] text-destructive">Scaduta</span>}
                             {ev.stato === "in_scadenza" && <span className="text-[9px] text-[hsl(var(--warning))]">In scadenza</span>}
                           </div>
-                        </div>
+                        </button>
                       </div>
                     );
                   })}
@@ -381,5 +406,94 @@ export function ScadenzarioCalendar({ events }: Props) {
         )}
       </CardContent>
     </Card>
+    <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+      <DialogContent className="sm:max-w-md">
+        {selected && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                {selected.soggetto}
+              </DialogTitle>
+              <DialogDescription>
+                Dettaglio scadenza
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Tipo</span>
+                <span className="font-medium">
+                  {selected.tipo === "credito" && "Credito (fattura vendita)"}
+                  {selected.tipo === "debito" && "Debito (fattura acquisto)"}
+                  {selected.tipo === "finanziamento" && "Rata finanziamento"}
+                  {selected.tipo === "credito_fiscale" && "Credito fiscale"}
+                  {selected.tipo === "polizza" && "Polizza"}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Numero / Riferimento</span>
+                <span className="font-mono text-xs">{selected.numero}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Scadenza</span>
+                <span className="font-medium">{selected.scadenza || "—"}</span>
+              </div>
+              {typeof selected.giorniRimasti === "number" && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Giorni</span>
+                  <span className={cn(
+                    "font-mono",
+                    selected.giorniRimasti < 0 ? "text-destructive" :
+                    selected.giorniRimasti <= 30 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"
+                  )}>
+                    {selected.giorniRimasti < 0 ? `${Math.abs(selected.giorniRimasti)}g fa` : `tra ${selected.giorniRimasti}g`}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Importo</span>
+                <span className={cn(
+                  "font-mono font-semibold",
+                  selected.tipo === "credito" ? "text-income" :
+                  selected.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense"
+                )}>
+                  {formatCurrency(selected.totale)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Stato</span>
+                {selected.stato === "scaduta" ? (
+                  <Badge variant="destructive" className="text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Scaduta</Badge>
+                ) : selected.stato === "in_scadenza" ? (
+                  <Badge className="bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] text-[10px]"><Clock className="h-3 w-3 mr-1" />In scadenza</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px]">Regolare</Badge>
+                )}
+              </div>
+              {selected.cig && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">CIG</span>
+                  <span className="font-mono text-xs">{selected.cig}</span>
+                </div>
+              )}
+              {selected.descrizione && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-1">Descrizione</p>
+                  <p className="text-xs">{selected.descrizione}</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setSelected(null)}>Chiudi</Button>
+              <Button size="sm" onClick={() => goToDocument(selected)}>
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                Apri documento
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
