@@ -403,6 +403,11 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
       existingFileNames.set(r.file_name, r);
     });
 
+    // Build a canonical denomination map (case-insensitive) to avoid creating
+    // duplicate entries that differ only in casing (e.g. ALL CAPS from one XML
+    // vs mixed-case from others). Rubrica wins as canonical form.
+    const denomMap = await buildDenominazioneMap();
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       onProgress?.(i, total);
@@ -422,6 +427,20 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
 
         const text = await file.text();
         const parsed = parseFatturaPA(text);
+        // Normalize cedente/cessionario denominations against the canonical map
+        if (parsed.cedente) {
+          parsed.cedente.denominazione = canonicalizeName(parsed.cedente.denominazione, denomMap);
+        }
+        if (parsed.cessionario) {
+          parsed.cessionario.denominazione = canonicalizeName(parsed.cessionario.denominazione, denomMap);
+        }
+        // Add fresh names to the map so subsequent files in the same batch reuse them
+        const addToMap = (n: string) => {
+          const key = n.trim().toLowerCase();
+          if (key && !denomMap.has(key)) denomMap.set(key, n.trim());
+        };
+        if (parsed.cedente?.denominazione) addToMap(parsed.cedente.denominazione);
+        if (parsed.cessionario?.denominazione) addToMap(parsed.cessionario.denominazione);
         const xmlNumero = extractInvoiceNumber(parsed.numero);
         const xmlAnno = extractInvoiceYear(parsed.data);
 
