@@ -419,7 +419,7 @@ export function DataTable<T extends Record<string, any>>({
            <TableHeader className="sticky top-0 z-10 bg-card">
             {activeColumns.some((c) => c.summaryRender) && (
               <TableRow className="border-b border-border bg-muted/50">
-                {expandable && <TableHead className="w-8 text-xs py-1" />}
+                {expandable && <TableHead className="w-8 text-xs py-1 bg-white" />}
                 {activeColumns.map((col) => (
                   <TableHead
                     key={`sum-${col.key}`}
@@ -432,11 +432,11 @@ export function DataTable<T extends Record<string, any>>({
               </TableRow>
             )}
             <TableRow ref={headerRowRef} className="shadow-[0_2px_0_0_hsl(var(--border))] border-b-2 border-border">
-              {expandable && <TableHead className="w-8 text-xs" />}
+              {expandable && <TableHead className="w-8 text-xs bg-white" />}
               {activeColumns.map((col) => (
                 <TableHead
                   key={col.key}
-                  className={`text-xs relative select-none ${col.align === "right" ? "text-right" : ""} ${dragOverCol === col.key ? "bg-accent" : ""}`}
+                  className={`text-xs relative select-none ${col.align === "right" ? "text-right" : ""} ${dragOverCol === col.key ? "bg-accent" : "bg-white"}`}
                   style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : col.defaultWidth ? { width: col.defaultWidth, minWidth: col.minWidth || 60 } : undefined}
                   draggable
                   onDragStart={() => handleDragStart(col.key)}
@@ -499,7 +499,7 @@ export function DataTable<T extends Record<string, any>>({
                         style={useVirtual ? { height: ROW_HEIGHT } : undefined}
                       >
                         {expandable && (
-                          <TableCell className="w-8 px-1 text-xs font-sans font-normal">
+                          <TableCell className="w-8 px-1 text-xs font-sans font-normal bg-white">
                             {isExpandable && (
                               <Button
                                 variant="ghost"
@@ -523,7 +523,7 @@ export function DataTable<T extends Record<string, any>>({
                         {activeColumns.map((col) => (
                           <TableCell
                             key={col.key}
-                            className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""}`}
+                            className={`${col.align === "right" ? "text-right" : ""} ${col.wrap ? "whitespace-pre-wrap break-words" : ""} bg-white`}
                             style={columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : undefined}
                           >
                             {col.render(row)}
