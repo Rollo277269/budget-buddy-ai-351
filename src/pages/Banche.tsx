@@ -857,7 +857,7 @@ const BanchePage = () => {
       }
 
       {/* Finanziamenti section */}
-      {contiFinanziamento.length > 0 && allRate.length > 0 && (
+      {!isOverview && contiFinanziamento.length > 0 && allRate.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <Banknote className="h-4 w-4" /> Prestiti e Finanziamenti
