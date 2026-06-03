@@ -432,7 +432,7 @@ export function DataTable<T extends Record<string, any>>({
               </TableRow>
             )}
             <TableRow ref={headerRowRef} className="shadow-[0_2px_0_0_hsl(var(--border))] border-b-2 border-border">
-              {expandable && <TableHead className="w-8 text-xs" />}
+              {expandable && <TableHead className="w-8 text-xs bg-white" />}
               {activeColumns.map((col) => (
                 <TableHead
                   key={col.key}
