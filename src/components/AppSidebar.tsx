@@ -161,11 +161,11 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
         </Button>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
+      <SidebarContent className="bg-white">
+        <SidebarGroup className="bg-white">
+          <SidebarGroupLabel className="bg-white">Menu</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-white">
+            <SidebarMenu className="bg-white">
               {items.map((item, idx) => (
                 <SidebarMenuItem
                   key={item.url}
@@ -174,7 +174,7 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
                   onDragOver={(e) => handleDragOver(e, idx)}
                   onDrop={() => handleDrop(idx)}
                   onDragEnd={handleDragEnd}
-                  className={`transition-all ${
+                  className={`bg-white transition-all ${
                     dragIdx === idx ? "opacity-40" : ""
                   } ${overIdx === idx && dragIdx !== idx ? "border-t-2 border-primary" : ""}`}
                 >
@@ -182,7 +182,7 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="hover:bg-sidebar-accent group"
+                      className="bg-white hover:bg-sidebar-accent group"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                       onMouseEnter={() => prefetchPage(item.url)}
                       onFocus={() => prefetchPage(item.url)}
