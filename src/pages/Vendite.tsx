@@ -74,7 +74,13 @@ function StatusBadge({ stato, paid, totale }: { stato: string; paid?: number; to
     return <Badge variant="destructive" className="text-[10px] font-medium">{stato}</Badge>;
   if (s.includes("scadere"))
     return <Badge variant="secondary" className="text-[10px] font-medium">{stato}</Badge>;
-  return <Badge variant="outline" className="text-[10px] font-medium">{stato}</Badge>;
+  // In vendite "pagata" non è semanticamente corretto: si parla di incasso
+  const displayStato = s.includes("parzial") && s.includes("pagat")
+    ? "Parzialmente incassata"
+    : s.includes("pagat")
+      ? "Incassata"
+      : stato;
+  return <Badge variant="outline" className="text-[10px] font-medium">{displayStato}</Badge>;
 }
 
 const VenditePage = () => {
