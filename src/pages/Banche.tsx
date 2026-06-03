@@ -804,7 +804,7 @@ const BanchePage = () => {
       {/* Account balances */}
       {conti.length > 0 && rawMovements.length > 0 &&
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {conti.map((c) => {
+          {conti.filter((c) => !activeAccountId || c.id === activeAccountId).map((c) => {
           const st = accountStats.get(c.id);
           if (!st) return null;
           return (
