@@ -57,6 +57,7 @@ function toIsoDate(ddmmyyyy: string): string {
 interface ExpenseFormData {
   fornitore: string;
   descrizione: string;
+  numero_documento: string;
   importo_totale: number;
   imponibile: number;
   imposta: number;
@@ -119,7 +120,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
 
     const vars: Record<string, string> = {
       ANNO: anno,
-      NUMERO: "0",
+      NUMERO: (aiData.numero_documento || "").trim() || "0",
       FORNITORE: (aiData.fornitore || "").replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
       CLIENTE: "",
       DATA: dataFormatted,
@@ -168,12 +169,13 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         console.error("AI parse error:", error);
         toast.error("Errore analisi AI, compila manualmente");
         aiResult = {
-          fornitore: "", descrizione: file.name, importo_totale: 0,
+          fornitore: "", descrizione: file.name, numero_documento: "", importo_totale: 0,
           imponibile: 0, imposta: 0, data_documento: "", centro_costo: "", tipo_documento: "Altro", data_scadenza: "", importo_garantito: null,
         };
       } else {
         aiResult = {
           fornitore: data.fornitore || "", descrizione: data.descrizione || file.name,
+          numero_documento: data.numero_documento || "",
           importo_totale: data.importo_totale || 0, imponibile: data.imponibile || 0,
           imposta: data.imposta || 0, data_documento: data.data_documento || "",
           centro_costo: data.centro_costo || "", tipo_documento: data.tipo_documento || "Altro",
@@ -241,6 +243,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
 
       // Update renamed file name with actual numero
       let finalFileName = renamedFileName;
+      const aiNum = (formData.numero_documento || "").trim();
       if (finalFileName.includes("0.pdf") || !finalFileName) {
         const tipoLower = (formData.tipo_documento || "").toLowerCase();
         let rule = namingRules.find((r) => r.tipo.toLowerCase() === tipoLower);
@@ -255,7 +258,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         if (rule) {
           const vars: Record<string, string> = {
             ANNO: String(anno),
-            NUMERO: String(nextNumero),
+            NUMERO: aiNum || String(nextNumero),
             FORNITORE: (formData.fornitore || "").replace(/[^a-zA-Z0-9À-ÿ ]/g, "").trim(),
             CLIENTE: "",
             DATA: formData.data_documento ? toIsoDate(formData.data_documento) : "",
@@ -322,7 +325,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
         ai_summary: `Spesa commessa ${commessaNumero} (CIG: ${cig})`,
         cig: cig || "",
         tipo: "acquisto",
-        numero: String(nextNumero),
+        numero: aiNum || String(nextNumero),
         tipo_documento: formData.tipo_documento || "",
         data_scadenza: isoScadenza,
         importo_garantito: formData.importo_garantito ?? null,
@@ -450,6 +453,17 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
             <div className="col-span-2 space-y-1">
               <Label className="text-[11px]">Descrizione</Label>
               <Input value={formData.descrizione} onChange={(e) => updateField("descrizione", e.target.value)} className="h-8 text-xs" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px]">
+                Numero {formData.tipo_documento === "Polizza" ? "polizza" : "documento"}
+              </Label>
+              <Input
+                value={formData.numero_documento}
+                onChange={(e) => updateField("numero_documento", e.target.value)}
+                placeholder={formData.tipo_documento === "Polizza" ? "Es. 123456789" : "N° documento"}
+                className="h-8 text-xs font-mono"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-[11px]">Totale (€)</Label>

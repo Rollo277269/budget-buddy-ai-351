@@ -61,6 +61,7 @@ Rispondi SOLO con la funzione tool.`;
                   properties: {
                     fornitore: { type: "string", description: "Nome del fornitore o emittente" },
                     descrizione: { type: "string", description: "Breve descrizione della spesa" },
+                    numero_documento: { type: "string", description: "Numero identificativo del documento. Per POLIZZE/FIDEIUSSIONI/GARANZIE è OBBLIGATORIO il numero di polizza: cerca diciture come 'Polizza n.', 'N. Polizza', 'Numero polizza', 'Polizza N°', 'Contratto n.', 'Nr. polizza', 'Polizza:', spesso una stringa alfanumerica anche lunga (es. '123456789', 'IT/01/12345/00'). NON usare il numero di quietanza/ricevuta/rata se è presente anche il numero di polizza: il numero polizza identifica il contratto e resta uguale per tutte le rate successive. Per altri documenti: numero ricevuta/fattura/contratto. Stringa vuota solo se non trovato." },
                     importo_totale: { type: "number", description: "Importo totale IVA inclusa effettivamente pagato. ATTENZIONE per le POLIZZE: NON usare mai 'Somma assicurata', 'Massimale', 'Importo garantito', 'Capitale garantito' (è la cifra coperta, non il costo). Usa SOLO il PREMIO pagato: cerca 'Premio', 'Premio totale', 'Premio lordo', 'Totale da pagare', 'Importo rata', 'Importo quietanza'. 0 se non trovato." },
                     imponibile: { type: "number", description: "Imponibile senza IVA/imposte. Per polizze: premio imponibile (al netto di imposte assicurative). Se non distinguibile, uguale al totale." },
                     imposta: { type: "number", description: "Importo IVA. 0 se non trovato o esente." },
@@ -70,7 +71,7 @@ Rispondi SOLO con la funzione tool.`;
                     data_scadenza: { type: "string", description: "OBBLIGATORIO per polizze (incluse quietanze/ricevute di pagamento rate polizza): data di scadenza copertura/rata in formato DD/MM/YYYY. Cerca SEMPRE diciture come 'Scadenza', 'Scade il', 'Valida fino al', 'Data scadenza', 'Fine copertura', 'Termine validità', 'Periodo di copertura ... al', 'Prossima scadenza', 'Scadenza rata', 'Copertura fino al'. Una stessa polizza (stesso numero) può avere quietanze successive con scadenze diverse: estrai la scadenza specifica della rata in oggetto, NON quella originaria. Vuoto solo se non è una polizza o la scadenza è veramente assente." },
                     importo_garantito: { type: "number", description: "SOLO per polizze, fideiussioni, garanzie: importo garantito / somma assicurata / massimale / capitale garantito (cifra coperta dalla garanzia, NON il costo). Cerca 'Somma assicurata', 'Massimale', 'Importo garantito', 'Capitale garantito', 'Importo della garanzia'. 0 se non è una polizza/garanzia o se non leggibile." },
                   },
-                  required: ["fornitore", "descrizione", "importo_totale", "imponibile", "imposta", "data_documento", "centro_costo", "tipo_documento", "data_scadenza", "importo_garantito"],
+                  required: ["fornitore", "descrizione", "numero_documento", "importo_totale", "imponibile", "imposta", "data_documento", "centro_costo", "tipo_documento", "data_scadenza", "importo_garantito"],
                   additionalProperties: false,
                 },
               },
