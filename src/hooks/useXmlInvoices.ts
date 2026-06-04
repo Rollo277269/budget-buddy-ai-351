@@ -371,7 +371,7 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
 
     // Realtime: auto-refresh on any INSERT/DELETE on fatture_xml for this tipo
     const channel = supabase
-      .channel(`fatture_xml_${tipo}_${Math.random().toString(36).slice(2)}`)
+      .channel(`fatture_xml_${tipo}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fatture_xml", filter: `tipo=eq.${tipo}` },

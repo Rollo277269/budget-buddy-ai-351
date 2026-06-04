@@ -1,7 +1,7 @@
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
-import { fetchCentriFromDb, CentroCR } from "@/hooks/useCentri";
+import { fetchCentriFromDb, CentroCR, useCentroMap } from "@/hooks/useCentri";
 import { useState, useEffect } from "react";
 import { useMemo } from "react";
 
@@ -9,31 +9,18 @@ import { formatCurrency } from "@/lib/format";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 
-async function fetchCentroAssignmentMap(tipo: "costo" | "ricavo", context: "vendite" | "acquisti") {
-  const { supabase } = await import("@/integrations/supabase/client");
-  const map: Record<string, string> = {};
-  const pageSize = 1000;
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("centro_assignments" as any)
-      .select("invoice_key, centro_codice")
-      .eq("tipo", tipo)
-      .eq("context", context)
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      console.error("Error loading centro assignments:", error);
-      break;
-    }
-
-    for (const d of (data as any[] || [])) map[d.invoice_key] = d.centro_codice;
-    if (!data || data.length < pageSize) break;
-    from += pageSize;
-  }
-
-  return map;
+// Cache module-level dei centri "ricavo" per evitare fetch ripetuti dei due chart.
+let _centriRicavoCache: CentroCR[] | null = null;
+let _centriRicavoInflight: Promise<CentroCR[]> | null = null;
+async function fetchCentriRicavoCached(): Promise<CentroCR[]> {
+  if (_centriRicavoCache) return _centriRicavoCache;
+  if (_centriRicavoInflight) return _centriRicavoInflight;
+  _centriRicavoInflight = fetchCentriFromDb().then((all) => {
+    _centriRicavoCache = all.filter((c) => c.tipo === "ricavo");
+    _centriRicavoInflight = null;
+    return _centriRicavoCache;
+  });
+  return _centriRicavoInflight;
 }
 
 const COLORS_SALES = [
@@ -172,13 +159,16 @@ const COLORS_CENTRI = [
 ];
 
 export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales, refreshKey = 0 }: { sales: SaleInvoice[]; refreshKey?: number }) {
-  const [centri, setCentri] = useState<CentroCR[]>([]);
-  const [mapRaw, setMapRaw] = useState<Record<string, string>>({});
+  const [centri, setCentri] = useState<CentroCR[]>(() => _centriRicavoCache ?? []);
+  const { map: mapRaw, refresh: refreshMap } = useCentroMap("ricavo", "vendite");
 
   useEffect(() => {
-    fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
-    fetchCentroAssignmentMap("ricavo", "vendite").then(setMapRaw);
-  }, [refreshKey]);
+    fetchCentriRicavoCached().then(setCentri);
+  }, []);
+
+  useEffect(() => {
+    if (refreshKey > 0) refreshMap();
+  }, [refreshKey, refreshMap]);
 
   const data = useMemo(() => {
     if (centri.length === 0) return [];
@@ -272,14 +262,17 @@ export const CentroRicavoChart = React.memo(function CentroRicavoChart({ sales, 
 });
 
 export const NonClassificatoList = React.memo(function NonClassificatoList({ sales, onRowClick, refreshKey = 0 }: { sales: SaleInvoice[]; onRowClick?: (invoice: SaleInvoice) => void; refreshKey?: number }) {
-  const [centri, setCentri] = useState<CentroCR[]>([]);
-  const [mapRaw, setMapRaw] = useState<Record<string, string>>({});
+  const [centri, setCentri] = useState<CentroCR[]>(() => _centriRicavoCache ?? []);
+  const { map: mapRaw, refresh: refreshMap } = useCentroMap("ricavo", "vendite");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    fetchCentriFromDb().then((all) => setCentri(all.filter((c) => c.tipo === "ricavo")));
-    fetchCentroAssignmentMap("ricavo", "vendite").then(setMapRaw);
-  }, [refreshKey]);
+    fetchCentriRicavoCached().then(setCentri);
+  }, []);
+
+  useEffect(() => {
+    if (refreshKey > 0) refreshMap();
+  }, [refreshKey, refreshMap]);
 
   const rows = useMemo(() => {
     if (centri.length === 0) return [];
