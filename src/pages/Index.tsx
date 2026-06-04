@@ -4,6 +4,7 @@ import { useCommessaLinks } from "@/hooks/useCommessaLinks";
 import { StatCard } from "@/components/StatCard";
 import { FilterBar } from "@/components/FilterBar";
 import { MonthlyChart } from "@/components/SummaryChart";
+import { QuoteChart } from "@/components/QuoteChart";
 import { ClientPieChart, SupplierPieChart, CentroRicavoChart, NonClassificatoList } from "@/components/PieCharts";
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
@@ -115,6 +116,14 @@ const Index = () => {
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">{filters.anno ? "Andamento Mensile" : "Andamento Annuale"}</h2>
           <MonthlyChart sales={sales} purchases={purchases} movements={movements} selectedYear={filters.anno} />
+        </div>
+
+        {/* Quote: lavori + avvalimenti */}
+        <div className="rounded-xl border bg-card p-5">
+          <h2 className="text-sm font-semibold mb-4">
+            {filters.anno ? "Andamento Mensile Quota Lavori + Quota Avvalimenti" : "Andamento Annuale Quota Lavori + Quota Avvalimenti"}
+          </h2>
+          <QuoteChart sales={sales} selectedYear={filters.anno} />
         </div>
 
         {/* Pie Charts */}
