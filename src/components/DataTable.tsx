@@ -251,7 +251,7 @@ export function DataTable<T extends Record<string, any>>({
       const same = keys.length === Object.keys(prev).length && keys.every((k) => prev[k] === next[k]);
       return same ? prev : next;
     });
-  }, [activeColumns, columnWidths, expandable, sorted.length]);
+  }, [activeColumns, columnWidths, expandable]);
 
   const hasActiveFilters = Object.values(columnFilters).some(Boolean) || !!globalSearch;
   const isReordered = useMemo(() => {

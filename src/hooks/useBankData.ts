@@ -885,15 +885,20 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
   }, [rawMovements, activeAccountId]);
 
   const movements = useMemo(
-    () => autoMatch(accountMovements, sales, purchases, reconciliations),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [accountMovements, sales, purchases, reconciliations, refreshKey]
-  );
-
-  const allMovements = useMemo(
     () => autoMatch(rawMovements, sales, purchases, reconciliations),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rawMovements, sales, purchases, reconciliations, refreshKey]
+  );
+
+  // `allMovements` è l'intero set arricchito; `movements` è il subset filtrato per
+  // conto attivo. Evitiamo di chiamare `autoMatch` due volte (O(n×m)) calcolando
+  // l'arricchimento una sola volta e filtrando in O(n).
+  const allMovements = movements;
+  const filteredMovements = useMemo(
+    () => activeAccountId === "all"
+      ? movements
+      : movements.filter((m) => (m.accountId || "default") === activeAccountId),
+    [movements, activeAccountId]
   );
 
   const addReconciliation = useCallback(async (rec: Reconciliation | Reconciliation[]) => {
