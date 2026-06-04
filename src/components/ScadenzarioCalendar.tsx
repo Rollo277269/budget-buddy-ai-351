@@ -277,7 +277,7 @@ export function ScadenzarioCalendar({ events }: Props) {
 
         {/* Month View */}
         {viewMode === "month" && (
-          <div className="border rounded-md overflow-hidden flex flex-col h-[600px]">
+          <div className="border rounded-md overflow-hidden flex flex-col h-[calc(100vh-240px)] min-h-[500px]">
             <div className="grid grid-cols-7 bg-muted/50 shrink-0">
               {WEEKDAYS.map((d) => (
                 <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1.5 border-b">
@@ -322,7 +322,7 @@ export function ScadenzarioCalendar({ events }: Props) {
         {/* Week View */}
         {viewMode === "week" && (
           <div className="border rounded-md overflow-hidden">
-            <div className="overflow-auto max-h-[600px]">
+            <div className="overflow-auto h-[calc(100vh-240px)] min-h-[500px]">
               <div className="grid" style={{ gridTemplateColumns: `40px repeat(7, minmax(0,1fr))` }}>
                 <div className="bg-muted/50 border-b border-r h-6" />
                 {weekDays.map((d, i) => (
