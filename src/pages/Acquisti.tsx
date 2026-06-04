@@ -949,16 +949,22 @@ const AcquistiPage = () => {
           centri={centri}
           centroMap={costoMap.map}
           onAssign={(key, codice) => {
-            costoMap.assign(key, codice);
-            // Propaga il centro di costo a tutte le righe della fattura
-            const headerSenzaIva = (r.imposta || 0) === 0 && (r.imponibile || 0) > 0 && (r.totale || 0) === (r.imponibile || 0);
             const righe = Array.isArray(r.righe) ? r.righe : [];
-            righe.forEach((riga: any, idx: number) => {
-              const rigaTotale = headerSenzaIva ? (riga?.imponibile || 0) : (riga?.totale || 0);
-              const rigaImp = Number(riga?.imponibile || 0);
-              if (Number(rigaTotale) === 0 && rigaImp === 0) return;
-              costoMap.assign(`${r.anno}-${r.numero}-${idx}`, codice);
-            });
+            // Solo per fatture con più di una riga propaghiamo a livello riga.
+            // Per fatture con 0 o 1 riga manteniamo l'attribuzione a livello header
+            // così la cella rimane selezionabile/editabile.
+            if (righe.length > 1) {
+              costoMap.assign(key, codice);
+              const headerSenzaIva = (r.imposta || 0) === 0 && (r.imponibile || 0) > 0 && (r.totale || 0) === (r.imponibile || 0);
+              righe.forEach((riga: any, idx: number) => {
+                const rigaTotale = headerSenzaIva ? (riga?.imponibile || 0) : (riga?.totale || 0);
+                const rigaImp = Number(riga?.imponibile || 0);
+                if (Number(rigaTotale) === 0 && rigaImp === 0) return;
+                costoMap.assign(`${r.anno}-${r.numero}-${idx}`, codice);
+              });
+            } else {
+              costoMap.assign(key, codice);
+            }
           }}
           onRemove={costoMap.remove}
           importo={r.totale}
