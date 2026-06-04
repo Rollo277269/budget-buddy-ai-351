@@ -723,7 +723,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[120px]" autoFocus />
                   ) : (
-                    <span className="cursor-text hover:text-primary transition-colors"
+                    <span className="cursor-text hover:text-primary transition-colors text-black"
                       onClick={() => startEditing(doc.id, "numero", doc.numero || "")}>
                       {doc.numero || "—"}
                     </span>
