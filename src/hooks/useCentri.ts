@@ -206,6 +206,19 @@ export function useCentroMap(tipo: "costo" | "ricavo", context: "vendite" | "acq
       setMap((prev) => {
         const next = { ...prev, [key]: codice };
         saveAssignment(key, tipo, context, codice);
+        // If this is a per-row key (header-idx), remove any stale header-level
+        // assignment so it does not coexist with per-row assignments.
+        const m = key.match(/^(.+)-(\d+)$/);
+        if (m) {
+          const headerKey = m[1];
+          if (headerKey && next[headerKey] !== undefined) {
+            delete next[headerKey];
+            deleteAssignment(headerKey, tipo, context);
+          } else if (headerKey) {
+            // Fire-and-forget delete in case the header exists in DB but not in local map
+            deleteAssignment(headerKey, tipo, context);
+          }
+        }
         return next;
       });
     },
