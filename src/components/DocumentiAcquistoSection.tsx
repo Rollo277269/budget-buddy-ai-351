@@ -713,7 +713,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
               )}
               {visibleCols.has("file_name") && (
                 <TableCell className="text-xs py-1.5 text-muted-foreground">
-                  <span className="truncate max-w-[160px] block" title={doc.file_name}>{doc.file_name}</span>
+                  <span className="truncate max-w-[160px] block bg-transparent text-black" title={doc.file_name}>{doc.file_name}</span>
                 </TableCell>
               )}
               {visibleCols.has("numero") && (
