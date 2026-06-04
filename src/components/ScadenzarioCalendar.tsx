@@ -277,15 +277,15 @@ export function ScadenzarioCalendar({ events }: Props) {
 
         {/* Month View */}
         {viewMode === "month" && (
-          <div className="border rounded-md overflow-hidden">
-            <div className="grid grid-cols-7 bg-muted/50">
+          <div className="border rounded-md overflow-hidden flex flex-col h-[600px]">
+            <div className="grid grid-cols-7 bg-muted/50 shrink-0">
               {WEEKDAYS.map((d) => (
                 <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1.5 border-b">
                   {d}
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7">
+            <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-0">
               {monthDays.map(({ date, inMonth }, idx) => {
                 const dayEvents = getEventsForDay(date);
                 const isToday = sameDay(date, today);
@@ -293,7 +293,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                   <div
                     key={idx}
                     className={cn(
-                      "min-h-[80px] p-1 border-b border-r text-[10px] transition-colors",
+                      "min-h-0 p-1 border-b border-r text-[10px] transition-colors overflow-auto",
                       !inMonth && "bg-muted/20 text-muted-foreground/50",
                       isToday && "bg-primary/5"
                     )}
