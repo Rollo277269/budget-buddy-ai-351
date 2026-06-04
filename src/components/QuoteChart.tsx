@@ -19,6 +19,7 @@ interface Props {
   selectedYear?: string;
 }
 
+const CODICE_AMMISSIONE = "RG1";
 const CODICE_LAVORI = "RG2";
 const CODICE_AVVALIMENTI = "RG3";
 
@@ -62,9 +63,9 @@ export const QuoteChart = React.memo(function QuoteChart({ sales, selectedYear }
   const aggregateByYear = !selectedYear;
 
   const data = useMemo(() => {
-    const buckets: Record<string, { lavori: number; avvalimenti: number }> = {};
+    const buckets: Record<string, { lavori: number; avvalimenti: number; ammissione: number }> = {};
     const ensure = (k: string) => {
-      if (!buckets[k]) buckets[k] = { lavori: 0, avvalimenti: 0 };
+      if (!buckets[k]) buckets[k] = { lavori: 0, avvalimenti: 0, ammissione: 0 };
     };
     const getKey = (d: string): string | null => {
       const p = parseDate(d);
@@ -76,6 +77,7 @@ export const QuoteChart = React.memo(function QuoteChart({ sales, selectedYear }
       ensure(key);
       if (code === CODICE_LAVORI) buckets[key].lavori += amt;
       else if (code === CODICE_AVVALIMENTI) buckets[key].avvalimenti += amt;
+      else if (code === CODICE_AMMISSIONE) buckets[key].ammissione += amt;
     };
 
     sales.forEach((s) => {
@@ -84,7 +86,7 @@ export const QuoteChart = React.memo(function QuoteChart({ sales, selectedYear }
       const headerKey = `${s.anno}-${s.numero}`;
       const headerCode = mapRaw[headerKey];
       const baseAmount = (s.imponibile ?? 0) !== 0 ? s.imponibile : s.totale;
-      if (headerCode === CODICE_LAVORI || headerCode === CODICE_AVVALIMENTI) {
+      if (headerCode === CODICE_LAVORI || headerCode === CODICE_AVVALIMENTI || headerCode === CODICE_AMMISSIONE) {
         add(key, headerCode, baseAmount);
         return;
       }
@@ -93,7 +95,7 @@ export const QuoteChart = React.memo(function QuoteChart({ sales, selectedYear }
         const amt = (r?.imponibile ?? r?.totale ?? 0) || 0;
         if (!amt) return;
         const code = mapRaw[`${headerKey}-${idx}`];
-        if (code === CODICE_LAVORI || code === CODICE_AVVALIMENTI) add(key, code, amt);
+        if (code === CODICE_LAVORI || code === CODICE_AVVALIMENTI || code === CODICE_AMMISSIONE) add(key, code, amt);
       });
     });
 
@@ -113,7 +115,8 @@ export const QuoteChart = React.memo(function QuoteChart({ sales, selectedYear }
         label,
         "Quota lavori": Math.round(v.lavori),
         "Quota avvalimenti": Math.round(v.avvalimenti),
-        Totale: Math.round(v.lavori + v.avvalimenti),
+        "Quota ammissione": Math.round(v.ammissione),
+        Totale: Math.round(v.lavori + v.avvalimenti + v.ammissione),
       }));
   }, [sales, mapRaw, aggregateByYear, selectedYear]);
 
@@ -137,7 +140,8 @@ export const QuoteChart = React.memo(function QuoteChart({ sales, selectedYear }
         <Legend wrapperStyle={{ fontSize: "0.8rem" }} />
         <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} />
         <Bar dataKey="Quota lavori" stackId="q" fill="hsl(152 60% 36%)" radius={[0, 0, 0, 0]} />
-        <Bar dataKey="Quota avvalimenti" stackId="q" fill="hsl(30 80% 50%)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Quota avvalimenti" stackId="q" fill="hsl(30 80% 50%)" radius={[0, 0, 0, 0]} />
+        <Bar dataKey="Quota ammissione" stackId="q" fill="hsl(280 60% 50%)" radius={[4, 4, 0, 0]} />
         <Line type="monotone" dataKey="Totale" stroke="hsl(210 80% 50%)" strokeWidth={2} dot={{ r: 3 }} />
       </ComposedChart>
     </ResponsiveContainer>
