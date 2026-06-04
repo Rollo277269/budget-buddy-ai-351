@@ -810,7 +810,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 </TableCell>
               )}
               {visibleCols.has("created_at") && (
-                <TableCell className="text-xs py-1.5 text-muted-foreground whitespace-nowrap">
+                <TableCell className="text-xs py-1.5 text-muted-foreground whitespace-nowrap text-black">
                   {doc.created_at ? new Date(doc.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                 </TableCell>
               )}
