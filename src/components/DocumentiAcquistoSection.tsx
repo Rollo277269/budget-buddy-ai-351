@@ -703,10 +703,10 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[180px]" autoFocus />
                   ) : (
-                    <div className="flex items-center gap-1.5 cursor-text hover:text-primary transition-colors"
+                    <div className="flex items-center gap-1.5 cursor-text hover:text-primary transition-colors text-black"
                       onClick={() => startEditing(doc.id, "descrizione", doc.descrizione || doc.file_name)}>
                       <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
-                      <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
+                      <span className="truncate max-w-[180px] text-black">{doc.descrizione || doc.file_name}</span>
                     </div>
                   )}
                 </TableCell>
