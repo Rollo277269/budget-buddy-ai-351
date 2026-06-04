@@ -353,7 +353,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                 {WEEKDAYS[(currentDate.getDay() + 6) % 7]} {currentDate.getDate()} {MONTH_NAMES[currentDate.getMonth()]}
               </span>
             </div>
-            <div className="overflow-auto max-h-[600px]">
+            <div className="overflow-auto h-[calc(100vh-280px)] min-h-[500px]">
               <div className="grid" style={{ gridTemplateColumns: `48px 1fr` }}>
                 {renderHourGutter()}
                 <div className="relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>
