@@ -114,7 +114,7 @@ const Index = () => {
 
         {/* Chart */}
         <div className="rounded-xl border bg-card p-5">
-          <h2 className="text-sm font-semibold mb-4">{filters.anno ? "Andamento Mensile" : "Andamento Annuale Acquisti e Vendite"}</h2>
+          <h2 className="text-sm font-semibold mb-4">{filters.anno ? "Andamento Mensile Acquisti e Vendite" : "Andamento Annuale Acquisti e Vendite"}</h2>
           <MonthlyChart sales={sales} purchases={purchases} movements={movements} selectedYear={filters.anno} />
         </div>
 
