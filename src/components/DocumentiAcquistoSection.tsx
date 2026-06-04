@@ -781,7 +781,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[120px] font-mono" autoFocus />
                   ) : (
-                    <span className="font-mono cursor-text hover:text-primary transition-colors"
+                    <span className="font-mono cursor-text hover:text-primary transition-colors text-black text-xs"
                       onClick={() => startEditing(doc.id, "cig", doc.cig || "")}>
                       {doc.cig || "—"}
                     </span>
