@@ -1054,7 +1054,7 @@ function FornitoreCellEditor({ value, options, open, onOpenChange, onPick, onFre
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="truncate max-w-[160px] text-left cursor-pointer hover:text-primary transition-colors"
+          className="truncate max-w-[160px] text-left cursor-pointer hover:text-primary transition-colors text-black"
           title={value || placeholder}
         >
           {value || <span className="text-muted-foreground">—</span>}
