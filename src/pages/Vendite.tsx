@@ -849,26 +849,35 @@ const VenditePage = () => {
           return Array.from(codes).join(", ") || "";
         },
         render: (r) => {
-          const codes = new Set<string>();
+          const rowCodes = new Set<string>();
           if (r.righe && r.righe.length > 1) {
             r.righe.forEach((_: any, idx: number) => {
               const rowCode = ricavoMap.map[`${r.anno}-${r.numero}-${idx}`];
-              if (rowCode) codes.add(rowCode);
+              if (rowCode) rowCodes.add(rowCode);
             });
           }
-          const hasRowAssignments = codes.size > 0;
-          if (!hasRowAssignments) {
-            const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
-            if (headerCode) codes.add(headerCode);
-          }
+          const hasRowAssignments = rowCodes.size > 0;
+          const headerCode = ricavoMap.map[`${r.anno}-${r.numero}`];
+          const codes = new Set<string>(rowCodes);
+          // Always include header code so user sees what makes filter match
+          if (headerCode) codes.add(headerCode);
           if (hasRowAssignments || codes.size > 1) {
             return (
               <div className="flex flex-wrap gap-0.5">
                 {Array.from(codes).map((code) => {
                   const centro = centri.find((c) => c.codice === code && c.tipo === "ricavo");
+                  const isHeaderOnly = code === headerCode && !rowCodes.has(code);
+                  const isMatch = filters.centroRicavo && code === filters.centroRicavo;
                   return (
-                    <Badge key={code} variant="outline" className="px-1 py-0 font-thin text-xs font-sans">
+                    <Badge
+                      key={code}
+                      variant={isMatch ? "default" : "outline"}
+                      className="px-1 py-0 font-thin text-xs font-sans"
+                      title={isHeaderOnly ? "Centro a livello fattura" : "Centro a livello riga"}
+                    >
                       {code}{centro ? ` - ${centro.descrizione.slice(0, 15)}` : ""}
+                      {isHeaderOnly && <span className="ml-0.5 opacity-60">(hd)</span>}
+                      {!isHeaderOnly && hasRowAssignments && <span className="ml-0.5 opacity-60">(rg)</span>}
                     </Badge>
                   );
                 })}
