@@ -878,27 +878,19 @@ export function useBankData(sales: SaleInvoice[], purchases: PurchaseInvoice[]) 
     await supabase.from("bank_movements" as any).delete().in("id", ids);
   }, []);
 
-  // Filter movements by active account
-  const accountMovements = useMemo(() => {
-    if (activeAccountId === "all") return rawMovements;
-    return rawMovements.filter(m => (m.accountId || "default") === activeAccountId);
-  }, [rawMovements, activeAccountId]);
-
-  const movements = useMemo(
+  // Calcoliamo l'arricchimento `autoMatch` UNA sola volta sull'intero set
+  // (O(n×m) molto costoso). Il filtro per conto attivo è poi O(n).
+  const allMovements = useMemo(
     () => autoMatch(rawMovements, sales, purchases, reconciliations),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rawMovements, sales, purchases, reconciliations, refreshKey]
   );
 
-  // `allMovements` è l'intero set arricchito; `movements` è il subset filtrato per
-  // conto attivo. Evitiamo di chiamare `autoMatch` due volte (O(n×m)) calcolando
-  // l'arricchimento una sola volta e filtrando in O(n).
-  const allMovements = movements;
-  const filteredMovements = useMemo(
+  const movements = useMemo(
     () => activeAccountId === "all"
-      ? movements
-      : movements.filter((m) => (m.accountId || "default") === activeAccountId),
-    [movements, activeAccountId]
+      ? allMovements
+      : allMovements.filter((m) => (m.accountId || "default") === activeAccountId),
+    [allMovements, activeAccountId]
   );
 
   const addReconciliation = useCallback(async (rec: Reconciliation | Reconciliation[]) => {
