@@ -767,7 +767,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[100px] font-mono text-right" autoFocus />
                   ) : (
-                    <span className="font-mono cursor-text hover:text-primary transition-colors"
+                    <span className="font-mono cursor-text hover:text-primary transition-colors text-black"
                       onClick={() => startEditing(doc.id, "importo", doc.importo ? String(doc.importo) : "")}>
                       {doc.importo ? formatCurrency(doc.importo) : "—"}
                     </span>
