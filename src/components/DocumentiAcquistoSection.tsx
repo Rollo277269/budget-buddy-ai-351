@@ -703,17 +703,17 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[180px]" autoFocus />
                   ) : (
-                    <div className="flex items-center gap-1.5 cursor-text hover:text-primary transition-colors"
+                    <div className="flex items-center gap-1.5 cursor-text hover:text-primary transition-colors text-black"
                       onClick={() => startEditing(doc.id, "descrizione", doc.descrizione || doc.file_name)}>
                       <FileText className="h-3.5 w-3.5 text-destructive shrink-0" />
-                      <span className="truncate max-w-[180px]">{doc.descrizione || doc.file_name}</span>
+                      <span className="truncate max-w-[180px] text-black">{doc.descrizione || doc.file_name}</span>
                     </div>
                   )}
                 </TableCell>
               )}
               {visibleCols.has("file_name") && (
                 <TableCell className="text-xs py-1.5 text-muted-foreground">
-                  <span className="truncate max-w-[160px] block" title={doc.file_name}>{doc.file_name}</span>
+                  <span className="truncate max-w-[160px] block bg-transparent text-black" title={doc.file_name}>{doc.file_name}</span>
                 </TableCell>
               )}
               {visibleCols.has("numero") && (
@@ -723,7 +723,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[120px]" autoFocus />
                   ) : (
-                    <span className="cursor-text hover:text-primary transition-colors"
+                    <span className="cursor-text hover:text-primary transition-colors text-black"
                       onClick={() => startEditing(doc.id, "numero", doc.numero || "")}>
                       {doc.numero || "—"}
                     </span>
@@ -753,7 +753,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[100px]" autoFocus placeholder="dd/mm/yyyy" />
                   ) : (
-                    <span className="cursor-text hover:text-primary transition-colors"
+                    <span className="cursor-text hover:text-primary transition-colors text-black"
                       onClick={() => startEditing(doc.id, "data_documento", doc.data_documento || "")}>
                       {doc.data_documento || "—"}
                     </span>
@@ -767,7 +767,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[100px] font-mono text-right" autoFocus />
                   ) : (
-                    <span className="font-mono cursor-text hover:text-primary transition-colors"
+                    <span className="font-mono cursor-text hover:text-primary transition-colors text-black"
                       onClick={() => startEditing(doc.id, "importo", doc.importo ? String(doc.importo) : "")}>
                       {doc.importo ? formatCurrency(doc.importo) : "—"}
                     </span>
@@ -781,7 +781,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                       onBlur={saveEditing} onKeyDown={(e) => { if (e.key === "Enter") saveEditing(); if (e.key === "Escape") cancelEditing(); }}
                       className="h-6 text-[10px] w-[120px] font-mono" autoFocus />
                   ) : (
-                    <span className="font-mono cursor-text hover:text-primary transition-colors"
+                    <span className="font-mono cursor-text hover:text-primary transition-colors text-black text-xs"
                       onClick={() => startEditing(doc.id, "cig", doc.cig || "")}>
                       {doc.cig || "—"}
                     </span>
@@ -810,7 +810,7 @@ export function DocumentiAcquistoSection({ dropZoneOnly, tableOnly, compact, tip
                 </TableCell>
               )}
               {visibleCols.has("created_at") && (
-                <TableCell className="text-xs py-1.5 text-muted-foreground whitespace-nowrap">
+                <TableCell className="text-xs py-1.5 text-muted-foreground whitespace-nowrap text-black">
                   {doc.created_at ? new Date(doc.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                 </TableCell>
               )}
@@ -1054,7 +1054,7 @@ function FornitoreCellEditor({ value, options, open, onOpenChange, onPick, onFre
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="truncate max-w-[160px] text-left cursor-pointer hover:text-primary transition-colors"
+          className="truncate max-w-[160px] text-left cursor-pointer hover:text-primary transition-colors text-black"
           title={value || placeholder}
         >
           {value || <span className="text-muted-foreground">—</span>}
