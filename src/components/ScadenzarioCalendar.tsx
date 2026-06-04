@@ -277,15 +277,15 @@ export function ScadenzarioCalendar({ events }: Props) {
 
         {/* Month View */}
         {viewMode === "month" && (
-          <div className="border rounded-md overflow-hidden">
-            <div className="grid grid-cols-7 bg-muted/50">
+          <div className="border rounded-md overflow-hidden flex flex-col h-[calc(100vh-240px)] min-h-[500px]">
+            <div className="grid grid-cols-7 bg-muted/50 shrink-0">
               {WEEKDAYS.map((d) => (
                 <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1.5 border-b">
                   {d}
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7">
+            <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-0">
               {monthDays.map(({ date, inMonth }, idx) => {
                 const dayEvents = getEventsForDay(date);
                 const isToday = sameDay(date, today);
@@ -293,7 +293,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                   <div
                     key={idx}
                     className={cn(
-                      "min-h-[80px] p-1 border-b border-r text-[10px] transition-colors",
+                      "min-h-0 p-1 border-b border-r text-[10px] transition-colors overflow-auto",
                       !inMonth && "bg-muted/20 text-muted-foreground/50",
                       isToday && "bg-primary/5"
                     )}
@@ -322,7 +322,7 @@ export function ScadenzarioCalendar({ events }: Props) {
         {/* Week View */}
         {viewMode === "week" && (
           <div className="border rounded-md overflow-hidden">
-            <div className="overflow-auto max-h-[600px]">
+            <div className="overflow-auto h-[calc(100vh-240px)] min-h-[500px]">
               <div className="grid" style={{ gridTemplateColumns: `40px repeat(7, minmax(0,1fr))` }}>
                 <div className="bg-muted/50 border-b border-r h-6" />
                 {weekDays.map((d, i) => (
@@ -353,7 +353,7 @@ export function ScadenzarioCalendar({ events }: Props) {
                 {WEEKDAYS[(currentDate.getDay() + 6) % 7]} {currentDate.getDate()} {MONTH_NAMES[currentDate.getMonth()]}
               </span>
             </div>
-            <div className="overflow-auto max-h-[600px]">
+            <div className="overflow-auto h-[calc(100vh-280px)] min-h-[500px]">
               <div className="grid" style={{ gridTemplateColumns: `48px 1fr` }}>
                 {renderHourGutter()}
                 <div className="relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>
