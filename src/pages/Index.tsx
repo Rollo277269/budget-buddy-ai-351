@@ -121,7 +121,7 @@ const Index = () => {
         {/* Quote: lavori + avvalimenti */}
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">
-            {filters.anno ? "Andamento Mensile Quota Lavori + Quota Avvalimenti" : "Andamento Annuale Quota Lavori + Quota Avvalimenti"}
+            {filters.anno ? "Andamento Mensile Ricavi Generali" : "Andamento Annuale Ricavi Generali"}
           </h2>
           <QuoteChart sales={sales} selectedYear={filters.anno} />
         </div>
