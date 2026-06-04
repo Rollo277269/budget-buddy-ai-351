@@ -42,7 +42,9 @@ function isNotaCredito(r: PurchaseInvoice): boolean {
 }
 
 function formatCreditAmount(value: number, isCreditNote: boolean): string {
-  const formatted = formatCurrency(Math.abs(value));
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const formatted = formatCurrency(Math.abs(n));
   return isCreditNote ? `- ${formatted}` : formatted;
 }
 
