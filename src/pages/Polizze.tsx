@@ -114,6 +114,16 @@ export default function Polizze() {
   const { documenti, refresh, updateField } = useDocumentiAcquisto("acquisto");
   const { centriCosto } = useCentriData();
   const { byCig: commesseByCig } = useCssrCommesse();
+  // Case-insensitive lookup map (CIG sometimes stored uppercase, sometimes mixed).
+  const commesseByCigUpper = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof commesseByCig.get>>();
+    commesseByCig.forEach((v, k) => { if (k) m.set(k.toUpperCase(), v); });
+    return m;
+  }, [commesseByCig]);
+  const lookupCommessa = useCallback((cig: string | null | undefined) => {
+    if (!cig) return null;
+    return commesseByCigUpper.get(cig.trim().toUpperCase()) || null;
+  }, [commesseByCigUpper]);
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [reassociating, setReassociating] = useState(false);
   const [filter, setFilter] = useState("");
