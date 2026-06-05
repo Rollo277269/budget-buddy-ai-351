@@ -96,7 +96,7 @@ interface Props {
   events: CalendarEvent[];
 }
 
-export function ScadenzarioCalendar({ events }: Props) {
+export function CalendarioComponent({ events }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
