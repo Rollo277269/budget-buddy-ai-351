@@ -7,7 +7,7 @@ import { useContiCorrenti } from "@/hooks/useContiCorrenti";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarioComponent } from "@/components/ScadenzarioCalendar";
+import { CalendarioComponent } from "@/components/CalendarioComponent";
 import { AlertTriangle, Clock, CheckCircle2, Landmark, CalendarDays, List, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
