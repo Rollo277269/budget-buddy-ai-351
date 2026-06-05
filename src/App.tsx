@@ -7,6 +7,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { lazy, Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { runLocalStorageMigration } from "@/lib/localStorageMigration";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+const AuthPage = lazy(() => import("./pages/Auth"));
 
 // Lazy load all pages for faster initial render
 const Index = lazy(() => import("./pages/Index"));
@@ -47,28 +49,38 @@ const App = () => {
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppLayout>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/scadenzario" element={<ScadenzarioPage />} />
-              <Route path="/vendite" element={<VenditePage />} />
-              <Route path="/acquisti" element={<AcquistiPage />} />
-              <Route path="/banche" element={<BanchePage />} />
-              <Route path="/commesse" element={<CommessePage />} />
-              <Route path="/lista-commesse" element={<ListaCommessePage />} />
-              <Route path="/offerte" element={<OffertePage />} />
-              <Route path="/schede-contabili" element={<SchedeContabiliPage />} />
-              <Route path="/bilancio" element={<BilancioPage />} />
-              <Route path="/strumenti" element={<StrumentiPage />} />
-              <Route path="/iva" element={<IvaPage />} />
-              <Route path="/rubrica" element={<RubricaPage />} />
-              <Route path="/diagnostica" element={<DiagnosticaPage />} />
-              <Route path="/polizze" element={<PolizzePage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </AppLayout>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
+            <Route
+              path="*"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/scadenzario" element={<ScadenzarioPage />} />
+                      <Route path="/vendite" element={<VenditePage />} />
+                      <Route path="/acquisti" element={<AcquistiPage />} />
+                      <Route path="/banche" element={<BanchePage />} />
+                      <Route path="/commesse" element={<CommessePage />} />
+                      <Route path="/lista-commesse" element={<ListaCommessePage />} />
+                      <Route path="/offerte" element={<OffertePage />} />
+                      <Route path="/schede-contabili" element={<SchedeContabiliPage />} />
+                      <Route path="/bilancio" element={<BilancioPage />} />
+                      <Route path="/strumenti" element={<StrumentiPage />} />
+                      <Route path="/iva" element={<IvaPage />} />
+                      <Route path="/rubrica" element={<RubricaPage />} />
+                      <Route path="/diagnostica" element={<DiagnosticaPage />} />
+                      <Route path="/polizze" element={<PolizzePage />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
