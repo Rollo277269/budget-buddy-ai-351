@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar, defaultItems as sidebarItems } from "@/components/AppSidebar";
-import { FileText, Maximize, Minimize, Moon, Sun } from "lucide-react";
+import { FileText, LogOut, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { LayoutEditModeIndicator } from "@/components/LayoutEditModeIndicator";
 import { YearLoadingBadge } from "@/components/YearLoadingBadge";
 
@@ -176,6 +177,18 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFs} title={isFs ? "Esci da schermo intero" : "Schermo intero"}>
                 {isFs ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.href = "/auth";
+                }}
+                title="Esci"
+              >
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </header>
