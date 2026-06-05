@@ -519,9 +519,13 @@ export default function Polizze() {
                           {isVisible("numero") && <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>}
                           {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
                           {isVisible("cig") && <TableCell className="text-xs px-2 py-1.5 font-mono">
-                            {d.cig ? (
-                              <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{d.cig}</Link>
-                            ) : "—"}
+                            <EditableCigCell
+                              value={d.cig || ""}
+                              onSave={async (next) => {
+                                await updateField(d.id, "cig", next);
+                                toast.success("CIG aggiornato");
+                              }}
+                            />
                           </TableCell>}
                           {isVisible("commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             {(() => {
