@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { BudgetAssumptions } from "@/lib/budgetEngine";
 import { useBudgetComparison, ComparisonRow } from "@/hooks/useBudgetComparison";
 import { formatCurrency } from "@/lib/format";
@@ -154,11 +154,11 @@ function ComparisonTable({ rows, months }: { rows: ComparisonRow[]; months: { ke
           </tr>
           <tr>
             {months.map((m) => (
-              <>
-                <th key={`${m.key}-a`} className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground border-l">Stor.</th>
-                <th key={`${m.key}-f`} className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground">Prev.</th>
-                <th key={`${m.key}-d`} className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground">Δ%</th>
-              </>
+              <Fragment key={m.key}>
+                <th className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground border-l">Stor.</th>
+                <th className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground">Prev.</th>
+                <th className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground">Δ%</th>
+              </Fragment>
             ))}
             <th className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground border-l bg-muted">Stor.</th>
             <th className="text-right px-1 py-1 font-normal text-[9px] text-muted-foreground bg-muted">Prev.</th>
@@ -194,13 +194,13 @@ function ComparisonTable({ rows, months }: { rows: ComparisonRow[]; months: { ke
                   const sa = r.sign === -1 ? -Math.abs(a) : a;
                   const sf = r.sign === -1 ? -Math.abs(f) : f;
                   return (
-                    <>
-                      <td key={`${m.key}-a`} className={cn("text-right px-1 py-1 font-mono whitespace-nowrap border-l", sa < 0 && "text-expense", sa > 0 && r.sign === 1 && "text-income")}>{fmt(sa)}</td>
-                      <td key={`${m.key}-f`} className="text-right px-1 py-1 font-mono whitespace-nowrap text-muted-foreground">{fmt(sf)}</td>
-                      <td key={`${m.key}-d`} className={cn("text-right px-1 py-1 font-mono text-[10px] whitespace-nowrap", v.delta < 0 && r.sign === 1 && "text-expense", v.delta > 0 && r.sign === 1 && "text-income", v.delta > 0 && r.sign === -1 && "text-expense", v.delta < 0 && r.sign === -1 && "text-income")}>
+                    <Fragment key={m.key}>
+                      <td className={cn("text-right px-1 py-1 font-mono whitespace-nowrap border-l", sa < 0 && "text-expense", sa > 0 && r.sign === 1 && "text-income")}>{fmt(sa)}</td>
+                      <td className="text-right px-1 py-1 font-mono whitespace-nowrap text-muted-foreground">{fmt(sf)}</td>
+                      <td className={cn("text-right px-1 py-1 font-mono text-[10px] whitespace-nowrap", v.delta < 0 && r.sign === 1 && "text-expense", v.delta > 0 && r.sign === 1 && "text-income", v.delta > 0 && r.sign === -1 && "text-expense", v.delta < 0 && r.sign === -1 && "text-income")}>
                         {a === 0 && f === 0 ? "—" : `${v.pct >= 0 ? "+" : ""}${v.pct.toFixed(0)}%`}
                       </td>
-                    </>
+                    </Fragment>
                   );
                 })}
                 <td className={cn("text-right px-1 py-1 font-mono font-semibold whitespace-nowrap border-l bg-muted/30", (r.sign === -1 ? -Math.abs(totA) : totA) < 0 && "text-expense", (r.sign === -1 ? -Math.abs(totA) : totA) > 0 && r.sign === 1 && "text-income")}>
