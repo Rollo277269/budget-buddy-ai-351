@@ -113,7 +113,21 @@ export default function SociPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Anno</span>
+          <span className="text-xs text-muted-foreground">Socio</span>
+          <Select value={socioId} onValueChange={setSocioId}>
+            <SelectTrigger className="h-8 w-56 text-xs">
+              <SelectValue placeholder="Tutti i soci" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__" className="text-xs">Tutti i soci</SelectItem>
+              {soci.map((s) => (
+                <SelectItem key={s.id} value={s.id} className="text-xs">
+                  {s.denominazione}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground ml-2">Anno</span>
           <Select value={year != null ? String(year) : ""} onValueChange={(v) => setYear(parseInt(v, 10))}>
             <SelectTrigger className="h-8 w-28 text-xs">
               <SelectValue placeholder="Anno" />
