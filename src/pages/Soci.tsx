@@ -41,6 +41,7 @@ export default function SociPage() {
   }, [allSales, allPurchases]);
 
   const [year, setYear] = useState<number | null>(null);
+  const [socioId, setSocioId] = useState<string>("__all__");
 
   // default year = max available, set once
   if (year === null && allYears.length > 0) {
@@ -57,7 +58,8 @@ export default function SociPage() {
     const salesByYear = allSales.filter((s) => s.anno === year);
     const purchasesByYear = allPurchases.filter((p) => p.anno === year);
 
-    return soci.map((socio) => {
+    const list = socioId === "__all__" ? soci : soci.filter((s) => s.id === socioId);
+    return list.map((socio) => {
       const nameKey = norm(socio.denominazione);
       const pivaKey = (socio.partita_iva || "").trim();
 
