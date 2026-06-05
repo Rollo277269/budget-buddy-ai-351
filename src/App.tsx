@@ -21,6 +21,7 @@ const ListaCommessePage = lazy(() => import("./pages/ListaCommesse"));
 const OffertePage = lazy(() => import("./pages/Offerte"));
 const SchedeContabiliPage = lazy(() => import("./pages/SchedeContabili"));
 const BilancioPage = lazy(() => import("./pages/Bilancio"));
+const BudgetPage = lazy(() => import("./pages/Budget"));
 const StrumentiPage = lazy(() => import("./pages/Strumenti"));
 const ScadenzarioPage = lazy(() => import("./pages/Calendario"));
 const IvaPage = lazy(() => import("./pages/Iva"));
@@ -70,6 +71,7 @@ const App = () => {
                       <Route path="/offerte" element={<OffertePage />} />
                       <Route path="/schede-contabili" element={<SchedeContabiliPage />} />
                       <Route path="/bilancio" element={<BilancioPage />} />
+                      <Route path="/budget" element={<BudgetPage />} />
                       <Route path="/strumenti" element={<StrumentiPage />} />
                       <Route path="/iva" element={<IvaPage />} />
                       <Route path="/rubrica" element={<RubricaPage />} />
