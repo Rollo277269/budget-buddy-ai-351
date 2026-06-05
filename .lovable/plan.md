@@ -1,57 +1,113 @@
 ## Obiettivo
-Aggiungere una sezione **Polizze** che raccoglie tutti i documenti PDF di tipo polizza (sia costi di gara CO* sia costi di commessa) già caricati come `documenti_acquisto`, ne legge la scadenza tramite AI e la mostra in un calendario con promemoria a 10 giorni.
 
-## Modifiche
+Aggiungere una pagina dedicata **"Budget"** che presenta un **bilancio annuale previsionale rolling 12 mesi**, costruito secondo uno schema misto:
 
-### 1. Database (migrazione)
-Aggiunta a `documenti_acquisto` di due colonne opzionali:
-- `tipo_documento text` — etichetta AI (es. "Polizza", "Bollo", "ANAC", "Fattura", "Ricevuta")
-- `data_scadenza text` — data scadenza polizza in formato `YYYY-MM-DD` (null se non rilevante / non trovata)
+- **Conto Economico riclassificato a margine di contribuzione** (gestionale, OIC 11/ESMA-friendly, distingue costi fissi/variabili) per la dimensione economica
+- **Prospetto di cash flow mensile** (ispirato a OIC 10 — metodo diretto) per la dimensione finanziaria/di tesoreria
 
-Nessun GRANT/RLS extra: tabella già pubblica.
+L'output non sostituisce il bilancio civilistico ma lo affianca come strumento di **controllo di gestione e pianificazione finanziaria**, in linea con la prassi consigliata da CNDCEC e Codice della Crisi (D.Lgs. 14/2019, art. 3) che impone alle imprese assetti adeguati per rilevare tempestivamente la crisi anche tramite **budget di tesoreria a 12 mesi**.
 
-### 2. AI: estrazione tipo + scadenza
-Aggiornate entrambe le edge function:
-- `parse-documento-acquisto` (upload da Acquisti > Ricevute)
-- `parse-spesa-commessa` (upload da dettaglio commessa)
+## Schema di rappresentazione
 
-Il tool schema espone due nuovi campi:
-- `tipo_documento`: enum guidato (`"Polizza" | "Bollo" | "ANAC" | "Fattura" | "Ricevuta" | "Nota Spese" | "Altro"`)
-- `data_scadenza`: data di scadenza della polizza in `DD/MM/YYYY`, vuota se il documento non è una polizza o se la scadenza non è leggibile
+### 1. Conto Economico previsionale riclassificato (mensile, 12 colonne + Totale)
 
-Prompt aggiornato: per le polizze cercare diciture "Scadenza", "Valida fino al", "Data scadenza", "Fine copertura".
+```text
+                                M-0   M+1   ...   M+11   TOT 12m
+RICAVI
+  Ricavi da commesse aperte      ...
+  Altri ricavi (storico)         ...
+  ─────────────────────────────────────
+  A. Totale ricavi               ...
+COSTI VARIABILI / DIRETTI
+  Costi diretti commessa         ...
+  Sub-appalti                    ...
+  ─────────────────────────────────────
+  B. Margine di contribuzione    ...   (% sui ricavi)
+COSTI FISSI / STRUTTURA
+  Personale                      ...
+  Utenze, locazioni              ...
+  Servizi professionali          ...
+  Polizze (quote)                ...
+  ─────────────────────────────────────
+  C. EBITDA                      ...
+  Ammortamenti / interessi finanz. ...
+  ─────────────────────────────────────
+  D. Risultato ante imposte      ...
+```
 
-Hook `useDocumentiAcquisto` e `DocumentoAiReviewDialog` propagano e permettono di rivedere i due nuovi campi prima del salvataggio.
+### 2. Cash Flow previsionale (mensile)
 
-`CommessaExpenseUpload` salva i nuovi campi nell'insert su `documenti_acquisto`.
+```text
+                                M-0   M+1   ...   M+11
+Saldo iniziale liquidità         ...
+(+) Incassi da clienti           ...   (scadenzario vendite)
+(−) Pagamenti fornitori          ...   (scadenzario acquisti)
+(−) Rate finanziamenti           ...
+(+) Rate crediti fiscali         ...
+(−) Polizze                      ...
+(−) Stipendi / IVA / imposte     ...   (stima da storico)
+─────────────────────────────────────
+= Saldo finale liquidità         ...
+```
 
-### 3. Nuova pagina `/polizze`
-Voce sidebar **"Polizze"** (icona `ShieldCheck`) inserita tra Scadenzario e Acquisti.
+## Fonti dati (incrociate)
 
-Layout `src/pages/Polizze.tsx` a due pannelli:
+| Voce previsionale | Fonte primaria | Logica |
+|---|---|---|
+| Ricavi da commesse aperte | CSSR `commessa_data` + `fatture_vendita` | Importo residuo commessa = importo contrattuale − già fatturato; distribuito linearmente sui mesi residui (data odierna → data scadenza contratto). |
+| Altri ricavi | `fatture_vendita` storico ultimi 3 anni | Media mensile per centro di ricavo escludendo commesse CIG. |
+| Costi diretti commessa | `fatture_acquisto` con CIG associato + media storica | Stimati come % sui ricavi residui di commessa (markup medio rilevato). |
+| Costi struttura | `fatture_acquisto` storico per centro di costo (escl. CIG) | Media mensile ultimi N anni, stagionalizzata se rilevante. |
+| Incassi attesi | `fatture_vendita` aperte + commesse aperte | Da `scadenza` (o data fattura) e stato non riconciliato. |
+| Pagamenti attesi | `fatture_acquisto` aperte | Idem dal lato passivo. |
+| Rate finanziamenti | `rate_finanziamento` pagata=false su conti tipo `finanziamento` | Importo rata su `data_scadenza`. |
+| Rate crediti fiscali | `rate_finanziamento` su conti tipo `crediti_fiscali` | Come sopra ma a segno positivo. |
+| Polizze | `documenti_acquisto` tipo Polizza | Premio sulla `data_scadenza`. |
+| Liquidità iniziale | `bank_movements` ultimo saldo per conto | Saldo aggregato corrente. |
 
-**A. Elenco polizze** (tabella ultra-compatta nello stile del progetto)
-- Filtro: tutte le `documenti_acquisto` con `tipo_documento = 'Polizza'` **oppure** con `descrizione`/`ai_summary` che contengono "polizz" (fallback per docs vecchi).
-- Suddivise visivamente per categoria centro:
-  - **Costi di gara** — `centro_costo` con prefisso `CO`
-  - **Costi di commessa** — gli altri centri costo associati a una commessa (qualunque `cig` non vuoto)
-  - **Altre** — senza centro/CIG
-- Colonne: Fornitore, Descrizione, CIG (cliccabile → CommessaDetailSheet), Centro, Data documento, **Scadenza**, Giorni residui (badge: rosso scaduta, ambra ≤10 giorni, verde >10), Importo, Azioni (apri PDF, "Estrai scadenza con AI" per documenti polizza senza `data_scadenza`).
-- Editing inline della `data_scadenza` (date picker shadcn) per correzioni manuali.
+## UI/UX
 
-**B. Calendario scadenze**
-- Componente `Calendar` di shadcn (mode="single") con `modifiers` per evidenziare i giorni con scadenza polizza:
-  - `expired` (rosso), `imminent` (ambra, ≤10gg), `future` (azzurro).
-- Sotto al calendario: lista delle scadenze nei prossimi 60 giorni ordinate per data, con countdown "tra N giorni" / "scaduta da N giorni".
-- Banner in testa alla pagina con conteggio delle polizze **in scadenza entro 10 giorni** e **scadute**.
+Nuova voce sidebar **"Budget"** (icona `TrendingUp`) tra "Bilancio" e "IVA".
 
-### 4. Bottone "Estrai scadenza"
-Per polizze già caricate prima di questa modifica (senza `data_scadenza`), un bottone per riga scarica il `parsed_text` già salvato in DB e chiama una nuova edge function leggera `extract-polizza-scadenza` (solo `data_scadenza` + `tipo_documento`) per popolare i campi senza re-caricare il file.
+Pagina con 3 sezioni in tab:
 
-### 5. Memoria
-Aggiunta voce in `mem://index.md`: `[Polizze](mem://features/polizze) — Elenco polizze (costi gara + commessa) con calendario scadenze e promemoria 10gg`.
+1. **Conto Economico previsionale** — tabella ultra-compatta 13 colonne (M-0…M+11 + Totale 12m), righe espandibili per drill-down (es. dettaglio commesse che generano la riga "Ricavi da commesse"), confronto con consuntivo stesso periodo anno precedente.
+2. **Cash Flow previsionale** — tabella + grafico a barre stacked (in/out) con linea del saldo cumulato. ReferenceLine a 0 e segnalazione mesi con saldo previsto negativo (alert tesoreria).
+3. **Parametri & assunzioni** — pannello con sliders/input modificabili: anni storico (1-5), % markup medio sui ricavi di commessa, modalità distribuzione ricavi commessa (lineare / a curva S / personalizzata), inflazione costi struttura (+%), override manuale per singole voci salvati in tabella `budget_assumptions`.
 
-## Note tecniche
-- Le date in ingresso (`DD/MM/YYYY`) sono normalizzate a ISO `YYYY-MM-DD` prima dell'insert per ordinamento corretto.
-- Il calendario riusa stessi token semantici (`destructive`, `warning`/`amber`, `primary`) già usati nello Scadenzario.
-- Nessuna modifica al flusso CIG/commessa esistente: le polizze restano `documenti_acquisto` standard e continuano a comparire in Acquisti > Ricevute e nelle commesse linkate.
+Toolbar: selettore mese di partenza (default = corrente), pulsante "Ricalcola", export PDF/Excel del prospetto.
+
+## Dettagli tecnici
+
+### File da creare
+- `src/pages/Budget.tsx` — pagina principale con i 3 tab
+- `src/components/budget/ContoEconomicoPrevisionale.tsx`
+- `src/components/budget/CashFlowPrevisionale.tsx`
+- `src/components/budget/BudgetAssumptionsPanel.tsx`
+- `src/hooks/useBudgetData.ts` — aggrega dati da `useInvoiceData`, `useCssrCommesse`, `useRateFinanziamento`, `useBankData`, `useDocumentiAcquisto` e produce le righe del CE e del cash flow rolling 12 mesi
+- `src/lib/budgetEngine.ts` — funzioni pure: `buildRollingMonths`, `forecastCommessaRevenue`, `forecastHistoricalAverages`, `buildCashFlowSchedule`, `applyAssumptions`
+
+### Modifiche
+- `src/App.tsx` — route `/budget`
+- `src/components/AppSidebar.tsx` — voce menu + prefetch
+
+### Nuova tabella DB
+`budget_assumptions` — salva override e parametri (anno_orizzonte, markup %, inflazione %, override per voce/mese in JSON). RLS authenticated full access, in linea con le altre tabelle.
+
+### Calcoli chiave (in `budgetEngine.ts`)
+- **Mesi rolling**: `Array.from({length:12}, (_,i) => addMonths(start, i))`
+- **Residuo commessa**: `importo_contrattuale − Σ fatture_vendita(cig).imponibile`. Distribuzione lineare sui mesi tra `today` e `min(data_scadenza_contratto, M+11)`.
+- **Media storica per voce**: per ogni centro di costo, calcola `Σ fatture ultimi N anni / (N × 12)`; applica fattore inflazione.
+- **Cash flow**: usa date di scadenza già parsate da `paymentTerms.ts`; somma per mese; aggiungi saldo iniziale cumulativo.
+
+### Coerenza con il progetto
+- Tabelle ultra-compatte (text-xs, h-8) come da memoria progetto
+- Format `it-IT` per valute
+- `ReferenceLine` a 0 sui grafici
+- Paginazione `.range()` se servono query >1000 righe
+- Dati cachati via React Query, ricaricati on-demand
+
+## Cosa NON include questa iterazione
+- Bilancio civilistico ex art. 2425 c.c. (lasciato a integrazione futura se richiesto, perché richiede mappature contabili formali non presenti oggi).
+- Scenari multipli (best/worst case) — proponibili in seconda fase.
+- Previsione IVA periodica dettagliata (rinviata, già presente sezione IVA).
