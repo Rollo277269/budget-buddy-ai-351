@@ -5,9 +5,6 @@ import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function parseYear(d: string): number | null {
   if (!d) return null;
@@ -128,42 +125,6 @@ export default function SociPage() {
   const loading = loadingRubrica || loadingInvoices;
 
   const fmt = (v: number) => (Math.abs(v) < 0.005 ? "—" : formatCurrency(v));
-  const pct = (v: number) => `${(v * 100).toFixed(1).replace(".", ",")}%`;
-
-  // KPI: quote calcolate sul totale anno (tutte le fatture, non solo soci)
-  const kpi = useMemo(() => {
-    if (year == null) return null;
-    const yearSales = allSales.filter((s) => s.anno === year);
-    const yearPurch = allPurchases.filter((p) => p.anno === year);
-    const totVendite = yearSales.reduce((a, s) => a + (s.totale || 0), 0);
-    const totAcquisti = yearPurch.reduce((a, p) => a + (p.totale || 0), 0);
-
-    const perSocio = soci.map((socio) => {
-      const nameKey = norm(socio.denominazione);
-      const pivaKey = (socio.partita_iva || "").trim();
-      const matchSale = (s: SaleInvoice) =>
-        norm(s.cliente) === nameKey || (!!pivaKey && ((s as any).partitaIva || "").trim() === pivaKey);
-      const matchPurchase = (p: PurchaseInvoice) =>
-        norm(p.fornitore) === nameKey || (!!pivaKey && ((p as any).partitaIva || "").trim() === pivaKey);
-      const v = yearSales.filter(matchSale).reduce((a, s) => a + (s.totale || 0), 0);
-      const a = yearPurch.filter(matchPurchase).reduce((acc, p) => acc + (p.totale || 0), 0);
-      return { id: socio.id, nome: socio.denominazione, vendite: v, acquisti: a };
-    });
-
-    const totVenditeSoci = perSocio.reduce((a, x) => a + x.vendite, 0);
-    const totAcquistiSoci = perSocio.reduce((a, x) => a + x.acquisti, 0);
-
-    return {
-      totVendite,
-      totAcquisti,
-      totVenditeSoci,
-      totAcquistiSoci,
-      quotaSociVendite: totVendite > 0 ? totVenditeSoci / totVendite : 0,
-      quotaSociAcquisti: totAcquisti > 0 ? totAcquistiSoci / totAcquisti : 0,
-      perSocio: perSocio.sort((a, b) => b.vendite - a.vendite),
-      sociAttivi: perSocio.filter((s) => s.vendite > 0 || s.acquisti > 0).length,
-    };
-  }, [year, allSales, allPurchases, soci]);
 
   return (
     <div className="p-4 space-y-3">
