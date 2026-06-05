@@ -381,7 +381,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
       className={`rounded-xl border-2 border-dashed p-4 space-y-3 no-print transition-colors ${
         dragging
           ? "border-primary bg-primary/5"
-          : "border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/50"
+          : "border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/50 py-0"
       }`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -394,7 +394,7 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
       </div>
 
       {!formData && !processing && (
-        <div className="flex flex-col items-center gap-2 py-3">
+        <div className="flex flex-col items-center gap-2 py-0">
           <input
             ref={fileInputRef}
             type="file"
