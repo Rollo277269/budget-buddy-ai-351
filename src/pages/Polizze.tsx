@@ -26,23 +26,19 @@ import { cn } from "@/lib/utils";
 const REMINDER_DAYS = 10;
 
 type StatusFilter = "all" | "scaduto" | "imminenti" | "future" | "senza";
-type ColKey = "fornitore" | "numero" | "descrizione" | "tipo" | "cig" | "commessa" | "centro" | "data_doc" | "scadenza" | "stato" | "premio" | "garantito" | "azioni";
+type ColKey = "fornitore" | "tipo_numero" | "descrizione" | "cig_commessa" | "centro" | "date" | "stato" | "importi" | "azioni";
 const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "fornitore", label: "Fornitore" },
-  { key: "numero", label: "N° polizza" },
+  { key: "tipo_numero", label: "Tipo / N° polizza" },
   { key: "descrizione", label: "Descrizione" },
-  { key: "tipo", label: "Tipo" },
-  { key: "cig", label: "CIG" },
-  { key: "commessa", label: "Commessa" },
+  { key: "cig_commessa", label: "CIG / Commessa" },
   { key: "centro", label: "Centro" },
-  { key: "data_doc", label: "Data doc." },
-  { key: "scadenza", label: "Scadenza" },
+  { key: "date", label: "Data doc. / Scadenza" },
   { key: "stato", label: "Stato" },
-  { key: "premio", label: "Premio" },
-  { key: "garantito", label: "Importo garantito" },
+  { key: "importi", label: "Premio / Importo garantito" },
   { key: "azioni", label: "Azioni" },
 ];
-const COLS_STORAGE_KEY = "polizze-visible-cols";
+const COLS_STORAGE_KEY = "polizze-visible-cols-v2";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function parseIsoOrItDate(s: string | null | undefined): Date | null {
@@ -293,20 +289,13 @@ export default function Polizze() {
       const getVal = (d: any): string | number | null => {
         switch (sortCol) {
           case "fornitore": return (d.fornitore || "").toLowerCase();
-          case "numero": return (d.numero || "").toLowerCase();
+          case "tipo_numero": return `${classifyTipoPolizza(d)} ${d.numero || ""}`.toLowerCase();
           case "descrizione": return (d.descrizione || "").toLowerCase();
-          case "tipo": return classifyTipoPolizza(d).toLowerCase();
-          case "cig": return (d.cig || "").toLowerCase();
-          case "commessa": return getCommessaNumero(d.cig).toLowerCase();
+          case "cig_commessa": return `${d.cig || ""} ${getCommessaNumero(d.cig)}`.toLowerCase();
           case "centro": return (d.centro_costo || "").toLowerCase();
-          case "data_doc": {
-            const dt = parseIsoOrItDate(d.data_documento);
-            return dt ? dt.getTime() : null;
-          }
-          case "scadenza": return d._date ? d._date.getTime() : null;
+          case "date": return d._date ? d._date.getTime() : (parseIsoOrItDate(d.data_documento)?.getTime() ?? null);
           case "stato": return d._date ? d._days : null;
-          case "premio": return d.importo != null ? Number(d.importo) : null;
-          case "garantito": return d.importo_garantito != null ? Number(d.importo_garantito) : null;
+          case "importi": return d.importo != null ? Number(d.importo) : (d.importo_garantito != null ? Number(d.importo_garantito) : null);
           default: return null;
         }
       };
@@ -573,17 +562,13 @@ export default function Polizze() {
                 <TableHeader>
                   <TableRow className="h-8">
                     {isVisible("fornitore") && <SortableTh col="fornitore" label="Fornitore" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("numero") && <SortableTh col="numero" label="N° polizza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("tipo_numero") && <SortableTh col="tipo_numero" label="Tipo / N° polizza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("descrizione") && <SortableTh col="descrizione" label="Descrizione" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("tipo") && <SortableTh col="tipo" label="Tipo" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("cig") && <SortableTh col="cig" label="CIG" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("commessa") && <SortableTh col="commessa" label="Commessa" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("cig_commessa") && <SortableTh col="cig_commessa" label="CIG / Commessa" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("centro") && <SortableTh col="centro" label="Centro" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("data_doc") && <SortableTh col="data_doc" label="Data doc." sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("scadenza") && <SortableTh col="scadenza" label="Scadenza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("date") && <SortableTh col="date" label="Data doc. / Scadenza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("stato") && <SortableTh col="stato" label="Stato" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("premio") && <SortableTh col="premio" label="Premio" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
-                    {isVisible("garantito") && <SortableTh col="garantito" label="Importo garantito" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
+                    {isVisible("importi") && <SortableTh col="importi" label="Premio / Importo garantito" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
                     {isVisible("azioni") && <TableHead className="text-[11px] h-8 px-2 w-[100px]">Azioni</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -600,37 +585,47 @@ export default function Polizze() {
                       return (
                         <TableRow key={d.id} className="hover:bg-muted/40">
                           {isVisible("fornitore") && <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>}
-                          {isVisible("numero") && <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>}
-                          {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
-                          {isVisible("tipo") && <TableCell className="text-xs px-2 py-1.5"><TipoPolizzaBadge tipo={classifyTipoPolizza(d)} /></TableCell>}
-                          {isVisible("cig") && <TableCell className="text-xs px-2 py-1.5 font-mono">
-                            <EditableCigCell
-                              value={d.cig || ""}
-                              onSave={async (next) => {
-                                await updateField(d.id, "cig", next);
-                                toast.success("CIG aggiornato");
-                              }}
-                            />
+                          {isVisible("tipo_numero") && <TableCell className="text-xs px-2 py-1.5">
+                            <div className="flex flex-col gap-0.5">
+                              <TipoPolizzaBadge tipo={classifyTipoPolizza(d)} />
+                              <span className="font-mono">{d.numero || "—"}</span>
+                            </div>
                           </TableCell>}
-                          {isVisible("commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
-                            {(() => {
-                              const num = getCommessaNumero(d.cig);
-                              if (!num) return <span className="text-muted-foreground">—</span>;
-                              return <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{num}</Link>;
-                            })()}
+                          {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
+                          {isVisible("cig_commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
+                            <div className="flex flex-col gap-0.5">
+                              <EditableCigCell
+                                value={d.cig || ""}
+                                onSave={async (next) => {
+                                  await updateField(d.id, "cig", next);
+                                  toast.success("CIG aggiornato");
+                                }}
+                              />
+                              {(() => {
+                                const num = getCommessaNumero(d.cig);
+                                if (!num) return <span className="text-muted-foreground">—</span>;
+                                return <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{num}</Link>;
+                              })()}
+                            </div>
                           </TableCell>}
                           {isVisible("centro") && <TableCell className="text-xs px-2 py-1.5">
                             {d.centro_costo ? (
                               <span className="font-mono">{d.centro_costo}{centroDesc ? <span className="text-muted-foreground"> – {centroDesc}</span> : null}</span>
                             ) : "—"}
                           </TableCell>}
-                          {isVisible("data_doc") && <TableCell className="text-xs px-2 py-1.5">{d.data_documento || "—"}</TableCell>}
-                          {isVisible("scadenza") && <TableCell className="text-xs px-2 py-1.5">
-                            <ScadenzaCell value={d._date} onChange={(date) => handleManualDate(d.id, date)} />
+                          {isVisible("date") && <TableCell className="text-xs px-2 py-1.5">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-muted-foreground text-[10px]">Doc: {d.data_documento || "—"}</span>
+                              <ScadenzaCell value={d._date} onChange={(date) => handleManualDate(d.id, date)} />
+                            </div>
                           </TableCell>}
                           {isVisible("stato") && <TableCell className="text-xs px-2 py-1.5"><StatoLabel date={d._date} /></TableCell>}
-                          {isVisible("premio") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono">{d.importo != null ? formatCurrency(d.importo) : "—"}</TableCell>}
-                          {isVisible("garantito") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono text-muted-foreground">{(d as any).importo_garantito != null ? formatCurrency((d as any).importo_garantito) : "—"}</TableCell>}
+                          {isVisible("importi") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono">
+                            <div className="flex flex-col gap-0.5 items-end">
+                              <span>{d.importo != null ? formatCurrency(d.importo) : "—"}</span>
+                              <span className="text-muted-foreground text-[10px]">Gar: {(d as any).importo_garantito != null ? formatCurrency((d as any).importo_garantito) : "—"}</span>
+                            </div>
+                          </TableCell>}
                           {isVisible("azioni") && <TableCell className="px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <Button size="icon" variant="ghost" className="h-6 w-6" title="Apri PDF" onClick={() => openPdf(d)}>
