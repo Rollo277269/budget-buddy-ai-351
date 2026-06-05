@@ -289,20 +289,13 @@ export default function Polizze() {
       const getVal = (d: any): string | number | null => {
         switch (sortCol) {
           case "fornitore": return (d.fornitore || "").toLowerCase();
-          case "numero": return (d.numero || "").toLowerCase();
+          case "tipo_numero": return `${classifyTipoPolizza(d)} ${d.numero || ""}`.toLowerCase();
           case "descrizione": return (d.descrizione || "").toLowerCase();
-          case "tipo": return classifyTipoPolizza(d).toLowerCase();
-          case "cig": return (d.cig || "").toLowerCase();
-          case "commessa": return getCommessaNumero(d.cig).toLowerCase();
+          case "cig_commessa": return `${d.cig || ""} ${getCommessaNumero(d.cig)}`.toLowerCase();
           case "centro": return (d.centro_costo || "").toLowerCase();
-          case "data_doc": {
-            const dt = parseIsoOrItDate(d.data_documento);
-            return dt ? dt.getTime() : null;
-          }
-          case "scadenza": return d._date ? d._date.getTime() : null;
+          case "date": return d._date ? d._date.getTime() : (parseIsoOrItDate(d.data_documento)?.getTime() ?? null);
           case "stato": return d._date ? d._days : null;
-          case "premio": return d.importo != null ? Number(d.importo) : null;
-          case "garantito": return d.importo_garantito != null ? Number(d.importo_garantito) : null;
+          case "importi": return d.importo != null ? Number(d.importo) : (d.importo_garantito != null ? Number(d.importo_garantito) : null);
           default: return null;
         }
       };
