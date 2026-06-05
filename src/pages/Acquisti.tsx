@@ -1155,13 +1155,13 @@ const AcquistiPage = () => {
         {/* ── Schede: Ricevute e Documenti / Fatture XML ── */}
         <div className="px-4 pt-3 bg-white">
           <Tabs defaultValue="xml" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 bg-white">
-              <TabsTrigger value="xml" className="text-xs gap-1.5">
+            <TabsList className="w-full grid grid-cols-2 bg-white rounded-none opacity-70">
+              <TabsTrigger value="xml" className="gap-1.5 text-sm shadow opacity-100 bg-sky-600 text-white">
                 <FileCode2 className="h-3.5 w-3.5" />
                 Fatture XML
                 {xmlUnmatchedCount > 0 && <Badge variant="destructive" className="text-[10px] ml-1 h-4 px-1">{xmlUnmatchedCount}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="documenti" className="text-xs gap-1.5">
+              <TabsTrigger value="documenti" className="gap-1.5 text-sm shadow opacity-100 bg-sky-600 text-white">
                 <FileText className="h-3.5 w-3.5" />
                 Ricevute e Documenti
               </TabsTrigger>
