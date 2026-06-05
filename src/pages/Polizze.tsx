@@ -226,7 +226,7 @@ export default function Polizze() {
           case "numero": return (d.numero || "").toLowerCase();
           case "descrizione": return (d.descrizione || "").toLowerCase();
           case "cig": return (d.cig || "").toLowerCase();
-          case "commessa": return (d.cig ? commesseByCig.get(d.cig)?.numero_repertorio ?? "" : "").toLowerCase();
+          case "commessa": return (lookupCommessa(d.cig)?.numero_repertorio ?? "").toLowerCase();
           case "centro": return (d.centro_costo || "").toLowerCase();
           case "data_doc": {
             const dt = parseIsoOrItDate(d.data_documento);
@@ -258,7 +258,7 @@ export default function Polizze() {
       if (!b._date) return -1;
       return a._date.getTime() - b._date.getTime();
     });
-  }, [filtered, sortCol, sortDir, commesseByCig]);
+  }, [filtered, sortCol, sortDir, lookupCommessa]);
 
   const counts = useMemo(() => {
     let scaduto = 0, imminenti = 0, future = 0, senza = 0;
@@ -521,7 +521,7 @@ export default function Polizze() {
                           </TableCell>}
                           {isVisible("commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             {(() => {
-                              const c = d.cig ? commesseByCig.get(d.cig) : null;
+                              const c = lookupCommessa(d.cig);
                               const num = c?.numero_repertorio;
                               if (!num) return <span className="text-muted-foreground">—</span>;
                               return <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{num}</Link>;
