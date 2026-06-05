@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { runLocalStorageMigration } from "@/lib/localStorageMigration";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 const AuthPage = lazy(() => import("./pages/Auth"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPassword"));
 
 // Lazy load all pages for faster initial render
 const Index = lazy(() => import("./pages/Index"));
@@ -52,6 +53,7 @@ const App = () => {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               path="*"
               element={

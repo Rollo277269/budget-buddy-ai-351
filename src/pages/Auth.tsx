@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -15,6 +16,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -56,6 +59,21 @@ export default function Auth() {
     }
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Email di reset inviata. Controlla la tua casella.");
+    setForgotOpen(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
@@ -82,6 +100,13 @@ export default function Auth() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Accedi
                 </Button>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground underline w-full text-center"
+                  onClick={() => { setForgotEmail(email); setForgotOpen(true); }}
+                >
+                  Password dimenticata?
+                </button>
               </form>
             </TabsContent>
             <TabsContent value="signup">
@@ -111,6 +136,25 @@ export default function Auth() {
           </Button>
         </CardContent>
       </Card>
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reimposta password</DialogTitle>
+            <DialogDescription>
+              Inserisci la tua email: ti invieremo un link per scegliere una nuova password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgot} className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="forgotEmail">Email</Label>
+              <Input id="forgotEmail" type="email" required value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Invia link di reset
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
