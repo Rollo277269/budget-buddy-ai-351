@@ -5,9 +5,6 @@ import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function parseYear(d: string): number | null {
   if (!d) return null;
@@ -128,42 +125,6 @@ export default function SociPage() {
   const loading = loadingRubrica || loadingInvoices;
 
   const fmt = (v: number) => (Math.abs(v) < 0.005 ? "—" : formatCurrency(v));
-  const pct = (v: number) => `${(v * 100).toFixed(1).replace(".", ",")}%`;
-
-  // KPI: quote calcolate sul totale anno (tutte le fatture, non solo soci)
-  const kpi = useMemo(() => {
-    if (year == null) return null;
-    const yearSales = allSales.filter((s) => s.anno === year);
-    const yearPurch = allPurchases.filter((p) => p.anno === year);
-    const totVendite = yearSales.reduce((a, s) => a + (s.totale || 0), 0);
-    const totAcquisti = yearPurch.reduce((a, p) => a + (p.totale || 0), 0);
-
-    const perSocio = soci.map((socio) => {
-      const nameKey = norm(socio.denominazione);
-      const pivaKey = (socio.partita_iva || "").trim();
-      const matchSale = (s: SaleInvoice) =>
-        norm(s.cliente) === nameKey || (!!pivaKey && ((s as any).partitaIva || "").trim() === pivaKey);
-      const matchPurchase = (p: PurchaseInvoice) =>
-        norm(p.fornitore) === nameKey || (!!pivaKey && ((p as any).partitaIva || "").trim() === pivaKey);
-      const v = yearSales.filter(matchSale).reduce((a, s) => a + (s.totale || 0), 0);
-      const a = yearPurch.filter(matchPurchase).reduce((acc, p) => acc + (p.totale || 0), 0);
-      return { id: socio.id, nome: socio.denominazione, vendite: v, acquisti: a };
-    });
-
-    const totVenditeSoci = perSocio.reduce((a, x) => a + x.vendite, 0);
-    const totAcquistiSoci = perSocio.reduce((a, x) => a + x.acquisti, 0);
-
-    return {
-      totVendite,
-      totAcquisti,
-      totVenditeSoci,
-      totAcquistiSoci,
-      quotaSociVendite: totVendite > 0 ? totVenditeSoci / totVendite : 0,
-      quotaSociAcquisti: totAcquisti > 0 ? totAcquistiSoci / totAcquisti : 0,
-      perSocio: perSocio.sort((a, b) => b.vendite - a.vendite),
-      sociAttivi: perSocio.filter((s) => s.vendite > 0 || s.acquisti > 0).length,
-    };
-  }, [year, allSales, allPurchases, soci]);
 
   return (
     <div className="p-4 space-y-3">
@@ -204,117 +165,6 @@ export default function SociPage() {
           </Select>
         </div>
       </div>
-
-      {/* KPI Direzione */}
-      {!loading && kpi && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              KPI Direzione {year}
-            </h2>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="text-xs max-w-xs">
-                  Indicatori derivati dalle fatture. Quote ammissione e avvalimenti
-                  richiedono un dato dedicato non ancora presente in DB.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card>
-              <CardHeader className="pb-1">
-                <CardTitle className="text-xs text-muted-foreground font-normal">
-                  Quota Soci su Vendite
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold font-mono">{pct(kpi.quotaSociVendite)}</div>
-                <div className="text-[10px] text-muted-foreground font-mono">
-                  {fmt(kpi.totVenditeSoci)} / {fmt(kpi.totVendite)}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-1">
-                <CardTitle className="text-xs text-muted-foreground font-normal">
-                  Quota Soci su Acquisti
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold font-mono">{pct(kpi.quotaSociAcquisti)}</div>
-                <div className="text-[10px] text-muted-foreground font-mono">
-                  {fmt(kpi.totAcquistiSoci)} / {fmt(kpi.totAcquisti)}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-1">
-                <CardTitle className="text-xs text-muted-foreground font-normal">
-                  Soci attivi
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold font-mono">{kpi.sociAttivi}</div>
-                <div className="text-[10px] text-muted-foreground">su {soci.length} totali</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-1">
-                <CardTitle className="text-xs text-muted-foreground font-normal">
-                  Quota Ammissione / Avvalimenti
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-sm font-semibold text-muted-foreground">N/D</div>
-                <div className="text-[10px] text-muted-foreground">
-                  Manca dato dedicato in archivio
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quota lavori per Socio */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold">
-                Quota lavori per Socio · {year}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-1.5">
-              {kpi.perSocio.length === 0 && (
-                <div className="text-xs text-muted-foreground">Nessun socio.</div>
-              )}
-              {kpi.perSocio.map((s) => {
-                const quotaV = kpi.totVendite > 0 ? s.vendite / kpi.totVendite : 0;
-                const quotaA = kpi.totAcquisti > 0 ? s.acquisti / kpi.totAcquisti : 0;
-                return (
-                  <div key={s.id} className="flex items-center gap-3 text-xs">
-                    <div className="w-48 truncate" title={s.nome}>{s.nome}</div>
-                    <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
-                      <div
-                        className="h-full bg-income"
-                        style={{ width: `${Math.min(100, quotaV * 100)}%` }}
-                      />
-                    </div>
-                    <div className="w-16 text-right font-mono">{pct(quotaV)}</div>
-                    <div className="w-24 text-right font-mono text-muted-foreground">
-                      {fmt(s.vendite)}
-                    </div>
-                    <div className="w-20 text-right font-mono text-expense text-[10px]">
-                      acq {pct(quotaA)}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       <div className="border rounded-md bg-card overflow-x-auto">
         <table className="w-full text-xs">

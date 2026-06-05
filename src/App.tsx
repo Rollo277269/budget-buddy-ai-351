@@ -27,6 +27,7 @@ const ScadenzarioPage = lazy(() => import("./pages/Calendario"));
 const IvaPage = lazy(() => import("./pages/Iva"));
 const RubricaPage = lazy(() => import("./pages/Rubrica"));
 const SociPage = lazy(() => import("./pages/Soci"));
+const KpiPage = lazy(() => import("./pages/Kpi"));
 const DiagnosticaPage = lazy(() => import("./pages/Diagnostica"));
 const PolizzePage = lazy(() => import("./pages/Polizze"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -77,6 +78,7 @@ const App = () => {
                       <Route path="/iva" element={<IvaPage />} />
                       <Route path="/rubrica" element={<RubricaPage />} />
                       <Route path="/soci" element={<SociPage />} />
+                      <Route path="/kpi" element={<KpiPage />} />
                       <Route path="/diagnostica" element={<DiagnosticaPage />} />
                       <Route path="/polizze" element={<PolizzePage />} />
                       <Route path="*" element={<NotFound />} />
