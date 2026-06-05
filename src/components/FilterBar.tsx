@@ -128,7 +128,7 @@ export function FilterBar({ filters, onFiltersChange, options, hideCliente, hide
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <div className="space-y-1.5 min-w-[160px]">
+      <div className="space-y-1.5 min-w-[160px] text-black">
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Anno</label>
         <Combobox
           value={filters.anno}
