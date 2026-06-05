@@ -70,6 +70,11 @@ export default function Auth() {
       toast.error(error.message);
       return;
     }
+    await supabase.from("password_reset_audit").insert({
+      event: "requested",
+      email: forgotEmail,
+      user_agent: navigator.userAgent.slice(0, 300),
+    });
     toast.success("Email di reset inviata. Controlla la tua casella.");
     setForgotOpen(false);
   };
