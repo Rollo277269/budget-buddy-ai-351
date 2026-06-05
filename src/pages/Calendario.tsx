@@ -68,7 +68,7 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
   { key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> },
 ];
 
-export default function ScadenzarioPage() {
+export default function CalendarioPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
   const { rate, loading: loadingRate } = useRateFinanziamento();
   const { conti } = useContiCorrenti();
