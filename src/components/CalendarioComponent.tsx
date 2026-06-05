@@ -252,18 +252,20 @@ export function CalendarioComponent({ events, centerSlot }: Props) {
             <span className="text-sm font-semibold ml-2">{title}</span>
           </div>
           {centerSlot && <div className="flex-shrink-0">{centerSlot}</div>}
-          <div className="flex rounded-md border overflow-hidden flex-1 justify-end">
-            {(["month", "week", "day"] as ViewMode[]).map((v) => (
-              <Button
-                key={v}
-                variant={viewMode === v ? "default" : "ghost"}
-                size="sm"
-                className="h-7 text-xs rounded-none px-3"
-                onClick={() => setViewMode(v)}
-              >
-                {{ month: "Mese", week: "Settimana", day: "Giorno" }[v]}
-              </Button>
-            ))}
+          <div className="flex-1 flex justify-end">
+            <div className="flex rounded-md border overflow-hidden">
+              {(["month", "week", "day"] as ViewMode[]).map((v) => (
+                <Button
+                  key={v}
+                  variant={viewMode === v ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 text-xs rounded-none px-3"
+                  onClick={() => setViewMode(v)}
+                >
+                  {{ month: "Mese", week: "Settimana", day: "Giorno" }[v]}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 
