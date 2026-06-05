@@ -44,6 +44,13 @@ export default function ResetPassword() {
       toast.error(error.message);
       return;
     }
+    const { data: userData } = await supabase.auth.getUser();
+    await supabase.from("password_reset_audit").insert({
+      event: "completed",
+      email: userData.user?.email ?? null,
+      user_id: userData.user?.id ?? null,
+      user_agent: navigator.userAgent.slice(0, 300),
+    });
     toast.success("Password aggiornata. Accedi con la nuova password.");
     await supabase.auth.signOut();
     navigate("/auth", { replace: true });
