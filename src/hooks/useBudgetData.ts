@@ -43,25 +43,25 @@ export function saveAssumptions(a: BudgetAssumptions): void {
   localStorage.setItem(ASSUMPTIONS_KEY, JSON.stringify(a));
 }
 
-function loadBankInitialBalance(): Promise<number> {
-  // Sum latest "saldo" per account
-  return supabase
-    .from("bank_movements" as any)
-    .select("account_id, data, saldo")
-    .order("data", { ascending: false })
-    .limit(2000)
-    .then(({ data }) => {
-      if (!data) return 0;
-      const seen = new Set<string>();
-      let total = 0;
-      for (const row of data as any[]) {
-        if (seen.has(row.account_id)) continue;
-        seen.add(row.account_id);
-        total += Number(row.saldo) || 0;
-      }
-      return total;
-    })
-    .catch(() => 0);
+async function loadBankInitialBalance(): Promise<number> {
+  try {
+    const { data } = await supabase
+      .from("bank_movements" as any)
+      .select("account_id, data, saldo")
+      .order("data", { ascending: false })
+      .limit(2000);
+    if (!data) return 0;
+    const seen = new Set<string>();
+    let total = 0;
+    for (const row of data as any[]) {
+      if (seen.has(row.account_id)) continue;
+      seen.add(row.account_id);
+      total += Number(row.saldo) || 0;
+    }
+    return total;
+  } catch {
+    return 0;
+  }
 }
 
 export function useBudgetData(assumptions: BudgetAssumptions) {
