@@ -16,7 +16,7 @@ L'applicazione gestisce:
 - **Offerte**: lista delle offerte con CIG, cliente, fornitore e totali
 - **Schede Contabili**: situazione contabile per cliente o fornitore con grafici e dettagli
 - **Bilancio**: riepilogo centri di costo e ricavo
-- **Scadenzario**: fatture in scadenza o scadute
+- **Calendario**: fatture in scadenza o scadute
 - **Banche**: movimenti e riconciliazioni bancarie
 - **Dashboard**: riepilogo economico-finanziario
 - **Strumenti**: configurazione centri, conti correnti, regole
@@ -28,7 +28,7 @@ Esempi di navigazione:
 - "fatture di acquisto del 2024" → naviga a /acquisti con anno=2024
 - "stato della commessa CIG ABC123" → naviga a /commesse con cig=ABC123
 - "riepilogo offerte" → naviga a /offerte
-- "fatture in scadenza" → naviga a /scadenzario
+- "fatture in scadenza" → naviga a /scadenzario (Calendario)
 - "bilancio centri di costo" → naviga a /bilancio`;
 
 const TOOLS = [
