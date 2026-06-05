@@ -25,7 +25,7 @@ interface MenuItem {
 
 export const defaultItems: MenuItem[] = [
   { title: "Cruscotto", url: "/", icon: LayoutDashboard },
-  { title: "Scadenzario", url: "/scadenzario", icon: CalendarClock },
+  { title: "Calendario", url: "/scadenzario", icon: CalendarClock },
   { title: "Polizze", url: "/polizze", icon: ShieldCheck },
   { title: "Vendite", url: "/vendite", icon: FileOutput },
   { title: "Acquisti", url: "/acquisti", icon: FileInput },
@@ -43,7 +43,7 @@ export const defaultItems: MenuItem[] = [
 // Prefetch lazy page chunks on hover so navigation feels instant.
 const pagePrefetchers: Record<string, () => Promise<unknown>> = {
   "/": () => import("@/pages/Index"),
-  "/scadenzario": () => import("@/pages/Scadenzario"),
+  "/scadenzario": () => import("@/pages/Calendario"),
   "/polizze": () => import("@/pages/Polizze"),
   "/vendite": () => import("@/pages/Vendite"),
   "/acquisti": () => import("@/pages/Acquisti"),

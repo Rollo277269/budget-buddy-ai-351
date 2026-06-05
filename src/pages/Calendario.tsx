@@ -7,7 +7,7 @@ import { useContiCorrenti } from "@/hooks/useContiCorrenti";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScadenzarioCalendar } from "@/components/ScadenzarioCalendar";
+import { CalendarioComponent } from "@/components/CalendarioComponent";
 import { AlertTriangle, Clock, CheckCircle2, Landmark, CalendarDays, List, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -68,7 +68,7 @@ const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
   { key: "cig", label: "CIG", filterable: true, defaultHidden: true, render: (r) => r.cig ? <span className="text-xs font-mono">{r.cig}</span> : <span className="text-xs text-muted-foreground">—</span> },
 ];
 
-export default function ScadenzarioPage() {
+export default function CalendarioPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
   const { rate, loading: loadingRate } = useRateFinanziamento();
   const { conti } = useContiCorrenti();
@@ -229,7 +229,7 @@ export default function ScadenzarioPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="calendario">
-          <ScadenzarioCalendar events={rows} />
+          <CalendarioComponent events={rows} />
         </TabsContent>
         <TabsContent value="tabella">
           <DataTable<ScadenzaRow>

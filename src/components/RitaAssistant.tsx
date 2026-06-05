@@ -353,7 +353,7 @@ function getPageName(path: string): string {
      "/offerte": "Gare",
     "/schede-contabili": "Schede Contabili",
     "/bilancio": "Bilancio",
-    "/scadenzario": "Scadenzario",
+    "/scadenzario": "Calendario",
     "/banche": "Banche",
     "/strumenti": "Strumenti",
   };
