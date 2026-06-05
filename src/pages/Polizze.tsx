@@ -549,6 +549,30 @@ function LegendDot({ className }: { className?: string }) {
   return <span className={cn("inline-block h-2 w-2 rounded-full", className)} />;
 }
 
+function SortableTh({ col, label, sortCol, sortDir, onToggle, align }: {
+  col: ColKey;
+  label: string;
+  sortCol: ColKey | null;
+  sortDir: "asc" | "desc" | null;
+  onToggle: (k: ColKey) => void;
+  align?: "right";
+}) {
+  const active = sortCol === col && sortDir;
+  return (
+    <TableHead className={cn("text-[11px] h-8 px-2", align === "right" && "text-right")}>
+      <button
+        type="button"
+        onClick={() => onToggle(col)}
+        className={cn("inline-flex items-center gap-1 hover:text-foreground", align === "right" && "justify-end w-full")}
+        title={`Ordina per ${label}`}
+      >
+        {label}
+        {active === "asc" ? <ArrowUp className="h-3 w-3" /> : active === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+      </button>
+    </TableHead>
+  );
+}
+
 function StatoLabel({ date }: { date: Date | null }) {
   if (!date) return <Badge variant="outline" className="text-[10px]">Senza scadenza</Badge>;
   const days = daysUntil(date);
