@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check } from "lucide-react";
-import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpDown, Link2 } from "lucide-react";
+import { extractCigCandidates } from "@/lib/cigCoherence";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentiAcquisto, type DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
@@ -114,6 +115,7 @@ export default function Polizze() {
   const { centriCosto } = useCentriData();
   const { byCig: commesseByCig } = useCssrCommesse();
   const [extractingId, setExtractingId] = useState<string | null>(null);
+  const [reassociating, setReassociating] = useState(false);
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "gara" | "commessa" | "altre">("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -322,6 +324,47 @@ export default function Polizze() {
     }
   }, []);
 
+  const handleReassociaCig = useCallback(async () => {
+    setReassociating(true);
+    try {
+      const cigSet = new Set<string>();
+      commesseByCig.forEach((_v, k) => { if (k) cigSet.add(k.toUpperCase()); });
+      if (cigSet.size === 0) {
+        toast.error("Nessuna commessa con CIG disponibile");
+        return;
+      }
+      let updated = 0;
+      let alreadyOk = 0;
+      let notFound = 0;
+      const updates: { id: string; cig: string }[] = [];
+      for (const d of polizze) {
+        const currentCig = (d.cig || "").trim().toUpperCase();
+        if (currentCig && cigSet.has(currentCig)) { alreadyOk++; continue; }
+        const text = `${d.descrizione || ""}\n${d.ai_summary || ""}\n${d.file_name || ""}\n${d.parsed_text || ""}`;
+        const { all, nearKeyword } = extractCigCandidates(text);
+        const candidates = [...nearKeyword, ...all];
+        const match = candidates.find((c) => cigSet.has(c));
+        if (!match) { notFound++; continue; }
+        if (match !== currentCig) updates.push({ id: d.id, cig: match });
+        else alreadyOk++;
+      }
+      for (const u of updates) {
+        const { error } = await supabase
+          .from("documenti_acquisto" as any)
+          .update({ cig: u.cig } as any)
+          .eq("id", u.id);
+        if (!error) updated++;
+      }
+      if (updated > 0) await refresh();
+      toast.success(`Riassociazione completata: ${updated} aggiornate, ${alreadyOk} già OK, ${notFound} senza CIG riconosciuto`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Errore riassociazione CIG");
+    } finally {
+      setReassociating(false);
+    }
+  }, [polizze, commesseByCig, refresh]);
+
   return (
     <div className="p-4 space-y-4">
       {/* Banner riassuntivo — clickable filters */}
@@ -405,6 +448,17 @@ export default function Polizze() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={handleReassociaCig}
+                  disabled={reassociating}
+                  title="Cerca un CIG nel testo di ogni polizza e collegalo alla commessa corrispondente"
+                >
+                  {reassociating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+                  Riassocia CIG
+                </Button>
               </div>
             </div>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-2">
