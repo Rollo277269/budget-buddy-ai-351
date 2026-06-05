@@ -43,7 +43,9 @@ export default function SociPage() {
   }, [allSales, allPurchases]);
 
   const soci = useMemo(
-    () => contatti.filter((c) => c.tipo === "socio").sort((a, b) => a.denominazione.localeCompare(b.denominazione, "it")),
+    () => contatti
+      .filter((c) => (c.tipo || "").toLowerCase().split(",").map((t) => t.trim()).includes("socio"))
+      .sort((a, b) => a.denominazione.localeCompare(b.denominazione, "it")),
     [contatti]
   );
 
