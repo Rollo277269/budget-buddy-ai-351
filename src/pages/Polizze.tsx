@@ -118,7 +118,14 @@ export default function Polizze() {
   const [activeTab, setActiveTab] = useState<"all" | "gara" | "commessa" | "altre">("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [yearFilter, setYearFilter] = useState<string>("all");
-  const [commessaSort, setCommessaSort] = useState<"asc" | "desc" | null>(null);
+  const [sortCol, setSortCol] = useState<ColKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+  const toggleSort = useCallback((k: ColKey) => {
+    if (sortCol !== k) { setSortCol(k); setSortDir("asc"); return; }
+    if (sortDir === "asc") setSortDir("desc");
+    else if (sortDir === "desc") { setSortCol(null); setSortDir(null); }
+    else setSortDir("asc");
+  }, [sortCol, sortDir]);
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => {
     try {
       const saved = localStorage.getItem(COLS_STORAGE_KEY);
@@ -199,15 +206,37 @@ export default function Polizze() {
   }, [enriched]);
 
   const sorted = useMemo(() => {
-    if (commessaSort) {
-      const dir = commessaSort === "asc" ? 1 : -1;
+    if (sortCol && sortDir) {
+      const dir = sortDir === "asc" ? 1 : -1;
+      const getVal = (d: any): string | number | null => {
+        switch (sortCol) {
+          case "fornitore": return (d.fornitore || "").toLowerCase();
+          case "numero": return (d.numero || "").toLowerCase();
+          case "descrizione": return (d.descrizione || "").toLowerCase();
+          case "cig": return (d.cig || "").toLowerCase();
+          case "commessa": return (d.cig ? commesseByCig.get(d.cig)?.numero_repertorio ?? "" : "").toLowerCase();
+          case "centro": return (d.centro_costo || "").toLowerCase();
+          case "data_doc": {
+            const dt = parseIsoOrItDate(d.data_documento);
+            return dt ? dt.getTime() : null;
+          }
+          case "scadenza": return d._date ? d._date.getTime() : null;
+          case "stato": return d._date ? d._days : null;
+          case "premio": return d.importo != null ? Number(d.importo) : null;
+          case "garantito": return d.importo_garantito != null ? Number(d.importo_garantito) : null;
+          default: return null;
+        }
+      };
       return [...filtered].sort((a, b) => {
-        const na = a.cig ? commesseByCig.get(a.cig)?.numero_repertorio ?? "" : "";
-        const nb = b.cig ? commesseByCig.get(b.cig)?.numero_repertorio ?? "" : "";
-        if (!na && !nb) return 0;
-        if (!na) return 1;
-        if (!nb) return -1;
-        return na.localeCompare(nb, undefined, { numeric: true }) * dir;
+        const va = getVal(a);
+        const vb = getVal(b);
+        const aEmpty = va === null || va === "" || (typeof va === "number" && isNaN(va));
+        const bEmpty = vb === null || vb === "" || (typeof vb === "number" && isNaN(vb));
+        if (aEmpty && bEmpty) return 0;
+        if (aEmpty) return 1;
+        if (bEmpty) return -1;
+        if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+        return String(va).localeCompare(String(vb), undefined, { numeric: true }) * dir;
       });
     }
     return [...filtered].sort((a, b) => {
@@ -217,7 +246,7 @@ export default function Polizze() {
       if (!b._date) return -1;
       return a._date.getTime() - b._date.getTime();
     });
-  }, [filtered, commessaSort, commesseByCig]);
+  }, [filtered, sortCol, sortDir, commesseByCig]);
 
   const counts = useMemo(() => {
     let scaduto = 0, imminenti = 0, future = 0, senza = 0;
@@ -392,29 +421,17 @@ export default function Polizze() {
               <Table>
                 <TableHeader>
                   <TableRow className="h-8">
-                    {isVisible("fornitore") && <TableHead className="text-[11px] h-8 px-2">Fornitore</TableHead>}
-                    {isVisible("numero") && <TableHead className="text-[11px] h-8 px-2">N° polizza</TableHead>}
-                    {isVisible("descrizione") && <TableHead className="text-[11px] h-8 px-2">Descrizione</TableHead>}
-                    {isVisible("cig") && <TableHead className="text-[11px] h-8 px-2">CIG</TableHead>}
-                    {isVisible("commessa") && (
-                      <TableHead className="text-[11px] h-8 px-2">
-                        <button
-                          type="button"
-                          onClick={() => setCommessaSort((s) => s === "asc" ? "desc" : s === "desc" ? null : "asc")}
-                          className="inline-flex items-center gap-1 hover:text-foreground"
-                          title="Ordina per Commessa"
-                        >
-                          Commessa
-                          {commessaSort === "asc" ? <ArrowUp className="h-3 w-3" /> : commessaSort === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                        </button>
-                      </TableHead>
-                    )}
-                    {isVisible("centro") && <TableHead className="text-[11px] h-8 px-2">Centro</TableHead>}
-                    {isVisible("data_doc") && <TableHead className="text-[11px] h-8 px-2">Data doc.</TableHead>}
-                    {isVisible("scadenza") && <TableHead className="text-[11px] h-8 px-2">Scadenza</TableHead>}
-                    {isVisible("stato") && <TableHead className="text-[11px] h-8 px-2">Stato</TableHead>}
-                    {isVisible("premio") && <TableHead className="text-[11px] h-8 px-2 text-right">Premio</TableHead>}
-                    {isVisible("garantito") && <TableHead className="text-[11px] h-8 px-2 text-right">Importo garantito</TableHead>}
+                    {isVisible("fornitore") && <SortableTh col="fornitore" label="Fornitore" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("numero") && <SortableTh col="numero" label="N° polizza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("descrizione") && <SortableTh col="descrizione" label="Descrizione" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("cig") && <SortableTh col="cig" label="CIG" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("commessa") && <SortableTh col="commessa" label="Commessa" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("centro") && <SortableTh col="centro" label="Centro" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("data_doc") && <SortableTh col="data_doc" label="Data doc." sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("scadenza") && <SortableTh col="scadenza" label="Scadenza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("stato") && <SortableTh col="stato" label="Stato" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("premio") && <SortableTh col="premio" label="Premio" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
+                    {isVisible("garantito") && <SortableTh col="garantito" label="Importo garantito" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
                     {isVisible("azioni") && <TableHead className="text-[11px] h-8 px-2 w-[100px]">Azioni</TableHead>}
                   </TableRow>
                 </TableHeader>
