@@ -574,6 +574,7 @@ export default function Polizze() {
                     {isVisible("fornitore") && <SortableTh col="fornitore" label="Fornitore" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("numero") && <SortableTh col="numero" label="N° polizza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("descrizione") && <SortableTh col="descrizione" label="Descrizione" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("tipo") && <SortableTh col="tipo" label="Tipo" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("cig") && <SortableTh col="cig" label="CIG" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("commessa") && <SortableTh col="commessa" label="Commessa" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("centro") && <SortableTh col="centro" label="Centro" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
@@ -600,6 +601,7 @@ export default function Polizze() {
                           {isVisible("fornitore") && <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>}
                           {isVisible("numero") && <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>}
                           {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
+                          {isVisible("tipo") && <TableCell className="text-xs px-2 py-1.5"><TipoPolizzaBadge tipo={classifyTipoPolizza(d)} /></TableCell>}
                           {isVisible("cig") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             <EditableCigCell
                               value={d.cig || ""}
