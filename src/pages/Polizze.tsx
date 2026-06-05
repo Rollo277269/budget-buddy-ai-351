@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check } from "lucide-react";
+import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check, Copy, Trash2 } from "lucide-react";
 import { ArrowUp, ArrowDown, ArrowUpDown, Link2 } from "lucide-react";
 import { Pencil, X as XIcon } from "lucide-react";
 import { extractCigCandidates } from "@/lib/cigCoherence";
@@ -16,6 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -112,7 +113,7 @@ function CountdownBadge({ date }: { date: Date | null }) {
 
 // ── page ───────────────────────────────────────────────────────────────────
 export default function Polizze() {
-  const { documenti, refresh, updateField } = useDocumentiAcquisto("acquisto");
+  const { documenti, refresh, updateField, deleteDocumento } = useDocumentiAcquisto("acquisto");
   const { centriCosto } = useCentriData();
   const { byCig: commesseByCig } = useCssrCommesse();
   // Case-insensitive lookup map (CIG sometimes stored uppercase, sometimes mixed).
@@ -131,6 +132,8 @@ export default function Polizze() {
   }, [lookupCommessa]);
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [reassociating, setReassociating] = useState(false);
+  const [duplicatesOpen, setDuplicatesOpen] = useState(false);
+  const [deletingDupId, setDeletingDupId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "gara" | "commessa" | "altre">("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -171,6 +174,43 @@ export default function Polizze() {
   }, [centriCosto]);
 
   const polizze = useMemo(() => documenti.filter(isPolizza), [documenti]);
+
+  // ── duplicate detection ──
+  // Two polizze are considered duplicates when same CIG + same premio (importo)
+  // + same scadenza (or, if scadenza missing, same data_documento).
+  const duplicateGroups = useMemo(() => {
+    const map = new Map<string, DocumentoAcquisto[]>();
+    for (const d of polizze) {
+      const cig = (d.cig || "").trim().toUpperCase();
+      const imp = d.importo != null ? Number(d.importo).toFixed(2) : "";
+      const scad = (d.data_scadenza || "").trim() || (d.data_documento || "").trim();
+      // Need at least cig OR scadenza OR importo to group meaningfully
+      if (!cig && !scad && !imp) continue;
+      const key = `${cig}|${imp}|${scad}`;
+      const arr = map.get(key);
+      if (arr) arr.push(d); else map.set(key, [d]);
+    }
+    return [...map.values()].filter((g) => g.length > 1);
+  }, [polizze]);
+  const duplicatesCount = useMemo(
+    () => duplicateGroups.reduce((acc, g) => acc + (g.length - 1), 0),
+    [duplicateGroups]
+  );
+
+  const handleDeleteDup = useCallback(async (doc: DocumentoAcquisto) => {
+    if (!confirm(`Eliminare definitivamente "${doc.file_name}"?\nVerrà rimosso anche il PDF dallo storage.`)) return;
+    setDeletingDupId(doc.id);
+    try {
+      await deleteDocumento(doc.id, doc.storage_path);
+      toast.success("Duplicato eliminato");
+      await refresh();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Errore eliminazione");
+    } finally {
+      setDeletingDupId(null);
+    }
+  }, [deleteDocumento, refresh]);
 
   const enriched = useMemo(
     () =>
@@ -474,6 +514,22 @@ export default function Polizze() {
                   {reassociating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
                   Riassocia CIG
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "h-8 text-xs gap-1",
+                    duplicatesCount > 0 && "border-amber-500/60 text-amber-700 hover:text-amber-800"
+                  )}
+                  onClick={() => setDuplicatesOpen(true)}
+                  title="Trova polizze duplicate (stesso CIG, premio e scadenza)"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Duplicati
+                  {duplicatesCount > 0 && (
+                    <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 h-4">{duplicatesCount}</Badge>
+                  )}
+                </Button>
               </div>
             </div>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-2">
@@ -576,6 +632,89 @@ export default function Polizze() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Duplicate detector dialog */}
+      <Dialog open={duplicatesOpen} onOpenChange={setDuplicatesOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-4 w-4 text-primary" />
+              Polizze duplicate
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Polizze raggruppate per <strong>CIG + premio + scadenza</strong> identici.
+              Elimina i doppioni mantenendo una sola copia per gruppo.
+            </DialogDescription>
+          </DialogHeader>
+          {duplicateGroups.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              <ShieldCheck className="h-8 w-8 mx-auto mb-2 text-primary/60" />
+              Nessun duplicato rilevato. 🎉
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {duplicateGroups.map((group, gi) => {
+                const first = group[0];
+                return (
+                  <div key={gi} className="rounded-md border bg-muted/20">
+                    <div className="px-3 py-2 border-b bg-muted/40 flex items-center justify-between gap-2">
+                      <div className="text-xs">
+                        <span className="font-semibold">{group.length} copie</span>
+                        {first.cig && <> · CIG <span className="font-mono">{first.cig}</span></>}
+                        {first.importo != null && <> · Premio <span className="font-mono">{formatCurrency(first.importo)}</span></>}
+                        {first.data_scadenza && <> · Scad. <span className="font-mono">{first.data_scadenza}</span></>}
+                      </div>
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="h-7">
+                          <TableHead className="text-[11px] h-7 px-2">File</TableHead>
+                          <TableHead className="text-[11px] h-7 px-2">Fornitore</TableHead>
+                          <TableHead className="text-[11px] h-7 px-2">Descrizione</TableHead>
+                          <TableHead className="text-[11px] h-7 px-2">Caricato il</TableHead>
+                          <TableHead className="text-[11px] h-7 px-2 w-[90px]">Azioni</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {group.map((d, idx) => (
+                          <TableRow key={d.id} className={cn("h-8", idx === 0 && "bg-primary/5")}>
+                            <TableCell className="text-xs px-2 py-1 font-mono truncate max-w-[280px]" title={d.file_name}>
+                              {idx === 0 && <Badge variant="secondary" className="text-[9px] mr-1">tieni</Badge>}
+                              {d.file_name}
+                            </TableCell>
+                            <TableCell className="text-xs px-2 py-1">{d.fornitore || "—"}</TableCell>
+                            <TableCell className="text-xs px-2 py-1 truncate max-w-[200px]" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>
+                            <TableCell className="text-xs px-2 py-1 font-mono text-muted-foreground">
+                              {(d as any).created_at ? new Date((d as any).created_at).toLocaleDateString("it-IT") : "—"}
+                            </TableCell>
+                            <TableCell className="px-2 py-1">
+                              <div className="flex items-center gap-1">
+                                <Button size="icon" variant="ghost" className="h-6 w-6" title="Apri PDF" onClick={() => openPdf(d)}>
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Elimina questa copia"
+                                  disabled={deletingDupId === d.id}
+                                  onClick={() => handleDeleteDup(d)}
+                                >
+                                  {deletingDupId === d.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
