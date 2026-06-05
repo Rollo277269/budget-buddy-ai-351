@@ -562,17 +562,13 @@ export default function Polizze() {
                 <TableHeader>
                   <TableRow className="h-8">
                     {isVisible("fornitore") && <SortableTh col="fornitore" label="Fornitore" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("numero") && <SortableTh col="numero" label="N° polizza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("tipo_numero") && <SortableTh col="tipo_numero" label="Tipo / N° polizza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("descrizione") && <SortableTh col="descrizione" label="Descrizione" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("tipo") && <SortableTh col="tipo" label="Tipo" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("cig") && <SortableTh col="cig" label="CIG" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("commessa") && <SortableTh col="commessa" label="Commessa" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("cig_commessa") && <SortableTh col="cig_commessa" label="CIG / Commessa" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("centro") && <SortableTh col="centro" label="Centro" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("data_doc") && <SortableTh col="data_doc" label="Data doc." sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("scadenza") && <SortableTh col="scadenza" label="Scadenza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("date") && <SortableTh col="date" label="Data doc. / Scadenza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("stato") && <SortableTh col="stato" label="Stato" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
-                    {isVisible("premio") && <SortableTh col="premio" label="Premio" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
-                    {isVisible("garantito") && <SortableTh col="garantito" label="Importo garantito" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
+                    {isVisible("importi") && <SortableTh col="importi" label="Premio / Importo garantito" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} align="right" />}
                     {isVisible("azioni") && <TableHead className="text-[11px] h-8 px-2 w-[100px]">Azioni</TableHead>}
                   </TableRow>
                 </TableHeader>
