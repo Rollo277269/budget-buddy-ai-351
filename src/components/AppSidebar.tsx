@@ -43,7 +43,7 @@ export const defaultItems: MenuItem[] = [
 // Prefetch lazy page chunks on hover so navigation feels instant.
 const pagePrefetchers: Record<string, () => Promise<unknown>> = {
   "/": () => import("@/pages/Index"),
-  "/scadenzario": () => import("@/pages/Scadenzario"),
+  "/scadenzario": () => import("@/pages/Calendario"),
   "/polizze": () => import("@/pages/Polizze"),
   "/vendite": () => import("@/pages/Vendite"),
   "/acquisti": () => import("@/pages/Acquisti"),
