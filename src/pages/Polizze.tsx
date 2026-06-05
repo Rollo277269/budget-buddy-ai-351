@@ -295,6 +295,7 @@ export default function Polizze() {
           case "fornitore": return (d.fornitore || "").toLowerCase();
           case "numero": return (d.numero || "").toLowerCase();
           case "descrizione": return (d.descrizione || "").toLowerCase();
+          case "tipo": return classifyTipoPolizza(d).toLowerCase();
           case "cig": return (d.cig || "").toLowerCase();
           case "commessa": return getCommessaNumero(d.cig).toLowerCase();
           case "centro": return (d.centro_costo || "").toLowerCase();
