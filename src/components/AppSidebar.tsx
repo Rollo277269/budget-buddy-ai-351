@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users, PanelLeftClose, PanelLeft, Lock, Unlock, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, FolderKanban, Briefcase, Settings, Gavel, BookOpen, Scale, GripVertical, Receipt, Users, PanelLeftClose, PanelLeft, Lock, Unlock, ShieldCheck, TrendingUp } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useLayoutEditMode } from "@/hooks/useLayoutEditMode";
@@ -32,6 +32,7 @@ export const defaultItems: MenuItem[] = [
   { title: "Schede Contabili", url: "/schede-contabili", icon: BookOpen },
   { title: "Rubrica", url: "/rubrica", icon: Users },
   { title: "Bilancio", url: "/bilancio", icon: Scale },
+  { title: "Budget", url: "/budget", icon: TrendingUp },
   { title: "IVA", url: "/iva", icon: Receipt },
   { title: "Conti", url: "/banche", icon: Landmark },
   { title: "Commesse", url: "/lista-commesse", icon: Briefcase },
@@ -50,6 +51,7 @@ const pagePrefetchers: Record<string, () => Promise<unknown>> = {
   "/schede-contabili": () => import("@/pages/SchedeContabili"),
   "/rubrica": () => import("@/pages/Rubrica"),
   "/bilancio": () => import("@/pages/Bilancio"),
+  "/budget": () => import("@/pages/Budget"),
   "/iva": () => import("@/pages/Iva"),
   "/banche": () => import("@/pages/Banche"),
   "/lista-commesse": () => import("@/pages/ListaCommesse"),
