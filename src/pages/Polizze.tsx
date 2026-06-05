@@ -124,6 +124,10 @@ export default function Polizze() {
     if (!cig) return null;
     return commesseByCigUpper.get(cig.trim().toUpperCase()) || null;
   }, [commesseByCigUpper]);
+  const getCommessaNumero = useCallback((cig: string | null | undefined) => {
+    const c = lookupCommessa(cig);
+    return c?.numero_repertorio || c?.commessa_consortile || "";
+  }, [lookupCommessa]);
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [reassociating, setReassociating] = useState(false);
   const [filter, setFilter] = useState("");
@@ -226,7 +230,7 @@ export default function Polizze() {
           case "numero": return (d.numero || "").toLowerCase();
           case "descrizione": return (d.descrizione || "").toLowerCase();
           case "cig": return (d.cig || "").toLowerCase();
-          case "commessa": return (lookupCommessa(d.cig)?.numero_repertorio ?? "").toLowerCase();
+          case "commessa": return getCommessaNumero(d.cig).toLowerCase();
           case "centro": return (d.centro_costo || "").toLowerCase();
           case "data_doc": {
             const dt = parseIsoOrItDate(d.data_documento);
@@ -258,7 +262,7 @@ export default function Polizze() {
       if (!b._date) return -1;
       return a._date.getTime() - b._date.getTime();
     });
-  }, [filtered, sortCol, sortDir, lookupCommessa]);
+  }, [filtered, sortCol, sortDir, getCommessaNumero]);
 
   const counts = useMemo(() => {
     let scaduto = 0, imminenti = 0, future = 0, senza = 0;
@@ -521,8 +525,7 @@ export default function Polizze() {
                           </TableCell>}
                           {isVisible("commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             {(() => {
-                              const c = lookupCommessa(d.cig);
-                              const num = c?.numero_repertorio;
+                              const num = getCommessaNumero(d.cig);
                               if (!num) return <span className="text-muted-foreground">—</span>;
                               return <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{num}</Link>;
                             })()}
