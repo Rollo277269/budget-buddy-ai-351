@@ -585,37 +585,47 @@ export default function Polizze() {
                       return (
                         <TableRow key={d.id} className="hover:bg-muted/40">
                           {isVisible("fornitore") && <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>}
-                          {isVisible("numero") && <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>}
-                          {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
-                          {isVisible("tipo") && <TableCell className="text-xs px-2 py-1.5"><TipoPolizzaBadge tipo={classifyTipoPolizza(d)} /></TableCell>}
-                          {isVisible("cig") && <TableCell className="text-xs px-2 py-1.5 font-mono">
-                            <EditableCigCell
-                              value={d.cig || ""}
-                              onSave={async (next) => {
-                                await updateField(d.id, "cig", next);
-                                toast.success("CIG aggiornato");
-                              }}
-                            />
+                          {isVisible("tipo_numero") && <TableCell className="text-xs px-2 py-1.5">
+                            <div className="flex flex-col gap-0.5">
+                              <TipoPolizzaBadge tipo={classifyTipoPolizza(d)} />
+                              <span className="font-mono">{d.numero || "—"}</span>
+                            </div>
                           </TableCell>}
-                          {isVisible("commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
-                            {(() => {
-                              const num = getCommessaNumero(d.cig);
-                              if (!num) return <span className="text-muted-foreground">—</span>;
-                              return <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{num}</Link>;
-                            })()}
+                          {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
+                          {isVisible("cig_commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
+                            <div className="flex flex-col gap-0.5">
+                              <EditableCigCell
+                                value={d.cig || ""}
+                                onSave={async (next) => {
+                                  await updateField(d.id, "cig", next);
+                                  toast.success("CIG aggiornato");
+                                }}
+                              />
+                              {(() => {
+                                const num = getCommessaNumero(d.cig);
+                                if (!num) return <span className="text-muted-foreground">—</span>;
+                                return <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{num}</Link>;
+                              })()}
+                            </div>
                           </TableCell>}
                           {isVisible("centro") && <TableCell className="text-xs px-2 py-1.5">
                             {d.centro_costo ? (
                               <span className="font-mono">{d.centro_costo}{centroDesc ? <span className="text-muted-foreground"> – {centroDesc}</span> : null}</span>
                             ) : "—"}
                           </TableCell>}
-                          {isVisible("data_doc") && <TableCell className="text-xs px-2 py-1.5">{d.data_documento || "—"}</TableCell>}
-                          {isVisible("scadenza") && <TableCell className="text-xs px-2 py-1.5">
-                            <ScadenzaCell value={d._date} onChange={(date) => handleManualDate(d.id, date)} />
+                          {isVisible("date") && <TableCell className="text-xs px-2 py-1.5">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-muted-foreground text-[10px]">Doc: {d.data_documento || "—"}</span>
+                              <ScadenzaCell value={d._date} onChange={(date) => handleManualDate(d.id, date)} />
+                            </div>
                           </TableCell>}
                           {isVisible("stato") && <TableCell className="text-xs px-2 py-1.5"><StatoLabel date={d._date} /></TableCell>}
-                          {isVisible("premio") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono">{d.importo != null ? formatCurrency(d.importo) : "—"}</TableCell>}
-                          {isVisible("garantito") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono text-muted-foreground">{(d as any).importo_garantito != null ? formatCurrency((d as any).importo_garantito) : "—"}</TableCell>}
+                          {isVisible("importi") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono">
+                            <div className="flex flex-col gap-0.5 items-end">
+                              <span>{d.importo != null ? formatCurrency(d.importo) : "—"}</span>
+                              <span className="text-muted-foreground text-[10px]">Gar: {(d as any).importo_garantito != null ? formatCurrency((d as any).importo_garantito) : "—"}</span>
+                            </div>
+                          </TableCell>}
                           {isVisible("azioni") && <TableCell className="px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <Button size="icon" variant="ghost" className="h-6 w-6" title="Apri PDF" onClick={() => openPdf(d)}>
