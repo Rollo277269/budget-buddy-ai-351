@@ -4,6 +4,7 @@ import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, Ext
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentiAcquisto, type DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
+import { useCssrCommesse } from "@/hooks/useCssrCommesse";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,12 +22,13 @@ import { cn } from "@/lib/utils";
 const REMINDER_DAYS = 10;
 
 type StatusFilter = "all" | "scaduto" | "imminenti" | "future" | "senza";
-type ColKey = "fornitore" | "numero" | "descrizione" | "cig" | "centro" | "data_doc" | "scadenza" | "stato" | "premio" | "garantito" | "azioni";
+type ColKey = "fornitore" | "numero" | "descrizione" | "cig" | "commessa" | "centro" | "data_doc" | "scadenza" | "stato" | "premio" | "garantito" | "azioni";
 const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "fornitore", label: "Fornitore" },
   { key: "numero", label: "N° polizza" },
   { key: "descrizione", label: "Descrizione" },
   { key: "cig", label: "CIG" },
+  { key: "commessa", label: "Commessa" },
   { key: "centro", label: "Centro" },
   { key: "data_doc", label: "Data doc." },
   { key: "scadenza", label: "Scadenza" },
@@ -109,6 +111,7 @@ function CountdownBadge({ date }: { date: Date | null }) {
 export default function Polizze() {
   const { documenti, refresh, updateField } = useDocumentiAcquisto("acquisto");
   const { centriCosto } = useCentriData();
+  const { byCig: commesseByCig } = useCssrCommesse();
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "gara" | "commessa" | "altre">("all");
@@ -380,6 +383,7 @@ export default function Polizze() {
                     {isVisible("numero") && <TableHead className="text-[11px] h-8 px-2">N° polizza</TableHead>}
                     {isVisible("descrizione") && <TableHead className="text-[11px] h-8 px-2">Descrizione</TableHead>}
                     {isVisible("cig") && <TableHead className="text-[11px] h-8 px-2">CIG</TableHead>}
+                    {isVisible("commessa") && <TableHead className="text-[11px] h-8 px-2">Commessa</TableHead>}
                     {isVisible("centro") && <TableHead className="text-[11px] h-8 px-2">Centro</TableHead>}
                     {isVisible("data_doc") && <TableHead className="text-[11px] h-8 px-2">Data doc.</TableHead>}
                     {isVisible("scadenza") && <TableHead className="text-[11px] h-8 px-2">Scadenza</TableHead>}
@@ -408,6 +412,14 @@ export default function Polizze() {
                             {d.cig ? (
                               <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{d.cig}</Link>
                             ) : "—"}
+                          </TableCell>}
+                          {isVisible("commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
+                            {(() => {
+                              const c = d.cig ? commesseByCig.get(d.cig) : null;
+                              const num = c?.numero_repertorio;
+                              if (!num) return <span className="text-muted-foreground">—</span>;
+                              return <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{num}</Link>;
+                            })()}
                           </TableCell>}
                           {isVisible("centro") && <TableCell className="text-xs px-2 py-1.5">
                             {d.centro_costo ? (
