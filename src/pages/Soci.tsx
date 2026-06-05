@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
@@ -32,6 +33,7 @@ export default function SociPage() {
   const { allSales, allPurchases, loading: loadingInvoices } = useInvoiceData();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<{ nome: string; tipo: "cliente" | "fornitore" } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const allYears = useMemo(() => {
     const ys = new Set<number>();
@@ -40,18 +42,37 @@ export default function SociPage() {
     return Array.from(ys).sort((a, b) => b - a);
   }, [allSales, allPurchases]);
 
-  const [year, setYear] = useState<number | null>(null);
-  const [socioId, setSocioId] = useState<string>("__all__");
-
-  // default year = max available, set once
-  if (year === null && allYears.length > 0) {
-    setYear(allYears[0]);
-  }
-
   const soci = useMemo(
     () => contatti.filter((c) => c.tipo === "socio").sort((a, b) => a.denominazione.localeCompare(b.denominazione, "it")),
     [contatti]
   );
+
+  const urlYear = searchParams.get("anno");
+  const urlSocio = searchParams.get("socio");
+  const year: number | null = urlYear && !isNaN(parseInt(urlYear, 10))
+    ? parseInt(urlYear, 10)
+    : (allYears[0] ?? null);
+  const socioId: string = urlSocio && soci.some((s) => s.id === urlSocio) ? urlSocio : "__all__";
+
+  const updateParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (value == null || value === "" || value === "__all__") next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
+  };
+
+  const setYear = (y: number) => updateParam("anno", String(y));
+  const setSocioId = (id: string) => updateParam("socio", id);
+
+  // Seed default year in URL once data is loaded, so shared links carry it explicitly.
+  useEffect(() => {
+    if (!urlYear && allYears.length > 0) {
+      const next = new URLSearchParams(searchParams);
+      next.set("anno", String(allYears[0]));
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allYears.length]);
 
   const rows = useMemo(() => {
     if (year == null) return [];
