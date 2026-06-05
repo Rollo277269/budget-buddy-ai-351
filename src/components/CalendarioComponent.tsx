@@ -94,9 +94,10 @@ function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => v
 
 interface Props {
   events: CalendarEvent[];
+  centerSlot?: React.ReactNode;
 }
 
-export function CalendarioComponent({ events }: Props) {
+export function CalendarioComponent({ events, centerSlot }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
@@ -237,8 +238,8 @@ export function CalendarioComponent({ events }: Props) {
     <Card>
       <CardContent className="p-4 space-y-3">
         {/* Toolbar */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
             <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => navigate(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -250,7 +251,8 @@ export function CalendarioComponent({ events }: Props) {
             </Button>
             <span className="text-sm font-semibold ml-2">{title}</span>
           </div>
-          <div className="flex rounded-md border overflow-hidden">
+          {centerSlot && <div className="flex-shrink-0">{centerSlot}</div>}
+          <div className="flex rounded-md border overflow-hidden flex-1 justify-end">
             {(["month", "week", "day"] as ViewMode[]).map((v) => (
               <Button
                 key={v}
