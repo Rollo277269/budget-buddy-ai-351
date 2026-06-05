@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check } from "lucide-react";
 import { ArrowUp, ArrowDown, ArrowUpDown, Link2 } from "lucide-react";
+import { Pencil, X as XIcon } from "lucide-react";
 import { extractCigCandidates } from "@/lib/cigCoherence";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentiAcquisto, type DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
@@ -519,9 +520,13 @@ export default function Polizze() {
                           {isVisible("numero") && <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>}
                           {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
                           {isVisible("cig") && <TableCell className="text-xs px-2 py-1.5 font-mono">
-                            {d.cig ? (
-                              <Link to={`/commesse?cig=${d.cig}`} className="text-primary hover:underline">{d.cig}</Link>
-                            ) : "—"}
+                            <EditableCigCell
+                              value={d.cig || ""}
+                              onSave={async (next) => {
+                                await updateField(d.id, "cig", next);
+                                toast.success("CIG aggiornato");
+                              }}
+                            />
                           </TableCell>}
                           {isVisible("commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             {(() => {
@@ -676,5 +681,71 @@ function ScadenzaCell({ value, onChange }: { value: Date | null; onChange: (d: D
         />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function EditableCigCell({ value, onSave }: { value: string; onSave: (next: string) => void | Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setDraft(value); }, [value]);
+
+  const commit = async () => {
+    const next = draft.trim().toUpperCase();
+    if (next === (value || "").trim().toUpperCase()) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await onSave(next);
+      setEditing(false);
+    } catch (e) {
+      console.error(e);
+      toast.error("Errore aggiornamento CIG");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.toUpperCase())}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); commit(); }
+            else if (e.key === "Escape") { e.preventDefault(); setDraft(value); setEditing(false); }
+          }}
+          disabled={saving}
+          maxLength={20}
+          className="h-6 px-1 text-xs font-mono w-[120px]"
+        />
+        <Button size="icon" variant="ghost" className="h-6 w-6" title="Salva" onClick={commit} disabled={saving}>
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 text-primary" />}
+        </Button>
+        <Button size="icon" variant="ghost" className="h-6 w-6" title="Annulla" onClick={() => { setDraft(value); setEditing(false); }} disabled={saving}>
+          <XIcon className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group flex items-center gap-1">
+      {value ? (
+        <Link to={`/commesse?cig=${value}`} className="text-primary hover:underline">{value}</Link>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      )}
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Modifica CIG"
+        onClick={() => setEditing(true)}
+      >
+        <Pencil className="h-3 w-3" />
+      </Button>
+    </div>
   );
 }
