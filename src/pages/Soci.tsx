@@ -62,9 +62,9 @@ export default function SociPage() {
       const pivaKey = (socio.partita_iva || "").trim();
 
       const matchSale = (s: SaleInvoice) =>
-        norm(s.cliente) === nameKey || (!!pivaKey && (s.partita_iva || "").trim() === pivaKey);
+        norm(s.cliente) === nameKey || (!!pivaKey && ((s as any).partitaIva || "").trim() === pivaKey);
       const matchPurchase = (p: PurchaseInvoice) =>
-        norm(p.fornitore) === nameKey || (!!pivaKey && (p.partita_iva || "").trim() === pivaKey);
+        norm(p.fornitore) === nameKey || (!!pivaKey && ((p as any).partitaIva || "").trim() === pivaKey);
 
       const vendite = salesByYear.filter(matchSale).reduce((a, s) => a + (s.totale || 0), 0);
       const acquisti = purchasesByYear.filter(matchPurchase).reduce((a, p) => a + (p.totale || 0), 0);
