@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Wallet, Settings2, Loader2 } from "lucide-react";
+import { TrendingUp, Wallet, Settings2, Loader2, GitCompareArrows } from "lucide-react";
 import { BudgetAssumptions } from "@/lib/budgetEngine";
 import { useBudgetData, loadAssumptions, saveAssumptions } from "@/hooks/useBudgetData";
 import { ContoEconomicoPrevisionale } from "@/components/budget/ContoEconomicoPrevisionale";
 import { CashFlowPrevisionale } from "@/components/budget/CashFlowPrevisionale";
 import { BudgetAssumptionsPanel } from "@/components/budget/BudgetAssumptionsPanel";
+import { ConfrontoStoricoPrevisionale } from "@/components/budget/ConfrontoStoricoPrevisionale";
 
 export default function BudgetPage() {
   const [assumptions, setAssumptions] = useState<BudgetAssumptions>(() => loadAssumptions());
@@ -42,6 +43,9 @@ export default function BudgetPage() {
           <TabsTrigger value="cf" className="text-xs">
             <Wallet className="h-3.5 w-3.5 mr-1.5" />Cash Flow
           </TabsTrigger>
+          <TabsTrigger value="cmp" className="text-xs">
+            <GitCompareArrows className="h-3.5 w-3.5 mr-1.5" />Storico vs Previsionale
+          </TabsTrigger>
           <TabsTrigger value="params" className="text-xs">
             <Settings2 className="h-3.5 w-3.5 mr-1.5" />Parametri
           </TabsTrigger>
@@ -51,6 +55,9 @@ export default function BudgetPage() {
         </TabsContent>
         <TabsContent value="cf">
           <CashFlowPrevisionale months={months} rows={cashFlowRows} initialBalance={initialBalance} />
+        </TabsContent>
+        <TabsContent value="cmp">
+          <ConfrontoStoricoPrevisionale assumptions={assumptions} />
         </TabsContent>
         <TabsContent value="params">
           <BudgetAssumptionsPanel assumptions={assumptions} onChange={setAssumptions} />
