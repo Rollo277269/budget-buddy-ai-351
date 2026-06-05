@@ -512,6 +512,33 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_audit: {
+        Row: {
+          created_at: string
+          email: string | null
+          event: string
+          id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event: string
+          id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event?: string
+          id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       rate_finanziamento: {
         Row: {
           conto_id: string
