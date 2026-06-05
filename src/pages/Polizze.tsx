@@ -26,23 +26,19 @@ import { cn } from "@/lib/utils";
 const REMINDER_DAYS = 10;
 
 type StatusFilter = "all" | "scaduto" | "imminenti" | "future" | "senza";
-type ColKey = "fornitore" | "numero" | "descrizione" | "tipo" | "cig" | "commessa" | "centro" | "data_doc" | "scadenza" | "stato" | "premio" | "garantito" | "azioni";
+type ColKey = "fornitore" | "tipo_numero" | "descrizione" | "cig_commessa" | "centro" | "date" | "stato" | "importi" | "azioni";
 const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "fornitore", label: "Fornitore" },
-  { key: "numero", label: "N° polizza" },
+  { key: "tipo_numero", label: "Tipo / N° polizza" },
   { key: "descrizione", label: "Descrizione" },
-  { key: "tipo", label: "Tipo" },
-  { key: "cig", label: "CIG" },
-  { key: "commessa", label: "Commessa" },
+  { key: "cig_commessa", label: "CIG / Commessa" },
   { key: "centro", label: "Centro" },
-  { key: "data_doc", label: "Data doc." },
-  { key: "scadenza", label: "Scadenza" },
+  { key: "date", label: "Data doc. / Scadenza" },
   { key: "stato", label: "Stato" },
-  { key: "premio", label: "Premio" },
-  { key: "garantito", label: "Importo garantito" },
+  { key: "importi", label: "Premio / Importo garantito" },
   { key: "azioni", label: "Azioni" },
 ];
-const COLS_STORAGE_KEY = "polizze-visible-cols";
+const COLS_STORAGE_KEY = "polizze-visible-cols-v2";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function parseIsoOrItDate(s: string | null | undefined): Date | null {
