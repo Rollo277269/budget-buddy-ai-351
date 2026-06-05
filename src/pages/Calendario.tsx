@@ -6,7 +6,7 @@ import { useRateFinanziamento } from "@/hooks/useRateFinanziamento";
 import { useContiCorrenti } from "@/hooks/useContiCorrenti";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { CalendarioComponent } from "@/components/CalendarioComponent";
 import { AlertTriangle, Clock, CheckCircle2, Landmark, CalendarDays, List, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +72,7 @@ export default function CalendarioPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
   const { rate, loading: loadingRate } = useRateFinanziamento();
   const { conti } = useContiCorrenti();
+  const [view, setView] = useState<"calendario" | "tabella">("calendario");
   const [polizze, setPolizze] = useState<Array<{ id: string; fornitore: string; descrizione: string; importo: number; data_scadenza: string; cig: string; numero: string }>>([]);
 
   useEffect(() => {
@@ -184,6 +185,27 @@ export default function CalendarioPage() {
     );
   }
 
+  const viewSwitcher = (
+    <div className="flex rounded-md border overflow-hidden">
+      <Button
+        variant={view === "calendario" ? "default" : "ghost"}
+        size="sm"
+        className="h-7 text-xs rounded-none px-3"
+        onClick={() => setView("calendario")}
+      >
+        <CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendario
+      </Button>
+      <Button
+        variant={view === "tabella" ? "default" : "ghost"}
+        size="sm"
+        className="h-7 text-xs rounded-none px-3"
+        onClick={() => setView("tabella")}
+      >
+        <List className="h-3.5 w-3.5 mr-1.5" />Tabella
+      </Button>
+    </div>
+  );
+
   return (
     <div className="p-6 space-y-4 bg-white py-0">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -219,25 +241,17 @@ export default function CalendarioPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="calendario" className="space-y-3">
-        <TabsList>
-          <TabsTrigger value="calendario" className="text-xs">
-            <CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendario
-          </TabsTrigger>
-          <TabsTrigger value="tabella" className="text-xs">
-            <List className="h-3.5 w-3.5 mr-1.5" />Tabella
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="calendario">
-          <CalendarioComponent events={rows} />
-        </TabsContent>
-        <TabsContent value="tabella">
+      {view === "calendario" ? (
+        <CalendarioComponent events={rows} centerSlot={viewSwitcher} />
+      ) : (
+        <div className="space-y-3">
+          <div className="flex justify-center">{viewSwitcher}</div>
           <DataTable<ScadenzaRow>
             columns={scadenzaCols}
             data={rows}
             rowKey={(r) => `${r.tipo}-${r.numero}-${r.soggetto}`} />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 }
