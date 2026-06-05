@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check } from "lucide-react";
 import { ArrowUp, ArrowDown, ArrowUpDown, Link2 } from "lucide-react";
+import { Pencil, X as XIcon } from "lucide-react";
 import { extractCigCandidates } from "@/lib/cigCoherence";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentiAcquisto, type DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
