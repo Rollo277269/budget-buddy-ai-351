@@ -26,11 +26,12 @@ import { cn } from "@/lib/utils";
 const REMINDER_DAYS = 10;
 
 type StatusFilter = "all" | "scaduto" | "imminenti" | "future" | "senza";
-type ColKey = "fornitore" | "numero" | "descrizione" | "cig" | "commessa" | "centro" | "data_doc" | "scadenza" | "stato" | "premio" | "garantito" | "azioni";
+type ColKey = "fornitore" | "numero" | "descrizione" | "tipo" | "cig" | "commessa" | "centro" | "data_doc" | "scadenza" | "stato" | "premio" | "garantito" | "azioni";
 const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "fornitore", label: "Fornitore" },
   { key: "numero", label: "N° polizza" },
   { key: "descrizione", label: "Descrizione" },
+  { key: "tipo", label: "Tipo" },
   { key: "cig", label: "CIG" },
   { key: "commessa", label: "Commessa" },
   { key: "centro", label: "Centro" },
@@ -94,6 +95,30 @@ function categoria(d: DocumentoAcquisto): "gara" | "commessa" | "altre" {
   if (centro.startsWith("CO")) return "gara";
   if (d.cig || centro) return "commessa";
   return "altre";
+}
+
+type TipoPolizza = "Provvisoria" | "Definitiva" | "CAR" | "Anticipazione" | "RCT/RCO" | "Altro";
+
+function classifyTipoPolizza(d: DocumentoAcquisto): TipoPolizza {
+  const text = `${d.descrizione || ""} ${d.ai_summary || ""} ${d.file_name || ""}`.toLowerCase();
+  if (/\bprovvisori/.test(text)) return "Provvisoria";
+  if (/\bdefinitiv/.test(text)) return "Definitiva";
+  if (/\bcar\b|all\s*risks|contractors[^a-z]*all[^a-z]*risks|tutti\s*i\s*rischi/.test(text)) return "CAR";
+  if (/anticipazion/.test(text)) return "Anticipazione";
+  if (/\brc[\s\/\-]?[tor]\b|rct|rco|responsabilit[aà]\s*civil/.test(text)) return "RCT/RCO";
+  return "Altro";
+}
+
+function TipoPolizzaBadge({ tipo }: { tipo: TipoPolizza }) {
+  const cls: Record<TipoPolizza, string> = {
+    "Provvisoria": "bg-amber-100 text-amber-800 border-amber-300",
+    "Definitiva": "bg-emerald-100 text-emerald-800 border-emerald-300",
+    "CAR": "bg-sky-100 text-sky-800 border-sky-300",
+    "Anticipazione": "bg-violet-100 text-violet-800 border-violet-300",
+    "RCT/RCO": "bg-rose-100 text-rose-800 border-rose-300",
+    "Altro": "bg-muted text-muted-foreground border-border",
+  };
+  return <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4 border", cls[tipo])}>{tipo}</Badge>;
 }
 
 function CountdownBadge({ date }: { date: Date | null }) {
@@ -270,6 +295,7 @@ export default function Polizze() {
           case "fornitore": return (d.fornitore || "").toLowerCase();
           case "numero": return (d.numero || "").toLowerCase();
           case "descrizione": return (d.descrizione || "").toLowerCase();
+          case "tipo": return classifyTipoPolizza(d).toLowerCase();
           case "cig": return (d.cig || "").toLowerCase();
           case "commessa": return getCommessaNumero(d.cig).toLowerCase();
           case "centro": return (d.centro_costo || "").toLowerCase();
@@ -549,6 +575,7 @@ export default function Polizze() {
                     {isVisible("fornitore") && <SortableTh col="fornitore" label="Fornitore" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("numero") && <SortableTh col="numero" label="N° polizza" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("descrizione") && <SortableTh col="descrizione" label="Descrizione" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
+                    {isVisible("tipo") && <SortableTh col="tipo" label="Tipo" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("cig") && <SortableTh col="cig" label="CIG" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("commessa") && <SortableTh col="commessa" label="Commessa" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
                     {isVisible("centro") && <SortableTh col="centro" label="Centro" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort} />}
@@ -575,6 +602,7 @@ export default function Polizze() {
                           {isVisible("fornitore") && <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>}
                           {isVisible("numero") && <TableCell className="text-xs px-2 py-1.5 font-mono">{d.numero || "—"}</TableCell>}
                           {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
+                          {isVisible("tipo") && <TableCell className="text-xs px-2 py-1.5"><TipoPolizzaBadge tipo={classifyTipoPolizza(d)} /></TableCell>}
                           {isVisible("cig") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             <EditableCigCell
                               value={d.cig || ""}
