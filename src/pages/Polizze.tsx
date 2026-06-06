@@ -865,6 +865,46 @@ export default function Polizze() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Duplicate-on-upload prompt */}
+      <Dialog open={!!dupPrompt} onOpenChange={(open) => { if (!open && dupPrompt) dupPrompt.resolve("skip"); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-4 w-4 text-amber-600" />
+              Polizza già presente
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Il file <span className="font-mono font-semibold">{dupPrompt?.fileName}</span> esiste già in archivio
+              {dupPrompt && dupPrompt.total > 1 && <> (file {dupPrompt.index} di {dupPrompt.total})</>}.
+              Cosa vuoi fare?
+            </DialogDescription>
+          </DialogHeader>
+          {dupPrompt && (
+            <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+              <div><span className="text-muted-foreground">Fornitore:</span> {dupPrompt.existing.fornitore || "—"}</div>
+              <div><span className="text-muted-foreground">Descrizione:</span> {dupPrompt.existing.descrizione || "—"}</div>
+              <div><span className="text-muted-foreground">Importo:</span> {dupPrompt.existing.importo != null ? formatCurrency(dupPrompt.existing.importo) : "—"}</div>
+              {dupPrompt.existing.created_at && (
+                <div><span className="text-muted-foreground">Caricato il:</span> {new Date(dupPrompt.existing.created_at).toLocaleString("it-IT")}</div>
+              )}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+            {dupPrompt && dupPrompt.total > 1 && (
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => dupPrompt.resolve("cancel-all")}>
+                Annulla tutti
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => dupPrompt?.resolve("skip")}>
+              Annulla
+            </Button>
+            <Button variant="default" size="sm" className="text-xs gap-1" onClick={() => dupPrompt?.resolve("replace")}>
+              <Check className="h-3.5 w-3.5" /> Sostituisci
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
