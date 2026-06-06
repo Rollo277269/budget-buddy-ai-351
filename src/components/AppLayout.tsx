@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar, defaultItems as sidebarItems } from "@/components/AppSidebar";
 import { FileText, LogOut, Maximize, Minimize, Moon, Sun } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutEditModeIndicator } from "@/components/LayoutEditModeIndicator";
@@ -140,6 +140,7 @@ function SidebarHoverWrapper({ children, locked }: { children: React.ReactNode; 
 
 export function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
+  const navigate = useNavigate();
    const title = pageTitles[location.pathname] || "Rubrica";
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
@@ -147,29 +148,50 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { isAdmin, isViewer, loading: roleLoading } = useUserRole();
 
   // Non-admin users must use the app only in fullscreen mode.
-  // Fullscreen requires a user gesture, so we show a blocking overlay
-  // until they click the button to enter fullscreen, and we auto-restore
-  // fullscreen at any user interaction if they exit it.
+  // Route changes are intercepted so the same navigation click also keeps/restores
+  // fullscreen, avoiding any normal-screen intermediate state between sections.
   const mustFullscreen = !roleLoading && !isAdmin;
   const requestFs = useCallback(() => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      const target = document.getElementById("root") || document.documentElement;
+      const request = target.requestFullscreen as (options?: { navigationUI?: "auto" | "hide" | "show" }) => Promise<void>;
+      return request.call(target, { navigationUI: "hide" }).catch(() => {});
     }
+    return Promise.resolve();
   }, []);
   useEffect(() => {
     if (!mustFullscreen) return;
+    sessionStorage.setItem("fs-pref", "1");
+    requestFs();
+
     const handler = () => requestFs();
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) window.setTimeout(() => requestFs(), 0);
+    };
+    const handleNavigationClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || anchor.target || anchor.origin !== window.location.origin) return;
+      const nextPath = `${anchor.pathname}${anchor.search}${anchor.hash}`;
+      if (!nextPath || nextPath === `${location.pathname}${location.search}${location.hash}`) return;
+      event.preventDefault();
+      requestFs().finally(() => navigate(nextPath));
+    };
     document.addEventListener("click", handler, true);
+    document.addEventListener("click", handleNavigationClick, true);
     document.addEventListener("keydown", handler, true);
     document.addEventListener("pointerdown", handler, true);
     document.addEventListener("touchstart", handler, true);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
       document.removeEventListener("click", handler, true);
+      document.removeEventListener("click", handleNavigationClick, true);
       document.removeEventListener("keydown", handler, true);
       document.removeEventListener("pointerdown", handler, true);
       document.removeEventListener("touchstart", handler, true);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [mustFullscreen, requestFs]);
+  }, [location.hash, location.pathname, location.search, mustFullscreen, navigate, requestFs]);
 
   // Mark the document with the current role so global CSS can hide
   // mutation controls ([data-admin-only]) for viewers.

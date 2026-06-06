@@ -65,27 +65,29 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/scadenzario" element={<ScadenzarioPage />} />
-                      <Route path="/vendite" element={<VenditePage />} />
-                      <Route path="/acquisti" element={<AcquistiPage />} />
-                      <Route path="/banche" element={<BanchePage />} />
-                      <Route path="/commesse" element={<CommessePage />} />
-                      <Route path="/lista-commesse" element={<ListaCommessePage />} />
-                      <Route path="/offerte" element={<OffertePage />} />
-                      <Route path="/schede-contabili" element={<SchedeContabiliPage />} />
-                      <Route path="/bilancio" element={<BilancioPage />} />
-                      <Route path="/budget" element={<BudgetPage />} />
-                      <Route path="/strumenti" element={<AdminRoute><StrumentiPage /></AdminRoute>} />
-                      <Route path="/iva" element={<IvaPage />} />
-                      <Route path="/rubrica" element={<RubricaPage />} />
-                      <Route path="/soci" element={<SociPage />} />
-                      <Route path="/kpi" element={<KpiPage />} />
-                      <Route path="/diagnostica" element={<AdminRoute><DiagnosticaPage /></AdminRoute>} />
-                      <Route path="/polizze" element={<PolizzePage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/scadenzario" element={<ScadenzarioPage />} />
+                        <Route path="/vendite" element={<VenditePage />} />
+                        <Route path="/acquisti" element={<AcquistiPage />} />
+                        <Route path="/banche" element={<BanchePage />} />
+                        <Route path="/commesse" element={<CommessePage />} />
+                        <Route path="/lista-commesse" element={<ListaCommessePage />} />
+                        <Route path="/offerte" element={<OffertePage />} />
+                        <Route path="/schede-contabili" element={<SchedeContabiliPage />} />
+                        <Route path="/bilancio" element={<BilancioPage />} />
+                        <Route path="/budget" element={<BudgetPage />} />
+                        <Route path="/strumenti" element={<AdminRoute><StrumentiPage /></AdminRoute>} />
+                        <Route path="/iva" element={<IvaPage />} />
+                        <Route path="/rubrica" element={<RubricaPage />} />
+                        <Route path="/soci" element={<SociPage />} />
+                        <Route path="/kpi" element={<KpiPage />} />
+                        <Route path="/diagnostica" element={<AdminRoute><DiagnosticaPage /></AdminRoute>} />
+                        <Route path="/polizze" element={<PolizzePage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
                   </AppLayout>
                 </ProtectedRoute>
               }
