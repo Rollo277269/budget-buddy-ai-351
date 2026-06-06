@@ -175,6 +175,14 @@ export default function Polizze() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const polizzaInputRef = useRef<HTMLInputElement>(null);
+  // Duplicate-on-upload prompt
+  const [dupPrompt, setDupPrompt] = useState<null | {
+    fileName: string;
+    existing: { id: string; storage_path: string; file_name: string; descrizione: string | null; importo: number | null; fornitore: string | null; created_at: string | null };
+    resolve: (action: "replace" | "skip" | "cancel-all") => void;
+    index: number;
+    total: number;
+  }>(null);
   const [duplicatesOpen, setDuplicatesOpen] = useState(false);
   const [deletingDupId, setDeletingDupId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
@@ -470,19 +478,30 @@ export default function Polizze() {
 
     setUploading(true);
     setUploadProgress({ done: 0, total: list.length });
-    let ok = 0, associated = 0, failed = 0;
+    let ok = 0, associated = 0, failed = 0, skipped = 0, replaced = 0;
+    let cancelAll = false;
     try {
       for (let i = 0; i < list.length; i++) {
+        if (cancelAll) { skipped += list.length - i; break; }
         const file = list[i];
         try {
           const text = await extractTextFromPdf(file);
           let prep = await prepareDocumento(file, text);
           if (prep && prep.kind === "duplicate") {
-            // overwrite duplicate silently
-            prep = await prepareDocumento(file, text, {
-              overwriteExistingId: prep.existing.id,
-              overwriteStoragePath: prep.existing.storage_path,
+            // Ask the user what to do
+            const existing = prep.existing;
+            const action = await new Promise<"replace" | "skip" | "cancel-all">((resolve) => {
+              setDupPrompt({ fileName: file.name, existing, resolve, index: i + 1, total: list.length });
             });
+            setDupPrompt(null);
+            if (action === "cancel-all") { cancelAll = true; skipped++; continue; }
+            if (action === "skip") { skipped++; setUploadProgress({ done: i + 1, total: list.length }); continue; }
+            // replace
+            prep = await prepareDocumento(file, text, {
+              overwriteExistingId: existing.id,
+              overwriteStoragePath: existing.storage_path,
+            });
+            if (prep && prep.kind === "ready") replaced++;
           }
           if (!prep || prep.kind !== "ready") { failed++; continue; }
           const prepared = prep.prepared;
@@ -509,11 +528,16 @@ export default function Polizze() {
         }
         setUploadProgress({ done: i + 1, total: list.length });
       }
-      toast.success(`Polizze caricate: ${ok}/${list.length} · ${associated} associate a commessa${failed ? ` · ${failed} errori` : ""}`);
+      const parts = [`${ok}/${list.length} caricate`, `${associated} associate`];
+      if (replaced) parts.push(`${replaced} sostituite`);
+      if (skipped) parts.push(`${skipped} saltate`);
+      if (failed) parts.push(`${failed} errori`);
+      toast.success(`Polizze: ${parts.join(" · ")}`);
       await refresh();
     } finally {
       setUploading(false);
       setUploadProgress(null);
+      setDupPrompt(null);
       if (polizzaInputRef.current) polizzaInputRef.current.value = "";
     }
   }, [commesseByCig, prepareDocumento, finalizeDocumento, refresh]);
