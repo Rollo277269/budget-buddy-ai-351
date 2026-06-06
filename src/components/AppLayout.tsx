@@ -216,7 +216,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleDark} title={dark ? "Modalità chiara" : "Modalità notte"}>
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              {(isAdmin || !roleLoading && isAdmin) || roleLoading ? (
+              {(isAdmin || roleLoading) ? (
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFs} title={isFs ? "Esci da schermo intero" : "Schermo intero"}>
                   {isFs ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
                 </Button>
