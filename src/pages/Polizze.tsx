@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check, Copy, Trash2 } from "lucide-react";
+import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check, Copy, Trash2, Upload } from "lucide-react";
 import { ArrowUp, ArrowDown, ArrowUpDown, Link2 } from "lucide-react";
 import { Pencil, X as XIcon } from "lucide-react";
 import { extractCigCandidates } from "@/lib/cigCoherence";
@@ -39,6 +39,25 @@ const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "azioni", label: "Azioni" },
 ];
 const COLS_STORAGE_KEY = "polizze-visible-cols-v2";
+
+// ── pdfjs text extraction (lazy) ────────────────────────────────────────────
+async function getPdfjs() {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
+async function extractTextFromPdf(file: File): Promise<string> {
+  const pdfjsLib = await getPdfjs();
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = "";
+  for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((it: any) => it.str).join(" ") + "\n";
+  }
+  return text;
+}
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function parseIsoOrItDate(s: string | null | undefined): Date | null {
@@ -134,7 +153,7 @@ function CountdownBadge({ date }: { date: Date | null }) {
 
 // ── page ───────────────────────────────────────────────────────────────────
 export default function Polizze() {
-  const { documenti, refresh, updateField, deleteDocumento } = useDocumentiAcquisto("acquisto");
+  const { documenti, refresh, updateField, deleteDocumento, prepareDocumento, finalizeDocumento } = useDocumentiAcquisto("acquisto");
   const { centriCosto } = useCentriData();
   const { byCig: commesseByCig } = useCssrCommesse();
   // Case-insensitive lookup map (CIG sometimes stored uppercase, sometimes mixed).
@@ -153,6 +172,9 @@ export default function Polizze() {
   }, [lookupCommessa]);
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [reassociating, setReassociating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const polizzaInputRef = useRef<HTMLInputElement>(null);
   const [duplicatesOpen, setDuplicatesOpen] = useState(false);
   const [deletingDupId, setDeletingDupId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
@@ -435,6 +457,67 @@ export default function Polizze() {
     }
   }, [polizze, commesseByCig, refresh]);
 
+  // ── Upload polizze PDFs (multiple) ──
+  const handleUploadPolizze = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const list = Array.from(files).filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    if (list.length === 0) {
+      toast.error("Seleziona almeno un file PDF");
+      return;
+    }
+    const cigSet = new Set<string>();
+    commesseByCig.forEach((_v, k) => { if (k) cigSet.add(k.toUpperCase()); });
+
+    setUploading(true);
+    setUploadProgress({ done: 0, total: list.length });
+    let ok = 0, associated = 0, failed = 0;
+    try {
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        try {
+          const text = await extractTextFromPdf(file);
+          let prep = await prepareDocumento(file, text);
+          if (prep && prep.kind === "duplicate") {
+            // overwrite duplicate silently
+            prep = await prepareDocumento(file, text, {
+              overwriteExistingId: prep.existing.id,
+              overwriteStoragePath: prep.existing.storage_path,
+            });
+          }
+          if (!prep || prep.kind !== "ready") { failed++; continue; }
+          const prepared = prep.prepared;
+
+          // Force tipo_documento = Polizza
+          prepared.tipo_documento = "Polizza";
+
+          // Auto-detect CIG against known commesse if missing or invalid
+          const currentCig = (prepared.cig || "").trim().toUpperCase();
+          if (!currentCig || !cigSet.has(currentCig)) {
+            const haystack = `${prepared.descrizione || ""}\n${prepared.fornitore || ""}\n${prepared.ai_summary || ""}\n${text}`;
+            const { all, nearKeyword } = extractCigCandidates(haystack);
+            const candidates = [...nearKeyword, ...all];
+            const match = candidates.find((c) => cigSet.has(c));
+            if (match) prepared.cig = match;
+          }
+          if (prepared.cig && cigSet.has(prepared.cig.toUpperCase())) associated++;
+
+          const saved = await finalizeDocumento(prepared);
+          if (saved) ok++; else failed++;
+        } catch (e) {
+          console.error("Errore upload polizza:", file.name, e);
+          failed++;
+        }
+        setUploadProgress({ done: i + 1, total: list.length });
+      }
+      toast.success(`Polizze caricate: ${ok}/${list.length} · ${associated} associate a commessa${failed ? ` · ${failed} errori` : ""}`);
+      await refresh();
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+      if (polizzaInputRef.current) polizzaInputRef.current.value = "";
+    }
+  }, [commesseByCig, prepareDocumento, finalizeDocumento, refresh]);
+
   return (
     <div className="p-4 space-y-4">
       {/* Banner riassuntivo — clickable filters */}
@@ -528,6 +611,26 @@ export default function Polizze() {
                 >
                   {reassociating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
                   Riassocia CIG
+                </Button>
+                <input
+                  ref={polizzaInputRef}
+                  type="file"
+                  accept=".pdf"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleUploadPolizze(e.target.files)}
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={() => polizzaInputRef.current?.click()}
+                  disabled={uploading}
+                  title="Carica uno o più PDF di polizza: verranno letti con AI e associati alla commessa tramite CIG"
+                >
+                  {uploading
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Analisi {uploadProgress?.done ?? 0}/{uploadProgress?.total ?? 0}</>
+                    : <><Upload className="h-3.5 w-3.5" />Carica polizze</>}
                 </Button>
                 <Button
                   variant="outline"
