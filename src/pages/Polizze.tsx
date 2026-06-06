@@ -612,6 +612,26 @@ export default function Polizze() {
                   {reassociating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
                   Riassocia CIG
                 </Button>
+                <input
+                  ref={polizzaInputRef}
+                  type="file"
+                  accept=".pdf"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleUploadPolizze(e.target.files)}
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={() => polizzaInputRef.current?.click()}
+                  disabled={uploading}
+                  title="Carica uno o più PDF di polizza: verranno letti con AI e associati alla commessa tramite CIG"
+                >
+                  {uploading
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Analisi {uploadProgress?.done ?? 0}/{uploadProgress?.total ?? 0}</>
+                    : <><Upload className="h-3.5 w-3.5" />Carica polizze</>}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
