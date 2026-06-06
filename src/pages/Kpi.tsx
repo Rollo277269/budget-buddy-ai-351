@@ -31,6 +31,30 @@ export default function KpiPage() {
   const { contatti, loading: loadingRubrica } = useRubrica();
   const { allSales, allPurchases, loading: loadingInvoices } = useInvoiceData();
 
+  // Mappa assegnazioni centri di ricavo per vendite (header + righe)
+  const [centroMap, setCentroMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    (async () => {
+      const map: Record<string, string> = {};
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("centro_assignments" as any)
+          .select("invoice_key, centro_codice")
+          .eq("tipo", "ricavo")
+          .eq("context", "vendite")
+          .range(from, from + pageSize - 1);
+        if (error) break;
+        for (const d of (data as any[] || [])) map[d.invoice_key] = d.centro_codice;
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+      }
+      setCentroMap(map);
+    })();
+  }, []);
+  const CODICE_QUOTA_LAVORI = "RG2";
+
   const allYears = useMemo(() => {
     const ys = new Set<number>();
     allSales.forEach((s) => s.anno && ys.add(s.anno));
