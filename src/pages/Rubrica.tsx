@@ -269,7 +269,7 @@ export default function RubricaPage() {
           <Users className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-bold tracking-tight">Rubrica</h1>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap" data-admin-only>
           {selected.size >= 2 && (
             <Button variant="default" size="sm" onClick={openMergeDialog}>
               <Merge className="h-3.5 w-3.5 mr-1" />
