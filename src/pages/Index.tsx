@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useMemo, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { EditableText } from "@/components/EditableText";
 
 const Index = () => {
   const {
@@ -106,22 +107,28 @@ const Index = () => {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Totale Vendite" value={formatCurrency(stats.totalSales)} subtitle={`${stats.countSales} fatture`} icon={TrendingUp} variant="income" />
-          <StatCard title="Totale Acquisti" value={formatCurrency(stats.totalPurchases)} subtitle={`${stats.countPurchases} fatture`} icon={TrendingDown} variant="expense" />
-          <StatCard title="Saldo" value={formatCurrency(stats.balance)} subtitle="Vendite - Acquisti" icon={Scale} variant="balance" />
-          <StatCard title="Saldo IVA" value={formatCurrency(stats.taxBalance)} subtitle="IVA vendite - IVA acquisti" icon={Receipt} variant="neutral" />
+          <StatCard editKey="cruscotto.vendite" title="Totale Vendite" value={formatCurrency(stats.totalSales)} subtitle={`${stats.countSales} fatture`} icon={TrendingUp} variant="income" />
+          <StatCard editKey="cruscotto.acquisti" title="Totale Acquisti" value={formatCurrency(stats.totalPurchases)} subtitle={`${stats.countPurchases} fatture`} icon={TrendingDown} variant="expense" />
+          <StatCard editKey="cruscotto.saldo" title="Saldo" value={formatCurrency(stats.balance)} subtitle="Vendite - Acquisti" icon={Scale} variant="balance" />
+          <StatCard editKey="cruscotto.saldo_iva" title="Saldo IVA" value={formatCurrency(stats.taxBalance)} subtitle="IVA vendite - IVA acquisti" icon={Receipt} variant="neutral" />
         </div>
 
         {/* Chart */}
         <div className="rounded-xl border bg-card p-5">
-          <h2 className="text-sm font-semibold mb-4">{filters.anno ? "Andamento Mensile Acquisti e Vendite" : "Andamento Annuale Acquisti e Vendite"}</h2>
+          <h2 className="text-sm font-semibold mb-4">
+            <EditableText textKey={filters.anno ? "cruscotto.chart.mensile" : "cruscotto.chart.annuale"}>
+              {filters.anno ? "Andamento Mensile Acquisti e Vendite" : "Andamento Annuale Acquisti e Vendite"}
+            </EditableText>
+          </h2>
           <MonthlyChart sales={sales} purchases={purchases} movements={movements} selectedYear={filters.anno} />
         </div>
 
         {/* Quote: lavori + avvalimenti */}
         <div className="rounded-xl border bg-card p-5">
           <h2 className="text-sm font-semibold mb-4">
-            {filters.anno ? "Andamento Mensile Ricavi Generali" : "Andamento Annuale Ricavi Generali"}
+            <EditableText textKey={filters.anno ? "cruscotto.ricavi.mensile" : "cruscotto.ricavi.annuale"}>
+              {filters.anno ? "Andamento Mensile Ricavi Generali" : "Andamento Annuale Ricavi Generali"}
+            </EditableText>
           </h2>
           <QuoteChart sales={sales} selectedYear={filters.anno} />
         </div>
@@ -129,18 +136,24 @@ const Index = () => {
         {/* Pie Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="rounded-xl border bg-card p-5">
-            <h2 className="text-sm font-semibold mb-4">Distribuzione Vendite per Cliente</h2>
+            <h2 className="text-sm font-semibold mb-4">
+              <EditableText textKey="cruscotto.pie.clienti">Distribuzione Vendite per Cliente</EditableText>
+            </h2>
             <ClientPieChart sales={sales} />
           </div>
           <div className="rounded-xl border bg-card p-5">
-            <h2 className="text-sm font-semibold mb-4">Distribuzione Acquisti per Fornitore</h2>
+            <h2 className="text-sm font-semibold mb-4">
+              <EditableText textKey="cruscotto.pie.fornitori">Distribuzione Acquisti per Fornitore</EditableText>
+            </h2>
             <SupplierPieChart purchases={purchases} />
           </div>
         </div>
 
         {/* Centro Ricavo Chart */}
         <div className="rounded-xl border bg-card p-5">
-          <h2 className="text-sm font-semibold mb-4">Ricavi per Centro di Ricavo</h2>
+          <h2 className="text-sm font-semibold mb-4">
+            <EditableText textKey="cruscotto.centri_ricavo">Ricavi per Centro di Ricavo</EditableText>
+          </h2>
           <CentroRicavoChart sales={sales} refreshKey={nonClassRefreshKey} />
           <NonClassificatoList sales={sales} onRowClick={(inv) => setSelectedInvoice(inv)} refreshKey={nonClassRefreshKey} />
         </div>
@@ -152,7 +165,9 @@ const Index = () => {
 
         {/* Deadline Analysis */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">Analisi Scadenze</h2>
+          <h2 className="text-sm font-semibold">
+            <EditableText textKey="cruscotto.scadenze">Analisi Scadenze</EditableText>
+          </h2>
           <DeadlineAnalysis sales={sales} purchases={purchases} />
         </div>
 
@@ -161,7 +176,9 @@ const Index = () => {
 
         {/* CIG Detail */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold">Dettaglio per CIG / Commessa</h2>
+          <h2 className="text-sm font-semibold">
+            <EditableText textKey="cruscotto.cig_detail">Dettaglio per CIG / Commessa</EditableText>
+          </h2>
           <CigDetailTable sales={sales} purchases={purchases} onCigClick={handleCigClick} />
         </div>
       </div>
