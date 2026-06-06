@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,6 +30,30 @@ const COLORS = [
 export default function KpiPage() {
   const { contatti, loading: loadingRubrica } = useRubrica();
   const { allSales, allPurchases, loading: loadingInvoices } = useInvoiceData();
+
+  // Mappa assegnazioni centri di ricavo per vendite (header + righe)
+  const [centroMap, setCentroMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    (async () => {
+      const map: Record<string, string> = {};
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("centro_assignments" as any)
+          .select("invoice_key, centro_codice")
+          .eq("tipo", "ricavo")
+          .eq("context", "vendite")
+          .range(from, from + pageSize - 1);
+        if (error) break;
+        for (const d of (data as any[] || [])) map[d.invoice_key] = d.centro_codice;
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+      }
+      setCentroMap(map);
+    })();
+  }, []);
+  const CODICE_QUOTA_LAVORI = "RG2";
 
   const allYears = useMemo(() => {
     const ys = new Set<number>();
@@ -126,14 +151,46 @@ export default function KpiPage() {
     "Soci attivi": y.sociAttivi,
   }));
 
-  const quotaLavoriData = (currentYearAgg?.sociData || [])
-    .filter((s) => s.vendite > 0)
-    .map((s) => ({
-      nome: s.nome.length > 20 ? s.nome.slice(0, 20) + "…" : s.nome,
-      nomeFull: s.nome,
-      vendite: s.vendite,
-      quota: currentYearAgg!.totV > 0 ? +(s.vendite / currentYearAgg!.totV * 100).toFixed(2) : 0,
-    }));
+  // "Quota lavori per Socio": somma per anno dell'importo assegnato al centro RG2 (Quota lavori),
+  // suddiviso per Socio. X=anni, Y=Euro.
+  const quotaLavoriPerYear = useMemo(() => {
+    const yearsToShow = focusYear ? [focusYear] : allYears;
+    return yearsToShow.map((y) => {
+      const ys = allSales.filter((s) => s.anno === y);
+      const row: any = { anno: String(y) };
+      matchers.forEach(({ socio, matchSale }) => { row[socio.denominazione] = 0; });
+      ys.forEach((s) => {
+        const headerKey = `${s.anno}-${s.numero}`;
+        const headerCode = centroMap[headerKey];
+        const matched = matchers.find((m) => m.matchSale(s));
+        if (!matched) return;
+        const base = (s.imponibile ?? 0) !== 0 ? s.imponibile : s.totale;
+        if (headerCode === CODICE_QUOTA_LAVORI) {
+          row[matched.socio.denominazione] += base || 0;
+          return;
+        }
+        const righe: any[] = Array.isArray((s as any).righe) ? (s as any).righe : [];
+        righe.forEach((r, idx) => {
+          const amt = (r?.imponibile ?? r?.totale ?? 0) || 0;
+          if (!amt) return;
+          if (centroMap[`${headerKey}-${idx}`] === CODICE_QUOTA_LAVORI) {
+            row[matched.socio.denominazione] += amt;
+          }
+        });
+      });
+      return row;
+    });
+  }, [allSales, allYears, focusYear, matchers, centroMap]);
+
+  const sociAttiviQuotaLavori = useMemo(() => {
+    const names = new Set<string>();
+    quotaLavoriPerYear.forEach((row) => {
+      Object.keys(row).forEach((k) => {
+        if (k !== "anno" && (row[k] || 0) > 0) names.add(k);
+      });
+    });
+    return Array.from(names);
+  }, [quotaLavoriPerYear]);
 
   const sociPerYearStack = perYear.map((y) => {
     const row: any = { anno: String(y.anno) };
@@ -206,23 +263,20 @@ export default function KpiPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 h-72">
-                {quotaLavoriData.length === 0 ? (
+                {sociAttiviQuotaLavori.length === 0 ? (
                   <div className="text-xs text-muted-foreground py-8 text-center">Nessun dato.</div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={quotaLavoriData} layout="vertical" margin={{ left: 8, right: 24 }}>
+                    <BarChart data={quotaLavoriPerYear} margin={{ left: 0, right: 16 }}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis type="number" tickFormatter={(v) => `${v}%`} fontSize={10} />
-                      <YAxis type="category" dataKey="nome" width={140} fontSize={10} />
-                      <RTooltip
-                        formatter={(v: any, _n, item: any) => [`${v}% · ${fmt(item.payload.vendite)}`, item.payload.nomeFull]}
-                      />
-                      <ReferenceLine x={0} stroke="hsl(var(--border))" />
-                      <Bar dataKey="quota" radius={[0, 4, 4, 0]}>
-                        {quotaLavoriData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Bar>
+                      <XAxis dataKey="anno" fontSize={10} />
+                      <YAxis tickFormatter={(v) => `${((v as number) / 1000).toFixed(0)}k`} fontSize={10} width={50} />
+                      <RTooltip formatter={(v: any, n) => [fmt(v as number), n]} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                      {sociAttiviQuotaLavori.map((nome, i) => (
+                        <Bar key={nome} dataKey={nome} fill={COLORS[i % COLORS.length]} radius={[2, 2, 0, 0]} />
+                      ))}
                     </BarChart>
                   </ResponsiveContainer>
                 )}
