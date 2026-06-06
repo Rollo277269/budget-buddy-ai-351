@@ -113,6 +113,9 @@ Deno.serve(async (req) => {
       if (password.length < 8) return json({ error: "password troppo corta (min 8)" }, 400);
       const { error } = await admin.auth.admin.updateUserById(userId, { password });
       if (error) return json({ error: error.message }, 400);
+      if (body.sendResetEmail) {
+        await sendResetEmail(body.email, body.redirectTo);
+      }
       return json({ ok: true });
     }
 
@@ -122,7 +125,20 @@ Deno.serve(async (req) => {
       const password = generatePassword(16);
       const { error } = await admin.auth.admin.updateUserById(userId, { password });
       if (error) return json({ error: error.message }, 400);
+      if (body.sendResetEmail) {
+        await sendResetEmail(body.email, body.redirectTo);
+      }
       return json({ ok: true, password });
+    }
+
+    if (action === "send_reset") {
+      const email = String(body.email || "").trim().toLowerCase();
+      if (!email) return json({ error: "email required" }, 400);
+      const redirectTo = body.redirectTo || undefined;
+      const anon = createClient(SUPABASE_URL, ANON_KEY);
+      const { error } = await anon.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
     }
 
     return json({ error: "unknown action" }, 400);
@@ -145,4 +161,13 @@ function generatePassword(len = 16): string {
   let out = "";
   for (let i = 0; i < len; i++) out += chars[bytes[i] % chars.length];
   return out;
+}
+
+async function sendResetEmail(email: unknown, redirectTo: unknown) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!e) return;
+  try {
+    const anon = createClient(SUPABASE_URL, ANON_KEY);
+    await anon.auth.resetPasswordForEmail(e, { redirectTo: redirectTo ? String(redirectTo) : undefined });
+  } catch (_) { /* ignore */ }
 }
