@@ -519,7 +519,6 @@ export default function Polizze() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button
-                  data-admin-only
                   variant="outline"
                   size="sm"
                   className="h-8 text-xs gap-1"
@@ -531,7 +530,6 @@ export default function Polizze() {
                   Riassocia CIG
                 </Button>
                 <Button
-                  data-admin-only
                   variant="outline"
                   size="sm"
                   className={cn(

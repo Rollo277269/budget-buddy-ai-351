@@ -31,5 +31,14 @@ export function useUserRole() {
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
 
-  return { role, isAdmin: role === "admin", isViewer: role === "viewer", loading };
+  return {
+    role,
+    isAdmin: role === "admin",
+    isViewer: role === "viewer",
+    // Any authenticated user with a role can insert/update data.
+    // Only admins can delete or manage configuration.
+    canEdit: role === "admin" || role === "viewer",
+    canDelete: role === "admin",
+    loading,
+  };
 }

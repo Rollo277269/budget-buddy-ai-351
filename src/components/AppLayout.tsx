@@ -187,9 +187,9 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               {isViewer && (
                 <span
                   className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-medium px-2 py-0.5 mr-1 border border-amber-300"
-                  title="Hai accesso in sola lettura: non puoi modificare i dati"
+                  title="Puoi caricare e modificare dati ma non eliminare record né gestire configurazioni"
                 >
-                  <Eye className="h-3 w-3" /> Sola lettura
+                  <Eye className="h-3 w-3" /> Permessi limitati
                 </span>
               )}
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleDark} title={dark ? "Modalità chiara" : "Modalità notte"}>
