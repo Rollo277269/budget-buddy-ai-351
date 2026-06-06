@@ -263,23 +263,20 @@ export default function KpiPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 h-72">
-                {quotaLavoriData.length === 0 ? (
+                {sociAttiviQuotaLavori.length === 0 ? (
                   <div className="text-xs text-muted-foreground py-8 text-center">Nessun dato.</div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={quotaLavoriData} layout="vertical" margin={{ left: 8, right: 24 }}>
+                    <BarChart data={quotaLavoriPerYear} margin={{ left: 0, right: 16 }}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis type="number" tickFormatter={(v) => `${v}%`} fontSize={10} />
-                      <YAxis type="category" dataKey="nome" width={140} fontSize={10} />
-                      <RTooltip
-                        formatter={(v: any, _n, item: any) => [`${v}% · ${fmt(item.payload.vendite)}`, item.payload.nomeFull]}
-                      />
-                      <ReferenceLine x={0} stroke="hsl(var(--border))" />
-                      <Bar dataKey="quota" radius={[0, 4, 4, 0]}>
-                        {quotaLavoriData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Bar>
+                      <XAxis dataKey="anno" fontSize={10} />
+                      <YAxis tickFormatter={(v) => `${((v as number) / 1000).toFixed(0)}k`} fontSize={10} width={50} />
+                      <RTooltip formatter={(v: any, n) => [fmt(v as number), n]} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                      {sociAttiviQuotaLavori.map((nome, i) => (
+                        <Bar key={nome} dataKey={nome} fill={COLORS[i % COLORS.length]} radius={[2, 2, 0, 0]} />
+                      ))}
                     </BarChart>
                   </ResponsiveContainer>
                 )}
