@@ -106,6 +106,25 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (action === "set_password") {
+      const userId = String(body.userId || "");
+      const password = String(body.password || "");
+      if (!userId) return json({ error: "userId required" }, 400);
+      if (password.length < 8) return json({ error: "password troppo corta (min 8)" }, 400);
+      const { error } = await admin.auth.admin.updateUserById(userId, { password });
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (action === "generate_password") {
+      const userId = String(body.userId || "");
+      if (!userId) return json({ error: "userId required" }, 400);
+      const password = generatePassword(16);
+      const { error } = await admin.auth.admin.updateUserById(userId, { password });
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true, password });
+    }
+
     return json({ error: "unknown action" }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
@@ -117,4 +136,13 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function generatePassword(len = 16): string {
+  const chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#%*";
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[bytes[i] % chars.length];
+  return out;
 }
