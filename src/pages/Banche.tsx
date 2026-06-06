@@ -1092,7 +1092,7 @@ const BanchePage = () => {
               <span className="text-xs font-medium">{selectedRows.size} righe selezionate</span>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="text-xs">
+                  <Button data-admin-only variant="destructive" size="sm" className="text-xs">
                     <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina selezionate
                   </Button>
                 </AlertDialogTrigger>
