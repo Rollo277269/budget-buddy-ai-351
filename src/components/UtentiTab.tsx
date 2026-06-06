@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Mail, Trash2, RefreshCcw, UserPlus, Shield, Eye, KeyRound, Copy, Wand2, Eye as EyeIcon, EyeOff } from "lucide-react";
+import { Loader2, Mail, Trash2, RefreshCcw, UserPlus, Shield, Eye, KeyRound, Copy, Wand2, Eye as EyeIcon, EyeOff, MailQuestion } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -41,6 +42,7 @@ export default function UtentiTab() {
   const [pwdValue, setPwdValue] = useState("");
   const [pwdShow, setPwdShow] = useState(false);
   const [pwdBusy, setPwdBusy] = useState(false);
+  const [pwdSendReset, setPwdSendReset] = useState(false);
 
   const redirectTo = `${window.location.origin}/auth`;
 
@@ -128,16 +130,22 @@ export default function UtentiTab() {
     setPwdUser(u);
     setPwdValue("");
     setPwdShow(true);
+    setPwdSendReset(false);
   };
 
   const handleGeneratePwd = async () => {
     if (!pwdUser) return;
     setPwdBusy(true);
     try {
-      const res = await invoke("generate_password", { userId: pwdUser.id });
+      const res = await invoke("generate_password", {
+        userId: pwdUser.id,
+        email: pwdUser.email,
+        sendResetEmail: pwdSendReset,
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       setPwdValue(res.password);
       setPwdShow(true);
-      toast.success("Password generata e impostata");
+      toast.success(pwdSendReset ? "Password generata, impostata ed email reset inviata" : "Password generata e impostata");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -150,12 +158,30 @@ export default function UtentiTab() {
     if (pwdValue.length < 8) { toast.error("Min 8 caratteri"); return; }
     setPwdBusy(true);
     try {
-      await invoke("set_password", { userId: pwdUser.id, password: pwdValue });
-      toast.success("Password aggiornata");
+      await invoke("set_password", {
+        userId: pwdUser.id,
+        password: pwdValue,
+        email: pwdUser.email,
+        sendResetEmail: pwdSendReset,
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      toast.success(pwdSendReset ? "Password aggiornata ed email reset inviata" : "Password aggiornata");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setPwdBusy(false);
+    }
+  };
+
+  const handleSendReset = async (u: UserRow) => {
+    try {
+      await invoke("send_reset", {
+        email: u.email,
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      toast.success(`Email di reset inviata a ${u.email}`);
+    } catch (err) {
+      toast.error((err as Error).message);
     }
   };
 
@@ -271,6 +297,9 @@ export default function UtentiTab() {
                               <Mail className="h-3.5 w-3.5" />
                             </Button>
                           )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Invia email reset password" onClick={() => handleSendReset(u)}>
+                            <MailQuestion className="h-3.5 w-3.5" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="Imposta password" onClick={() => openPwd(u)}>
                             <KeyRound className="h-3.5 w-3.5" />
                           </Button>
@@ -331,6 +360,16 @@ export default function UtentiTab() {
               <Wand2 className="h-3.5 w-3.5 mr-1.5" />
               Genera e imposta password casuale
             </Button>
+            <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+              <Checkbox
+                checked={pwdSendReset}
+                onCheckedChange={(v) => setPwdSendReset(!!v)}
+                className="mt-0.5"
+              />
+              <span>
+                Invia anche all'utente un'<strong>email di reset password</strong> così potrà sceglierne una sua.
+              </span>
+            </label>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPwdUser(null)}>Chiudi</Button>
