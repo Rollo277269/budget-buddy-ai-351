@@ -360,6 +360,16 @@ export default function UtentiTab() {
               <Wand2 className="h-3.5 w-3.5 mr-1.5" />
               Genera e imposta password casuale
             </Button>
+            <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+              <Checkbox
+                checked={pwdSendReset}
+                onCheckedChange={(v) => setPwdSendReset(!!v)}
+                className="mt-0.5"
+              />
+              <span>
+                Invia anche all'utente un'<strong>email di reset password</strong> così potrà sceglierne una sua.
+              </span>
+            </label>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPwdUser(null)}>Chiudi</Button>
