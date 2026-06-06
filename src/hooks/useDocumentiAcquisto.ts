@@ -55,7 +55,13 @@ async function loadDocumenti(tipo: string, force = false): Promise<DocumentoAcqu
       .eq("tipo", tipo)
       .order("created_at", { ascending: false });
     if (error) { console.error("Error fetching documenti:", error); docCache[tipo] = docCache[tipo] ?? []; docInflight[tipo] = undefined; return docCache[tipo]!; }
-    docCache[tipo] = (data || []) as unknown as DocumentoAcquisto[];
+    const { loadRubrica } = await import("./useRubrica");
+    const { buildRubricaResolver } = await import("./useRubricaName");
+    const resolveName = buildRubricaResolver(await loadRubrica());
+    docCache[tipo] = ((data || []) as any[]).map((d: any) => ({
+      ...d,
+      fornitore: d.fornitore ? resolveName(null, d.fornitore) : d.fornitore,
+    })) as unknown as DocumentoAcquisto[];
     docInflight[tipo] = undefined;
     docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
     return docCache[tipo]!;
