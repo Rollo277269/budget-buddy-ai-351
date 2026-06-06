@@ -8,6 +8,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { runLocalStorageMigration } from "@/lib/localStorageMigration";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 const AuthPage = lazy(() => import("./pages/Auth"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPassword"));
 
@@ -74,12 +75,12 @@ const App = () => {
                       <Route path="/schede-contabili" element={<SchedeContabiliPage />} />
                       <Route path="/bilancio" element={<BilancioPage />} />
                       <Route path="/budget" element={<BudgetPage />} />
-                      <Route path="/strumenti" element={<StrumentiPage />} />
+                      <Route path="/strumenti" element={<AdminRoute><StrumentiPage /></AdminRoute>} />
                       <Route path="/iva" element={<IvaPage />} />
                       <Route path="/rubrica" element={<RubricaPage />} />
                       <Route path="/soci" element={<SociPage />} />
                       <Route path="/kpi" element={<KpiPage />} />
-                      <Route path="/diagnostica" element={<DiagnosticaPage />} />
+                      <Route path="/diagnostica" element={<AdminRoute><DiagnosticaPage /></AdminRoute>} />
                       <Route path="/polizze" element={<PolizzePage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
