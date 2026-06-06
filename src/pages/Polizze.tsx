@@ -457,6 +457,67 @@ export default function Polizze() {
     }
   }, [polizze, commesseByCig, refresh]);
 
+  // ── Upload polizze PDFs (multiple) ──
+  const handleUploadPolizze = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const list = Array.from(files).filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    if (list.length === 0) {
+      toast.error("Seleziona almeno un file PDF");
+      return;
+    }
+    const cigSet = new Set<string>();
+    commesseByCig.forEach((_v, k) => { if (k) cigSet.add(k.toUpperCase()); });
+
+    setUploading(true);
+    setUploadProgress({ done: 0, total: list.length });
+    let ok = 0, associated = 0, failed = 0;
+    try {
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        try {
+          const text = await extractTextFromPdf(file);
+          let prep = await prepareDocumento(file, text);
+          if (prep && prep.kind === "duplicate") {
+            // overwrite duplicate silently
+            prep = await prepareDocumento(file, text, {
+              overwriteExistingId: prep.existing.id,
+              overwriteStoragePath: prep.existing.storage_path,
+            });
+          }
+          if (!prep || prep.kind !== "ready") { failed++; continue; }
+          const prepared = prep.prepared;
+
+          // Force tipo_documento = Polizza
+          prepared.tipo_documento = "Polizza";
+
+          // Auto-detect CIG against known commesse if missing or invalid
+          const currentCig = (prepared.cig || "").trim().toUpperCase();
+          if (!currentCig || !cigSet.has(currentCig)) {
+            const haystack = `${prepared.descrizione || ""}\n${prepared.fornitore || ""}\n${prepared.ai_summary || ""}\n${text}`;
+            const { all, nearKeyword } = extractCigCandidates(haystack);
+            const candidates = [...nearKeyword, ...all];
+            const match = candidates.find((c) => cigSet.has(c));
+            if (match) prepared.cig = match;
+          }
+          if (prepared.cig && cigSet.has(prepared.cig.toUpperCase())) associated++;
+
+          const saved = await finalizeDocumento(prepared);
+          if (saved) ok++; else failed++;
+        } catch (e) {
+          console.error("Errore upload polizza:", file.name, e);
+          failed++;
+        }
+        setUploadProgress({ done: i + 1, total: list.length });
+      }
+      toast.success(`Polizze caricate: ${ok}/${list.length} · ${associated} associate a commessa${failed ? ` · ${failed} errori` : ""}`);
+      await refresh();
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+      if (polizzaInputRef.current) polizzaInputRef.current.value = "";
+    }
+  }, [commesseByCig, prepareDocumento, finalizeDocumento, refresh]);
+
   return (
     <div className="p-4 space-y-4">
       {/* Banner riassuntivo — clickable filters */}
