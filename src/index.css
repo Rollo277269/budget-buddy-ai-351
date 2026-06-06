@@ -775,3 +775,46 @@ body[data-role="viewer"] [data-admin-only] {
     margin: 0 !important;
   }
 }
+
+/* ── Tabelle: font uniforme, testo nero, niente sovrapposizioni ── */
+@layer utilities {
+  table th,
+  table td {
+    color: hsl(0 0% 0%) !important;
+    font-size: 12px !important;
+    line-height: 1.25rem !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+  /* Forza il colore nero anche sui contenuti interni testuali delle celle,
+     senza alterare badge con sfondi colorati né icone SVG. */
+  table th > span,
+  table td > span,
+  table th > div,
+  table td > div,
+  table th > a,
+  table td > a,
+  table th > p,
+  table td > p {
+    color: hsl(0 0% 0%);
+    font-size: 12px;
+    line-height: 1.25rem;
+  }
+  /* Consenti wrap esplicito (classi Tailwind) di sovrascrivere il troncamento */
+  table td.whitespace-normal,
+  table td.whitespace-pre-wrap,
+  table td.break-words,
+  table td .whitespace-normal,
+  table td .whitespace-pre-wrap,
+  table td .break-words {
+    overflow: visible;
+    text-overflow: clip;
+  }
+  /* Le celle troncate devono comunque mostrare l'ellissi su una sola riga */
+  table td > span.truncate,
+  table td > div.truncate {
+    display: block;
+    max-width: 100%;
+  }
+}
