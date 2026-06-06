@@ -153,7 +153,9 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const mustFullscreen = !roleLoading && !isAdmin;
   const requestFs = useCallback(() => {
     if (!document.fullscreenElement) {
-      const target = document.getElementById("root") || document.documentElement;
+      // Use <html> as the fullscreen target so portals (Dialog, Popover, Sheet,
+      // Toaster) that render into document.body remain visible inside fullscreen.
+      const target = document.documentElement;
       const request = target.requestFullscreen as (options?: { navigationUI?: "auto" | "hide" | "show" }) => Promise<void>;
       return request.call(target, { navigationUI: "hide" }).catch(() => {});
     }
