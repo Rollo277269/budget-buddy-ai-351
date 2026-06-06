@@ -745,11 +745,11 @@ const BanchePage = () => {
 
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
           {movements.length > 0 &&
-          <span data-admin-only className="contents">
+          <>
           <Button variant="outline" size="sm" title="Riesegui il matching automatico solo sui movimenti non ancora riconciliati" onClick={() => {const n = refreshAutoMatch();if (n > 0) toast.success(`${n} nuove riconciliazioni automatiche salvate`); else toast.info("Nessun nuovo match trovato — le riconciliazioni esistenti sono state preservate");}}>
               <RefreshCw className="h-4 w-4 mr-1" />Aggiorna riconciliazione
             </Button>
-          <Button variant="outline" size="sm" title="Trova e rimuovi movimenti duplicati nel database" onClick={async () => {
+          <Button data-admin-only variant="outline" size="sm" title="Trova e rimuovi movimenti duplicati nel database" onClick={async () => {
               const count = await deduplicateExisting();
               if (count > 0) toast.success(`Rimossi ${count} movimenti duplicati`);
               else toast.info("Nessun duplicato trovato");
@@ -763,9 +763,9 @@ const BanchePage = () => {
             }}>
               <RefreshCw className="h-4 w-4 mr-1" />Aggiorna CIG
             </Button>
-          </span>
+          </>
           }
-          <Button data-admin-only onClick={() => {
+          <Button onClick={() => {
             if (!hasValidAccount) {toast.error("Seleziona prima un conto corrente o una carta");return;}
             fileInputRef.current?.click();
           }} disabled={isLoading} size="sm">
