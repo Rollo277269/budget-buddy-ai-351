@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check, Copy, Trash2 } from "lucide-react";
+import { ShieldCheck, ShieldAlert, AlertCircle, Sparkles, Loader2, FileText, ExternalLink, Columns3, Check, Copy, Trash2, Upload } from "lucide-react";
 import { ArrowUp, ArrowDown, ArrowUpDown, Link2 } from "lucide-react";
 import { Pencil, X as XIcon } from "lucide-react";
 import { extractCigCandidates } from "@/lib/cigCoherence";
@@ -39,6 +39,25 @@ const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "azioni", label: "Azioni" },
 ];
 const COLS_STORAGE_KEY = "polizze-visible-cols-v2";
+
+// ── pdfjs text extraction (lazy) ────────────────────────────────────────────
+async function getPdfjs() {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
+async function extractTextFromPdf(file: File): Promise<string> {
+  const pdfjsLib = await getPdfjs();
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = "";
+  for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((it: any) => it.str).join(" ") + "\n";
+  }
+  return text;
+}
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function parseIsoOrItDate(s: string | null | undefined): Date | null {
