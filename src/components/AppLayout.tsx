@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutEditModeIndicator } from "@/components/LayoutEditModeIndicator";
 import { YearLoadingBadge } from "@/components/YearLoadingBadge";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Eye } from "lucide-react";
 
 // Lazy-load the floating assistant — it's non-critical for first paint and
 // pulls in react-markdown (~70KB).
@@ -142,6 +144,16 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
   const [sidebarLocked, setSidebarLocked] = useState(() => localStorage.getItem("sidebar-locked") === "true");
+  const { isViewer, loading: roleLoading } = useUserRole();
+
+  // Mark the document with the current role so global CSS can hide
+  // mutation controls ([data-admin-only]) for viewers.
+  useEffect(() => {
+    if (roleLoading) return;
+    if (isViewer) document.body.setAttribute("data-role", "viewer");
+    else document.body.removeAttribute("data-role");
+    return () => document.body.removeAttribute("data-role");
+  }, [isViewer, roleLoading]);
 
   // Hydrate IDB cache immediately, then schedule fresh-data prefetch when idle.
   useEffect(() => {
@@ -172,6 +184,14 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               <h1 className="font-bold tracking-tight text-3xl">{title}</h1>
             </div>
             <div className="ml-auto flex items-center gap-1">
+              {isViewer && (
+                <span
+                  className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-medium px-2 py-0.5 mr-1 border border-amber-300"
+                  title="Hai accesso in sola lettura: non puoi modificare i dati"
+                >
+                  <Eye className="h-3 w-3" /> Sola lettura
+                </span>
+              )}
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleDark} title={dark ? "Modalità chiara" : "Modalità notte"}>
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
