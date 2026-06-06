@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Mail, Trash2, RefreshCcw, UserPlus, Shield, Eye } from "lucide-react";
+import { Loader2, Mail, Trash2, RefreshCcw, UserPlus, Shield, Eye, KeyRound, Copy, Wand2, Eye as EyeIcon, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUserRole } from "@/hooks/useUserRole";
 
 type UserRow = {
@@ -35,6 +36,11 @@ export default function UtentiTab() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"viewer" | "admin">("viewer");
   const [busy, setBusy] = useState(false);
+
+  const [pwdUser, setPwdUser] = useState<UserRow | null>(null);
+  const [pwdValue, setPwdValue] = useState("");
+  const [pwdShow, setPwdShow] = useState(false);
+  const [pwdBusy, setPwdBusy] = useState(false);
 
   const redirectTo = `${window.location.origin}/auth`;
 
@@ -116,6 +122,47 @@ export default function UtentiTab() {
     } catch (err) {
       toast.error((err as Error).message);
     }
+  };
+
+  const openPwd = (u: UserRow) => {
+    setPwdUser(u);
+    setPwdValue("");
+    setPwdShow(true);
+  };
+
+  const handleGeneratePwd = async () => {
+    if (!pwdUser) return;
+    setPwdBusy(true);
+    try {
+      const res = await invoke("generate_password", { userId: pwdUser.id });
+      setPwdValue(res.password);
+      setPwdShow(true);
+      toast.success("Password generata e impostata");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setPwdBusy(false);
+    }
+  };
+
+  const handleSetPwd = async () => {
+    if (!pwdUser) return;
+    if (pwdValue.length < 8) { toast.error("Min 8 caratteri"); return; }
+    setPwdBusy(true);
+    try {
+      await invoke("set_password", { userId: pwdUser.id, password: pwdValue });
+      toast.success("Password aggiornata");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setPwdBusy(false);
+    }
+  };
+
+  const copyPwd = async () => {
+    if (!pwdValue) return;
+    await navigator.clipboard.writeText(pwdValue);
+    toast.success("Copiata negli appunti");
   };
 
   return (
@@ -224,6 +271,9 @@ export default function UtentiTab() {
                               <Mail className="h-3.5 w-3.5" />
                             </Button>
                           )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Imposta password" onClick={() => openPwd(u)}>
+                            <KeyRound className="h-3.5 w-3.5" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Elimina utente" onClick={() => handleDelete(u)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -244,6 +294,53 @@ export default function UtentiTab() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!pwdUser} onOpenChange={(o) => { if (!o) { setPwdUser(null); setPwdValue(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Imposta password</DialogTitle>
+            <DialogDescription className="text-xs">
+              Per sicurezza le password non sono visualizzabili (sono salvate solo come hash).
+              Puoi però <strong>impostarne una nuova</strong> o <strong>generarne una casuale</strong> e
+              comunicarla all'utente, che dovrà cambiarla al primo accesso.
+              <br />Utente: <strong>{pwdUser?.email}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Nuova password</Label>
+              <div className="relative">
+                <Input
+                  type={pwdShow ? "text" : "password"}
+                  value={pwdValue}
+                  onChange={(e) => setPwdValue(e.target.value)}
+                  placeholder="min 8 caratteri"
+                  className="pr-20 font-mono"
+                />
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex">
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPwdShow((v) => !v)}>
+                    {pwdShow ? <EyeOff className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={copyPwd} disabled={!pwdValue} title="Copia">
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={handleGeneratePwd} disabled={pwdBusy} className="w-full">
+              <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+              Genera e imposta password casuale
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPwdUser(null)}>Chiudi</Button>
+            <Button onClick={handleSetPwd} disabled={pwdBusy || pwdValue.length < 8}>
+              {pwdBusy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+              Salva password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
