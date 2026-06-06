@@ -239,9 +239,12 @@ async function loadSalesFromDb(minYear?: number, exactYear?: number): Promise<Sa
     if (data.length < PAGE) break;
     from += PAGE;
   }
+  const { loadRubrica } = await import("./useRubrica");
+  const { buildRubricaResolver } = await import("./useRubricaName");
+  const resolveName = buildRubricaResolver(await loadRubrica());
   return allRows.map((d: any) => ({
     tipo: d.tipo, anno: d.anno, numero: d.numero, suffisso: d.suffisso || "", data: formatDate(d.data),
-    cliente: d.cliente, partitaIva: d.partita_iva,
+    cliente: resolveName(d.partita_iva, d.cliente), partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
     stato: d.stato, scadenza: formatDate(d.scadenza), pagamento: d.pagamento,
@@ -269,9 +272,12 @@ async function loadPurchasesFromDb(minYear?: number, exactYear?: number): Promis
     if (data.length < PAGE) break;
     from += PAGE;
   }
+  const { loadRubrica } = await import("./useRubrica");
+  const { buildRubricaResolver } = await import("./useRubricaName");
+  const resolveName = buildRubricaResolver(await loadRubrica());
   return allRows.map((d: any) => ({
     tipo: d.tipo, anno: d.anno, numero: d.numero, data: formatDate(d.data),
-    fornitore: d.fornitore, partitaIva: d.partita_iva,
+    fornitore: resolveName(d.partita_iva, d.fornitore), partitaIva: d.partita_iva,
     totale: Number(d.totale), imponibile: Number(d.imponibile), imposta: Number(d.imposta),
     cassa: Number(d.cassa || 0), ritenute: Number(d.ritenute || 0),
     descrizione: d.descrizione, cig: d.cig, cup: d.cup,
