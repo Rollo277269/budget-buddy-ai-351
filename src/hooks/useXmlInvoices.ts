@@ -339,7 +339,16 @@ export function useXmlInvoices(invoices: InvoiceWithKey[], tipo: "vendita" | "ac
         if (batch.length < PAGE) break;
         from += PAGE;
       }
-      xmlCache[tipo] = all.map((r: any) => ({ ...r, parsed_data: null, numero_documento: r.numero_documento || "" })) as unknown as XmlInvoiceRecord[];
+      const { loadRubrica } = await import("./useRubrica");
+      const { buildRubricaResolver } = await import("./useRubricaName");
+      const resolveName = buildRubricaResolver(await loadRubrica());
+      xmlCache[tipo] = all.map((r: any) => ({
+        ...r,
+        parsed_data: null,
+        numero_documento: r.numero_documento || "",
+        cedente_denominazione: r.cedente_denominazione ? resolveName(null, r.cedente_denominazione) : r.cedente_denominazione,
+        cessionario_denominazione: r.cessionario_denominazione ? resolveName(null, r.cessionario_denominazione) : r.cessionario_denominazione,
+      })) as unknown as XmlInvoiceRecord[];
       xmlInflight[tipo] = undefined;
       (xmlSubs[tipo] ||= new Set()).forEach((s) => s(xmlCache[tipo]!));
       return xmlCache[tipo]!;
