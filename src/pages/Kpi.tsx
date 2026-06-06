@@ -151,14 +151,46 @@ export default function KpiPage() {
     "Soci attivi": y.sociAttivi,
   }));
 
-  const quotaLavoriData = (currentYearAgg?.sociData || [])
-    .filter((s) => s.vendite > 0)
-    .map((s) => ({
-      nome: s.nome.length > 20 ? s.nome.slice(0, 20) + "…" : s.nome,
-      nomeFull: s.nome,
-      vendite: s.vendite,
-      quota: currentYearAgg!.totV > 0 ? +(s.vendite / currentYearAgg!.totV * 100).toFixed(2) : 0,
-    }));
+  // "Quota lavori per Socio": somma per anno dell'importo assegnato al centro RG2 (Quota lavori),
+  // suddiviso per Socio. X=anni, Y=Euro.
+  const quotaLavoriPerYear = useMemo(() => {
+    const yearsToShow = focusYear ? [focusYear] : allYears;
+    return yearsToShow.map((y) => {
+      const ys = allSales.filter((s) => s.anno === y);
+      const row: any = { anno: String(y) };
+      matchers.forEach(({ socio, matchSale }) => { row[socio.denominazione] = 0; });
+      ys.forEach((s) => {
+        const headerKey = `${s.anno}-${s.numero}`;
+        const headerCode = centroMap[headerKey];
+        const matched = matchers.find((m) => m.matchSale(s));
+        if (!matched) return;
+        const base = (s.imponibile ?? 0) !== 0 ? s.imponibile : s.totale;
+        if (headerCode === CODICE_QUOTA_LAVORI) {
+          row[matched.socio.denominazione] += base || 0;
+          return;
+        }
+        const righe: any[] = Array.isArray((s as any).righe) ? (s as any).righe : [];
+        righe.forEach((r, idx) => {
+          const amt = (r?.imponibile ?? r?.totale ?? 0) || 0;
+          if (!amt) return;
+          if (centroMap[`${headerKey}-${idx}`] === CODICE_QUOTA_LAVORI) {
+            row[matched.socio.denominazione] += amt;
+          }
+        });
+      });
+      return row;
+    });
+  }, [allSales, allYears, focusYear, matchers, centroMap]);
+
+  const sociAttiviQuotaLavori = useMemo(() => {
+    const names = new Set<string>();
+    quotaLavoriPerYear.forEach((row) => {
+      Object.keys(row).forEach((k) => {
+        if (k !== "anno" && (row[k] || 0) > 0) names.add(k);
+      });
+    });
+    return Array.from(names);
+  }, [quotaLavoriPerYear]);
 
   const sociPerYearStack = perYear.map((y) => {
     const row: any = { anno: String(y.anno) };
