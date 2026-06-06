@@ -30,7 +30,33 @@ export function TextOverridesProvider({ children }: { children: ReactNode }) {
       }
       setLoaded(true);
     })();
-    return () => { cancelled = true; };
+    const channel = supabase
+      .channel("ui_text_overrides_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ui_text_overrides" },
+        (payload: any) => {
+          const evt = payload.eventType;
+          if (evt === "DELETE") {
+            const k = payload.old?.key;
+            if (!k) return;
+            setOverrides((prev) => {
+              const next = { ...prev };
+              delete next[k];
+              return next;
+            });
+          } else {
+            const row = payload.new;
+            if (!row?.key) return;
+            setOverrides((prev) => ({ ...prev, [row.key]: row.value }));
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const setLocal = useCallback((key: string, value: string) => {
