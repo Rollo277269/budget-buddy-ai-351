@@ -192,6 +192,25 @@ export default function KpiPage() {
     return Array.from(names);
   }, [quotaLavoriPerYear]);
 
+  // Quota lavori (RG2) per Socio nell'ambito selezionato (anno o tutti)
+  const quotaLavoriBySocio = useMemo(() => {
+    const totals: Record<string, number> = {};
+    matchers.forEach(({ socio }) => { totals[socio.denominazione] = 0; });
+    quotaLavoriPerYear.forEach((row) => {
+      Object.keys(row).forEach((k) => {
+        if (k === "anno") return;
+        totals[k] = (totals[k] || 0) + (row[k] || 0);
+      });
+    });
+    const rows = matchers.map(({ socio }) => ({
+      id: socio.id,
+      nome: socio.denominazione,
+      quotaLavori: totals[socio.denominazione] || 0,
+    })).sort((a, b) => b.quotaLavori - a.quotaLavori);
+    const totale = rows.reduce((a, r) => a + r.quotaLavori, 0);
+    return { rows, totale };
+  }, [matchers, quotaLavoriPerYear]);
+
   const sociPerYearStack = perYear.map((y) => {
     const row: any = { anno: String(y.anno) };
     y.sociData.forEach((s) => { row[s.nome] = s.vendite; });
@@ -350,23 +369,18 @@ export default function KpiPage() {
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left px-2 py-1.5 font-semibold">Socio</th>
-                      <th className="text-right px-2 py-1.5 font-semibold">Vendite</th>
-                      <th className="text-right px-2 py-1.5 font-semibold">Quota V.</th>
-                      <th className="text-right px-2 py-1.5 font-semibold">Acquisti</th>
-                      <th className="text-right px-2 py-1.5 font-semibold">Quota A.</th>
+                      <th className="text-right px-2 py-1.5 font-semibold">Quota lavori (RG2)</th>
+                      <th className="text-right px-2 py-1.5 font-semibold">% sul totale Soci</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {currentYearAgg.sociData.map((s) => {
-                      const qv = currentYearAgg.totV > 0 ? s.vendite / currentYearAgg.totV : 0;
-                      const qa = currentYearAgg.totA > 0 ? s.acquisti / currentYearAgg.totA : 0;
+                    {quotaLavoriBySocio.rows.map((s) => {
+                      const q = quotaLavoriBySocio.totale > 0 ? s.quotaLavori / quotaLavoriBySocio.totale : 0;
                       return (
                         <tr key={s.id} className="border-b hover:bg-muted/30">
                           <td className="px-2 py-1">{s.nome}</td>
-                          <td className="text-right px-2 py-1 font-mono text-income">{fmt(s.vendite)}</td>
-                          <td className="text-right px-2 py-1 font-mono">{pct(qv)}</td>
-                          <td className="text-right px-2 py-1 font-mono text-expense">{fmt(s.acquisti)}</td>
-                          <td className="text-right px-2 py-1 font-mono">{pct(qa)}</td>
+                          <td className="text-right px-2 py-1 font-mono text-income">{fmt(s.quotaLavori)}</td>
+                          <td className="text-right px-2 py-1 font-mono">{pct(q)}</td>
                         </tr>
                       );
                     })}
@@ -374,10 +388,8 @@ export default function KpiPage() {
                   <tfoot>
                     <tr className="bg-primary/5 font-semibold border-t-2 border-primary/40">
                       <td className="px-2 py-1.5">Totale Soci</td>
-                      <td className="text-right px-2 py-1.5 font-mono text-income">{fmt(currentYearAgg.totVSoci)}</td>
-                      <td className="text-right px-2 py-1.5 font-mono">{pct(currentYearAgg.quotaV)}</td>
-                      <td className="text-right px-2 py-1.5 font-mono text-expense">{fmt(currentYearAgg.totASoci)}</td>
-                      <td className="text-right px-2 py-1.5 font-mono">{pct(currentYearAgg.quotaA)}</td>
+                      <td className="text-right px-2 py-1.5 font-mono text-income">{fmt(quotaLavoriBySocio.totale)}</td>
+                      <td className="text-right px-2 py-1.5 font-mono">{pct(1)}</td>
                     </tr>
                   </tfoot>
                 </table>
