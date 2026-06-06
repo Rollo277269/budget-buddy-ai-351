@@ -43,7 +43,7 @@ let rubricaCache: ContattoRubrica[] | null = null;
 let rubricaInflight: Promise<ContattoRubrica[]> | null = null;
 const rubricaSubs = new Set<(c: ContattoRubrica[]) => void>();
 
-async function loadRubrica(force = false): Promise<ContattoRubrica[]> {
+export async function loadRubrica(force = false): Promise<ContattoRubrica[]> {
   if (rubricaCache && !force) return rubricaCache;
   if (rubricaInflight && !force) return rubricaInflight;
   rubricaInflight = (async () => {
