@@ -1046,6 +1046,7 @@ const AcquistiPage = () => {
             <div ref={toolbarPortalRef} className="flex items-center gap-2" />
 
             {/* Action buttons / drop zones — reorderable */}
+            <div data-admin-only className="ml-auto contents">
             <ReorderableToolbar
               storageKey="acquisti-header"
               canEdit
@@ -1141,6 +1142,7 @@ const AcquistiPage = () => {
                 return items;
               })()}
             />
+            </div>
           </div>
 
           {/* Upload progress bar */}
