@@ -91,6 +91,20 @@ const AcquistiPage = () => {
     }));
   }, [searchParams, setFilters]);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
+  // Deep-link: open invoice detail sheet from ?openInvoice=anno-numero
+  const openInvoiceApplied = useRef(false);
+  useEffect(() => {
+    if (openInvoiceApplied.current) return;
+    const key = searchParams.get("openInvoice");
+    if (!key || !allPurchases || allPurchases.length === 0) return;
+    const [anno, ...rest] = key.split("-");
+    const numero = rest.join("-");
+    const found = allPurchases.find((p: any) => String(p.anno) === anno && String(p.numero) === numero);
+    if (found) {
+      setSelectedInvoice(found as PurchaseInvoice);
+      openInvoiceApplied.current = true;
+    }
+  }, [searchParams, allPurchases]);
   const [selectedFornitore, setSelectedFornitore] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const costoMap = useCentroMap("costo", "acquisti");

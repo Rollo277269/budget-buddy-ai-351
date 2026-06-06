@@ -106,9 +106,19 @@ export function CalendarioComponent({ events, centerSlot }: Props) {
   const openEvent = (ev: CalendarEvent) => setSelected(ev);
 
   const goToDocument = (ev: CalendarEvent) => {
-    if (ev.tipo === "credito") router("/vendite");
-    else if (ev.tipo === "debito") router("/acquisti");
-    else if (ev.tipo === "polizza") router("/polizze");
+    // ev.numero is "<numero>/<anno>" for credito/debito
+    const parseKey = () => {
+      const m = ev.numero.match(/^(.+)\/(\d{4})$/);
+      if (!m) return null;
+      return `${m[2]}-${m[1]}`; // anno-numero
+    };
+    if (ev.tipo === "credito") {
+      const key = parseKey();
+      router(key ? `/vendite?openInvoice=${encodeURIComponent(key)}` : "/vendite");
+    } else if (ev.tipo === "debito") {
+      const key = parseKey();
+      router(key ? `/acquisti?openInvoice=${encodeURIComponent(key)}` : "/acquisti");
+    } else if (ev.tipo === "polizza") router("/polizze");
     else if (ev.tipo === "finanziamento" || ev.tipo === "credito_fiscale") router("/banche");
     setSelected(null);
   };

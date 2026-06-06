@@ -109,6 +109,23 @@ const VenditePage = () => {
     }
   }, [searchParams, setFilters, setSearchParams]);
   const [selectedInvoice, setSelectedInvoice] = useState<SaleInvoice | null>(null);
+  // Deep-link: open invoice detail sheet from ?openInvoice=anno-numero
+  const openInvoiceApplied = useRef(false);
+  useEffect(() => {
+    if (openInvoiceApplied.current) return;
+    const key = searchParams.get("openInvoice");
+    if (!key || !allSales || allSales.length === 0) return;
+    const [anno, ...rest] = key.split("-");
+    const numero = rest.join("-");
+    const found = allSales.find((s: any) => String(s.anno) === anno && String(s.numero) === numero);
+    if (found) {
+      setSelectedInvoice(found as SaleInvoice);
+      openInvoiceApplied.current = true;
+      const next = new URLSearchParams(searchParams);
+      next.delete("openInvoice");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, allSales, setSearchParams]);
   const [selectedCliente, setSelectedCliente] = useState<string | null>(null);
   const { centri, centriCosto, centriRicavo } = useCentriData();
   const ricavoMap = useCentroMap("ricavo", "vendite");
