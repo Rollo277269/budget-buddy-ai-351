@@ -192,6 +192,25 @@ export default function KpiPage() {
     return Array.from(names);
   }, [quotaLavoriPerYear]);
 
+  // Quota lavori (RG2) per Socio nell'ambito selezionato (anno o tutti)
+  const quotaLavoriBySocio = useMemo(() => {
+    const totals: Record<string, number> = {};
+    matchers.forEach(({ socio }) => { totals[socio.denominazione] = 0; });
+    quotaLavoriPerYear.forEach((row) => {
+      Object.keys(row).forEach((k) => {
+        if (k === "anno") return;
+        totals[k] = (totals[k] || 0) + (row[k] || 0);
+      });
+    });
+    const rows = matchers.map(({ socio }) => ({
+      id: socio.id,
+      nome: socio.denominazione,
+      quotaLavori: totals[socio.denominazione] || 0,
+    })).sort((a, b) => b.quotaLavori - a.quotaLavori);
+    const totale = rows.reduce((a, r) => a + r.quotaLavori, 0);
+    return { rows, totale };
+  }, [matchers, quotaLavoriPerYear]);
+
   const sociPerYearStack = perYear.map((y) => {
     const row: any = { anno: String(y.anno) };
     y.sociData.forEach((s) => { row[s.nome] = s.vendite; });
