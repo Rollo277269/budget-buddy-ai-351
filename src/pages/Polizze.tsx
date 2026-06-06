@@ -175,6 +175,8 @@ export default function Polizze() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const polizzaInputRef = useRef<HTMLInputElement>(null);
+  const [dragOnButton, setDragOnButton] = useState(false);
+  const dragCounter = useRef(0);
   // Duplicate-on-upload prompt
   const [dupPrompt, setDupPrompt] = useState<null | {
     fileName: string;
@@ -647,14 +649,27 @@ export default function Polizze() {
                 <Button
                   variant="default"
                   size="sm"
-                  className="h-8 text-xs gap-1"
+                  className={cn(
+                    "h-8 text-xs gap-1 transition-all",
+                    dragOnButton && "ring-2 ring-primary ring-offset-2 scale-105"
+                  )}
                   onClick={() => polizzaInputRef.current?.click()}
                   disabled={uploading}
-                  title="Carica uno o più PDF di polizza: verranno letti con AI e associati alla commessa tramite CIG"
+                  title="Carica o trascina qui uno o più PDF di polizza: verranno letti con AI e associati alla commessa tramite CIG"
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; setDragOnButton(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setDragOnButton(false); } }}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer) e.dataTransfer.dropEffect = "copy"; }}
+                  onDrop={(e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    dragCounter.current = 0; setDragOnButton(false);
+                    if (uploading) return;
+                    const files = e.dataTransfer?.files;
+                    if (files && files.length > 0) handleUploadPolizze(files);
+                  }}
                 >
                   {uploading
                     ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Analisi {uploadProgress?.done ?? 0}/{uploadProgress?.total ?? 0}</>
-                    : <><Upload className="h-3.5 w-3.5" />Carica polizze</>}
+                    : <><Upload className="h-3.5 w-3.5" />{dragOnButton ? "Rilascia per caricare" : "Carica polizze"}</>}
                 </Button>
                 <Button
                   variant="outline"
