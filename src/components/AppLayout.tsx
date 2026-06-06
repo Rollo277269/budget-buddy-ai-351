@@ -208,13 +208,10 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
   return (
     <SidebarProvider defaultOpen={sidebarLocked}>
       <div className="min-h-screen flex w-full">
-        {!mustFullscreen && (
-          <SidebarHoverWrapper locked={sidebarLocked}>
-            <AppSidebar locked={sidebarLocked} onToggleLock={toggleLock} />
-          </SidebarHoverWrapper>
-        )}
+        <SidebarHoverWrapper locked={sidebarLocked}>
+          <AppSidebar locked={sidebarLocked} onToggleLock={toggleLock} />
+        </SidebarHoverWrapper>
         <div className="flex-1 flex flex-col min-w-0">
-          {!mustFullscreen && (
           <header className="sticky top-0 z-20 border-b bg-card h-14 flex items-center px-4 gap-3 shrink-0 bg-slate-400">
             <div className="flex items-center gap-2">
               <div className="rounded-lg bg-primary p-1.5">
@@ -253,7 +250,6 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               </Button>
             </div>
           </header>
-          )}
           <main className="flex-1 overflow-auto bg-white">
             {children}
           </main>
