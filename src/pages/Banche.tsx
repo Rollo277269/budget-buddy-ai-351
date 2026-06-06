@@ -630,6 +630,7 @@ const BanchePage = () => {
   {
     key: "_delete", label: "", render: (r) =>
     <button
+      data-admin-only
       className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
       title="Elimina movimento"
       onClick={(e) => {e.stopPropagation();deleteMovements([r.id]);}}>
