@@ -116,6 +116,17 @@
   }
 }
 
+/* ──────────────────────────────────────────────────────────────
+   Viewer mode (read-only).
+   When the logged-in user has the `viewer` role, the AppLayout sets
+   `data-role="viewer"` on <body>. The rules below hide every element
+   explicitly marked as a mutation control via `data-admin-only`.
+   RLS already blocks writes server-side, this just keeps the UI clean.
+   ────────────────────────────────────────────────────────────── */
+body[data-role="viewer"] [data-admin-only] {
+  display: none !important;
+}
+
 .pdf-report {
   display: none;
 }
