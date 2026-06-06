@@ -168,30 +168,19 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) window.setTimeout(() => requestFs(), 0);
     };
-    const handleNavigationClick = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const anchor = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
-      if (!anchor || anchor.target || anchor.origin !== window.location.origin) return;
-      const nextPath = `${anchor.pathname}${anchor.search}${anchor.hash}`;
-      if (!nextPath || nextPath === `${location.pathname}${location.search}${location.hash}`) return;
-      event.preventDefault();
-      requestFs().finally(() => navigate(nextPath));
-    };
     document.addEventListener("click", handler, true);
-    document.addEventListener("click", handleNavigationClick, true);
     document.addEventListener("keydown", handler, true);
     document.addEventListener("pointerdown", handler, true);
     document.addEventListener("touchstart", handler, true);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
       document.removeEventListener("click", handler, true);
-      document.removeEventListener("click", handleNavigationClick, true);
       document.removeEventListener("keydown", handler, true);
       document.removeEventListener("pointerdown", handler, true);
       document.removeEventListener("touchstart", handler, true);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [location.hash, location.pathname, location.search, mustFullscreen, navigate, requestFs]);
+  }, [mustFullscreen, requestFs]);
 
   // Mark the document with the current role so global CSS can hide
   // mutation controls ([data-admin-only]) for viewers.
