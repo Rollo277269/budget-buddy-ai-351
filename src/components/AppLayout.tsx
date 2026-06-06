@@ -249,21 +249,5 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
       </Suspense>
       <LayoutEditModeIndicator />
       <YearLoadingBadge />
-      {mustFullscreen && !isFs && (
-        <div className="fixed inset-0 z-[200] bg-background/95 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-card border rounded-xl shadow-lg p-8 text-center space-y-4">
-            <div className="mx-auto rounded-full bg-primary/10 p-3 w-fit">
-              <Maximize className="h-6 w-6 text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold">Modalità schermo intero richiesta</h2>
-            <p className="text-sm text-muted-foreground">
-              Per il tuo profilo l'applicazione è disponibile esclusivamente a schermo intero.
-            </p>
-            <Button onClick={requestFs} className="w-full">
-              <Maximize className="h-4 w-4 mr-2" /> Attiva schermo intero
-            </Button>
-          </div>
-        </div>
-      )}
     </SidebarProvider>);
 }
