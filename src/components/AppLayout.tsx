@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar, defaultItems as sidebarItems } from "@/components/AppSidebar";
 import { FileText, LogOut, Maximize, Minimize, Moon, Sun } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutEditModeIndicator } from "@/components/LayoutEditModeIndicator";
@@ -140,7 +140,6 @@ function SidebarHoverWrapper({ children, locked }: { children: React.ReactNode; 
 
 export function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
-  const navigate = useNavigate();
    const title = pageTitles[location.pathname] || "Rubrica";
   const { dark, toggle: toggleDark } = useDarkMode();
   const { isFs, toggle: toggleFs } = useFullscreen();
@@ -170,16 +169,12 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) window.setTimeout(() => requestFs(), 0);
     };
-    document.addEventListener("click", handler, true);
-    document.addEventListener("keydown", handler, true);
-    document.addEventListener("pointerdown", handler, true);
-    document.addEventListener("touchstart", handler, true);
+    document.addEventListener("click", handler);
+    document.addEventListener("keydown", handler);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener("click", handler, true);
-      document.removeEventListener("keydown", handler, true);
-      document.removeEventListener("pointerdown", handler, true);
-      document.removeEventListener("touchstart", handler, true);
+      document.removeEventListener("click", handler);
+      document.removeEventListener("keydown", handler);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, [mustFullscreen, requestFs]);
