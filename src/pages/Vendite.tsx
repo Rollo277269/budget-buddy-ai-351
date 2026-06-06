@@ -1089,7 +1089,7 @@ const VenditePage = () => {
           {/* Row 1: summary + actions + compact drop zones */}
           <div className="flex items-center justify-between gap-3">
             <div />
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5" data-admin-only>
               {/* Compact drop zones */}
               <input ref={fileInputRef} type="file" accept=".xml" multiple className="hidden" onChange={handleFileUpload} />
               <div

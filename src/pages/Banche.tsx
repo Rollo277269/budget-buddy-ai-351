@@ -630,6 +630,7 @@ const BanchePage = () => {
   {
     key: "_delete", label: "", render: (r) =>
     <button
+      data-admin-only
       className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
       title="Elimina movimento"
       onClick={(e) => {e.stopPropagation();deleteMovements([r.id]);}}>
@@ -744,7 +745,7 @@ const BanchePage = () => {
 
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.pdf" multiple className="hidden" onChange={onFileChange} />
           {movements.length > 0 &&
-          <>
+          <span data-admin-only className="contents">
           <Button variant="outline" size="sm" title="Riesegui il matching automatico solo sui movimenti non ancora riconciliati" onClick={() => {const n = refreshAutoMatch();if (n > 0) toast.success(`${n} nuove riconciliazioni automatiche salvate`); else toast.info("Nessun nuovo match trovato — le riconciliazioni esistenti sono state preservate");}}>
               <RefreshCw className="h-4 w-4 mr-1" />Aggiorna riconciliazione
             </Button>
@@ -762,9 +763,9 @@ const BanchePage = () => {
             }}>
               <RefreshCw className="h-4 w-4 mr-1" />Aggiorna CIG
             </Button>
-          </>
+          </span>
           }
-          <Button onClick={() => {
+          <Button data-admin-only onClick={() => {
             if (!hasValidAccount) {toast.error("Seleziona prima un conto corrente o una carta");return;}
             fileInputRef.current?.click();
           }} disabled={isLoading} size="sm">
@@ -1092,7 +1093,7 @@ const BanchePage = () => {
               <span className="text-xs font-medium">{selectedRows.size} righe selezionate</span>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="text-xs">
+                  <Button data-admin-only variant="destructive" size="sm" className="text-xs">
                     <Trash2 className="h-3.5 w-3.5 mr-1" />Elimina selezionate
                   </Button>
                 </AlertDialogTrigger>

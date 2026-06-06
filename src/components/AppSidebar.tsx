@@ -3,6 +3,7 @@ import { LayoutDashboard, CalendarClock, FileOutput, FileInput, Landmark, Folder
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useLayoutEditMode } from "@/hooks/useLayoutEditMode";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Sidebar,
   SidebarContent,
@@ -109,6 +110,10 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
   const [items, setItems] = useState<MenuItem[]>(loadOrder);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
+  const { isViewer } = useUserRole();
+
+  // Viewers cannot use the admin tools page — hide it from the sidebar.
+  const visibleItems = isViewer ? items.filter((i) => i.url !== "/strumenti") : items;
 
   useEffect(() => {
     saveOrder(items);
@@ -172,7 +177,7 @@ export function AppSidebar({ locked, onToggleLock }: { locked: boolean; onToggle
           <SidebarGroupLabel className="bg-white">Menu</SidebarGroupLabel>
           <SidebarGroupContent className="bg-white">
             <SidebarMenu className="bg-white">
-              {items.map((item, idx) => (
+              {visibleItems.map((item, idx) => (
                 <SidebarMenuItem
                   key={item.url}
                   draggable

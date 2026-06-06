@@ -98,6 +98,7 @@ const ListaCommessePage = () => {
       key: "azioni" as any, label: "", sortable: false,
       render: (r) => (
         <Button
+          data-admin-only
           variant="ghost"
           size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-destructive"
