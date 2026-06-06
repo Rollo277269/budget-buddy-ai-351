@@ -161,9 +161,13 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
     const handler = () => requestFs();
     document.addEventListener("click", handler, true);
     document.addEventListener("keydown", handler, true);
+    document.addEventListener("pointerdown", handler, true);
+    document.addEventListener("touchstart", handler, true);
     return () => {
       document.removeEventListener("click", handler, true);
       document.removeEventListener("keydown", handler, true);
+      document.removeEventListener("pointerdown", handler, true);
+      document.removeEventListener("touchstart", handler, true);
     };
   }, [mustFullscreen, requestFs]);
 
