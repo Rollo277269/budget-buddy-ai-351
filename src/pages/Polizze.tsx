@@ -153,7 +153,7 @@ function CountdownBadge({ date }: { date: Date | null }) {
 
 // ── page ───────────────────────────────────────────────────────────────────
 export default function Polizze() {
-  const { documenti, refresh, updateField, deleteDocumento } = useDocumentiAcquisto("acquisto");
+  const { documenti, refresh, updateField, deleteDocumento, prepareDocumento, finalizeDocumento } = useDocumentiAcquisto("acquisto");
   const { centriCosto } = useCentriData();
   const { byCig: commesseByCig } = useCssrCommesse();
   // Case-insensitive lookup map (CIG sometimes stored uppercase, sometimes mixed).
@@ -172,6 +172,9 @@ export default function Polizze() {
   }, [lookupCommessa]);
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [reassociating, setReassociating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const polizzaInputRef = useRef<HTMLInputElement>(null);
   const [duplicatesOpen, setDuplicatesOpen] = useState(false);
   const [deletingDupId, setDeletingDupId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
