@@ -1,4 +1,5 @@
 import { LucideIcon } from "lucide-react";
+import { EditableText } from "@/components/EditableText";
 
 interface StatCardProps {
   title: string;
@@ -6,6 +7,8 @@ interface StatCardProps {
   subtitle?: string;
   icon: LucideIcon;
   variant: "income" | "expense" | "neutral" | "balance";
+  /** Stable key for admin inline editing of title/subtitle. */
+  editKey?: string;
 }
 
 const variantStyles = {
@@ -29,17 +32,21 @@ const valueStyles = {
   balance: "text-primary",
 };
 
-export function StatCard({ title, value, subtitle, icon: Icon, variant }: StatCardProps) {
+export function StatCard({ title, value, subtitle, icon: Icon, variant, editKey }: StatCardProps) {
   return (
     <div className={`rounded-xl border p-5 transition-all hover:shadow-md ${variantStyles[variant]}`}>
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            {editKey ? <EditableText textKey={`statcard.${editKey}.title`}>{title}</EditableText> : title}
+          </p>
           <p className={`text-xl font-bold tracking-tight font-mono ${valueStyles[variant]}`}>
             {value}
           </p>
           {subtitle && (
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
+            <p className="text-xs text-muted-foreground">
+              {editKey ? <EditableText textKey={`statcard.${editKey}.subtitle`}>{subtitle}</EditableText> : subtitle}
+            </p>
           )}
         </div>
         <div className={`rounded-lg p-2.5 ${iconStyles[variant]}`}>

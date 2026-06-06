@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { runLocalStorageMigration } from "@/lib/localStorageMigration";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import { TextOverridesProvider } from "@/components/EditableText";
 const AuthPage = lazy(() => import("./pages/Auth"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPassword"));
 
@@ -51,6 +52,7 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <TextOverridesProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -91,6 +93,7 @@ const App = () => {
           </Routes>
         </Suspense>
       </BrowserRouter>
+      </TextOverridesProvider>
     </TooltipProvider>
   </QueryClientProvider>
   );
