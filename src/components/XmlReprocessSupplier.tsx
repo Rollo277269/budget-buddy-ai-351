@@ -321,9 +321,8 @@ export function XmlReprocessSupplier() {
             <Combobox
               options={options}
               value={selected}
-              onChange={setSelected}
+              onValueChange={setSelected}
               placeholder={loadingList ? "Caricamento fornitori..." : "Cerca fornitore..."}
-              disabled={loadingList || running}
             />
           </div>
           <Button onClick={runReprocess} disabled={!selected || running} size="sm">
