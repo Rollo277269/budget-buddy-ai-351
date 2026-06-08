@@ -4,6 +4,7 @@ import { BankLogo } from "@/components/BankLogo";
 import { CigIntegrityCheck } from "@/components/CigIntegrityCheck";
 import { CigCoherenceCheck } from "@/components/CigCoherenceCheck";
 import { XmlClassificationCheck } from "@/components/XmlClassificationCheck";
+import { XmlReprocessSupplier } from "@/components/XmlReprocessSupplier";
 import UtentiTab from "@/components/UtentiTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -907,7 +908,7 @@ const StrumentiPage = () => {
     <div className="p-6 space-y-6 bg-white">
 
       <Tabs defaultValue="conti" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8 max-w-6xl">
+        <TabsList className="grid w-full grid-cols-9 max-w-6xl">
           <TabsTrigger value="conti" className="text-xs">
             <Landmark className="h-3.5 w-3.5 mr-1.5" />Conti Correnti
           </TabsTrigger>
@@ -928,6 +929,9 @@ const StrumentiPage = () => {
           </TabsTrigger>
           <TabsTrigger value="xml-class" className="text-xs">
             <ScanSearch className="h-3.5 w-3.5 mr-1.5" />Classif. XML
+          </TabsTrigger>
+          <TabsTrigger value="xml-reproc" className="text-xs">
+            <ScanSearch className="h-3.5 w-3.5 mr-1.5" />Rielab. XML
           </TabsTrigger>
           <TabsTrigger value="utenti" className="text-xs">
             <Users className="h-3.5 w-3.5 mr-1.5" />Utenti
@@ -954,6 +958,9 @@ const StrumentiPage = () => {
         </TabsContent>
         <TabsContent value="xml-class">
           <XmlClassificationCheck />
+        </TabsContent>
+        <TabsContent value="xml-reproc">
+          <XmlReprocessSupplier />
         </TabsContent>
         <TabsContent value="utenti">
           <UtentiTab />
