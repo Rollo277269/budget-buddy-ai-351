@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDocumentiAcquisto, type DocumentoAcquisto } from "@/hooks/useDocumentiAcquisto";
 import { useCentriData } from "@/hooks/useCentri";
 import { useCssrCommesse } from "@/hooks/useCssrCommesse";
+import { useRubrica } from "@/hooks/useRubrica";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -231,17 +232,27 @@ export default function Polizze() {
 
   // Inline edit fornitore: lista fornitori unici tra polizze (≈ fornitori di polizze in Rubrica)
   const [editingFornitoreId, setEditingFornitoreId] = useState<string | null>(null);
+  const { contatti: rubricaContatti } = useRubrica();
   const fornitoreOptions = useMemo(() => {
     const set = new Set<string>();
+    // Fornitori dalla Rubrica (tipo fornitore o socio)
+    rubricaContatti.forEach((c) => {
+      const t = (c.tipo || "").toLowerCase();
+      if (t === "fornitore" || t === "socio") {
+        const n = (c.denominazione || "").trim();
+        if (n) set.add(n);
+      }
+    });
+    // Aggiungi anche i fornitori già presenti nelle polizze (fallback per nomi non ancora in Rubrica)
     polizze.forEach((d) => { const n = (d.fornitore || "").trim(); if (n) set.add(n); });
     return [...set].sort((a, b) => a.localeCompare(b, "it")).map((n) => ({ value: n, label: n }));
-  }, [polizze]);
+  }, [polizze, rubricaContatti]);
   const updateFornitore = useCallback(async (id: string, nuovo: string) => {
     if (!nuovo) return;
     try {
+      setEditingFornitoreId(null);
       await updateField(id, "fornitore", nuovo);
       toast.success("Fornitore aggiornato");
-      setEditingFornitoreId(null);
     } catch (e: any) {
       toast.error(e?.message || "Errore aggiornamento fornitore");
     }
