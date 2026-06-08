@@ -142,6 +142,7 @@ const AcquistiPage = () => {
   const [xmlExpanded, setXmlExpanded] = useState(false);
   const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
+  const [editingFornitoreKey, setEditingFornitoreKey] = useState<string | null>(null);
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
 
   // ── Reconciliation data for payment columns ──
