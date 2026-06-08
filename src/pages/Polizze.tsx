@@ -745,7 +745,33 @@ export default function Polizze() {
                       const centroDesc = d.centro_costo ? centroLabel.get(d.centro_costo) : null;
                       return (
                         <TableRow key={d.id} className="hover:bg-muted/40">
-                          {isVisible("fornitore") && <TableCell className="text-xs px-2 py-1.5">{d.fornitore || "—"}</TableCell>}
+                          {isVisible("fornitore") && <TableCell className="text-xs px-2 py-1.5">
+                            {editingFornitoreId === d.id ? (
+                              <div className="flex items-center gap-1 min-w-[200px]">
+                                <Combobox
+                                  value={d.fornitore || ""}
+                                  onValueChange={(v) => updateFornitore(d.id, v)}
+                                  options={fornitoreOptions}
+                                  placeholder="Seleziona fornitore"
+                                  searchPlaceholder="Cerca fornitore..."
+                                  className="h-7"
+                                />
+                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingFornitoreId(null)}>
+                                  <XIcon className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setEditingFornitoreId(d.id)}
+                                className="inline-flex items-center gap-1 text-left hover:text-primary group"
+                                title="Modifica fornitore"
+                              >
+                                <span>{d.fornitore || "—"}</span>
+                                <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60" />
+                              </button>
+                            )}
+                          </TableCell>}
                           {isVisible("tipo_numero") && <TableCell className="text-xs px-2 py-1.5">
                             <div className="flex flex-col gap-0.5">
                               <TipoPolizzaBadge tipo={classifyTipoPolizza(d)} />
