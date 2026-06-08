@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Combobox } from "@/components/ui/combobox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -122,6 +123,20 @@ const AcquistiPage = () => {
     const c = commesseByCig.get(cig);
     return c?.commessa_consortile || "";
   }, [commesseByCig, commessaLinkByInvoice]);
+  const fornitoreOptions = useMemo(() => {
+    const set = new Set<string>();
+    allPurchases.forEach((p) => { if (p.fornitore) set.add(p.fornitore); });
+    return [...set].sort((a, b) => a.localeCompare(b, "it")).map((f) => ({ value: f, label: f }));
+  }, [allPurchases]);
+  const updateFornitore = useCallback(async (r: PurchaseInvoice, nuovo: string) => {
+    if (!nuovo || nuovo === r.fornitore) { setEditingFornitoreKey(null); return; }
+    const { error } = await supabase.from("fatture_acquisto").update({ fornitore: nuovo }).eq("anno", r.anno).eq("numero", r.numero);
+    if (error) { toast.error("Errore aggiornamento fornitore"); return; }
+    toast.success("Fornitore aggiornato");
+    setEditingFornitoreKey(null);
+    invalidateInvoiceCache();
+    refreshInvoices();
+  }, [refreshInvoices]);
   const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -141,6 +156,7 @@ const AcquistiPage = () => {
   const [xmlExpanded, setXmlExpanded] = useState(false);
   const [editingCigKey, setEditingCigKey] = useState<string | null>(null);
   const [editingCigValue, setEditingCigValue] = useState("");
+  const [editingFornitoreKey, setEditingFornitoreKey] = useState<string | null>(null);
   const toolbarPortalRef = useRef<HTMLDivElement>(null);
 
   // ── Reconciliation data for payment columns ──
@@ -666,7 +682,40 @@ const AcquistiPage = () => {
     }, sortable: false },
     { key: "data", label: "Data Ricezione", render: (r) => <span className="text-xs text-muted-foreground">{normalizeDateDisplay(r.data)}</span>, sortable: true },
     { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
-    { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
+    { key: "fornitore", label: "Fornitore", sortable: true, filterable: true, render: (r) => {
+      const k = `${r.anno}-${r.numero}`;
+      if (editingFornitoreKey === k) {
+        return (
+          <span className="block min-w-[220px]" onClick={(e) => e.stopPropagation()}>
+            <Combobox
+              value={r.fornitore || ""}
+              onValueChange={(v) => updateFornitore(r, v)}
+              options={fornitoreOptions}
+              placeholder="Seleziona fornitore…"
+              searchPlaceholder="Cerca fornitore…"
+              className="h-7 text-xs"
+            />
+            <button className="ml-1 text-muted-foreground hover:text-foreground inline-flex align-middle" onClick={() => setEditingFornitoreKey(null)} title="Annulla">
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        );
+      }
+      return (
+        <span className="flex items-center gap-1 max-w-[240px]">
+          <span
+            className="text-xs truncate cursor-pointer text-primary underline decoration-dotted hover:text-primary/80"
+            onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}
+          >
+            {r.fornitore}
+          </span>
+          <Pencil
+            className="h-3 w-3 opacity-30 hover:opacity-80 shrink-0 cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setEditingFornitoreKey(k); }}
+          />
+        </span>
+      );
+    } },
     { key: "cig", label: "CIG", render: (r) => {
       const k = `${r.anno}-${r.numero}`;
       if (editingCigKey === k) {
