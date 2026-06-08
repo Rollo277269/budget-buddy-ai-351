@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -227,6 +228,24 @@ export default function Polizze() {
   }, [centriCosto]);
 
   const polizze = useMemo(() => documenti.filter(isPolizza), [documenti]);
+
+  // Inline edit fornitore: lista fornitori unici tra polizze (≈ fornitori di polizze in Rubrica)
+  const [editingFornitoreId, setEditingFornitoreId] = useState<string | null>(null);
+  const fornitoreOptions = useMemo(() => {
+    const set = new Set<string>();
+    polizze.forEach((d) => { const n = (d.fornitore || "").trim(); if (n) set.add(n); });
+    return [...set].sort((a, b) => a.localeCompare(b, "it")).map((n) => ({ value: n, label: n }));
+  }, [polizze]);
+  const updateFornitore = useCallback(async (id: string, nuovo: string) => {
+    if (!nuovo) return;
+    try {
+      await updateField(id, "fornitore", nuovo);
+      toast.success("Fornitore aggiornato");
+      setEditingFornitoreId(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Errore aggiornamento fornitore");
+    }
+  }, [updateField]);
 
   // ── duplicate detection ──
   // Two polizze are considered duplicates when same CIG + same premio (importo)
