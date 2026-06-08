@@ -682,7 +682,40 @@ const AcquistiPage = () => {
     }, sortable: false },
     { key: "data", label: "Data Ricezione", render: (r) => <span className="text-xs text-muted-foreground">{normalizeDateDisplay(r.data)}</span>, sortable: true },
     { key: "tipo", label: "Tipo", render: (r) => isNotaCredito(r) ? <Badge variant="destructive" className="text-[10px] font-medium">NC</Badge> : <span className="text-xs text-muted-foreground">{r.tipo}</span>, sortable: true, filterable: true },
-    { key: "fornitore", label: "Fornitore", render: (r) => <span className="text-xs max-w-[200px] truncate block cursor-pointer text-primary underline decoration-dotted hover:text-primary/80" onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}>{r.fornitore}</span>, sortable: true, filterable: true },
+    { key: "fornitore", label: "Fornitore", sortable: true, filterable: true, render: (r) => {
+      const k = `${r.anno}-${r.numero}`;
+      if (editingFornitoreKey === k) {
+        return (
+          <span className="block min-w-[220px]" onClick={(e) => e.stopPropagation()}>
+            <Combobox
+              value={r.fornitore || ""}
+              onValueChange={(v) => updateFornitore(r, v)}
+              options={fornitoreOptions}
+              placeholder="Seleziona fornitore…"
+              searchPlaceholder="Cerca fornitore…"
+              className="h-7 text-xs"
+            />
+            <button className="ml-1 text-muted-foreground hover:text-foreground inline-flex align-middle" onClick={() => setEditingFornitoreKey(null)} title="Annulla">
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        );
+      }
+      return (
+        <span className="flex items-center gap-1 max-w-[240px]">
+          <span
+            className="text-xs truncate cursor-pointer text-primary underline decoration-dotted hover:text-primary/80"
+            onClick={(e) => { e.stopPropagation(); setSelectedFornitore(r.fornitore); }}
+          >
+            {r.fornitore}
+          </span>
+          <Pencil
+            className="h-3 w-3 opacity-30 hover:opacity-80 shrink-0 cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setEditingFornitoreKey(k); }}
+          />
+        </span>
+      );
+    } },
     { key: "cig", label: "CIG", render: (r) => {
       const k = `${r.anno}-${r.numero}`;
       if (editingCigKey === k) {
