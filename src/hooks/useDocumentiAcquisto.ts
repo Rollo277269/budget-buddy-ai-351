@@ -245,10 +245,14 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
   }, [fetchDocumenti]);
 
   const updateField = useCallback(async (id: string, field: string, value: string | number | null) => {
-    await supabase
+    const { error } = await supabase
       .from("documenti_acquisto" as any)
       .update({ [field]: value } as any)
       .eq("id", id);
+    if (error) {
+      console.error(`updateField ${field} failed`, error);
+      throw new Error(error.message);
+    }
     await fetchDocumenti();
   }, [fetchDocumenti]);
 
