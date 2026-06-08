@@ -243,7 +243,7 @@ function findSaleMatch(
  * - Numero documento match (XML supplier number = invoice numero): +15 points
  * Returns the highest-scoring unmatched invoice, or null if score < 40.
  */
-function findPurchaseMatch(
+export function findPurchaseMatch(
   xmlCedente: string | null,
   xmlImporto: number | null,
   xmlAnno: number | null,
