@@ -123,6 +123,20 @@ const AcquistiPage = () => {
     const c = commesseByCig.get(cig);
     return c?.commessa_consortile || "";
   }, [commesseByCig, commessaLinkByInvoice]);
+  const fornitoreOptions = useMemo(() => {
+    const set = new Set<string>();
+    allPurchases.forEach((p) => { if (p.fornitore) set.add(p.fornitore); });
+    return [...set].sort((a, b) => a.localeCompare(b, "it")).map((f) => ({ value: f, label: f }));
+  }, [allPurchases]);
+  const updateFornitore = useCallback(async (r: PurchaseInvoice, nuovo: string) => {
+    if (!nuovo || nuovo === r.fornitore) { setEditingFornitoreKey(null); return; }
+    const { error } = await supabase.from("fatture_acquisto").update({ fornitore: nuovo }).eq("anno", r.anno).eq("numero", r.numero);
+    if (error) { toast.error("Errore aggiornamento fornitore"); return; }
+    toast.success("Fornitore aggiornato");
+    setEditingFornitoreKey(null);
+    invalidateInvoiceCache();
+    refreshInvoices();
+  }, [refreshInvoices]);
   const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
