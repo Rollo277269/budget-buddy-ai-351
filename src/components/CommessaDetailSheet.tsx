@@ -525,8 +525,26 @@ export function CommessaDetailSheet({
     const isRC1 = (codice: string | null | undefined) =>
       !!codice && codice.trim().toUpperCase().startsWith("RC1");
     const totalVenditeImponibileRC1 = linkedSalesForTotals.reduce((s, i) => {
-      const codice = ricavoMap.map[`${i.anno}-${i.numero}`];
-      return isRC1(codice) ? s + saleImponibile(i) : s;
+      const map = ricavoMap.map;
+      const headerCodice = map[`${i.anno}-${i.numero}`] || "";
+      const righe = Array.isArray((i as any).righe) ? (i as any).righe : [];
+      const hasRowAssignments = righe.length >= 1 && righe.some((_: any, idx: number) => !!map[`${i.anno}-${i.numero}-${idx}`]);
+      const rowsAllZero = !righe.some(saleRowHasAmount);
+      if (hasRowAssignments && !rowsAllZero) {
+        const headerSenzaIva = Number(i.imposta || 0) === 0;
+        let acc = 0;
+        righe.forEach((riga: any, idx: number) => {
+          if (!saleRowHasAmount(riga)) return;
+          const codiceRiga = map[`${i.anno}-${i.numero}-${idx}`] || headerCodice;
+          if (!isRC1(codiceRiga)) return;
+          const isCN = ((i as any).tipo || "").toLowerCase().includes("nota di credito");
+          const sign = isCN ? -1 : 1;
+          const amounts = saleRowBaseAmounts(riga, headerSenzaIva);
+          acc += sign * Math.abs(amounts.imponibile);
+        });
+        return s + acc;
+      }
+      return isRC1(headerCodice) ? s + saleImponibile(i) : s;
     }, 0);
     const percentualeFatturato = importoContratto && !isNaN(importoContratto) && importoContratto > 0
       ? (totalVenditeImponibileRC1 / importoContratto) * 100 : null;
