@@ -1905,6 +1905,7 @@ export function CommessaDetailSheet({
                             centroMap={centroMapRef.map}
                             onAssign={centroMapRef.assign}
                             onRemove={centroMapRef.remove}
+                            importo={riga.totale}
                           />
                         </div>
                       </div>
@@ -1920,6 +1921,7 @@ export function CommessaDetailSheet({
                       centroMap={centroMapRef.map}
                       onAssign={centroMapRef.assign}
                       onRemove={centroMapRef.remove}
+                      importo={inv.totale}
                     />
                   </div>
                 )}
@@ -2434,6 +2436,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                  centri={centri}
                                  centroMap={centroMapObj}
                                  onAssign={onAssign}
+                                 importo={rowTot}
                                />
                              </TableCell>
                            </TableRow>
@@ -2756,7 +2759,7 @@ function InvoiceList({
                     )}
                   </TableCell>
                 ),
-                centro: <TableCell key="centro"><CentroCell invoiceKey={key} tipo={centroTipo} centri={centri} centroMap={centroMap} onAssign={onAssignCentro} /></TableCell>,
+                centro: <TableCell key="centro" onClick={(e) => e.stopPropagation()}><CentroCell invoiceKey={key} tipo={centroTipo} centri={centri} centroMap={centroMap} onAssign={onAssignCentro} importo={inv.totale} /></TableCell>,
               };
 
               return (
