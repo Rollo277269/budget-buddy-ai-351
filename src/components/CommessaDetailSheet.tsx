@@ -2436,6 +2436,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                  centri={centri}
                                  centroMap={centroMapObj}
                                  onAssign={onAssign}
+                                 importo={rowTot}
                                />
                              </TableCell>
                            </TableRow>
