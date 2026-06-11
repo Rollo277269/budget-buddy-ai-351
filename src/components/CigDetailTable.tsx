@@ -55,13 +55,15 @@ export function CigDetailTable({ sales, purchases, onCigClick }: CigDetailTableP
     sales.forEach((s) => {
       if (!s.cig) return;
       if (!map[s.cig]) map[s.cig] = { cig: s.cig, vendite: 0, acquisti: 0, saldo: 0, nVendite: 0, nAcquisti: 0 };
-      map[s.cig].vendite += s.totale;
+      const isNC = (s.tipo || "").toLowerCase().includes("nota di credito");
+      map[s.cig].vendite += isNC ? -Math.abs(s.totale || 0) : (s.totale || 0);
       map[s.cig].nVendite++;
     });
     purchases.forEach((p) => {
       if (!p.cig) return;
       if (!map[p.cig]) map[p.cig] = { cig: p.cig, vendite: 0, acquisti: 0, saldo: 0, nVendite: 0, nAcquisti: 0 };
-      map[p.cig].acquisti += p.totale;
+      const isNC = (p.tipo || "").toLowerCase().includes("nota di credito");
+      map[p.cig].acquisti += isNC ? -Math.abs(p.totale || 0) : (p.totale || 0);
       map[p.cig].nAcquisti++;
     });
     return Object.values(map)
