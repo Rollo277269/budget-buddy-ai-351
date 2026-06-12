@@ -900,6 +900,8 @@ export default function Polizze() {
                                   refresh();
                                   toast.success("CIG aggiornato");
                                 }}
+                                suggestions={!d.cig ? suggestCigFor(d) : []}
+                                onApplySuggestion={(cig) => applyCigSuggestion(d.id, cig)}
                               />
                               {(() => {
                                 const num = getCommessaNumero(d.cig);
