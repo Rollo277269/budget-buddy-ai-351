@@ -58,6 +58,7 @@ import { exportFascicoloCommessa } from "@/lib/exportFascicolo";
 import { FolderArchive } from "lucide-react";
 import { ShieldCheck, ShieldAlert, ExternalLink } from "lucide-react";
 import { openDocumentPdf } from "@/lib/openDocumentPdf";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
   Legend, CartesianGrid, ComposedChart, Line, ReferenceLine,
@@ -2053,9 +2054,23 @@ function isPolizzaDoc(d: DocumentoAcquisto): boolean {
   return /polizz|fideiussor|cauzion/.test(text);
 }
 
-function PolizzeCommessaPanel({ documenti }: { documenti: DocumentoAcquisto[] }) {
+const POLIZZA_CC3_TYPES = new Set<string>(["Definitiva", "CAR", "Anticipazione", "RCT/RCO"]);
+const POLIZZA_CENTRO = "CC3";
+
+function PolizzeCommessaPanel({
+  documenti,
+  centri,
+  onAssignCentro,
+}: {
+  documenti: DocumentoAcquisto[];
+  centri: CentroCR[];
+  onAssignCentro: (id: string, codice: string) => void | Promise<void>;
+}) {
   const polizze = useMemo(() => documenti.filter(isPolizzaDoc), [documenti]);
   if (polizze.length === 0) return null;
+
+  const centroOptions = [...centri].sort((a, b) => a.codice.localeCompare(b.codice, "it"));
+  const hasCc3 = centroOptions.some((c) => c.codice === POLIZZA_CENTRO);
 
   const parseDate = (s: string | null | undefined): Date | null => {
     if (!s) return null;
