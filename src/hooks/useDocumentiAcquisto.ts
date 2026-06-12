@@ -44,24 +44,29 @@ export interface PreparedDocumento {
 const docCache: Record<string, DocumentoAcquisto[] | undefined> = {};
 const docInflight: Record<string, Promise<DocumentoAcquisto[]> | undefined> = {};
 const docSubs: Record<string, Set<(d: DocumentoAcquisto[]) => void>> = {};
+const docLoadSeq: Record<string, number> = {};
 
 async function loadDocumenti(tipo: string, force = false): Promise<DocumentoAcquisto[]> {
   if (docCache[tipo] && !force) return docCache[tipo]!;
   if (docInflight[tipo] && !force) return docInflight[tipo]!;
+  const seq = (docLoadSeq[tipo] = (docLoadSeq[tipo] || 0) + 1);
   docInflight[tipo] = (async () => {
     const { data, error } = await supabase
       .from("documenti_acquisto" as any)
       .select("*")
       .eq("tipo", tipo)
       .order("created_at", { ascending: false });
-    if (error) { console.error("Error fetching documenti:", error); docCache[tipo] = docCache[tipo] ?? []; docInflight[tipo] = undefined; return docCache[tipo]!; }
+    if (error) { console.error("Error fetching documenti:", error); docCache[tipo] = docCache[tipo] ?? []; if (seq === docLoadSeq[tipo]) docInflight[tipo] = undefined; return docCache[tipo]!; }
     const { loadRubrica } = await import("./useRubrica");
     const { buildRubricaResolver } = await import("./useRubricaName");
     const resolveName = buildRubricaResolver(await loadRubrica());
-    docCache[tipo] = ((data || []) as any[]).map((d: any) => ({
+    const fresh = ((data || []) as any[]).map((d: any) => ({
       ...d,
       fornitore: d.fornitore ? resolveName(null, d.fornitore) : d.fornitore,
     })) as unknown as DocumentoAcquisto[];
+    // Ignore stale results: only apply if this is the latest dispatched load.
+    if (seq !== docLoadSeq[tipo]) return docCache[tipo] ?? fresh;
+    docCache[tipo] = fresh;
     docInflight[tipo] = undefined;
     docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
     return docCache[tipo]!;
@@ -253,8 +258,16 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
       console.error(`updateField ${field} failed`, error);
       throw new Error(error.message);
     }
+    // Optimistic local update so the change is visible immediately and not
+    // overwritten by a stale concurrent refresh.
+    if (docCache[tipo]) {
+      docCache[tipo] = docCache[tipo]!.map((d) =>
+        d.id === id ? ({ ...d, [field]: value } as DocumentoAcquisto) : d
+      );
+      docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
+    }
     await fetchDocumenti();
-  }, [fetchDocumenti]);
+  }, [fetchDocumenti, tipo]);
 
   /** Re-run AI parsing on an existing document using fresh PDF text. */
   const reclassifyExisting = useCallback(async (
