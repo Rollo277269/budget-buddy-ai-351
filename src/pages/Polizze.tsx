@@ -822,9 +822,41 @@ export default function Polizze() {
                             </div>
                           </TableCell>}
                           {isVisible("centro") && <TableCell className="text-xs px-2 py-1.5">
-                            {d.centro_costo ? (
-                              <span className="font-mono">{d.centro_costo}{centroDesc ? <span className="text-muted-foreground"> – {centroDesc}</span> : null}</span>
-                            ) : "—"}
+                            <div className="flex items-center gap-1">
+                              <Select
+                                value={d.centro_costo || ""}
+                                onValueChange={(v) => updateCentro(d.id, v)}
+                              >
+                                <SelectTrigger className={cn(
+                                  "h-7 text-xs w-[180px]",
+                                  !d.centro_costo && "border-amber-500 text-amber-700 bg-amber-50/60"
+                                )}>
+                                  <SelectValue placeholder="Assegna centro…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {centroSelectOptions.map((c) => (
+                                    <SelectItem key={c.codice} value={c.codice} className="text-xs">
+                                      <span className="font-mono">{c.codice}</span>
+                                      {c.descrizione && <span className="text-muted-foreground"> – {c.descrizione}</span>}
+                                      {c.codice === POLIZZA_CENTRO && (
+                                        <span className="ml-1 text-[9px] text-primary">(consigliato)</span>
+                                      )}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {!d.centro_costo && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-[10px] text-primary"
+                                  title={`Imposta rapido a ${POLIZZA_CENTRO}`}
+                                  onClick={() => updateCentro(d.id, POLIZZA_CENTRO)}
+                                >
+                                  +{POLIZZA_CENTRO}
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>}
                           {isVisible("date") && <TableCell className="text-xs px-2 py-1.5">
                             <div className="flex flex-col gap-0.5">
