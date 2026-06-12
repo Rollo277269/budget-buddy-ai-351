@@ -258,8 +258,16 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
       console.error(`updateField ${field} failed`, error);
       throw new Error(error.message);
     }
+    // Optimistic local update so the change is visible immediately and not
+    // overwritten by a stale concurrent refresh.
+    if (docCache[tipo]) {
+      docCache[tipo] = docCache[tipo]!.map((d) =>
+        d.id === id ? ({ ...d, [field]: value } as DocumentoAcquisto) : d
+      );
+      docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
+    }
     await fetchDocumenti();
-  }, [fetchDocumenti]);
+  }, [fetchDocumenti, tipo]);
 
   /** Re-run AI parsing on an existing document using fresh PDF text. */
   const reclassifyExisting = useCallback(async (
