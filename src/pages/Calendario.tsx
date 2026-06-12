@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useInvoiceData } from "@/hooks/useInvoiceData";
 import { useRateFinanziamento } from "@/hooks/useRateFinanziamento";
 import { useContiCorrenti } from "@/hooks/useContiCorrenti";
+import { useCssrCommesse } from "@/hooks/useCssrCommesse";
 import { formatCurrency } from "@/lib/format";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,8 @@ interface ScadenzaRow {
   giorniRimasti: number;
   stato: "scaduta" | "in_scadenza" | "regolare";
   cig: string;
+  commessaNumero?: string | number;
+  commessaOggetto?: string;
 }
 
 const scadenzaCols: ColumnDef<ScadenzaRow>[] = [
@@ -72,6 +75,7 @@ export default function CalendarioPage() {
   const { allSales, allPurchases, loading } = useInvoiceData();
   const { rate, loading: loadingRate } = useRateFinanziamento();
   const { conti } = useContiCorrenti();
+  const { byCig: cssrByCig } = useCssrCommesse();
   const [view, setView] = useState<"calendario" | "tabella">("calendario");
   const [polizze, setPolizze] = useState<Array<{ id: string; fornitore: string; descrizione: string; importo: number; data_scadenza: string; cig: string; numero: string }>>([]);
 
@@ -155,6 +159,7 @@ export default function CalendarioPage() {
       if (!d) return;
       const days = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       const stato: ScadenzaRow["stato"] = days < 0 ? "scaduta" : days <= 30 ? "in_scadenza" : "regolare";
+      const cssr = p.cig ? cssrByCig.get(p.cig) : undefined;
       result.push({
         tipo: "polizza",
         numero: p.numero ? `Pol. ${p.numero}` : "Polizza",
@@ -165,6 +170,8 @@ export default function CalendarioPage() {
         giorniRimasti: days,
         stato,
         cig: p.cig,
+        commessaNumero: cssr?.commessa_consortile || undefined,
+        commessaOggetto: cssr?.oggetto_lavori || undefined,
       });
     });
 

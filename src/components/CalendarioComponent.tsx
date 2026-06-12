@@ -19,6 +19,8 @@ export interface CalendarEvent {
   cig?: string;
   descrizione?: string;
   giorniRimasti?: number;
+  commessaNumero?: string | number;
+  commessaOggetto?: string;
 }
 
 type ViewMode = "month" | "week" | "day";
@@ -88,6 +90,12 @@ function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => v
       <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : event.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense")}>
         {formatCurrency(event.totale)}
       </span>
+      {event.tipo === "polizza" && (event.commessaNumero || event.commessaOggetto) && (
+        <div className="truncate text-[9px] text-muted-foreground">
+          {event.commessaNumero != null && event.commessaNumero !== "" ? `Comm. ${event.commessaNumero}` : ""}
+          {event.commessaOggetto ? ` · ${event.commessaOggetto}` : ""}
+        </div>
+      )}
     </button>
   );
 }
@@ -516,6 +524,23 @@ export function CalendarioComponent({ events, centerSlot }: Props) {
                 <div className="flex justify-between gap-3">
                   <span className="text-muted-foreground">CIG</span>
                   <span className="font-mono text-xs">{selected.cig}</span>
+                </div>
+              )}
+              {(selected.commessaNumero || selected.commessaOggetto) && (
+                <div className="pt-2 border-t space-y-1">
+                  <p className="text-xs text-muted-foreground">Commessa</p>
+                  {selected.commessaNumero != null && selected.commessaNumero !== "" && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground text-xs">N°</span>
+                      <span className="font-mono text-xs font-medium">{selected.commessaNumero}</span>
+                    </div>
+                  )}
+                  {selected.commessaOggetto && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground text-xs">Oggetto</span>
+                      <span className="text-xs text-right max-w-[260px]">{selected.commessaOggetto}</span>
+                    </div>
+                  )}
                 </div>
               )}
               {selected.descrizione && (
