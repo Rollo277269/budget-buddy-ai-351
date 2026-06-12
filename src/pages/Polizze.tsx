@@ -171,7 +171,7 @@ function CountdownBadge({ date }: { date: Date | null }) {
 export default function Polizze() {
   const { documenti, refresh, updateField, deleteDocumento, prepareDocumento, finalizeDocumento } = useDocumentiAcquisto("acquisto");
   const { centriCosto } = useCentriData();
-  const { byCig: commesseByCig } = useCssrCommesse();
+  const { byCig: commesseByCig, commesse: commesseAll } = useCssrCommesse();
   // Case-insensitive lookup map (CIG sometimes stored uppercase, sometimes mixed).
   const commesseByCigUpper = useMemo(() => {
     const m = new Map<string, ReturnType<typeof commesseByCig.get>>();
