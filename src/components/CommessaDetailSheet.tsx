@@ -1239,7 +1239,18 @@ export function CommessaDetailSheet({
               />
 
               {/* Polizze collegate (da pagina Polizze o caricate qui come Polizza) */}
-              <PolizzeCommessaPanel documenti={linkedDocumenti} />
+              <PolizzeCommessaPanel
+                documenti={linkedDocumenti}
+                centri={centri}
+                onAssignCentro={async (id, codice) => {
+                  try {
+                    await updateDocField(id, "centro_costo", codice);
+                    toast.success(`Centro impostato a ${codice}`);
+                  } catch (e: any) {
+                    toast.error(e?.message || "Errore aggiornamento centro");
+                  }
+                }}
+              />
 
               <InvoiceList
                 invoices={data.linkedPurchases} type="acquisto"
