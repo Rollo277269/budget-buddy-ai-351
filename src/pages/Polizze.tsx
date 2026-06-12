@@ -108,6 +108,19 @@ function isPolizza(d: DocumentoAcquisto): boolean {
   return /polizz|fideiussor|cauzion/.test(text);
 }
 
+/**
+ * Le polizze "vere" mostrate nella pagina sono solo quelle classificate come
+ * Definitiva / CAR / Anticipazione / RCT-RCO (i tipi che appartengono al centro
+ * costo CC3 — Polizze di commessa). Provvisorie (costi di gara) e "Altro" sono
+ * escluse: appariranno in Acquisti o Commesse, dove l'utente potrà completare
+ * il centro costo.
+ */
+const POLIZZA_CC3_TYPES = new Set<TipoPolizza>(["Definitiva", "CAR", "Anticipazione", "RCT/RCO"]);
+const POLIZZA_CENTRO = "CC3";
+function isPolizzaCC3(d: DocumentoAcquisto): boolean {
+  return isPolizza(d) && POLIZZA_CC3_TYPES.has(classifyTipoPolizza(d));
+}
+
 function categoria(d: DocumentoAcquisto): "gara" | "commessa" | "altre" {
   const centro = (d.centro_costo || "").toUpperCase();
   if (centro.startsWith("CO")) return "gara";
@@ -229,7 +242,24 @@ export default function Polizze() {
     return m;
   }, [centriCosto]);
 
-  const polizze = useMemo(() => documenti.filter(isPolizza), [documenti]);
+  const polizze = useMemo(() => documenti.filter(isPolizzaCC3), [documenti]);
+
+  // Quick centro options for inline assignment (CC3 in cima se presente)
+  const centroSelectOptions = useMemo(() => {
+    const all = [...centriCosto].sort((a, b) => a.codice.localeCompare(b.codice, "it"));
+    const cc3 = all.find((c) => c.codice === POLIZZA_CENTRO);
+    const rest = all.filter((c) => c.codice !== POLIZZA_CENTRO);
+    return cc3 ? [cc3, ...rest] : all;
+  }, [centriCosto]);
+
+  const updateCentro = useCallback(async (id: string, codice: string) => {
+    try {
+      await updateField(id, "centro_costo", codice);
+      toast.success(`Centro impostato a ${codice}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Errore aggiornamento centro");
+    }
+  }, [updateField]);
 
   // Inline edit fornitore: lista fornitori unici tra polizze (≈ fornitori di polizze in Rubrica)
   const [editingFornitoreId, setEditingFornitoreId] = useState<string | null>(null);
@@ -792,9 +822,41 @@ export default function Polizze() {
                             </div>
                           </TableCell>}
                           {isVisible("centro") && <TableCell className="text-xs px-2 py-1.5">
-                            {d.centro_costo ? (
-                              <span className="font-mono">{d.centro_costo}{centroDesc ? <span className="text-muted-foreground"> – {centroDesc}</span> : null}</span>
-                            ) : "—"}
+                            <div className="flex items-center gap-1">
+                              <Select
+                                value={d.centro_costo || ""}
+                                onValueChange={(v) => updateCentro(d.id, v)}
+                              >
+                                <SelectTrigger className={cn(
+                                  "h-7 text-xs w-[180px]",
+                                  !d.centro_costo && "border-amber-500 text-amber-700 bg-amber-50/60"
+                                )}>
+                                  <SelectValue placeholder="Assegna centro…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {centroSelectOptions.map((c) => (
+                                    <SelectItem key={c.codice} value={c.codice} className="text-xs">
+                                      <span className="font-mono">{c.codice}</span>
+                                      {c.descrizione && <span className="text-muted-foreground"> – {c.descrizione}</span>}
+                                      {c.codice === POLIZZA_CENTRO && (
+                                        <span className="ml-1 text-[9px] text-primary">(consigliato)</span>
+                                      )}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {!d.centro_costo && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-[10px] text-primary"
+                                  title={`Imposta rapido a ${POLIZZA_CENTRO}`}
+                                  onClick={() => updateCentro(d.id, POLIZZA_CENTRO)}
+                                >
+                                  +{POLIZZA_CENTRO}
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>}
                           {isVisible("date") && <TableCell className="text-xs px-2 py-1.5">
                             <div className="flex flex-col gap-0.5">

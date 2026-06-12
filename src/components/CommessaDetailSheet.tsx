@@ -58,6 +58,7 @@ import { exportFascicoloCommessa } from "@/lib/exportFascicolo";
 import { FolderArchive } from "lucide-react";
 import { ShieldCheck, ShieldAlert, ExternalLink } from "lucide-react";
 import { openDocumentPdf } from "@/lib/openDocumentPdf";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
   Legend, CartesianGrid, ComposedChart, Line, ReferenceLine,
@@ -343,7 +344,7 @@ export function CommessaDetailSheet({
   const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
-  const { documenti: documentiAcquisto } = useDocumentiAcquisto("acquisto");
+  const { documenti: documentiAcquisto, updateField: updateDocField } = useDocumentiAcquisto("acquisto");
 
   // Refresh centro data when sheet opens
   useEffect(() => {
@@ -1239,7 +1240,18 @@ export function CommessaDetailSheet({
               />
 
               {/* Polizze collegate (da pagina Polizze o caricate qui come Polizza) */}
-              <PolizzeCommessaPanel documenti={linkedDocumenti} />
+              <PolizzeCommessaPanel
+                documenti={linkedDocumenti}
+                centri={centri}
+                onAssignCentro={async (id, codice) => {
+                  try {
+                    await updateDocField(id, "centro_costo", codice);
+                    toast.success(`Centro impostato a ${codice}`);
+                  } catch (e: any) {
+                    toast.error(e?.message || "Errore aggiornamento centro");
+                  }
+                }}
+              />
 
               <InvoiceList
                 invoices={data.linkedPurchases} type="acquisto"
@@ -2042,9 +2054,23 @@ function isPolizzaDoc(d: DocumentoAcquisto): boolean {
   return /polizz|fideiussor|cauzion/.test(text);
 }
 
-function PolizzeCommessaPanel({ documenti }: { documenti: DocumentoAcquisto[] }) {
+const POLIZZA_CC3_TYPES = new Set<string>(["Definitiva", "CAR", "Anticipazione", "RCT/RCO"]);
+const POLIZZA_CENTRO = "CC3";
+
+function PolizzeCommessaPanel({
+  documenti,
+  centri,
+  onAssignCentro,
+}: {
+  documenti: DocumentoAcquisto[];
+  centri: CentroCR[];
+  onAssignCentro: (id: string, codice: string) => void | Promise<void>;
+}) {
   const polizze = useMemo(() => documenti.filter(isPolizzaDoc), [documenti]);
   if (polizze.length === 0) return null;
+
+  const centroOptions = [...centri].sort((a, b) => a.codice.localeCompare(b.codice, "it"));
+  const hasCc3 = centroOptions.some((c) => c.codice === POLIZZA_CENTRO);
 
   const parseDate = (s: string | null | undefined): Date | null => {
     if (!s) return null;
@@ -2080,6 +2106,7 @@ function PolizzeCommessaPanel({ documenti }: { documenti: DocumentoAcquisto[] })
             <th className="px-3 py-1.5 text-right">Premio</th>
             <th className="px-3 py-1.5 text-right">Imp. garantito</th>
             <th className="px-3 py-1.5">Scadenza</th>
+            <th className="px-3 py-1.5">Centro</th>
             <th className="px-3 py-1.5 w-[60px]"></th>
           </tr>
         </thead>
@@ -2122,6 +2149,40 @@ function PolizzeCommessaPanel({ documenti }: { documenti: DocumentoAcquisto[] })
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
+                </td>
+                <td className="px-3 py-1.5">
+                  <div className="flex items-center gap-1">
+                    <Select
+                      value={p.centro_costo || ""}
+                      onValueChange={(v) => onAssignCentro(p.id, v)}
+                    >
+                      <SelectTrigger className={
+                        "h-7 text-xs w-[150px]" +
+                        (!p.centro_costo ? " border-amber-500 text-amber-700 bg-amber-50/60" : "")
+                      }>
+                        <SelectValue placeholder="Assegna…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {centroOptions.map((c) => (
+                          <SelectItem key={c.codice} value={c.codice} className="text-xs">
+                            <span className="font-mono">{c.codice}</span>
+                            {c.descrizione && <span className="text-muted-foreground"> – {c.descrizione}</span>}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!p.centro_costo && hasCc3 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-primary"
+                        title={`Imposta rapido a ${POLIZZA_CENTRO}`}
+                        onClick={() => onAssignCentro(p.id, POLIZZA_CENTRO)}
+                      >
+                        +{POLIZZA_CENTRO}
+                      </Button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-1.5 text-right">
                   <Button
