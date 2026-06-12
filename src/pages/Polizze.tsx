@@ -171,7 +171,7 @@ function CountdownBadge({ date }: { date: Date | null }) {
 export default function Polizze() {
   const { documenti, refresh, updateField, deleteDocumento, prepareDocumento, finalizeDocumento } = useDocumentiAcquisto("acquisto");
   const { centriCosto } = useCentriData();
-  const { byCig: commesseByCig } = useCssrCommesse();
+  const { byCig: commesseByCig, commesse: commesseAll } = useCssrCommesse();
   // Case-insensitive lookup map (CIG sometimes stored uppercase, sometimes mixed).
   const commesseByCigUpper = useMemo(() => {
     const m = new Map<string, ReturnType<typeof commesseByCig.get>>();
@@ -186,6 +186,89 @@ export default function Polizze() {
     const c = lookupCommessa(cig);
     return c?.numero_repertorio || c?.commessa_consortile || "";
   }, [lookupCommessa]);
+
+  // ── Suggerimento CIG per associazione a una commessa (per polizze senza CIG) ──
+  // Strategia:
+  //  1) cerca CIG (10 char) nel testo del PDF / descrizione / ai_summary che
+  //     corrispondano a una commessa nota → match certo.
+  //  2) altrimenti, token-overlap sull'oggetto_lavori delle commesse.
+  const STOPWORDS = useMemo(() => new Set([
+    "lavori","lavoro","opera","opere","intervento","interventi","fornitura","servizio","servizi",
+    "appalto","gara","contratto","progetto","comune","provincia","via","cig","cup","della","delle","dello",
+    "degli","sulla","sullo","nella","nello","negli","sulle","alla","allo","alle","agli","per","con","del",
+    "dei","dal","dai","dall","dalla","una","uno","gli","che","non","sono","stato","stata","euro",
+    "manutenzione","ristrutturazione","realizzazione","ampliamento","riqualificazione","sistemazione",
+  ]), []);
+  const tokenize = useCallback((s: string): string[] => {
+    return (s || "")
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((t) => t.length >= 4 && !STOPWORDS.has(t));
+  }, [STOPWORDS]);
+
+  const suggestCigFor = useCallback((doc: DocumentoAcquisto): Array<{ cig: string; numero: string; oggetto: string; score: number; reason: "cig-in-testo" | "oggetto-lavori" }> => {
+    const text = `${doc.descrizione || ""}\n${doc.ai_summary || ""}\n${doc.file_name || ""}\n${doc.parsed_text || ""}`;
+    // 1) match diretto su CIG presenti nel testo
+    const { all, nearKeyword } = extractCigCandidates(text);
+    const direct: Array<{ cig: string; numero: string; oggetto: string; score: number; reason: "cig-in-testo" }> = [];
+    const seen = new Set<string>();
+    for (const c of [...nearKeyword, ...all]) {
+      const cu = c.toUpperCase();
+      if (seen.has(cu)) continue;
+      const com = commesseByCigUpper.get(cu);
+      if (com) {
+        seen.add(cu);
+        direct.push({
+          cig: cu,
+          numero: com.numero_repertorio || com.commessa_consortile || "",
+          oggetto: com.oggetto_lavori || "",
+          score: 100,
+          reason: "cig-in-testo",
+        });
+      }
+    }
+    if (direct.length > 0) return direct.slice(0, 5);
+
+    // 2) similarità sull'oggetto lavori
+    const docTokens = new Set(tokenize(text));
+    if (docTokens.size === 0) return [];
+    const scored: Array<{ cig: string; numero: string; oggetto: string; score: number; reason: "oggetto-lavori" }> = [];
+    for (const com of commesseAll) {
+      const cig = (com.cig || com.cig_derivato || "").trim().toUpperCase();
+      if (!cig) continue;
+      const oggetto = com.oggetto_lavori || "";
+      if (!oggetto) continue;
+      const tks = tokenize(oggetto);
+      if (tks.length === 0) continue;
+      let overlap = 0;
+      const uniq = new Set(tks);
+      uniq.forEach((t) => { if (docTokens.has(t)) overlap++; });
+      if (overlap < 2) continue;
+      const score = Math.round((overlap / uniq.size) * 100);
+      scored.push({
+        cig,
+        numero: com.numero_repertorio || com.commessa_consortile || "",
+        oggetto,
+        score,
+        reason: "oggetto-lavori",
+      });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, 5);
+  }, [commesseAll, commesseByCigUpper, tokenize]);
+
+  const applyCigSuggestion = useCallback(async (id: string, cig: string) => {
+    try {
+      await updateField(id, "cig", cig);
+      refresh();
+      toast.success(`CIG ${cig} associato`);
+    } catch (e: any) {
+      toast.error(e?.message || "Errore associazione CIG");
+    }
+  }, [updateField, refresh]);
+
   const [extractingId, setExtractingId] = useState<string | null>(null);
   const [reassociating, setReassociating] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -817,6 +900,8 @@ export default function Polizze() {
                                   refresh();
                                   toast.success("CIG aggiornato");
                                 }}
+                                suggestions={!d.cig ? suggestCigFor(d) : []}
+                                onApplySuggestion={(cig) => applyCigSuggestion(d.id, cig)}
                               />
                               {(() => {
                                 const num = getCommessaNumero(d.cig);
@@ -1135,10 +1220,17 @@ function ScadenzaCell({ value, onChange }: { value: Date | null; onChange: (d: D
   );
 }
 
-function EditableCigCell({ value, onSave }: { value: string; onSave: (next: string) => void | Promise<void> }) {
+interface CigSuggestion { cig: string; numero: string; oggetto: string; score: number; reason: "cig-in-testo" | "oggetto-lavori" }
+function EditableCigCell({ value, onSave, suggestions = [], onApplySuggestion }: {
+  value: string;
+  onSave: (next: string) => void | Promise<void>;
+  suggestions?: CigSuggestion[];
+  onApplySuggestion?: (cig: string) => void | Promise<void>;
+}) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   useEffect(() => { setDraft(value); }, [value]);
 
   const commit = async () => {
@@ -1186,17 +1278,64 @@ function EditableCigCell({ value, onSave }: { value: string; onSave: (next: stri
       {value ? (
         <Link to={`/commesse?cig=${value}`} className="text-primary hover:underline">{value}</Link>
       ) : (
-        <span className="text-muted-foreground">—</span>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="text-amber-700 hover:text-amber-900 underline decoration-dotted underline-offset-2"
+          title="Inserisci CIG"
+        >
+          + CIG
+        </button>
       )}
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-        title="Modifica CIG"
-        onClick={() => setEditing(true)}
-      >
-        <Pencil className="h-3 w-3" />
-      </Button>
+      {value && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Modifica CIG"
+          onClick={() => setEditing(true)}
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+      )}
+      {!value && suggestions.length > 0 && onApplySuggestion && (
+        <Popover open={suggestOpen} onOpenChange={setSuggestOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-5 w-5 text-primary"
+              title={`Suggerisci CIG da commesse (${suggestions.length})`}
+            >
+              <Sparkles className="h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[360px] p-2">
+            <div className="text-[11px] font-semibold text-muted-foreground px-1 pb-1">
+              Possibili commesse {suggestions[0].reason === "cig-in-testo" ? "(CIG trovato nel PDF)" : "(per oggetto lavori)"}
+            </div>
+            <div className="flex flex-col gap-1 max-h-[260px] overflow-auto">
+              {suggestions.map((s) => (
+                <button
+                  key={s.cig}
+                  type="button"
+                  onClick={async () => { setSuggestOpen(false); await onApplySuggestion(s.cig); }}
+                  className="text-left rounded border border-border hover:bg-accent p-1.5 flex flex-col gap-0.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-primary">{s.cig}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {s.numero && <>N. {s.numero} · </>}
+                      {s.reason === "cig-in-testo" ? "match" : `${s.score}%`}
+                    </span>
+                  </div>
+                  {s.oggetto && <div className="text-[11px] text-muted-foreground line-clamp-2">{s.oggetto}</div>}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }
