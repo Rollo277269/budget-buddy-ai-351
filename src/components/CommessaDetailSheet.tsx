@@ -1238,6 +1238,9 @@ export function CommessaDetailSheet({
                 onExpenseAdded={onExpenseAdded}
               />
 
+              {/* Polizze collegate (da pagina Polizze o caricate qui come Polizza) */}
+              <PolizzeCommessaPanel documenti={linkedDocumenti} />
+
               <InvoiceList
                 invoices={data.linkedPurchases} type="acquisto"
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
