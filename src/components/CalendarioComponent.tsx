@@ -520,6 +520,23 @@ export function CalendarioComponent({ events, centerSlot }: Props) {
                   <span className="font-mono text-xs">{selected.cig}</span>
                 </div>
               )}
+              {(selected.commessaNumero || selected.commessaOggetto) && (
+                <div className="pt-2 border-t space-y-1">
+                  <p className="text-xs text-muted-foreground">Commessa</p>
+                  {selected.commessaNumero != null && selected.commessaNumero !== "" && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground text-xs">N°</span>
+                      <span className="font-mono text-xs font-medium">{selected.commessaNumero}</span>
+                    </div>
+                  )}
+                  {selected.commessaOggetto && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground text-xs">Oggetto</span>
+                      <span className="text-xs text-right max-w-[260px]">{selected.commessaOggetto}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {selected.descrizione && (
                 <div className="pt-2 border-t">
                   <p className="text-xs text-muted-foreground mb-1">Descrizione</p>
