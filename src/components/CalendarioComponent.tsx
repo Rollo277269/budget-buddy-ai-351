@@ -19,6 +19,8 @@ export interface CalendarEvent {
   cig?: string;
   descrizione?: string;
   giorniRimasti?: number;
+  commessaNumero?: string | number;
+  commessaOggetto?: string;
 }
 
 type ViewMode = "month" | "week" | "day";
