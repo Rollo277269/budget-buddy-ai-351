@@ -2106,6 +2106,7 @@ function PolizzeCommessaPanel({
             <th className="px-3 py-1.5 text-right">Premio</th>
             <th className="px-3 py-1.5 text-right">Imp. garantito</th>
             <th className="px-3 py-1.5">Scadenza</th>
+            <th className="px-3 py-1.5">Centro</th>
             <th className="px-3 py-1.5 w-[60px]"></th>
           </tr>
         </thead>
@@ -2148,6 +2149,40 @@ function PolizzeCommessaPanel({
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
+                </td>
+                <td className="px-3 py-1.5">
+                  <div className="flex items-center gap-1">
+                    <Select
+                      value={p.centro_costo || ""}
+                      onValueChange={(v) => onAssignCentro(p.id, v)}
+                    >
+                      <SelectTrigger className={
+                        "h-7 text-xs w-[150px]" +
+                        (!p.centro_costo ? " border-amber-500 text-amber-700 bg-amber-50/60" : "")
+                      }>
+                        <SelectValue placeholder="Assegna…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {centroOptions.map((c) => (
+                          <SelectItem key={c.codice} value={c.codice} className="text-xs">
+                            <span className="font-mono">{c.codice}</span>
+                            {c.descrizione && <span className="text-muted-foreground"> – {c.descrizione}</span>}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!p.centro_costo && hasCc3 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-primary"
+                        title={`Imposta rapido a ${POLIZZA_CENTRO}`}
+                        onClick={() => onAssignCentro(p.id, POLIZZA_CENTRO)}
+                      >
+                        +{POLIZZA_CENTRO}
+                      </Button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-1.5 text-right">
                   <Button
