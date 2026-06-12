@@ -1222,17 +1222,39 @@ function ScadenzaCell({ value, onChange }: { value: Date | null; onChange: (d: D
 }
 
 interface CigSuggestion { cig: string; numero: string; oggetto: string; score: number; reason: "cig-in-testo" | "oggetto-lavori" }
-function EditableCigCell({ value, onSave, suggestions = [], onApplySuggestion }: {
+function EditableCigCell({ value, onSave, suggestions = [], onApplySuggestion, allCommesse = [] }: {
   value: string;
   onSave: (next: string) => void | Promise<void>;
   suggestions?: CigSuggestion[];
   onApplySuggestion?: (cig: string) => void | Promise<void>;
+  allCommesse?: import("@/hooks/useCssrCommesse").CssrCommessa[];
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   useEffect(() => { setDraft(value); }, [value]);
+
+  const suggestedCigSet = useMemo(() => new Set(suggestions.map((s) => s.cig)), [suggestions]);
+  const filteredCommesse = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    const list = allCommesse
+      .map((c) => ({
+        cig: (c.cig || c.cig_derivato || "").trim().toUpperCase(),
+        numero: c.numero_repertorio || c.commessa_consortile || "",
+        oggetto: c.oggetto_lavori || "",
+      }))
+      .filter((c) => c.cig && !suggestedCigSet.has(c.cig));
+    const filtered = q
+      ? list.filter((c) =>
+          c.cig.toLowerCase().includes(q) ||
+          c.numero.toLowerCase().includes(q) ||
+          c.oggetto.toLowerCase().includes(q),
+        )
+      : list;
+    return filtered.slice(0, 200);
+  }, [allCommesse, searchTerm, suggestedCigSet]);
 
   const commit = async () => {
     const next = draft.trim().toUpperCase();
