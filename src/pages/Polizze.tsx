@@ -902,6 +902,7 @@ export default function Polizze() {
                                 }}
                                 suggestions={!d.cig ? suggestCigFor(d) : []}
                                 onApplySuggestion={(cig) => applyCigSuggestion(d.id, cig)}
+                                allCommesse={commesseAll}
                               />
                               {(() => {
                                 const num = getCommessaNumero(d.cig);
@@ -1221,17 +1222,39 @@ function ScadenzaCell({ value, onChange }: { value: Date | null; onChange: (d: D
 }
 
 interface CigSuggestion { cig: string; numero: string; oggetto: string; score: number; reason: "cig-in-testo" | "oggetto-lavori" }
-function EditableCigCell({ value, onSave, suggestions = [], onApplySuggestion }: {
+function EditableCigCell({ value, onSave, suggestions = [], onApplySuggestion, allCommesse = [] }: {
   value: string;
   onSave: (next: string) => void | Promise<void>;
   suggestions?: CigSuggestion[];
   onApplySuggestion?: (cig: string) => void | Promise<void>;
+  allCommesse?: import("@/hooks/useCssrCommesse").CssrCommessa[];
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   useEffect(() => { setDraft(value); }, [value]);
+
+  const suggestedCigSet = useMemo(() => new Set(suggestions.map((s) => s.cig)), [suggestions]);
+  const filteredCommesse = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    const list = allCommesse
+      .map((c) => ({
+        cig: (c.cig || c.cig_derivato || "").trim().toUpperCase(),
+        numero: c.numero_repertorio || c.commessa_consortile || "",
+        oggetto: c.oggetto_lavori || "",
+      }))
+      .filter((c) => c.cig && !suggestedCigSet.has(c.cig));
+    const filtered = q
+      ? list.filter((c) =>
+          c.cig.toLowerCase().includes(q) ||
+          c.numero.toLowerCase().includes(q) ||
+          c.oggetto.toLowerCase().includes(q),
+        )
+      : list;
+    return filtered.slice(0, 200);
+  }, [allCommesse, searchTerm, suggestedCigSet]);
 
   const commit = async () => {
     const next = draft.trim().toUpperCase();
@@ -1298,38 +1321,73 @@ function EditableCigCell({ value, onSave, suggestions = [], onApplySuggestion }:
           <Pencil className="h-3 w-3" />
         </Button>
       )}
-      {!value && suggestions.length > 0 && onApplySuggestion && (
+      {!value && onApplySuggestion && (
         <Popover open={suggestOpen} onOpenChange={setSuggestOpen}>
           <PopoverTrigger asChild>
             <Button
               size="icon"
               variant="ghost"
               className="h-5 w-5 text-primary"
-              title={`Suggerisci CIG da commesse (${suggestions.length})`}
+              title={suggestions.length > 0 ? `Suggerimenti (${suggestions.length}) — o scegli commessa` : "Scegli commessa"}
             >
               <Sparkles className="h-3 w-3" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-[360px] p-2">
-            <div className="text-[11px] font-semibold text-muted-foreground px-1 pb-1">
-              Possibili commesse {suggestions[0].reason === "cig-in-testo" ? "(CIG trovato nel PDF)" : "(per oggetto lavori)"}
-            </div>
-            <div className="flex flex-col gap-1 max-h-[260px] overflow-auto">
-              {suggestions.map((s) => (
+          <PopoverContent align="start" className="w-[420px] p-2">
+            <Input
+              autoFocus
+              placeholder="Cerca per numero, CIG o oggetto lavori…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-7 text-xs mb-2"
+            />
+            <div className="flex flex-col gap-1 max-h-[320px] overflow-auto">
+              {suggestions.length > 0 && !searchTerm && (
+                <>
+                  <div className="text-[10px] uppercase tracking-wide font-semibold text-primary px-1">
+                    Suggerite {suggestions[0].reason === "cig-in-testo" ? "(CIG nel PDF)" : "(oggetto simile)"}
+                  </div>
+                  {suggestions.map((s) => (
+                    <button
+                      key={`sug-${s.cig}`}
+                      type="button"
+                      onClick={async () => { setSuggestOpen(false); await onApplySuggestion(s.cig); }}
+                      className="text-left rounded border border-primary/40 bg-primary/5 hover:bg-primary/10 p-1.5 flex flex-col gap-0.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs text-primary">
+                          {s.numero ? `N. ${s.numero}` : "—"} · {s.cig}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {s.reason === "cig-in-testo" ? "match" : `${s.score}%`}
+                        </span>
+                      </div>
+                      {s.oggetto && <div className="text-[11px] text-muted-foreground line-clamp-2">{s.oggetto}</div>}
+                    </button>
+                  ))}
+                  <div className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground px-1 pt-1">
+                    Tutte le commesse
+                  </div>
+                </>
+              )}
+              {filteredCommesse.length === 0 && suggestions.length === 0 && (
+                <div className="text-[11px] text-muted-foreground px-1 py-2 text-center">
+                  {searchTerm ? "Nessuna commessa trovata" : "Nessuna commessa con CIG"}
+                </div>
+              )}
+              {filteredCommesse.map((c) => (
                 <button
-                  key={s.cig}
+                  key={`all-${c.cig}`}
                   type="button"
-                  onClick={async () => { setSuggestOpen(false); await onApplySuggestion(s.cig); }}
+                  onClick={async () => { setSuggestOpen(false); await onApplySuggestion(c.cig); }}
                   className="text-left rounded border border-border hover:bg-accent p-1.5 flex flex-col gap-0.5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-primary">{s.cig}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {s.numero && <>N. {s.numero} · </>}
-                      {s.reason === "cig-in-testo" ? "match" : `${s.score}%`}
+                    <span className="font-mono text-xs">
+                      {c.numero ? `N. ${c.numero}` : "—"} · <span className="text-primary">{c.cig}</span>
                     </span>
                   </div>
-                  {s.oggetto && <div className="text-[11px] text-muted-foreground line-clamp-2">{s.oggetto}</div>}
+                  {c.oggetto && <div className="text-[11px] text-muted-foreground line-clamp-2">{c.oggetto}</div>}
                 </button>
               ))}
             </div>
