@@ -234,12 +234,23 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
   }, [fetchDocumenti]);
 
   const updateCentroCosto = useCallback(async (id: string, centroCosto: string) => {
-    await supabase
+    const { error } = await supabase
       .from("documenti_acquisto" as any)
       .update({ centro_costo: centroCosto } as any)
       .eq("id", id);
-    await fetchDocumenti();
-  }, [fetchDocumenti]);
+    if (error) {
+      console.error("updateCentroCosto failed", error);
+      throw new Error(error.message);
+    }
+    if (docCache[tipo]) {
+      docCache[tipo] = docCache[tipo]!.map((d) =>
+        d.id === id ? ({ ...d, centro_costo: centroCosto } as DocumentoAcquisto) : d
+      );
+      docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
+    } else {
+      await fetchDocumenti();
+    }
+  }, [fetchDocumenti, tipo]);
 
   const updateCig = useCallback(async (id: string, cig: string) => {
     await supabase
