@@ -902,6 +902,7 @@ export default function Polizze() {
                                 }}
                                 suggestions={!d.cig ? suggestCigFor(d) : []}
                                 onApplySuggestion={(cig) => applyCigSuggestion(d.id, cig)}
+                                allCommesse={commesseAll}
                               />
                               {(() => {
                                 const num = getCommessaNumero(d.cig);
