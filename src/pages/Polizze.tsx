@@ -887,7 +887,7 @@ export default function Polizze() {
                               <span className="font-mono">{d.numero || "—"}</span>
                             </div>
                           </TableCell>}
-                          {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 max-w-[260px] truncate" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
+                          {isVisible("descrizione") && <TableCell className="text-xs px-2 py-1.5 align-top whitespace-normal break-words" title={d.descrizione || ""}>{d.descrizione || "—"}</TableCell>}
                           {isVisible("cig_commessa") && <TableCell className="text-xs px-2 py-1.5 font-mono">
                             <div className="flex flex-col gap-0.5">
                               <EditableCigCell
