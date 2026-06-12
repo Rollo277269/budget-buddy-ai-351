@@ -343,7 +343,7 @@ export function CommessaDetailSheet({
   const { rules: namingRules } = useNamingRules();
   const ricavoMap = useCentroMap("ricavo", "vendite");
   const costoMap = useCentroMap("costo", "acquisti");
-  const { documenti: documentiAcquisto } = useDocumentiAcquisto("acquisto");
+  const { documenti: documentiAcquisto, updateField: updateDocField } = useDocumentiAcquisto("acquisto");
 
   // Refresh centro data when sheet opens
   useEffect(() => {
