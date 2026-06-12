@@ -90,6 +90,12 @@ function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => v
       <span className={cn("font-mono", event.tipo === "credito" ? "text-income" : event.tipo === "polizza" ? "text-[hsl(var(--warning))]" : "text-expense")}>
         {formatCurrency(event.totale)}
       </span>
+      {event.tipo === "polizza" && (event.commessaNumero || event.commessaOggetto) && (
+        <div className="truncate text-[9px] text-muted-foreground">
+          {event.commessaNumero != null && event.commessaNumero !== "" ? `Comm. ${event.commessaNumero}` : ""}
+          {event.commessaOggetto ? ` · ${event.commessaOggetto}` : ""}
+        </div>
+      )}
     </button>
   );
 }
