@@ -140,6 +140,31 @@ export function CommessaExpenseUpload({ cig, commessaNumero, namingRules, onExpe
       return;
     }
 
+    // Duplicate check by file name across documenti_acquisto.
+    try {
+      const { data: dup } = await supabase
+        .from("documenti_acquisto" as any)
+        .select("id, file_name, cig, fornitore, descrizione, created_at")
+        .eq("file_name", file.name)
+        .limit(1);
+      if (dup && dup.length > 0) {
+        const d = dup[0] as any;
+        const where = d.cig ? ` (CIG ${d.cig})` : "";
+        const proceed = confirm(
+          `Attenzione: esiste già un documento con lo stesso nome file:\n` +
+          `"${d.file_name}"${where}\n` +
+          `${d.descrizione || ""}\n\n` +
+          `Continuare comunque con il caricamento di una copia?`
+        );
+        if (!proceed) {
+          toast.message("Caricamento annullato (duplicato)");
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Duplicate check error:", e);
+    }
+
     setProcessing(true);
     setSelectedFile(file);
     setFormData(null);
