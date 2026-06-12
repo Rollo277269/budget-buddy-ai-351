@@ -811,6 +811,10 @@ export default function Polizze() {
                                 value={d.cig || ""}
                                 onSave={async (next) => {
                                   await updateField(d.id, "cig", next);
+                                  // Forza un refresh per sincronizzare immediatamente
+                                  // l'associazione alla commessa (lookup CSSR e
+                                  // pannelli "Polizze collegate" nelle commesse).
+                                  refresh();
                                   toast.success("CIG aggiornato");
                                 }}
                               />
