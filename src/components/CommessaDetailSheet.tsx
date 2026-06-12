@@ -56,6 +56,8 @@ import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { exportFascicoloCommessa } from "@/lib/exportFascicolo";
 import { FolderArchive } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ExternalLink } from "lucide-react";
+import { openDocumentPdf } from "@/lib/openDocumentPdf";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie,
   Legend, CartesianGrid, ComposedChart, Line, ReferenceLine,
@@ -1236,6 +1238,9 @@ export function CommessaDetailSheet({
                 onExpenseAdded={onExpenseAdded}
               />
 
+              {/* Polizze collegate (da pagina Polizze o caricate qui come Polizza) */}
+              <PolizzeCommessaPanel documenti={linkedDocumenti} />
+
               <InvoiceList
                 invoices={data.linkedPurchases} type="acquisto"
                 autoKeys={data.autoPurchaseKeys} cig={commessa.cig}
@@ -2025,6 +2030,115 @@ function MiniCard({ label, value, highlight }: { label: string; value: string; h
     <div className="rounded-lg border bg-card p-2 text-center">
       <p className="text-[10px] text-muted-foreground">{label}</p>
       <p className={`text-xs font-bold font-mono ${highlight ? "text-primary" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+/* ── Polizze collegate alla commessa (lette da documenti_acquisto con stesso CIG) ── */
+function isPolizzaDoc(d: DocumentoAcquisto): boolean {
+  const tipo = (d.tipo_documento || "").toLowerCase();
+  if (tipo === "polizza") return true;
+  const text = `${d.descrizione || ""} ${d.ai_summary || ""} ${d.file_name || ""}`.toLowerCase();
+  return /polizz|fideiussor|cauzion/.test(text);
+}
+
+function PolizzeCommessaPanel({ documenti }: { documenti: DocumentoAcquisto[] }) {
+  const polizze = useMemo(() => documenti.filter(isPolizzaDoc), [documenti]);
+  if (polizze.length === 0) return null;
+
+  const parseDate = (s: string | null | undefined): Date | null => {
+    if (!s) return null;
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    const it = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+    if (it) return new Date(Number(it[3]), Number(it[2]) - 1, Number(it[1]));
+    return null;
+  };
+  const daysUntil = (d: Date) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const t = new Date(d); t.setHours(0, 0, 0, 0);
+    return Math.round((t.getTime() - today.getTime()) / 86400000);
+  };
+
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="px-4 py-2 border-b bg-muted/30 flex items-center gap-2">
+        <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Polizze collegate ({polizze.length})
+        </h3>
+        <Badge variant="outline" className="text-[10px] ml-1">CIG comune</Badge>
+        <span className="ml-auto text-[10px] text-muted-foreground">
+          Sincronizzate con la pagina Polizze
+        </span>
+      </div>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-left text-[10px] uppercase text-muted-foreground bg-muted/20">
+            <th className="px-3 py-1.5">Fornitore</th>
+            <th className="px-3 py-1.5">Descrizione / Tipo</th>
+            <th className="px-3 py-1.5 text-right">Premio</th>
+            <th className="px-3 py-1.5 text-right">Imp. garantito</th>
+            <th className="px-3 py-1.5">Scadenza</th>
+            <th className="px-3 py-1.5 w-[60px]"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {polizze.map((p) => {
+            const scad = parseDate(p.data_scadenza);
+            const days = scad ? daysUntil(scad) : null;
+            return (
+              <tr key={p.id} className="border-t hover:bg-muted/20">
+                <td className="px-3 py-1.5">{p.fornitore || "—"}</td>
+                <td className="px-3 py-1.5">
+                  <div className="truncate max-w-[260px]" title={p.descrizione || p.file_name}>
+                    {p.descrizione || p.file_name}
+                  </div>
+                  {p.tipo_documento && (
+                    <Badge variant="outline" className="text-[9px] mt-0.5 px-1 py-0 h-4">{p.tipo_documento}</Badge>
+                  )}
+                </td>
+                <td className="px-3 py-1.5 text-right font-mono">
+                  {p.importo != null ? formatCurrency(Number(p.importo)) : "—"}
+                </td>
+                <td className="px-3 py-1.5 text-right font-mono">
+                  {p.importo_garantito != null ? formatCurrency(Number(p.importo_garantito)) : "—"}
+                </td>
+                <td className="px-3 py-1.5">
+                  {scad ? (
+                    <span className="inline-flex items-center gap-1">
+                      {scad.toLocaleDateString("it-IT")}
+                      {days != null && days < 0 && (
+                        <Badge variant="destructive" className="text-[9px] gap-1 px-1 py-0 h-4">
+                          <ShieldAlert className="h-2.5 w-2.5" />Scaduta
+                        </Badge>
+                      )}
+                      {days != null && days >= 0 && days <= 10 && (
+                        <Badge className="text-[9px] bg-amber-500 hover:bg-amber-500 text-white px-1 py-0 h-4">
+                          Tra {days}g
+                        </Badge>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-1.5 text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px] gap-1"
+                    onClick={() => openDocumentPdf(p.storage_path)}
+                    title="Apri PDF"
+                  >
+                    <ExternalLink className="h-3 w-3" />PDF
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
