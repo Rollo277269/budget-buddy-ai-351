@@ -24,6 +24,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { openDocumentPdf } from "@/lib/openDocumentPdf";
 
 const REMINDER_DAYS = 10;
 
@@ -437,23 +438,7 @@ export default function Polizze() {
   }, [updateField]);
 
   const openPdf = useCallback(async (doc: DocumentoAcquisto) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from("documenti-acquisto")
-        .createSignedUrl(doc.storage_path, 60 * 10);
-      if (error || !data?.signedUrl) throw error || new Error("URL non disponibile");
-      window.open(data.signedUrl, "_blank");
-    } catch {
-      // Fallback: download as blob
-      try {
-        const { data: blob } = await supabase.storage.from("documenti-acquisto").download(doc.storage_path);
-        if (!blob) { toast.error("Errore apertura PDF"); return; }
-        const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
-      } catch {
-        toast.error("Errore apertura PDF");
-      }
-    }
+    await openDocumentPdf(doc.storage_path);
   }, []);
 
   const handleReassociaCig = useCallback(async () => {
