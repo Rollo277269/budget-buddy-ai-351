@@ -234,12 +234,23 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
   }, [fetchDocumenti]);
 
   const updateCentroCosto = useCallback(async (id: string, centroCosto: string) => {
-    await supabase
+    const { error } = await supabase
       .from("documenti_acquisto" as any)
       .update({ centro_costo: centroCosto } as any)
       .eq("id", id);
-    await fetchDocumenti();
-  }, [fetchDocumenti]);
+    if (error) {
+      console.error("updateCentroCosto failed", error);
+      throw new Error(error.message);
+    }
+    if (docCache[tipo]) {
+      docCache[tipo] = docCache[tipo]!.map((d) =>
+        d.id === id ? ({ ...d, centro_costo: centroCosto } as DocumentoAcquisto) : d
+      );
+      docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
+    } else {
+      await fetchDocumenti();
+    }
+  }, [fetchDocumenti, tipo]);
 
   const updateCig = useCallback(async (id: string, cig: string) => {
     await supabase
@@ -258,15 +269,17 @@ export function useDocumentiAcquisto(tipo: "acquisto" | "vendita" = "acquisto") 
       console.error(`updateField ${field} failed`, error);
       throw new Error(error.message);
     }
-    // Optimistic local update so the change is visible immediately and not
-    // overwritten by a stale concurrent refresh.
+    // Apply the change locally and broadcast it. Skip an immediate DB refresh
+    // because it would race with any other in-flight write on a different
+    // field of the same row and could revert the change the user just made.
     if (docCache[tipo]) {
       docCache[tipo] = docCache[tipo]!.map((d) =>
         d.id === id ? ({ ...d, [field]: value } as DocumentoAcquisto) : d
       );
       docSubs[tipo]?.forEach((s) => s(docCache[tipo]!));
+    } else {
+      await fetchDocumenti();
     }
-    await fetchDocumenti();
   }, [fetchDocumenti, tipo]);
 
   /** Re-run AI parsing on an existing document using fresh PDF text. */
