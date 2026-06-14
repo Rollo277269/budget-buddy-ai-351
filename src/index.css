@@ -117,6 +117,35 @@
 }
 
 /* ──────────────────────────────────────────────────────────────
+   Trigger blu unificato (tab e filtri).
+   Stesso comportamento di hover, focus-visible (keyboard),
+   focus mouse e active per ogni superficie blu sky-600.
+   ────────────────────────────────────────────────────────────── */
+@layer components {
+  .trigger-blue {
+    @apply bg-sky-600 text-white border border-sky-700/40 shadow-sm
+           transition-colors duration-150
+           outline-none ring-0 ring-offset-0;
+  }
+  .trigger-blue:hover {
+    @apply bg-sky-500 border-sky-600;
+  }
+  .trigger-blue:focus-visible {
+    @apply bg-sky-500 outline-none ring-2 ring-sky-300 ring-offset-2 ring-offset-background;
+  }
+  .trigger-blue:active,
+  .trigger-blue[data-state="active"],
+  .trigger-blue[data-state="open"],
+  .trigger-blue[aria-pressed="true"],
+  .trigger-blue[aria-expanded="true"] {
+    @apply bg-sky-700 border-sky-800 text-white;
+  }
+  .trigger-blue:disabled {
+    @apply opacity-50 pointer-events-none;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
    Viewer mode (read-only).
    When the logged-in user has the `viewer` role, the AppLayout sets
    `data-role="viewer"` on <body>. The rules below hide every element
