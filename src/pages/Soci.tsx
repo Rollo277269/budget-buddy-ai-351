@@ -215,11 +215,12 @@ export default function SociPage() {
             </SelectContent>
           </Select>
           <span className="text-xs text-muted-foreground ml-2">Anno</span>
-          <Select value={year != null ? String(year) : ""} onValueChange={(v) => setYear(parseInt(v, 10))}>
+          <Select value={year != null ? String(year) : "__all__"} onValueChange={setYear}>
             <SelectTrigger className="h-8 w-28 text-xs">
               <SelectValue placeholder="Anno" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__all__" className="text-xs">Tutti gli anni</SelectItem>
               {allYears.map((y) => (
                 <SelectItem key={y} value={String(y)} className="text-xs">
                   {y}
