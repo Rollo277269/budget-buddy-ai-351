@@ -56,19 +56,21 @@ export default function SociPage() {
 
   const urlYear = searchParams.get("anno");
   const urlSocio = searchParams.get("socio");
-  const year: number | null = urlYear && !isNaN(parseInt(urlYear, 10))
-    ? parseInt(urlYear, 10)
-    : (allYears[0] ?? null);
+  const year: number | null = urlYear === "__all__"
+    ? null
+    : (urlYear && !isNaN(parseInt(urlYear, 10))
+        ? parseInt(urlYear, 10)
+        : (allYears[0] ?? null));
   const socioId: string = urlSocio && soci.some((s) => s.id === urlSocio) ? urlSocio : "__all__";
 
-  const updateParam = (key: string, value: string | null) => {
+  const updateParam = (key: string, value: string | null, keepAll = false) => {
     const next = new URLSearchParams(searchParams);
-    if (value == null || value === "" || value === "__all__") next.delete(key);
+    if (value == null || value === "" || (!keepAll && value === "__all__")) next.delete(key);
     else next.set(key, value);
     setSearchParams(next, { replace: true });
   };
 
-  const setYear = (y: number) => updateParam("anno", String(y));
+  const setYear = (y: string) => updateParam("anno", y, true);
   const setSocioId = (id: string) => updateParam("socio", id);
 
   // Seed default year in URL once data is loaded, so shared links carry it explicitly.
@@ -82,9 +84,8 @@ export default function SociPage() {
   }, [allYears.length]);
 
   const rows = useMemo(() => {
-    if (year == null) return [];
-    const salesByYear = allSales.filter((s) => s.anno === year);
-    const purchasesByYear = allPurchases.filter((p) => p.anno === year);
+    const salesByYear = year == null ? allSales : allSales.filter((s) => s.anno === year);
+    const purchasesByYear = year == null ? allPurchases : allPurchases.filter((p) => p.anno === year);
 
     const list = socioId === "__all__" ? soci : soci.filter((s) => s.id === socioId);
     return list.map((socio) => {
@@ -214,11 +215,12 @@ export default function SociPage() {
             </SelectContent>
           </Select>
           <span className="text-xs text-muted-foreground ml-2">Anno</span>
-          <Select value={year != null ? String(year) : ""} onValueChange={(v) => setYear(parseInt(v, 10))}>
+          <Select value={year != null ? String(year) : "__all__"} onValueChange={setYear}>
             <SelectTrigger className="h-8 w-28 text-xs">
               <SelectValue placeholder="Anno" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__all__" className="text-xs">Tutti gli anni</SelectItem>
               {allYears.map((y) => (
                 <SelectItem key={y} value={String(y)} className="text-xs">
                   {y}
