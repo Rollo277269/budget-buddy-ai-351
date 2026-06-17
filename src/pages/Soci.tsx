@@ -5,6 +5,11 @@ import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
+import { Button } from "@/components/ui/button";
+import { FileSpreadsheet, FileText } from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 function parseYear(d: string): number | null {
   if (!d) return null;
@@ -126,6 +131,58 @@ export default function SociPage() {
 
   const fmt = (v: number) => (Math.abs(v) < 0.005 ? "—" : formatCurrency(v));
 
+  const socioLabel = socioId === "__all__"
+    ? "Tutti i soci"
+    : (soci.find((s) => s.id === socioId)?.denominazione ?? "");
+  const baseFilename = `Soci_${year ?? "tutti"}${socioId === "__all__" ? "" : "_" + socioLabel.replace(/[^\w-]+/g, "_")}`;
+
+  const exportExcel = () => {
+    const header = ["Socio", "Partita IVA", "Vendite (crediti)", "Acquisti (debiti)", "IVA T1", "IVA T2", "IVA T3", "IVA T4", "IVA totale"];
+    const data = rows.map((r) => [
+      r.socio.denominazione,
+      r.socio.partita_iva || "",
+      r.vendite, r.acquisti, r.iva[0], r.iva[1], r.iva[2], r.iva[3], r.ivaTot,
+    ]);
+    const totalRow = ["Totale", `${rows.length} soci`, totals.vendite, totals.acquisti, totals.iva[0], totals.iva[1], totals.iva[2], totals.iva[3], totals.ivaTot];
+    const ws = XLSX.utils.aoa_to_sheet([
+      [`Report Soci - Anno ${year ?? ""} - ${socioLabel}`],
+      [],
+      header,
+      ...data,
+      totalRow,
+    ]);
+    ws["!cols"] = [{ wch: 36 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Soci");
+    XLSX.writeFile(wb, `${baseFilename}.xlsx`);
+  };
+
+  const exportPdf = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFontSize(14);
+    doc.text(`Report Soci - Anno ${year ?? ""}`, 40, 40);
+    doc.setFontSize(10);
+    doc.text(socioLabel, 40, 58);
+    autoTable(doc, {
+      startY: 75,
+      head: [["Socio", "P. IVA", "Vendite", "Acquisti", "IVA T1", "IVA T2", "IVA T3", "IVA T4", "IVA totale"]],
+      body: rows.map((r) => [
+        r.socio.denominazione,
+        r.socio.partita_iva || "",
+        fmt(r.vendite), fmt(r.acquisti), fmt(r.iva[0]), fmt(r.iva[1]), fmt(r.iva[2]), fmt(r.iva[3]), fmt(r.ivaTot),
+      ]),
+      foot: [["Totale", `${rows.length} soci`, fmt(totals.vendite), fmt(totals.acquisti), fmt(totals.iva[0]), fmt(totals.iva[1]), fmt(totals.iva[2]), fmt(totals.iva[3]), fmt(totals.ivaTot)]],
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [30, 64, 175], textColor: 255 },
+      footStyles: { fillColor: [219, 234, 254], textColor: 0, fontStyle: "bold" },
+      columnStyles: {
+        2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" },
+        5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" }, 8: { halign: "right" },
+      },
+    });
+    doc.save(`${baseFilename}.pdf`);
+  };
+
   return (
     <div className="p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -136,6 +193,12 @@ export default function SociPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={exportExcel} disabled={loading || rows.length === 0}>
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" /> Excel
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={exportPdf} disabled={loading || rows.length === 0}>
+            <FileText className="h-3.5 w-3.5 mr-1" /> PDF
+          </Button>
           <span className="text-xs text-muted-foreground">Socio</span>
           <Select value={socioId} onValueChange={setSocioId}>
             <SelectTrigger className="h-8 w-56 text-xs">
