@@ -41,6 +41,7 @@ export const defaultItems: MenuItem[] = [
   { title: "Commesse", url: "/lista-commesse", icon: Briefcase },
   { title: "Gare", url: "/offerte", icon: Gavel },
   { title: "Riepilogo CIG", url: "/commesse", icon: FolderKanban },
+  { title: "MyCommessa", url: "/mycommessa", icon: Briefcase },
   { title: "Strumenti", url: "/strumenti", icon: Settings },
 ];
 
@@ -62,6 +63,7 @@ const pagePrefetchers: Record<string, () => Promise<unknown>> = {
   "/lista-commesse": () => import("@/pages/ListaCommesse"),
   "/offerte": () => import("@/pages/Offerte"),
   "/commesse": () => import("@/pages/Commesse"),
+  "/mycommessa": () => import("@/pages/MyCommessa"),
   "/strumenti": () => import("@/pages/Strumenti"),
 };
 const prefetched = new Set<string>();
