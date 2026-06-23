@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMyCommessaAuth } from '@/hooks/useMyCommessaAuth';
 import { mycommessa } from '@/integrations/mycommessa/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, LogOut } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, LogOut, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 type CommessaRow = {
@@ -16,6 +23,9 @@ type CommessaRow = {
   importo_appalto: number | null;
 };
 
+type SortKey = 'titolo' | 'stato_commessa' | 'importo_appalto';
+type SortDir = 'asc' | 'desc';
+
 export default function MyCommessaPage() {
   const { session, loading, signIn, signOut } = useMyCommessaAuth();
   const [email, setEmail] = useState('');
@@ -23,6 +33,10 @@ export default function MyCommessaPage() {
   const [submitting, setSubmitting] = useState(false);
   const [rows, setRows] = useState<CommessaRow[]>([]);
   const [loadingRows, setLoadingRows] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statoFilter, setStatoFilter] = useState<string>('__all__');
+  const [sortKey, setSortKey] = useState<SortKey>('titolo');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   useEffect(() => {
     if (!session) {
