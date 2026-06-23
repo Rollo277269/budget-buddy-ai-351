@@ -32,6 +32,7 @@ const SociPage = lazy(() => import("./pages/Soci"));
 const KpiPage = lazy(() => import("./pages/Kpi"));
 const DiagnosticaPage = lazy(() => import("./pages/Diagnostica"));
 const PolizzePage = lazy(() => import("./pages/Polizze"));
+const MyCommessaPage = lazy(() => import("./pages/MyCommessa"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ const App = () => {
                         <Route path="/kpi" element={<KpiPage />} />
                         <Route path="/diagnostica" element={<AdminRoute><DiagnosticaPage /></AdminRoute>} />
                         <Route path="/polizze" element={<PolizzePage />} />
+                        <Route path="/mycommessa" element={<MyCommessaPage />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </Suspense>
