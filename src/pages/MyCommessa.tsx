@@ -26,25 +26,47 @@ type CommessaRow = {
 type SortKey = 'titolo' | 'stato_commessa' | 'importo_appalto';
 type SortDir = 'asc' | 'desc';
 
+const CACHE_KEY = 'mycommessa:rows:v1';
+const PREFS_KEY = 'mycommessa:prefs:v1';
+
+const loadCache = (): CommessaRow[] => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as CommessaRow[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const loadPrefs = () => {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function MyCommessaPage() {
   const { session, loading, signIn, signOut } = useMyCommessaAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [rows, setRows] = useState<CommessaRow[]>([]);
+  const [rows, setRows] = useState<CommessaRow[]>(() => loadCache());
   const [loadingRows, setLoadingRows] = useState(false);
-  const [search, setSearch] = useState('');
-  const [statoFilter, setStatoFilter] = useState<string>('__all__');
-  const [sortKey, setSortKey] = useState<SortKey>('titolo');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const initialPrefs = loadPrefs();
+  const [search, setSearch] = useState<string>(initialPrefs?.search ?? '');
+  const [statoFilter, setStatoFilter] = useState<string>(initialPrefs?.statoFilter ?? '__all__');
+  const [sortKey, setSortKey] = useState<SortKey>(initialPrefs?.sortKey ?? 'titolo');
+  const [sortDir, setSortDir] = useState<SortDir>(initialPrefs?.sortDir ?? 'asc');
 
   useEffect(() => {
     if (!session) {
-      setRows([]);
       return;
     }
     let cancelled = false;
-    setLoadingRows(true);
+    // Show spinner only if we have no cached data
+    if (rows.length === 0) setLoadingRows(true);
     mycommessa
       .from('commessa_data')
       .select('id, titolo, stato_commessa, importo_appalto')
@@ -54,7 +76,11 @@ export default function MyCommessaPage() {
         if (error) {
           toast.error(`Errore caricamento commesse: ${error.message}`);
         } else {
-          setRows((data ?? []) as CommessaRow[]);
+          const next = (data ?? []) as CommessaRow[];
+          setRows(next);
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+          } catch {}
         }
         setLoadingRows(false);
       });
@@ -62,6 +88,16 @@ export default function MyCommessaPage() {
       cancelled = true;
     };
   }, [session]);
+
+  // Persist UI preferences
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ search, statoFilter, sortKey, sortDir }),
+      );
+    } catch {}
+  }, [search, statoFilter, sortKey, sortDir]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +121,8 @@ export default function MyCommessaPage() {
   }
 
   if (!session) {
+    // Clear cache on logout state so a different user doesn't see stale data
+    try { localStorage.removeItem(CACHE_KEY); } catch {}
     return (
       <div className="flex items-center justify-center py-12">
         <Card className="w-full max-w-sm">
