@@ -342,16 +342,16 @@ export default function SociPage() {
         <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div className="rounded-xl border bg-card p-4">
             <SociBarChart
-              sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
-              purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+              sales={allSales.filter((s) => inRange(s.anno))}
+              purchases={allPurchases.filter((p) => inRange(p.anno))}
               mode="vendite"
               onBarClick={(_, nome) => { setSelected({ nome, tipo: "cliente" }); setSheetOpen(true); }}
             />
           </div>
           <div className="rounded-xl border bg-card p-4">
             <SociBarChart
-              sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
-              purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+              sales={allSales.filter((s) => inRange(s.anno))}
+              purchases={allPurchases.filter((p) => inRange(p.anno))}
               mode="acquisti"
               onBarClick={(_, nome) => { setSelected({ nome, tipo: "fornitore" }); setSheetOpen(true); }}
             />
@@ -368,16 +368,16 @@ export default function SociPage() {
           <div ref={chartsReportRef} className="grid grid-cols-2 gap-3 p-2 bg-white">
             <div className="rounded-xl border bg-card p-4">
               <SociBarChart
-                sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
-                purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+                sales={allSales.filter((s) => inRange(s.anno))}
+                purchases={allPurchases.filter((p) => inRange(p.anno))}
                 mode="vendite"
                 topN={9999}
               />
             </div>
             <div className="rounded-xl border bg-card p-4">
               <SociBarChart
-                sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
-                purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+                sales={allSales.filter((s) => inRange(s.anno))}
+                purchases={allPurchases.filter((p) => inRange(p.anno))}
                 mode="acquisti"
                 topN={9999}
               />
