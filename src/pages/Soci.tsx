@@ -68,9 +68,21 @@ export default function SociPage() {
   }, [allSales, allPurchases]);
 
   const soci = useMemo(
-    () => contatti
-      .filter((c) => (c.tipo || "").toLowerCase().split(",").map((t) => t.trim()).includes("socio"))
-      .sort((a, b) => a.denominazione.localeCompare(b.denominazione, "it")),
+    () => {
+      const list = contatti.filter((c) =>
+        (c.tipo || "").toLowerCase().split(",").map((t) => t.trim()).includes("socio")
+      );
+      // Dedup per partita IVA (stesso soggetto con denominazioni diverse)
+      const seen = new Set<string>();
+      const deduped = list.filter((c) => {
+        const piva = (c.partita_iva || "").trim();
+        if (!piva) return true;
+        if (seen.has(piva)) return false;
+        seen.add(piva);
+        return true;
+      });
+      return deduped.sort((a, b) => a.denominazione.localeCompare(b.denominazione, "it"));
+    },
     [contatti]
   );
 
