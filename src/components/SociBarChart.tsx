@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList } from "recharts";
 import type { SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useRubrica } from "@/hooks/useRubrica";
 import { formatCurrency } from "@/lib/format";
@@ -122,6 +122,12 @@ export const SociBarChart = React.memo(function SociBarChart({
               {data.map((_, i) => (
                 <Cell key={i} fill={color} fillOpacity={1 - i * 0.04} />
               ))}
+              <LabelList
+                dataKey="value"
+                position="right"
+                formatter={(v: number) => formatCurrency(v)}
+                style={{ fontSize: 10, fill: "hsl(var(--foreground))", fontFamily: "ui-monospace, monospace" }}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
