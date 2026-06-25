@@ -105,16 +105,27 @@ export const SociBarChart = React.memo(function SociBarChart({
 
   return (
     <div className="space-y-2">
+      {large ? (
+        <div className="space-y-0.5">
+          <h3 className="text-3xl font-bold text-black whitespace-nowrap">{headerTitle}</h3>
+          <p className="text-lg font-semibold text-black whitespace-nowrap">{headerSub}</p>
+          <p className="text-base font-semibold text-black whitespace-nowrap">
+            Totale: <span className="font-mono font-bold">{formatCurrency(total)}</span>
+          </p>
+          <p className="text-base font-semibold text-black whitespace-nowrap">{data.length} soci</p>
+        </div>
+      ) : (
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h3 className={`${large ? "text-3xl" : "text-xl"} font-bold text-black`}>{headerTitle}</h3>
-          <p className={`${large ? "text-lg" : "text-sm"} font-semibold text-black`}>{headerSub}</p>
+          <h3 className="text-xl font-bold text-black">{headerTitle}</h3>
+          <p className="text-sm font-semibold text-black">{headerSub}</p>
         </div>
-        <div className={`${large ? "text-base" : "text-xs"} font-semibold text-black`}>
+        <div className="text-xs font-semibold text-black">
           Totale: <span className="font-mono font-bold text-black">{formatCurrency(total)}</span>
           <span className="ml-2">({data.length} soci)</span>
         </div>
       </div>
+      )}
       {data.length === 0 ? (
         <div className="text-center text-xs text-muted-foreground py-10 border rounded-md">Nessun dato disponibile</div>
       ) : (
