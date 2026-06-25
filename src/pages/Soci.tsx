@@ -368,6 +368,7 @@ export default function SociPage() {
                 purchases={allPurchases.filter((p) => inRange(p.anno))}
                 mode="vendite"
                 topN={9999}
+                large
               />
             </div>
             <div className="rounded-xl border bg-card p-4">
@@ -376,6 +377,7 @@ export default function SociPage() {
                 purchases={allPurchases.filter((p) => inRange(p.anno))}
                 mode="acquisti"
                 topN={9999}
+                large
               />
             </div>
           </div>
