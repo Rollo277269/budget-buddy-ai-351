@@ -232,6 +232,27 @@ export default function SociPage() {
         </div>
       </div>
 
+      {!loading && rows.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="rounded-xl border bg-card p-4">
+            <SociBarChart
+              sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
+              purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+              mode="vendite"
+              onBarClick={(_, nome) => { setSelected({ nome, tipo: "cliente" }); setSheetOpen(true); }}
+            />
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <SociBarChart
+              sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
+              purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+              mode="acquisti"
+              onBarClick={(_, nome) => { setSelected({ nome, tipo: "fornitore" }); setSheetOpen(true); }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="border rounded-md bg-card overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-muted/50">
