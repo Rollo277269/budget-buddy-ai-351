@@ -11,6 +11,7 @@ import { SociBarChart } from "@/components/SociBarChart";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas-pro";
 
 function parseYear(d: string): number | null {
   if (!d) return null;
@@ -186,34 +187,39 @@ export default function SociPage() {
     doc.save(`${baseFilename}.pdf`);
   };
 
-  const printCharts = () => {
+  const printCharts = async () => {
     const node = chartsRef.current;
     if (!node) return;
-    const win = window.open("", "_blank", "width=1200,height=900");
-    if (!win) return;
-    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-      .map((el) => el.outerHTML)
-      .join("\n");
+    const canvas = await html2canvas(node, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true,
+    });
+    const imgData = canvas.toDataURL("image/png");
+
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 32;
     const titleStr = `Report Grafico Soci - Anno ${year ?? "Tutti"}${socioId === "__all__" ? "" : " - " + socioLabel}`;
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titleStr}</title>${styles}
-    <style>
-      @page { size: A4 landscape; margin: 12mm; }
-      body { background: white; font-family: system-ui, sans-serif; padding: 0; margin: 0; }
-      .report-header { padding: 8px 0 12px; border-bottom: 1px solid #ddd; margin-bottom: 12px; }
-      .report-header h1 { font-size: 16px; margin: 0; font-weight: 600; }
-      .report-header p { font-size: 11px; color: #666; margin: 2px 0 0; }
-      .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      .report-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; page-break-inside: avoid; }
-    </style></head><body>
-    <div class="report-header">
-      <h1>${titleStr}</h1>
-      <p>Generato il ${new Date().toLocaleString("it-IT")}</p>
-    </div>
-    <div class="report-grid">${node.innerHTML}</div>
-    </body></html>`);
-    win.document.close();
-    // Wait for fonts/styles then print
-    setTimeout(() => { win.focus(); win.print(); }, 600);
+
+    doc.setFontSize(14);
+    doc.text(titleStr, margin, margin);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generato il ${new Date().toLocaleString("it-IT")}`, margin, margin + 14);
+    doc.setTextColor(0);
+
+    const availW = pageW - margin * 2;
+    const availH = pageH - margin * 2 - 30;
+    const ratio = canvas.width / canvas.height;
+    let imgW = availW;
+    let imgH = imgW / ratio;
+    if (imgH > availH) { imgH = availH; imgW = imgH * ratio; }
+    const x = (pageW - imgW) / 2;
+    const y = margin + 28;
+    doc.addImage(imgData, "PNG", x, y, imgW, imgH);
+    doc.save(`${baseFilename}_grafici.pdf`);
   };
 
   return (
