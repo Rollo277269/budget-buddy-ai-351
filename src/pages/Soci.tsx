@@ -209,7 +209,7 @@ export default function SociPage() {
   };
 
   const printCharts = async () => {
-    const node = chartsRef.current;
+    const node = chartsReportRef.current ?? chartsRef.current;
     if (!node) return;
     const canvas = await html2canvas(node, {
       backgroundColor: "#ffffff",
