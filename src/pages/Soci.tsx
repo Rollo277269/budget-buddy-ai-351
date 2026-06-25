@@ -87,12 +87,18 @@ export default function SociPage() {
   );
 
   const urlYear = searchParams.get("anno");
+  const urlYearFrom = searchParams.get("annoDa");
+  const urlYearTo = searchParams.get("annoA");
   const urlSocio = searchParams.get("socio");
   const year: number | null = urlYear === "__all__"
     ? null
     : (urlYear && !isNaN(parseInt(urlYear, 10))
         ? parseInt(urlYear, 10)
         : (allYears[0] ?? null));
+  const parseYearParam = (v: string | null): number | null =>
+    v && !isNaN(parseInt(v, 10)) ? parseInt(v, 10) : null;
+  const yearFrom: number | null = parseYearParam(urlYearFrom) ?? year;
+  const yearTo: number | null = parseYearParam(urlYearTo) ?? year;
   const socioId: string = urlSocio && soci.some((s) => s.id === urlSocio) ? urlSocio : "__all__";
 
   const updateParam = (key: string, value: string | null, keepAll = false) => {
@@ -103,6 +109,8 @@ export default function SociPage() {
   };
 
   const setYear = (y: string) => updateParam("anno", y, true);
+  const setYearFrom = (y: string) => updateParam("annoDa", y === "__all__" ? null : y);
+  const setYearTo = (y: string) => updateParam("annoA", y === "__all__" ? null : y);
   const setSocioId = (id: string) => updateParam("socio", id);
 
   // Seed default year in URL once data is loaded, so shared links carry it explicitly.
@@ -115,9 +123,16 @@ export default function SociPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allYears.length]);
 
+  const inRange = (anno: number | null | undefined): boolean => {
+    if (anno == null) return yearFrom == null && yearTo == null;
+    if (yearFrom != null && anno < yearFrom) return false;
+    if (yearTo != null && anno > yearTo) return false;
+    return true;
+  };
+
   const rows = useMemo(() => {
-    const salesByYear = year == null ? allSales : allSales.filter((s) => s.anno === year);
-    const purchasesByYear = year == null ? allPurchases : allPurchases.filter((p) => p.anno === year);
+    const salesByYear = allSales.filter((s) => inRange(s.anno));
+    const purchasesByYear = allPurchases.filter((p) => inRange(p.anno));
 
     const list = socioId === "__all__" ? soci : soci.filter((s) => s.id === socioId);
     return list.map((socio) => {
@@ -144,7 +159,7 @@ export default function SociPage() {
 
       return { socio, vendite, acquisti, iva, ivaTot };
     });
-  }, [soci, allSales, allPurchases, year]);
+  }, [soci, allSales, allPurchases, yearFrom, yearTo]);
 
   const totals = useMemo(() => {
     const t = { vendite: 0, acquisti: 0, iva: [0, 0, 0, 0], ivaTot: 0 };
@@ -167,7 +182,11 @@ export default function SociPage() {
   const socioLabel = socioId === "__all__"
     ? "Tutti i soci"
     : (soci.find((s) => s.id === socioId)?.denominazione ?? "");
-  const baseFilename = `Soci_${year ?? "tutti"}${socioId === "__all__" ? "" : "_" + socioLabel.replace(/[^\w-]+/g, "_")}`;
+  const rangeLabel =
+    yearFrom == null && yearTo == null ? "Tutti gli anni"
+    : yearFrom != null && yearTo != null && yearFrom === yearTo ? String(yearFrom)
+    : `${yearFrom ?? "…"} - ${yearTo ?? "…"}`;
+  const baseFilename = `Soci_${rangeLabel.replace(/\s+/g, "")}${socioId === "__all__" ? "" : "_" + socioLabel.replace(/[^\w-]+/g, "_")}`;
 
   const exportExcel = () => {
     const header = ["Socio", "Partita IVA", "Vendite (crediti)", "Acquisti (debiti)", "IVA T1", "IVA T2", "IVA T3", "IVA T4", "IVA totale"];
@@ -178,7 +197,7 @@ export default function SociPage() {
     ]);
     const totalRow = ["Totale", `${rows.length} soci`, totals.vendite, totals.acquisti, totals.iva[0], totals.iva[1], totals.iva[2], totals.iva[3], totals.ivaTot];
     const ws = XLSX.utils.aoa_to_sheet([
-      [`Report Soci - Anno ${year ?? ""} - ${socioLabel}`],
+      [`Report Soci - ${rangeLabel} - ${socioLabel}`],
       [],
       header,
       ...data,
@@ -196,7 +215,7 @@ export default function SociPage() {
     if (logo) { try { doc.addImage(logo, "JPEG", 40, 24, 40, 40); } catch {} }
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text(`Report Soci - Anno ${year ?? ""}`, 92, 44);
+    doc.text(`Report Soci - ${rangeLabel}`, 92, 44);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(socioLabel, 92, 60);
@@ -235,7 +254,7 @@ export default function SociPage() {
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 32;
-    const titleStr = `Report Grafico Soci - Anno ${year ?? "Tutti"}${socioId === "__all__" ? "" : " - " + socioLabel}`;
+    const titleStr = `Report Grafico Soci - ${rangeLabel}${socioId === "__all__" ? "" : " - " + socioLabel}`;
 
     if (logo) { try { doc.addImage(logo, "JPEG", margin, margin - 8, 40, 40); } catch {} }
     doc.setFontSize(14);
