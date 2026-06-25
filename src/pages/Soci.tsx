@@ -232,6 +232,9 @@ export default function SociPage() {
           <Button size="sm" variant="outline" className="h-8 text-xs" onClick={exportPdf} disabled={loading || rows.length === 0}>
             <FileText className="h-3.5 w-3.5 mr-1" /> PDF
           </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={printCharts} disabled={loading || rows.length === 0}>
+            <BarChart3 className="h-3.5 w-3.5 mr-1" /> Report Grafico
+          </Button>
           <span className="text-xs text-muted-foreground">Socio</span>
           <Select value={socioId} onValueChange={setSocioId}>
             <SelectTrigger className="h-8 w-56 text-xs">
@@ -264,7 +267,7 @@ export default function SociPage() {
       </div>
 
       {!loading && rows.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div className="rounded-xl border bg-card p-4">
             <SociBarChart
               sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
