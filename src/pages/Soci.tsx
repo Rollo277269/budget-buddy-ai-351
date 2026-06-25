@@ -318,6 +318,33 @@ export default function SociPage() {
         </div>
       )}
 
+      {/* Off-screen container for PDF report: tutti i soci */}
+      {!loading && rows.length > 0 && (
+        <div
+          aria-hidden
+          style={{ position: "fixed", left: -10000, top: 0, width: 1600, background: "#ffffff", pointerEvents: "none" }}
+        >
+          <div ref={chartsReportRef} className="grid grid-cols-2 gap-3 p-2 bg-white">
+            <div className="rounded-xl border bg-card p-4">
+              <SociBarChart
+                sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
+                purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+                mode="vendite"
+                topN={9999}
+              />
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <SociBarChart
+                sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
+                purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+                mode="acquisti"
+                topN={9999}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="border rounded-md bg-card overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-muted/50">
