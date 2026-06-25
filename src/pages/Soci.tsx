@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useInvoiceData, SaleInvoice, PurchaseInvoice } from "@/hooks/useInvoiceData";
 import { useRubrica } from "@/hooks/useRubrica";
@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SchedaSoggettoSheet } from "@/components/SchedaSoggettoSheet";
 import { Button } from "@/components/ui/button";
-import { FileSpreadsheet, FileText } from "lucide-react";
+import { FileSpreadsheet, FileText, BarChart3 } from "lucide-react";
 import { SociBarChart } from "@/components/SociBarChart";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -40,6 +40,7 @@ export default function SociPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<{ nome: string; tipo: "cliente" | "fornitore" } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const chartsRef = useRef<HTMLDivElement>(null);
 
   const allYears = useMemo(() => {
     const ys = new Set<number>();
@@ -185,6 +186,36 @@ export default function SociPage() {
     doc.save(`${baseFilename}.pdf`);
   };
 
+  const printCharts = () => {
+    const node = chartsRef.current;
+    if (!node) return;
+    const win = window.open("", "_blank", "width=1200,height=900");
+    if (!win) return;
+    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map((el) => el.outerHTML)
+      .join("\n");
+    const titleStr = `Report Grafico Soci - Anno ${year ?? "Tutti"}${socioId === "__all__" ? "" : " - " + socioLabel}`;
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titleStr}</title>${styles}
+    <style>
+      @page { size: A4 landscape; margin: 12mm; }
+      body { background: white; font-family: system-ui, sans-serif; padding: 0; margin: 0; }
+      .report-header { padding: 8px 0 12px; border-bottom: 1px solid #ddd; margin-bottom: 12px; }
+      .report-header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+      .report-header p { font-size: 11px; color: #666; margin: 2px 0 0; }
+      .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .report-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; page-break-inside: avoid; }
+    </style></head><body>
+    <div class="report-header">
+      <h1>${titleStr}</h1>
+      <p>Generato il ${new Date().toLocaleString("it-IT")}</p>
+    </div>
+    <div class="report-grid">${node.innerHTML}</div>
+    </body></html>`);
+    win.document.close();
+    // Wait for fonts/styles then print
+    setTimeout(() => { win.focus(); win.print(); }, 600);
+  };
+
   return (
     <div className="p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -200,6 +231,9 @@ export default function SociPage() {
           </Button>
           <Button size="sm" variant="outline" className="h-8 text-xs" onClick={exportPdf} disabled={loading || rows.length === 0}>
             <FileText className="h-3.5 w-3.5 mr-1" /> PDF
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={printCharts} disabled={loading || rows.length === 0}>
+            <BarChart3 className="h-3.5 w-3.5 mr-1" /> Report Grafico
           </Button>
           <span className="text-xs text-muted-foreground">Socio</span>
           <Select value={socioId} onValueChange={setSocioId}>
@@ -233,7 +267,7 @@ export default function SociPage() {
       </div>
 
       {!loading && rows.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div className="rounded-xl border bg-card p-4">
             <SociBarChart
               sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
