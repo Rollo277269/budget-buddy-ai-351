@@ -16,6 +16,7 @@ interface Props {
   subtitle?: string;
   topN?: number;
   onBarClick?: (socioId: string, denominazione: string) => void;
+  large?: boolean;
 }
 
 function Tip({ active, payload, label }: any) {
