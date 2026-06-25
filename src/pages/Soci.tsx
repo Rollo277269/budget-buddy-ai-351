@@ -58,6 +58,7 @@ export default function SociPage() {
   const [selected, setSelected] = useState<{ nome: string; tipo: "cliente" | "fornitore" } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const chartsRef = useRef<HTMLDivElement>(null);
+  const chartsReportRef = useRef<HTMLDivElement>(null);
 
   const allYears = useMemo(() => {
     const ys = new Set<number>();
@@ -208,7 +209,7 @@ export default function SociPage() {
   };
 
   const printCharts = async () => {
-    const node = chartsRef.current;
+    const node = chartsReportRef.current ?? chartsRef.current;
     if (!node) return;
     const canvas = await html2canvas(node, {
       backgroundColor: "#ffffff",
@@ -313,6 +314,33 @@ export default function SociPage() {
               mode="acquisti"
               onBarClick={(_, nome) => { setSelected({ nome, tipo: "fornitore" }); setSheetOpen(true); }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Off-screen container for PDF report: tutti i soci */}
+      {!loading && rows.length > 0 && (
+        <div
+          aria-hidden
+          style={{ position: "fixed", left: -10000, top: 0, width: 1600, background: "#ffffff", pointerEvents: "none" }}
+        >
+          <div ref={chartsReportRef} className="grid grid-cols-2 gap-3 p-2 bg-white">
+            <div className="rounded-xl border bg-card p-4">
+              <SociBarChart
+                sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
+                purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+                mode="vendite"
+                topN={9999}
+              />
+            </div>
+            <div className="rounded-xl border bg-card p-4">
+              <SociBarChart
+                sales={year == null ? allSales : allSales.filter((s) => s.anno === year)}
+                purchases={year == null ? allPurchases : allPurchases.filter((p) => p.anno === year)}
+                mode="acquisti"
+                topN={9999}
+              />
+            </div>
           </div>
         </div>
       )}
