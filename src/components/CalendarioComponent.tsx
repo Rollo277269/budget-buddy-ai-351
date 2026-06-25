@@ -317,14 +317,17 @@ export function CalendarioComponent({ events, centerSlot }: Props) {
                     className={cn(
                       "min-h-0 p-1 border-b border-r text-[10px] transition-colors overflow-auto",
                       !inMonth && "bg-muted/20 text-muted-foreground/50",
-                      isToday && "bg-primary/5"
+                      isToday && "bg-primary/10 ring-2 ring-primary ring-inset relative z-10"
                     )}
                   >
-                    <div className={cn(
-                      "text-right text-[11px] mb-0.5",
-                      isToday && "font-bold text-primary"
-                    )}>
-                      {date.getDate()}
+                    <div className={cn("flex justify-end mb-0.5")}>
+                      {isToday ? (
+                        <span className="inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shadow-sm">
+                          {date.getDate()}
+                        </span>
+                      ) : (
+                        <span className="text-[11px]">{date.getDate()}</span>
+                      )}
                     </div>
                     <div className="space-y-0.5">
                       {dayEvents.slice(0, 3).map((ev, i) => (
@@ -350,10 +353,10 @@ export function CalendarioComponent({ events, centerSlot }: Props) {
                 {weekDays.map((d, i) => (
                   <div key={`h-${i}`} className={cn(
                     "border-b border-r bg-muted/50 h-6 flex items-center justify-center gap-1",
-                    sameDay(d, today) && "bg-primary/10"
+                    sameDay(d, today) && "bg-primary text-primary-foreground"
                   )}>
-                    <span className="text-[10px] font-semibold text-muted-foreground">{WEEKDAYS[i]}</span>
-                    <span className={cn("text-[11px] font-medium", sameDay(d, today) && "text-primary font-bold")}>{d.getDate()}</span>
+                    <span className={cn("text-[10px] font-semibold text-muted-foreground", sameDay(d, today) && "text-primary-foreground")}>{WEEKDAYS[i]}</span>
+                    <span className={cn("text-[11px] font-medium", sameDay(d, today) && "text-primary-foreground font-bold")}>{d.getDate()}</span>
                   </div>
                 ))}
                 {renderHourGutter()}
@@ -370,9 +373,10 @@ export function CalendarioComponent({ events, centerSlot }: Props) {
         {/* Day View */}
         {viewMode === "day" && (
           <div className="border rounded-md">
-            <div className={cn("px-4 py-3 border-b bg-muted/30", sameDay(currentDate, today) && "bg-primary/5")}>
-              <span className="text-sm font-semibold">
+            <div className={cn("px-4 py-3 border-b bg-muted/30", sameDay(currentDate, today) && "bg-primary/10 border-l-4 border-l-primary")}>
+              <span className={cn("text-sm font-semibold", sameDay(currentDate, today) && "text-primary")}>
                 {WEEKDAYS[(currentDate.getDay() + 6) % 7]} {currentDate.getDate()} {MONTH_NAMES[currentDate.getMonth()]}
+                {sameDay(currentDate, today) && <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Oggi</span>}
               </span>
             </div>
             <div className="overflow-auto h-[calc(100vh-280px)] min-h-[500px]">
