@@ -6,6 +6,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { MonthlyChart } from "@/components/SummaryChart";
 import { QuoteChart } from "@/components/QuoteChart";
 import { ClientPieChart, SupplierPieChart, CentroRicavoChart, NonClassificatoList } from "@/components/PieCharts";
+import { SociBarChart } from "@/components/SociBarChart";
 import { CigDetailTable } from "@/components/CigDetailTable";
 import { DeadlineAnalysis } from "@/components/DeadlineAnalysis";
 import { BankReconciliationSummary } from "@/components/BankReconciliationSummary";
@@ -156,6 +157,16 @@ const Index = () => {
           </h2>
           <CentroRicavoChart sales={sales} refreshKey={nonClassRefreshKey} />
           <NonClassificatoList sales={sales} onRowClick={(inv) => setSelectedInvoice(inv)} refreshKey={nonClassRefreshKey} />
+        </div>
+
+        {/* Soci ranking */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="rounded-xl border bg-card p-5">
+            <SociBarChart sales={sales} purchases={purchases} mode="vendite" />
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <SociBarChart sales={sales} purchases={purchases} mode="acquisti" />
+          </div>
         </div>
 
         {/* Bank Reconciliation Summary */}
