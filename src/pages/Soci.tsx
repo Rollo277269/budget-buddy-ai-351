@@ -204,9 +204,11 @@ export default function SociPage() {
     const titleStr = `Report Grafico Soci - Anno ${year ?? "Tutti"}${socioId === "__all__" ? "" : " - " + socioLabel}`;
 
     doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
     doc.text(titleStr, margin, margin);
     doc.setFontSize(9);
-    doc.setTextColor(120);
+    doc.setTextColor(0);
+    doc.setFont("helvetica", "bold");
     doc.text(`Generato il ${new Date().toLocaleString("it-IT")}`, margin, margin + 14);
     doc.setTextColor(0);
 
