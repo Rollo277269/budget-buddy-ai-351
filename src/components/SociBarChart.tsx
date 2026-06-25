@@ -126,7 +126,7 @@ export const SociBarChart = React.memo(function SociBarChart({
                 dataKey="value"
                 position="right"
                 formatter={(v: number) => formatCurrency(v).replace(/\s?€/, "")}
-                style={{ fontSize: 10, fill: "#000", fontFamily: "ui-monospace, monospace", fontWeight: 700 }}
+                style={{ fontSize: 10, fill: "#000", fillOpacity: 1, opacity: 1, fontFamily: "ui-monospace, monospace", fontWeight: 700 }}
               />
             </Bar>
           </BarChart>
