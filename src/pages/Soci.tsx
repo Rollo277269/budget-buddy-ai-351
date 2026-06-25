@@ -12,6 +12,22 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas-pro";
+import logoCssr from "@/assets/logo-cssr.jpg";
+
+async function loadLogoDataUrl(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext("2d")!.drawImage(img, 0, 0);
+      try { resolve(c.toDataURL("image/jpeg", 0.92)); } catch { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = logoCssr;
+  });
+}
 
 function parseYear(d: string): number | null {
   if (!d) return null;
@@ -161,14 +177,18 @@ export default function SociPage() {
     XLSX.writeFile(wb, `${baseFilename}.xlsx`);
   };
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const logo = await loadLogoDataUrl();
+    if (logo) { try { doc.addImage(logo, "JPEG", 40, 24, 40, 40); } catch {} }
     doc.setFontSize(14);
-    doc.text(`Report Soci - Anno ${year ?? ""}`, 40, 40);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Report Soci - Anno ${year ?? ""}`, 92, 44);
     doc.setFontSize(10);
-    doc.text(socioLabel, 40, 58);
+    doc.setFont("helvetica", "normal");
+    doc.text(socioLabel, 92, 60);
     autoTable(doc, {
-      startY: 75,
+      startY: 80,
       head: [["Socio", "P. IVA", "Vendite", "Acquisti", "IVA T1", "IVA T2", "IVA T3", "IVA T4", "IVA totale"]],
       body: rows.map((r) => [
         r.socio.denominazione,
@@ -198,28 +218,30 @@ export default function SociPage() {
     const imgData = canvas.toDataURL("image/png");
 
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const logo = await loadLogoDataUrl();
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 32;
     const titleStr = `Report Grafico Soci - Anno ${year ?? "Tutti"}${socioId === "__all__" ? "" : " - " + socioLabel}`;
 
+    if (logo) { try { doc.addImage(logo, "JPEG", margin, margin - 8, 40, 40); } catch {} }
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text(titleStr, margin, margin);
+    doc.text(titleStr, margin + 52, margin + 6);
     doc.setFontSize(9);
     doc.setTextColor(0);
     doc.setFont("helvetica", "bold");
-    doc.text(`Generato il ${new Date().toLocaleString("it-IT")}`, margin, margin + 14);
+    doc.text(`Generato il ${new Date().toLocaleString("it-IT")}`, margin + 52, margin + 20);
     doc.setTextColor(0);
 
     const availW = pageW - margin * 2;
-    const availH = pageH - margin * 2 - 30;
+    const availH = pageH - margin * 2 - 40;
     const ratio = canvas.width / canvas.height;
     let imgW = availW;
     let imgH = imgW / ratio;
     if (imgH > availH) { imgH = availH; imgW = imgH * ratio; }
     const x = (pageW - imgW) / 2;
-    const y = margin + 28;
+    const y = margin + 38;
     doc.addImage(imgData, "PNG", x, y, imgW, imgH);
     doc.save(`${baseFilename}_grafici.pdf`);
   };
