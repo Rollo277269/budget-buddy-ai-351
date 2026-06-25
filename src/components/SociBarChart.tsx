@@ -106,8 +106,8 @@ export const SociBarChart = React.memo(function SociBarChart({
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-black">{headerTitle}</h3>
-          <p className="text-[11px] font-semibold text-black">{headerSub}</p>
+          <h3 className="text-xl font-bold text-black">{headerTitle}</h3>
+          <p className="text-sm font-semibold text-black">{headerSub}</p>
         </div>
         <div className="text-xs font-semibold text-black">
           Totale: <span className="font-mono font-bold text-black">{formatCurrency(total)}</span>
