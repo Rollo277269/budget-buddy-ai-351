@@ -260,10 +260,6 @@ export default function SociPage() {
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text(titleStr, margin + 52, margin + 6);
-    doc.setFontSize(9);
-    doc.setTextColor(0);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Generato il ${new Date().toLocaleString("it-IT")}`, margin + 52, margin + 20);
     doc.setTextColor(0);
 
     const availW = pageW - margin * 2;
