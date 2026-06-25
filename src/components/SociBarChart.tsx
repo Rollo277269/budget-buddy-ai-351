@@ -54,9 +54,18 @@ export const SociBarChart = React.memo(function SociBarChart({
   const { contatti } = useRubrica();
 
   const data = useMemo(() => {
-    const soci = contatti.filter((c) =>
+    const allSoci = contatti.filter((c) =>
       (c.tipo || "").toLowerCase().split(",").map((t) => t.trim()).includes("socio")
     );
+    // Dedup per partita IVA: stesso soggetto registrato con denominazioni diverse
+    const seen = new Set<string>();
+    const soci = allSoci.filter((c) => {
+      const piva = (c.partita_iva || "").trim();
+      if (!piva) return true;
+      if (seen.has(piva)) return false;
+      seen.add(piva);
+      return true;
+    });
     const rows = soci.map((socio) => {
       const nameKey = norm(socio.denominazione);
       const piva = (socio.partita_iva || "").trim();
