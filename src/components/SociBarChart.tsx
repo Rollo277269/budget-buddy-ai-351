@@ -97,11 +97,11 @@ export const SociBarChart = React.memo(function SociBarChart({
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">{headerTitle}</h3>
-          <p className="text-[11px] text-muted-foreground">{headerSub}</p>
+          <h3 className="text-sm font-bold text-black">{headerTitle}</h3>
+          <p className="text-[11px] font-semibold text-black">{headerSub}</p>
         </div>
-        <div className="text-xs text-muted-foreground">
-          Totale: <span className="font-mono font-semibold text-foreground">{formatCurrency(total)}</span>
+        <div className="text-xs font-semibold text-black">
+          Totale: <span className="font-mono font-bold text-black">{formatCurrency(total)}</span>
           <span className="ml-2">({data.length} soci)</span>
         </div>
       </div>
@@ -111,8 +111,8 @@ export const SociBarChart = React.memo(function SociBarChart({
         <ResponsiveContainer width="100%" height={Math.max(220, data.length * 28 + 40)}>
           <BarChart data={data} layout="vertical" margin={{ top: 5, right: 90, left: 8, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
-            <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v as number).replace(/\s?€/, "")} />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={180} interval={0}
+            <XAxis type="number" tick={{ fontSize: 10, fill: "#000", fontWeight: 700 }} tickFormatter={(v) => formatCurrency(v as number).replace(/\s?€/, "")} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#000", fontWeight: 700 }} width={180} interval={0}
               tickFormatter={(s: string) => (s.length > 26 ? s.slice(0, 26) + "…" : s)} />
             <ReferenceLine x={0} stroke="hsl(var(--border))" />
             <Tooltip content={<Tip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
@@ -126,7 +126,7 @@ export const SociBarChart = React.memo(function SociBarChart({
                 dataKey="value"
                 position="right"
                 formatter={(v: number) => formatCurrency(v).replace(/\s?€/, "")}
-                style={{ fontSize: 10, fill: "hsl(var(--foreground))", fontFamily: "ui-monospace, monospace" }}
+                style={{ fontSize: 10, fill: "#000", fontFamily: "ui-monospace, monospace", fontWeight: 700 }}
               />
             </Bar>
           </BarChart>
