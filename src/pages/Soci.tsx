@@ -311,17 +311,27 @@ export default function SociPage() {
               ))}
             </SelectContent>
           </Select>
-          <span className="text-xs text-muted-foreground ml-2">Anno</span>
-          <Select value={year != null ? String(year) : "__all__"} onValueChange={setYear}>
-            <SelectTrigger className="h-8 w-28 text-xs">
-              <SelectValue placeholder="Anno" />
+          <span className="text-xs text-muted-foreground ml-2">Dal</span>
+          <Select value={yearFrom != null ? String(yearFrom) : "__all__"} onValueChange={setYearFrom}>
+            <SelectTrigger className="h-8 w-24 text-xs">
+              <SelectValue placeholder="Dal" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__" className="text-xs">Tutti gli anni</SelectItem>
+              <SelectItem value="__all__" className="text-xs">—</SelectItem>
               {allYears.map((y) => (
-                <SelectItem key={y} value={String(y)} className="text-xs">
-                  {y}
-                </SelectItem>
+                <SelectItem key={y} value={String(y)} className="text-xs">{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground">al</span>
+          <Select value={yearTo != null ? String(yearTo) : "__all__"} onValueChange={setYearTo}>
+            <SelectTrigger className="h-8 w-24 text-xs">
+              <SelectValue placeholder="Al" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__" className="text-xs">—</SelectItem>
+              {allYears.map((y) => (
+                <SelectItem key={y} value={String(y)} className="text-xs">{y}</SelectItem>
               ))}
             </SelectContent>
           </Select>
