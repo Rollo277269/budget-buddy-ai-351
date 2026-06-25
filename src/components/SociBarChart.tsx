@@ -50,7 +50,7 @@ function Tip({ active, payload, label }: any) {
 }
 
 export const SociBarChart = React.memo(function SociBarChart({
-  sales, purchases, mode, title, subtitle, topN = 15, onBarClick,
+  sales, purchases, mode, title, subtitle, topN = 15, onBarClick, large,
 }: Props) {
   const { contatti } = useRubrica();
 
@@ -107,10 +107,10 @@ export const SociBarChart = React.memo(function SociBarChart({
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h3 className="text-xl font-bold text-black">{headerTitle}</h3>
-          <p className="text-sm font-semibold text-black">{headerSub}</p>
+          <h3 className={`${large ? "text-3xl" : "text-xl"} font-bold text-black`}>{headerTitle}</h3>
+          <p className={`${large ? "text-lg" : "text-sm"} font-semibold text-black`}>{headerSub}</p>
         </div>
-        <div className="text-xs font-semibold text-black">
+        <div className={`${large ? "text-base" : "text-xs"} font-semibold text-black`}>
           Totale: <span className="font-mono font-bold text-black">{formatCurrency(total)}</span>
           <span className="ml-2">({data.length} soci)</span>
         </div>
