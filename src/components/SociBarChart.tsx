@@ -20,11 +20,30 @@ interface Props {
 
 function Tip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
   return (
-    <div className="rounded-lg border bg-card p-2.5 shadow-md text-xs">
-      <p className="font-medium mb-0.5">{label}</p>
-      <p className="font-mono">{formatCurrency(payload[0].value as number)}</p>
-      <p className="text-[10px] text-muted-foreground mt-0.5">{payload[0].payload.count} fatture</p>
+    <div className="rounded-lg border bg-card p-2.5 shadow-md text-xs min-w-[220px]">
+      <p className="font-semibold mb-1">{label}</p>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground">Posizione</span>
+        <span className="font-semibold">#{d.rank} di {d.total}</span>
+      </div>
+      <div className="border-t my-1.5" />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-income">Totale Vendite</span>
+        <span className="font-mono">{formatCurrency(d.vendite)}</span>
+      </div>
+      <div className="text-[10px] text-muted-foreground text-right">{d.venditeCount} fatture</div>
+      <div className="flex items-center justify-between gap-3 mt-1">
+        <span className="text-expense">Totale Acquisti</span>
+        <span className="font-mono">{formatCurrency(d.acquisti)}</span>
+      </div>
+      <div className="text-[10px] text-muted-foreground text-right">{d.acquistiCount} fatture</div>
+      <div className="border-t my-1.5" />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground">Saldo</span>
+        <span className="font-mono font-semibold">{formatCurrency(d.vendite - d.acquisti)}</span>
+      </div>
     </div>
   );
 }
@@ -41,21 +60,29 @@ export const SociBarChart = React.memo(function SociBarChart({
     const rows = soci.map((socio) => {
       const nameKey = norm(socio.denominazione);
       const piva = (socio.partita_iva || "").trim();
-      if (mode === "vendite") {
-        const list = sales.filter((s) =>
-          norm(s.cliente) === nameKey || (!!piva && ((s as any).partitaIva || "").trim() === piva)
-        );
-        return { id: socio.id, name: socio.denominazione, value: list.reduce((a, s) => a + (s.totale || 0), 0), count: list.length };
-      }
-      const list = purchases.filter((p) =>
+      const sList = sales.filter((s) =>
+        norm(s.cliente) === nameKey || (!!piva && ((s as any).partitaIva || "").trim() === piva)
+      );
+      const pList = purchases.filter((p) =>
         norm(p.fornitore) === nameKey || (!!piva && ((p as any).partitaIva || "").trim() === piva)
       );
-      return { id: socio.id, name: socio.denominazione, value: list.reduce((a, p) => a + (p.totale || 0), 0), count: list.length };
+      const vendite = sList.reduce((a, s) => a + (s.totale || 0), 0);
+      const acquisti = pList.reduce((a, p) => a + (p.totale || 0), 0);
+      return {
+        id: socio.id,
+        name: socio.denominazione,
+        vendite,
+        acquisti,
+        venditeCount: sList.length,
+        acquistiCount: pList.length,
+        value: mode === "vendite" ? vendite : acquisti,
+      };
     });
-    return rows
+    const filtered = rows
       .filter((r) => r.value > 0)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, topN);
+      .sort((a, b) => b.value - a.value);
+    const total = filtered.length;
+    return filtered.slice(0, topN).map((r, i) => ({ ...r, rank: i + 1, total }));
   }, [contatti, sales, purchases, mode, topN]);
 
   const total = useMemo(() => data.reduce((a, r) => a + r.value, 0), [data]);
