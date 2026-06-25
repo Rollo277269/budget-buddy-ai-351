@@ -58,6 +58,7 @@ export default function SociPage() {
   const [selected, setSelected] = useState<{ nome: string; tipo: "cliente" | "fornitore" } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const chartsRef = useRef<HTMLDivElement>(null);
+  const chartsReportRef = useRef<HTMLDivElement>(null);
 
   const allYears = useMemo(() => {
     const ys = new Set<number>();
