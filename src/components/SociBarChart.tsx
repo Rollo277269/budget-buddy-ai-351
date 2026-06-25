@@ -109,7 +109,7 @@ export const SociBarChart = React.memo(function SociBarChart({
         <div className="text-center text-xs text-muted-foreground py-10 border rounded-md">Nessun dato disponibile</div>
       ) : (
         <ResponsiveContainer width="100%" height={Math.max(220, data.length * 28 + 40)}>
-          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 24, left: 8, bottom: 5 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 90, left: 8, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
             <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v as number).replace(/\s?€/, "")} />
             <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={180} interval={0}
