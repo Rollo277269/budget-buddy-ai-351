@@ -2633,6 +2633,7 @@ function CentroBreakdownCharts({ linkedSales, linkedPurchases, ricavoMap, costoM
                                  centroMap={centroMapObj}
                                  onAssign={onAssign}
                                  importo={rowTot}
+                                 displayCodice={d.name !== "Non classificato" ? d.name.split(" - ")[0] : undefined}
                                />
                              </TableCell>
                            </TableRow>
