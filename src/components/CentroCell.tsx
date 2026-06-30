@@ -14,13 +14,20 @@ interface CentroCellProps {
   onAssign: (key: string, codice: string) => void;
   onRemove?: (key: string) => void;
   importo?: number;
+  /**
+   * Codice da mostrare nel trigger quando non esiste un'assegnazione di testata
+   * (es. la fattura è classificata solo a livello di riga, ma siamo in una
+   * vista che la raggruppa già sotto un centro).
+   */
+  displayCodice?: string;
 }
 
-export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRemove, importo }: CentroCellProps) {
+export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRemove, importo, displayCodice }: CentroCellProps) {
   const filtered = centri
     .filter((c) => c.tipo === tipo)
     .sort((a, b) => a.codice.localeCompare(b.codice, "it", { sensitivity: "base" }));
-  const assigned = centroMap[invoiceKey];
+  const headerAssigned = centroMap[invoiceKey];
+  const assigned = headerAssigned || displayCodice || "";
   const [open, setOpen] = React.useState(false);
 
   if (filtered.length === 0) {
@@ -92,7 +99,7 @@ export function CentroCell({ invoiceKey, tipo, centri, centroMap, onAssign, onRe
           </Command>
         </PopoverContent>
       </Popover>
-      {assigned && onRemove && (
+      {headerAssigned && onRemove && (
         <Button
           variant="ghost"
           size="sm"
