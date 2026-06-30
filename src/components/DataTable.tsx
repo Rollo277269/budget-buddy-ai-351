@@ -84,7 +84,16 @@ export function DataTable<T extends Record<string, any>>({
     if (tableId) {
       try {
         const saved = localStorage.getItem(`dt-cols-${tableId}`);
-        if (saved) return new Set(JSON.parse(saved) as string[]);
+        if (saved) {
+          const set = new Set(JSON.parse(saved) as string[]);
+          // Auto-show columns added after the user saved their preferences
+          const knownRaw = localStorage.getItem(`dt-known-${tableId}`);
+          const known = new Set<string>(knownRaw ? (JSON.parse(knownRaw) as string[]) : []);
+          columns.forEach((c) => {
+            if (!known.has(c.key) && !c.defaultHidden) set.add(c.key);
+          });
+          return set;
+        }
       } catch { /* ignore */ }
     }
     return new Set(columns.filter((c) => !c.defaultHidden).map((c) => c.key));
@@ -95,8 +104,9 @@ export function DataTable<T extends Record<string, any>>({
   useEffect(() => {
     if (tableId) {
       localStorage.setItem(`dt-cols-${tableId}`, JSON.stringify([...visibleColumns]));
+      localStorage.setItem(`dt-known-${tableId}`, JSON.stringify(columns.map((c) => c.key)));
     }
-  }, [visibleColumns, tableId]);
+  }, [visibleColumns, tableId, columns]);
 
   const [columnOrder, setColumnOrder] = useState<string[]>(() => columns.map((c) => c.key));
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
