@@ -1721,10 +1721,24 @@ export function CommessaDetailSheet({
           {(() => {
             const grouped = new Map<string, SaleInvoice[]>();
             data.linkedSales.forEach((s) => {
-              const codice = ricavoMap.map[`${s.anno}-${s.numero}`] || "Non classificato";
-              const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
-              if (!grouped.has(label)) grouped.set(label, []);
-              grouped.get(label)!.push(s);
+              // Considera sia l'assegnazione header che quelle per-riga: una fattura
+              // può comparire in più centri se le sue righe sono classificate diversamente.
+              const map = ricavoMap.map;
+              const headerCodice = map[`${s.anno}-${s.numero}`] || "";
+              const righe = Array.isArray(s.righe) ? s.righe : [];
+              const codici = new Set<string>();
+              righe.forEach((_: any, idx: number) => {
+                const c = map[`${s.anno}-${s.numero}-${idx}`];
+                if (c) codici.add(c);
+              });
+              if (codici.size === 0 && headerCodice) codici.add(headerCodice);
+              if (codici.size === 0) codici.add("Non classificato");
+              codici.forEach((codice) => {
+                if (codice !== "Non classificato" && isExcludedFromCommessa(codice)) return;
+                const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
+                if (!grouped.has(label)) grouped.set(label, []);
+                grouped.get(label)!.push(s);
+              });
             });
             return Array.from(grouped.entries()).map(([centro, invoices]) => (
               <div key={centro} className="pdf-page">
@@ -1749,6 +1763,7 @@ export function CommessaDetailSheet({
             const grouped = new Map<string, PurchaseInvoice[]>();
             data.linkedPurchases.forEach((p) => {
               const codice = costoMap.map[`${p.anno}-${p.numero}`] || "Non classificato";
+              if (codice !== "Non classificato" && isExcludedFromCommessa(codice)) return;
               const label = codice === "Non classificato" ? codice : `${codice} - ${centroLabelMap.get(codice) || ""}`;
               if (!grouped.has(label)) grouped.set(label, []);
               grouped.get(label)!.push(p);
