@@ -423,6 +423,35 @@ export default function Polizze() {
     [polizze]
   );
 
+  // ── Superseded detection ───────────────────────────────────────────────
+  // Se esistono più polizze con stesso fornitore + stesso numero, quella con
+  // data documento (fallback: data scadenza / created_at) più recente è la
+  // vigente; le precedenti sono marcate "Aggiornato" (soppiantate).
+  const supersededIds = useMemo(() => {
+    const groups = new Map<string, DocumentoAcquisto[]>();
+    for (const d of polizze) {
+      const num = (d.numero || "").trim();
+      if (!num) continue;
+      const forn = (d.fornitore || "").trim().toLowerCase();
+      const key = `${forn}|${num.toLowerCase()}`;
+      const arr = groups.get(key);
+      if (arr) arr.push(d); else groups.set(key, [d]);
+    }
+    const set = new Set<string>();
+    groups.forEach((arr) => {
+      if (arr.length < 2) return;
+      const rank = (d: DocumentoAcquisto): number => {
+        const dd = parseIsoOrItDate(d.data_documento) || parseIsoOrItDate(d.data_scadenza);
+        if (dd) return dd.getTime();
+        return d.created_at ? new Date(d.created_at).getTime() : 0;
+      };
+      const sorted = [...arr].sort((a, b) => rank(b) - rank(a));
+      // tutti tranne il primo (più recente) sono aggiornati
+      for (let i = 1; i < sorted.length; i++) set.add(sorted[i].id);
+    });
+    return set;
+  }, [polizze]);
+
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
     return enriched.filter((d) => {
@@ -952,9 +981,39 @@ export default function Polizze() {
                             <div className="flex flex-col gap-0.5">
                               <span className="text-muted-foreground text-[10px]">Doc: {d.data_documento || "—"}</span>
                               <ScadenzaCell value={d._date} onChange={(date) => handleManualDate(d.id, date)} />
+                              <div className="flex items-center gap-1 text-[10px]">
+                                <span className="text-muted-foreground">Estinta:</span>
+                                <ScadenzaCell
+                                  value={parseIsoOrItDate((d as any).data_estinzione || "")}
+                                  onChange={(date) => updateField(d.id, "data_estinzione", date ? toIso(date) : "")}
+                                />
+                                {(d as any).data_estinzione && (
+                                  <button
+                                    className="text-muted-foreground hover:text-destructive"
+                                    title="Rimuovi data estinzione"
+                                    onClick={() => updateField(d.id, "data_estinzione", "")}
+                                  >
+                                    <XIcon className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </TableCell>}
-                          {isVisible("stato") && <TableCell className="text-xs px-2 py-1.5"><StatoLabel date={d._date} /></TableCell>}
+                          {isVisible("stato") && <TableCell className="text-xs px-2 py-1.5">
+                            <div className="flex flex-col gap-1 items-start">
+                              <StatoLabel date={d._date} />
+                              {(d as any).data_estinzione && (
+                                <Badge variant="outline" className="text-[10px] gap-1 border-slate-400 text-slate-600 bg-slate-100">
+                                  Estinta il {(d as any).data_estinzione}
+                                </Badge>
+                              )}
+                              {supersededIds.has(d.id) && (
+                                <Badge className="text-[10px] gap-1 bg-blue-500 hover:bg-blue-500 text-white uppercase font-semibold" title="Esiste una polizza più recente con lo stesso numero">
+                                  Aggiornato
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>}
                           {isVisible("importi") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono">
                             <div className="flex flex-col gap-0.5 items-end">
                               <span>{d.importo != null ? formatCurrency(d.importo) : "—"}</span>

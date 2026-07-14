@@ -1,0 +1,1 @@
+ALTER TABLE public.documenti_acquisto ADD COLUMN IF NOT EXISTS data_estinzione text NOT NULL DEFAULT '';
