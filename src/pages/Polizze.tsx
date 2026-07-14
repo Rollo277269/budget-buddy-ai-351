@@ -423,6 +423,35 @@ export default function Polizze() {
     [polizze]
   );
 
+  // ── Superseded detection ───────────────────────────────────────────────
+  // Se esistono più polizze con stesso fornitore + stesso numero, quella con
+  // data documento (fallback: data scadenza / created_at) più recente è la
+  // vigente; le precedenti sono marcate "Aggiornato" (soppiantate).
+  const supersededIds = useMemo(() => {
+    const groups = new Map<string, DocumentoAcquisto[]>();
+    for (const d of polizze) {
+      const num = (d.numero || "").trim();
+      if (!num) continue;
+      const forn = (d.fornitore || "").trim().toLowerCase();
+      const key = `${forn}|${num.toLowerCase()}`;
+      const arr = groups.get(key);
+      if (arr) arr.push(d); else groups.set(key, [d]);
+    }
+    const set = new Set<string>();
+    groups.forEach((arr) => {
+      if (arr.length < 2) return;
+      const rank = (d: DocumentoAcquisto): number => {
+        const dd = parseIsoOrItDate(d.data_documento) || parseIsoOrItDate(d.data_scadenza);
+        if (dd) return dd.getTime();
+        return d.created_at ? new Date(d.created_at).getTime() : 0;
+      };
+      const sorted = [...arr].sort((a, b) => rank(b) - rank(a));
+      // tutti tranne il primo (più recente) sono aggiornati
+      for (let i = 1; i < sorted.length; i++) set.add(sorted[i].id);
+    });
+    return set;
+  }, [polizze]);
+
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
     return enriched.filter((d) => {
