@@ -981,9 +981,39 @@ export default function Polizze() {
                             <div className="flex flex-col gap-0.5">
                               <span className="text-muted-foreground text-[10px]">Doc: {d.data_documento || "—"}</span>
                               <ScadenzaCell value={d._date} onChange={(date) => handleManualDate(d.id, date)} />
+                              <div className="flex items-center gap-1 text-[10px]">
+                                <span className="text-muted-foreground">Estinta:</span>
+                                <ScadenzaCell
+                                  value={parseIsoOrItDate((d as any).data_estinzione || "")}
+                                  onChange={(date) => updateField(d.id, "data_estinzione", date ? toIso(date) : "")}
+                                />
+                                {(d as any).data_estinzione && (
+                                  <button
+                                    className="text-muted-foreground hover:text-destructive"
+                                    title="Rimuovi data estinzione"
+                                    onClick={() => updateField(d.id, "data_estinzione", "")}
+                                  >
+                                    <XIcon className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </TableCell>}
-                          {isVisible("stato") && <TableCell className="text-xs px-2 py-1.5"><StatoLabel date={d._date} /></TableCell>}
+                          {isVisible("stato") && <TableCell className="text-xs px-2 py-1.5">
+                            <div className="flex flex-col gap-1 items-start">
+                              <StatoLabel date={d._date} />
+                              {(d as any).data_estinzione && (
+                                <Badge variant="outline" className="text-[10px] gap-1 border-slate-400 text-slate-600 bg-slate-100">
+                                  Estinta il {(d as any).data_estinzione}
+                                </Badge>
+                              )}
+                              {supersededIds.has(d.id) && (
+                                <Badge className="text-[10px] gap-1 bg-blue-500 hover:bg-blue-500 text-white uppercase font-semibold" title="Esiste una polizza più recente con lo stesso numero">
+                                  Aggiornato
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>}
                           {isVisible("importi") && <TableCell className="text-xs px-2 py-1.5 text-right font-mono">
                             <div className="flex flex-col gap-0.5 items-end">
                               <span>{d.importo != null ? formatCurrency(d.importo) : "—"}</span>
