@@ -246,6 +246,7 @@ export type Database = {
           cig: string
           created_at: string | null
           data_documento: string | null
+          data_estinzione: string
           data_scadenza: string
           descrizione: string | null
           file_name: string
@@ -265,6 +266,7 @@ export type Database = {
           cig?: string
           created_at?: string | null
           data_documento?: string | null
+          data_estinzione?: string
           data_scadenza?: string
           descrizione?: string | null
           file_name: string
@@ -284,6 +286,7 @@ export type Database = {
           cig?: string
           created_at?: string | null
           data_documento?: string | null
+          data_estinzione?: string
           data_scadenza?: string
           descrizione?: string | null
           file_name?: string
