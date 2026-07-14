@@ -20,6 +20,7 @@ export interface DocumentoAcquisto {
   tipo_documento?: string | null;
   data_scadenza?: string | null;
   importo_garantito?: number | null;
+  data_estinzione?: string | null;
 }
 
 export interface PreparedDocumento {
